@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: appgate.com
+  name: policies.beta.appgate.com
 spec:
-  group: appgate.com
+  group: beta.appgate.com
   versions:
   - name: v1
     served: true
@@ -104,20 +104,22 @@ spec:
         condition_logic:
           type: string
         actions:
-          type: object
-          properties:
-            subtype:
-              type: string
-            action:
-              type: allow
-            types:
-              type: array
-              items:
+          type: array
+          items:
+            type: object
+            properties:
+              subtype:
                 type: string
-            hosts:
-              type: array
-              items:
-                type: string
+              action:
+                type: allow
+              types:
+                type: array
+                items:
+                  type: string
+              hosts:
+                type: array
+                items:
+                  type: string
         app_shortcut:
           type: object
           properties:
