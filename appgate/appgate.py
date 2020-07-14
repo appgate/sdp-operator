@@ -15,5 +15,6 @@ def event_loop() -> None:
     w = kubernetes.watch.Watch()
     for event in w.stream(crds.list_namespaced_custom_object, DOMAIN, 'v1',
                           'appgate-test-1', 'entitlements'):
+        ev = Event(event)
         entitlement = entitlement_load(ev.object.spec)
         print(f'Event type: {ev.type}: {entitlement}')
