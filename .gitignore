@@ -1,0 +1,23 @@
+__pycache__
+install/
+pkg/
+_tmp/
+tmp/
+virtualenv/
+.rnd
+.vscode/
+.pylintrc
+.mypy_cache/
+build/
+.cache
+
+### IntelliJ ###
+*.iml
+.idea/
+*.ipr
+*.iws
+/out/
+.idea_modules/
+configd.kdev4
+.paswd
+.group
