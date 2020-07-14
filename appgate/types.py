@@ -42,7 +42,9 @@ class Action:
 class AppShortcut:
     name: str = attrib()
     url: str = attrib()
-    color_mode: str = attrib()
+    color_mode: str = attrib(metadata={
+        'name': 'colorMode'
+    })
 
 
 @attrs(slots=True)
@@ -52,9 +54,13 @@ class Entitlement:
     conditions: List[str] = attrib()
     disabled: bool = attrib()
     tags: List[str] = attrib()
-    condition_logic: str = attrib()
+    condition_logic: str = attrib(metadata={
+        'name': 'conditionLogic'
+    })
     actions: List[Action] = attrib()
-    app_shortcut: AppShortcut = attrib()
+    app_shortcut: AppShortcut = attrib(metadata={
+        'name': 'appShortcut'
+    })
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -78,7 +84,9 @@ class Condition:
     name: str = attrib()
     tags: List[str] = attrib()
     expression: str = attrib()
-    repeat_schedules: List[str]
+    repeat_schedules: List[str] = attrib(metadata={
+        'name': 'repeatSchedules'
+    })
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:

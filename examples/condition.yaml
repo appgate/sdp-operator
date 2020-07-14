@@ -16,6 +16,6 @@ if (claims.user.hasPassword('test', 60)) {
 /*end password*/
 return result;
 "
-  repeat_schedules:
+  repeatSchedules:
     - 1h
     - 13:32

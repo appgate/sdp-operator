@@ -11,7 +11,7 @@ spec:
   conditions: 
     - data.appgate_condition.always.id
   disabled: true
-  condition_logic: and
+  conditionLogic: and
   actions:
     - subtype: icmp_up
       action: allow
@@ -27,7 +27,7 @@ spec:
       types: 0-16
       hosts:
         - 10.0.0.5
-  app_shortcut:
+  appShortcut:
     name: ping
     url: https://www.google.com
-    color_mode: 5
+    colorMode: 5

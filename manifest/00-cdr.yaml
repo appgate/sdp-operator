@@ -61,7 +61,7 @@ spec:
             type: string
         expression:
           type: string
-        repeat_schedules:
+        repeatSchedules:
           type: array
           items:
             type: string
@@ -101,7 +101,7 @@ spec:
           type: array
           items:
             type: string
-        condition_logic:
+        conditionLogic:
           type: string
         actions:
           type: array
@@ -118,12 +118,12 @@ spec:
                 type: array
                 items:
                   type: string
-        app_shortcut:
+        appShortcut:
           type: object
           properties:
             name:
               type: string
             url:
               type: string
-            color_mode:
+            colorMode:
               type: int
