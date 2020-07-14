@@ -113,9 +113,7 @@ spec:
               action:
                 type: allow
               types:
-                type: array
-                items:
-                  type: string
+                type: string
               hosts:
                 type: array
                 items:
