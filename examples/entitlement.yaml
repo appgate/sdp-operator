@@ -1,0 +1,28 @@
+apiVersion: "beta.appgate.com/v1"
+kind: Entitlement
+metadata:
+  name: my-new-entitlement
+spec:
+  name: my-new-entitlement
+  site: data.appgate_site.default_site.id
+  tags: 
+    - k8s
+    - api-created
+  conditions: 
+    - data.appgate_condition.always.id
+  disabled: true
+  condition_logic: and
+  actions:
+    subtype: icmp_up
+    action: allow
+    types: 0-16
+    hosts:
+      - 10.0.0.1
+      - 10.0.0.0/24
+      - hostname.company.com
+      - dns://hostname.company.com
+      - aws://security-group:accounting
+    app_shortcut:
+      name: ping
+      url: https://www.google.com
+      color_mode: 5

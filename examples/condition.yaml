@@ -1,0 +1,21 @@
+apiVersion: "beta.appgate.com/v1"
+kind: Condition
+metadata:
+  name: my-new-condition
+spec:
+  name: my-new-condition
+  tags: 
+    - k8s
+    - api-created
+  expression: "
+var result = false;
+/*password*/
+if (claims.user.hasPassword('test', 60)) {
+  return true;
+}
+/*end password*/
+return result;
+"
+  repeat_schedules:
+    - 1h
+    - 13:32

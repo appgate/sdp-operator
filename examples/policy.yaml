@@ -1,0 +1,24 @@
+apiVersion: "beta.appgate.com/v1"
+kind: Policy
+metadata:
+  name: my-new-policy
+spec:
+  name: my-new-policy
+  tags:
+    - k8s
+    - api-created
+  disabled: false
+  expression: '
+var result = false;
+/*claims.user.groups*/
+if(claims.user.groups && claims.user.groups.indexOf("developers") >= 0) {
+  return true;
+}
+/*end claims.user.groups*/
+/*criteriaScript*/
+if (admins(claims)) {
+  return true;
+}
+/*end criteriaScript*/
+return result;
+'
