@@ -31,7 +31,7 @@ def init_kubernetes() -> Optional[str]:
     return kubernetes.config.list_kube_config_contexts()[1]['context'].get('namespace')
 
 
-async def event_loop(namespace: str, crd: str) -> AsyncGenerator[Dict[str, Any]]:
+async def event_loop(namespace: str, crd: str) -> AsyncGenerator[Dict[str, Any], None]:
     w = kubernetes.watch.Watch()
     print(f'Loop for {crd}/{namespace} started')
     s = w.stream(get_crds().list_namespaced_custom_object, DOMAIN, 'v1',
