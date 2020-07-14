@@ -1,0 +1,129 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: appgate.com
+spec:
+  group: appgate.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+  scope: Namespaced
+  names:
+    plural: policies
+    singular: policy
+    kind: Policy
+    shortNames:
+    - pol
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        name:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        disabled:
+          type: boolean
+        expression:
+          type: string
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: conditions.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+  scope: Namespaced
+  names:
+    plural: conditions
+    singular: condition
+    kind: Condition
+    shortNames:
+    - con
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        expression:
+          type: string
+        repeat_schedules:
+          type: array
+          items:
+            type: string
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: entitlements.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+  scope: Namespaced
+  names:
+    plural: entitlements
+    singular: entitlement
+    kind: Entitlement
+    shortNames:
+    - ent
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        name:
+          type: string
+        site:
+          type: string
+        condition:
+          type: array
+          items:
+            type: string
+        disabled:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        condition_logic:
+          type: string
+        actions:
+          type: object
+          properties:
+            subtype:
+              type: string
+            action:
+              type: allow
+            types:
+              type: array
+              items:
+                type: string
+            hosts:
+              type: array
+              items:
+                type: string
+        app_shortcut:
+          type: object
+          properties:
+            name:
+              type: string
+            url:
+              type: string
+            color_mode:
+              type: int
