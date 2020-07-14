@@ -13,16 +13,21 @@ spec:
   disabled: true
   condition_logic: and
   actions:
-    subtype: icmp_up
-    action: allow
-    types: 0-16
-    hosts:
-      - 10.0.0.1
-      - 10.0.0.0/24
-      - hostname.company.com
-      - dns://hostname.company.com
-      - aws://security-group:accounting
-    app_shortcut:
-      name: ping
-      url: https://www.google.com
-      color_mode: 5
+    - subtype: icmp_up
+      action: allow
+      types: 0-16
+      hosts:
+        - 10.0.0.1
+        - 10.0.0.0/24
+        - hostname.company.com
+        - dns://hostname.company.com
+        - aws://security-group:accounting
+    - subtype: icmp_up
+      action: deny
+      types: 0-16
+      hosts:
+        - 10.0.0.5
+  app_shortcut:
+    name: ping
+    url: https://www.google.com
+    color_mode: 5
