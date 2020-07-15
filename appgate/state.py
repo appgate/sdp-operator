@@ -21,6 +21,7 @@ T = TypeVar('T', bound=Entity_T)
 
 @attrs
 class Plan(Generic[T]):
+    share: Set[T] = attrib(factory=set)
     delete: Set[T] = attrib(factory=set)
     create: Set[T] = attrib(factory=set)
     modify: Set[T] = attrib(factory=set)
@@ -32,6 +33,7 @@ class Plan(Generic[T]):
         """
         names = {c.name for c in self.modify}
         names.update({c.name for c in self.create})
+        names.update({c.name for c in self.share})
         return names
 
     @cached_property
@@ -39,7 +41,8 @@ class Plan(Generic[T]):
         """
         Set with all the known id names in the system in this plan
         """
-        return set(filter(None, map(lambda c: c.id, self.modify)))
+        return set(filter(None, map(lambda c: c.id,
+                                    self.modify.union(self.share))))
 
 
 # Policies have entitlements that have conditions, so conditions always first.
@@ -78,16 +81,21 @@ def compare_entities(current: Set[T],
     to_modify = set(map(lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
                         filter(lambda e: e.name in shared_names and e not in current,
                                expected)))
+    to_share = set(map(lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
+                        filter(lambda e: e.name in shared_names and e in current,
+                               expected)))
     return Plan(delete=to_delete,
                 create=to_create,
-                modify=to_modify)
+                modify=to_modify,
+                share=to_share)
 
 
 # TODO: These 2 functions do the same!
 def check_entitlements(entitlements: Plan[Entitlement],
                        conditions: Plan[Condition]) -> Optional[Dict[str, Set[str]]]:
     missing_conditions: Dict[str, Set[str]] = {}
-    for entitlement in entitlements.create.union(entitlements.modify):
+    expected_entitlements = entitlements.create.union(entitlements.modify).union(entitlements.share)
+    for entitlement in expected_entitlements:
         for condition in entitlement.conditions:
             if condition not in conditions.expected_names:
                 if entitlement.name not in missing_conditions:
@@ -102,7 +110,8 @@ def check_entitlements(entitlements: Plan[Entitlement],
 def check_policies(policies: Plan[Policy],
                    entitlements: Plan[Entitlement]) -> Optional[Dict[str, Set[str]]]:
     missing_entitlements: Dict[str, Set[str]] = {}
-    for policy in policies.create.union(policies.modify):
+    expected_policies = policies.create.union(policies.modify).union(policies.share)
+    for policy in expected_policies:
         for entitlement in (policy.entitlements or []):
             if entitlement not in entitlements.expected_names:
                 if policy.name not in missing_entitlements:
