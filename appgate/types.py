@@ -12,7 +12,8 @@ __all__ = [
     'Policy',
     'policy_load',
     'Condition',
-    'condition_load'
+    'condition_load',
+    'Entity_T'
 ]
 
 
@@ -36,14 +37,14 @@ class ActionMonitor:
     timeout: int = attrib()
 
 
-class Entity:
+class Entity_T:
     @property
     def name(self) -> str:
-        raise Exception()
+        raise NotImplementedError()
 
     @property
     def id(self) -> Optional[str]:
-        raise Exception()
+        raise NotImplementedError()
 
 
 @attrs(slots=True, frozen=True)

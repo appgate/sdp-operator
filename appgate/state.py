@@ -1,8 +1,8 @@
-from typing import Set, TypeVar, Generic, Callable, Optional, Dict, List, Any
+from typing import Set, TypeVar, Generic, Dict, List
 
 from attr import attrib, attrs, evolve
 
-from appgate.types import Policy, Condition, Entitlement, Entity
+from appgate.types import Policy, Condition, Entitlement, Entity_T
 
 
 @attrs()
@@ -15,7 +15,7 @@ class AppgateState:
     entitlements: Set[Entitlement] = attrib()
 
 
-T = TypeVar('T', bound=Entity)
+T = TypeVar('T', bound=Entity_T)
 
 
 @attrs
