@@ -57,6 +57,7 @@ class AppShortcut:
 
 @attrs(slots=True)
 class Entitlement:
+    id: Optional[str] = attrib()
     name: str = attrib()
     notes: str = attrib()
     tags: List[str] = attrib()
@@ -82,6 +83,7 @@ def entitlement_load(data: Dict[str, Any]) -> Entitlement:
 
 @attrs(slots=True)
 class Policy:
+    id: Optional[str] = attrib()
     name: str = attrib()
     notes: str = attrib()
     tags: List[str] = attrib()
@@ -126,6 +128,7 @@ class RemedyMethod:
 
 @attrs(slots=True)
 class Condition:
+    id: Optional[str] = attrib()
     name: str = attrib()
     notes: str = attrib()
     tags: List[str] = attrib()
