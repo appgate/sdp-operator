@@ -12,7 +12,8 @@ __all__ = [
     'Policy',
     'policy_load',
     'Condition',
-    'condition_load'
+    'condition_load',
+    'Entity_T'
 ]
 
 
@@ -30,13 +31,23 @@ class Event:
         self.object = EventObject(data['object'])
 
 
-@attrs(slots=True)
+@attrs(slots=True, frozen=True)
 class ActionMonitor:
     enabled: bool = attrib()
     timeout: int = attrib()
 
 
-@attrs(slots=True)
+class Entity_T:
+    @property
+    def name(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def id(self) -> Optional[str]:
+        raise NotImplementedError()
+
+
+@attrs(slots=True, frozen=True)
 class Action:
     subtype: str = attrib()
     action: str = attrib()
@@ -46,7 +57,7 @@ class Action:
     monitor: ActionMonitor = attrib()
 
 
-@attrs(slots=True)
+@attrs(slots=True, frozen=True)
 class AppShortcut:
     name: str = attrib()
     url: str = attrib()
@@ -55,66 +66,66 @@ class AppShortcut:
     })
 
 
-@attrs(slots=True)
-class Entitlement:
+@attrs(slots=True, frozen=True)
+class Entitlement(Entity):
     id: Optional[str] = attrib()
     name: str = attrib()
-    notes: str = attrib()
-    tags: List[str] = attrib()
-    disabled: bool = attrib()
     site: str = attrib()
+    conditions: List[str] = attrib()
+    actions: List[Action] = attrib()
+    notes: Optional[str] = attrib()
+    tags: Optional[List[str]] = attrib()
     site_name: str = attrib(metadata={
         'name': 'siteName'
     })
-    condition_logic: str = attrib(metadata={
+    condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     })
-    conditions: List[str] = attrib()
-    actions: List[Action] = attrib()
-    app_shortcut: AppShortcut = attrib(metadata={
+    app_shortcut: Optional[AppShortcut] = attrib(metadata={
         'name': 'appShortcut'
     })
-    app_shortcut_scripts: List[str] = attrib()
+    app_shortcut_scripts: Optional[List[str]] = attrib()
+    disabled: Optional[bool] = attrib(default=False)
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
     return load(data, Entitlement)
 
 
-@attrs(slots=True)
-class Policy:
-    id: Optional[str] = attrib()
+@attrs(slots=True, frozen=True)
+class Policy(Entity):
     name: str = attrib()
-    notes: str = attrib()
-    tags: List[str] = attrib()
-    disabled: bool = attrib()
     expression: str = attrib()
-    entitlements: List[str] = attrib()
-    entitlement_links: List[str] = attrib(metadata={
+    notes: Optional[str] = attrib(default=None)
+    override_site: Optional[str] = attrib(metadata={
+        'name': 'overrideSite'
+    }, default=None)
+    tags: Optional[List[str]] = attrib(default=None)
+    entitlements: Optional[List[str]] = attrib(default=None)
+    entitlement_links: Optional[List[str]] = attrib(metadata={
         'name': 'entitlementLinks'
-    })
-    ringfence_rules: List[str] = attrib(metadata={
+    }, default=None)
+    ringfence_rules: Optional[List[str]] = attrib(metadata={
         'name': 'ringfenceRules'
-    })
-    ringfence_rule_links: List[str] = attrib(metadata={
+    }, default=None)
+    ringfence_rule_links: Optional[List[str]] = attrib(metadata={
         'name': 'ringfenceRuleLinks'
-    })
+    }, default=None)
+    administrative_roles: Optional[List[str]] = attrib(metadata={
+        'name': 'administrativeRoles'
+    }, default=None)
+    disabled: bool = attrib(default=False)
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
-    })
-    override_site: str = attrib(metadata={
-        'name': 'overrideSite'
-    })
-    administrative_roles: List[str] = attrib(metadata={
-        'name': 'administrativeRoles'
-    })
+    }, default=True)
+    id: Optional[str] = attrib(default=None, eq=False)
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
     return load(data, Policy)
 
 
-@attrs(slots=True)
+@attrs(slots=True, frozen=True)
 class RemedyMethod:
     type: str = attrib()
     message: str = attrib()
@@ -126,17 +137,17 @@ class RemedyMethod:
     })
 
 
-@attrs(slots=True)
-class Condition:
+@attrs(slots=True, frozen=True)
+class Condition(Entity):
     id: Optional[str] = attrib()
     name: str = attrib()
-    notes: str = attrib()
-    tags: List[str] = attrib()
     expression: str = attrib()
-    repeat_schedules: List[str] = attrib(metadata={
+    notes: Optional[str] = attrib()
+    tags: Optional[List[str]] = attrib()
+    repeat_schedules: Optional[List[str]] = attrib(metadata={
         'name': 'repeatSchedules'
     })
-    remedy_methods: List[RemedyMethod] = attrib(metadata={
+    remedy_methods: Optional[List[RemedyMethod]] = attrib(metadata={
         'name': 'remedyMethods'
     })
 
