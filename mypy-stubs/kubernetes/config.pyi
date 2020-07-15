@@ -1,0 +1,6 @@
+from typing import Tuple, List, Any
+
+
+def load_kube_config() -> None: ...
+
+def list_kube_config_contexts() -> Tuple[List[Any], Any]: ...
