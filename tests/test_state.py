@@ -3,6 +3,9 @@ import pytest
 from appgate.state import compare_entities, Plan
 from appgate.types import Policy
 
+get_name = lambda e: e.name
+get_id = lambda e: e.id
+
 
 def test_compare_policies_0():
     current_policies = {
@@ -17,7 +20,8 @@ def test_compare_policies_0():
                expression='expression-3')
     }
     expected_policies = set()
-    plan = compare_entities(current_policies, expected_policies)
+    plan = compare_entities(current_policies, expected_policies,
+                            get_name=get_name, get_id=get_id)
     assert plan.delete == {
         Policy(id='id1',
                name='policy1',
@@ -47,7 +51,8 @@ def test_compare_policies_1():
         Policy(name='policy3',
                expression='expression-3')
     }
-    plan = compare_entities(current_policies, expected_policies)
+    plan = compare_entities(current_policies, expected_policies,
+                            get_name=get_name, get_id=get_id)
     assert plan.create == {
         Policy(name='policy1',
                expression='expression-1'),
@@ -80,7 +85,8 @@ def test_compare_policies_2():
         Policy(name='policy3',
                expression='expression-3')
     }
-    assert compare_entities(current_policies, expected_policies) == Plan()
+    assert compare_entities(current_policies, expected_policies,
+                            get_name=get_name, get_id=get_id) == Plan()
 
 
 def test_compare_policies_3():
@@ -103,7 +109,8 @@ def test_compare_policies_3():
         Policy(name='policy4',
                expression='expression-3')
     }
-    plan = compare_entities(current_policies, expected_policies)
+    plan = compare_entities(current_policies, expected_policies,
+                            get_name=get_name, get_id=get_id)
     assert plan.delete == {Policy(id='id1', name='policy3', expression='expression-1')}
     # test that the ids are propagated when modifying
     assert [p.id for p in plan.delete] == ['id1']
@@ -131,7 +138,8 @@ def test_compare_policies_4():
         Policy(name='policy4',
                expression='expression-4')
     }
-    plan = compare_entities(current_policies, expected_policies)
+    plan = compare_entities(current_policies, expected_policies,
+                            get_name=get_name, get_id=get_id)
     assert plan.delete == {Policy(id='id3', name='policy3', expression='expression-3')}
     # test that the ids are propagated when modifying
     assert [p.id for p in plan.delete] == ['id3']

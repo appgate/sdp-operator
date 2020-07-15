@@ -1,4 +1,4 @@
-from typing import Set, TypeVar, Generic
+from typing import Set, TypeVar, Generic, Callable, Optional
 
 from attr import attrib, attrs, evolve
 
@@ -34,16 +34,18 @@ class AppgatePlan:
 
 
 def compare_entities(current: Set[T],
-                     expected: Set[T]) -> Plan[T]:
-    current_names = {e.name for e in current}
-    current_ids_by_name = {e.name: e.id for e in current if e.id}
-    expected_names = {e.name for e in expected}
+                     expected: Set[T],
+                     get_name: Callable[[T], str],
+                     get_id: Callable[[T], Optional[str]]) -> Plan[T]:
+    current_names = {get_name(e) for e in current}
+    current_ids_by_name = {get_name(e): get_id(e) for e in current if get_id(e)}
+    expected_names = {get_name(e) for e in expected}
     shared_names = current_names.intersection(expected_names)
-    to_delete = set(filter(lambda e: e.name not in expected_names, current))
-    to_create = set(filter(lambda e: e.name not in current_names and e.name not in shared_names,
+    to_delete = set(filter(lambda e: get_name(e) not in expected_names, current))
+    to_create = set(filter(lambda e: get_name(e) not in current_names and get_name(e) not in shared_names,
                            expected))
-    to_modify = set(map(lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
-                        filter(lambda e: e.name in shared_names and e not in current,
+    to_modify = set(map(lambda e: evolve(e, id=current_ids_by_name.get(get_name(e))),
+                        filter(lambda e: get_name(e) in shared_names and e not in current,
                                expected)))
     return Plan(delete=to_delete,
                 create=to_create,
@@ -65,13 +67,20 @@ def create_appgate_plan(current_state: AppgateState,
     """
     Creates a new AppgatePlan to apply
     """
+    get_name = lambda e: e.name
+    get_id = lambda e: e.id
     conditions_plan = compare_entities(current_state.conditions,
-                                       expected_state.conditions)
+                                       expected_state.conditions,
+                                       get_name=get_name,
+                                       get_id=get_id)
     first_entitlements_plan = compare_entities(current_state.entitlements,
-                                               expected_state.entitlements)
+                                               expected_state.entitlements,
+                                               get_name=get_name,
+                                               get_id=get_id)
     entitlements_plan = normalize_entitlements(first_entitlements_plan,
                                                conditions_plan)
-    first_policies_plan = compare_entities(current_state.policies, expected_state.policies)
+    first_policies_plan = compare_entities(current_state.policies, expected_state.policies,
+                                           get_name=get_name, get_id=get_id)
     policies_plan = normalize_policies(first_policies_plan, entitlements_plan)
 
     return AppgatePlan(policies=policies_plan,
