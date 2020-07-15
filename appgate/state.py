@@ -9,7 +9,7 @@ from appgate.types import Policy, Condition, Entitlement
 class AppgateState:
     controller: str = attrib()
     token: str = attrib()
-    user: attrib() = attrib()
+    user: str = attrib()
     policies: Set[Policy] = attrib()
     conditions: Set[Condition] = attrib()
     entitlements: Set[Entitlement] = attrib()

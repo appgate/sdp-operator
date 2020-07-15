@@ -102,8 +102,8 @@ class Policy:
     }, default=None)
     administrative_roles: Optional[List[str]] = attrib(metadata={
         'name': 'administrativeRoles'
-    }, default=None),
-    disabled: bool = attrib(default=False),
+    }, default=None)
+    disabled: bool = attrib(default=False)
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
