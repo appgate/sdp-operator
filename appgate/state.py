@@ -1,4 +1,5 @@
-from typing import Set, TypeVar, Generic, Dict, List
+from functools import cached_property
+from typing import Set, TypeVar, Generic, Dict, List, Optional
 
 from attr import attrib, attrs, evolve
 
@@ -24,6 +25,22 @@ class Plan(Generic[T]):
     create: Set[T] = attrib(factory=set)
     modify: Set[T] = attrib(factory=set)
 
+    @cached_property
+    def expected_names(self) -> Set[str]:
+        """
+        Set with all the names in the system in this plan
+        """
+        names = {c.name for c in self.modify}
+        names.update({c.name for c in self.create})
+        return names
+
+    @cached_property
+    def expected_ids(self) -> Set[str]:
+        """
+        Set with all the known id names in the system in this plan
+        """
+        return set(filter(None, map(lambda c: c.id, self.modify)))
+
 
 # Policies have entitlements that have conditions, so conditions always first.
 @attrs
@@ -31,6 +48,22 @@ class AppgatePlan:
     policies: Plan[Policy] = attrib()
     entitlements: Plan[Entitlement] = attrib()
     conditions: Plan[Condition] = attrib()
+    entitlement_errors: Optional[Dict[str, Set[str]]] = attrib(default=None)
+    policy_errors: Optional[Dict[str, Set[str]]] = attrib(default=None)
+
+    @cached_property
+    def expected_condition_names(self) -> Set[str]:
+        """
+        Set with all the condition names in the system after the plan is applied
+        """
+        return self.conditions.expected_names
+
+    @cached_property
+    def expected_entitlement_names(self) -> Set[str]:
+        """
+        Set with all the condition names in the system after the plan is applied
+        """
+        return self.entitlements.expected_names
 
 
 def compare_entities(current: Set[T],
@@ -50,62 +83,36 @@ def compare_entities(current: Set[T],
                 modify=to_modify)
 
 
-def normalize_entitlements(entitlements: Plan[Entitlement],
-                           conditions: Plan[Condition]) -> Plan[Entitlement]:
-    pass
+# TODO: These 2 functions do the same!
+def check_entitlements(entitlements: Plan[Entitlement],
+                       conditions: Plan[Condition]) -> Optional[Dict[str, Set[str]]]:
+    missing_conditions: Dict[str, Set[str]] = {}
+    for entitlement in entitlements.create.union(entitlements.modify):
+        for condition in entitlement.conditions:
+            if condition not in conditions.expected_names:
+                if entitlement.name not in missing_conditions:
+                    missing_conditions[entitlement.name] = set()
+                missing_conditions[entitlement.name].add(condition)
+
+    if len(missing_conditions) > 0:
+        return missing_conditions
+    return None
 
 
+def check_policies(policies: Plan[Policy],
+                   entitlements: Plan[Entitlement]) -> Optional[Dict[str, Set[str]]]:
+    missing_entitlements: Dict[str, Set[str]] = {}
+    for policy in policies.create.union(policies.modify):
+        for entitlement in (policy.entitlements or []):
+            if entitlement not in entitlements.expected_names:
+                if policy.name not in missing_entitlements:
+                    missing_entitlements[policy.name] = set()
+                missing_entitlements[policy.name].add(entitlement)
 
-def normalize_policies(entitlements: Plan[Policy],
-                       conditions: Plan[Entitlement]) -> Plan[Policy]:
-    pass
+    if len(missing_entitlements) > 0:
+        return missing_entitlements
 
-
-def entity_dependencies_dag(entity_dependencies: Dict[str, List[str]]):
-    reversed_deps: Dict[str, Set[str]] = {}
-    candidates: List[str] = []
-    rest_nodes: Dict[str, int] = {}
-    dag:List[Any] = []
-    visited = 0
-    # Used to show a better output on errors
-    added_nodes = set()
-    total_nodes = set()
-    # Initialize a reversed index to find easily where an edge is pointing to
-    # also generate the candidates and rest_nodes lists
-    for p, ds in entity_dependencies.items():
-        total_nodes.add(p)
-        if len(ds) == 0:
-            candidates.insert(0, p)
-        else:
-            rest_nodes[p] = len(ds)
-        for d in ds:
-            if d not in reversed_deps:
-                reversed_deps[d] = set()
-            reversed_deps[d].add(p)
-    candidates = sorted(candidates)
-    group = -1
-    while candidates:
-        node = candidates.pop(0)
-        added_nodes.add(node)
-        # This candidate depends on the previous group
-        if group >= 0 and dag[group].intersection(set(entity_dependencies[node])):
-            dag.append({node})
-            group += 1
-        # This candidate does not depend on the previous one
-        elif group >= 0:
-            dag[group].add(node)
-        else:
-            dag.append({node})
-            group += 1
-        visited += 1
-        for d in reversed_deps.get(node, []):
-            rest_nodes[d] = rest_nodes[d] - 1
-            if rest_nodes[d] == 0:
-                candidates.append(d)
-    if visited < len(entity_dependencies):
-        unfit_nodes = total_nodes.difference(added_nodes)
-        raise Exception(f'Unable to fullfit dependencies: {unfit_nodes}')
-    return dag
+    return None
 
 
 def create_appgate_plan(current_state: AppgateState,
@@ -115,13 +122,14 @@ def create_appgate_plan(current_state: AppgateState,
     """
     conditions_plan = compare_entities(current_state.conditions,
                                        expected_state.conditions)
-    first_entitlements_plan = compare_entities(current_state.entitlements,
-                                               expected_state.entitlements)
-    entitlements_plan = normalize_entitlements(first_entitlements_plan,
-                                               conditions_plan)
-    first_policies_plan = compare_entities(current_state.policies, expected_state.policies)
-    policies_plan = normalize_policies(first_policies_plan, entitlements_plan)
+    entitlements_plan = compare_entities(current_state.entitlements,
+                                         expected_state.entitlements)
+    entitlement_errors = check_entitlements(entitlements_plan, conditions_plan)
+    policies_plan = compare_entities(current_state.policies, expected_state.policies)
+    policy_errors = check_policies(policies_plan, entitlements_plan)
 
     return AppgatePlan(policies=policies_plan,
                        entitlements=entitlements_plan,
-                       conditions=conditions_plan)
+                       conditions=conditions_plan,
+                       entitlement_errors=entitlement_errors,
+                       policy_errors=policy_errors)
