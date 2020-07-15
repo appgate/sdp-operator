@@ -59,8 +59,6 @@ class AppShortcut:
 class Entitlement:
     name: str = attrib()
     notes: str = attrib()
-    create: str = attrib()
-    updated: str = attrib()
     tags: List[str] = attrib()
     disabled: bool = attrib()
     site: str = attrib()
@@ -86,8 +84,6 @@ def entitlement_load(data: Dict[str, Any]) -> Entitlement:
 class Policy:
     name: str = attrib()
     notes: str = attrib()
-    create: Optional[str] = attrib()
-    updated: Optional[str] = attrib()
     tags: List[str] = attrib()
     disabled: bool = attrib()
     expression: str = attrib()
@@ -132,8 +128,6 @@ class RemedyMethod:
 class Condition:
     name: str = attrib()
     notes: str = attrib()
-    create: str = attrib()
-    updated: str = attrib()
     tags: List[str] = attrib()
     expression: str = attrib()
     repeat_schedules: List[str] = attrib(metadata={
