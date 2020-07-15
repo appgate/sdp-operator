@@ -36,6 +36,16 @@ class ActionMonitor:
     timeout: int = attrib()
 
 
+class Entity:
+    @property
+    def name(self) -> str:
+        raise Exception()
+
+    @property
+    def id(self) -> Optional[str]:
+        raise Exception()
+
+
 @attrs(slots=True, frozen=True)
 class Action:
     subtype: str = attrib()
@@ -56,7 +66,7 @@ class AppShortcut:
 
 
 @attrs(slots=True, frozen=True)
-class Entitlement:
+class Entitlement(Entity):
     id: Optional[str] = attrib()
     name: str = attrib()
     site: str = attrib()
@@ -82,7 +92,7 @@ def entitlement_load(data: Dict[str, Any]) -> Entitlement:
 
 
 @attrs(slots=True, frozen=True)
-class Policy:
+class Policy(Entity):
     name: str = attrib()
     expression: str = attrib()
     notes: Optional[str] = attrib(default=None)
@@ -127,7 +137,7 @@ class RemedyMethod:
 
 
 @attrs(slots=True, frozen=True)
-class Condition:
+class Condition(Entity):
     id: Optional[str] = attrib()
     name: str = attrib()
     expression: str = attrib()
