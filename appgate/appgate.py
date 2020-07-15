@@ -1,9 +1,11 @@
 import asyncio
 import functools
 import logging
-from typing import Optional, Dict, Any, AsyncGenerator
-import kubernetes
+from typing import Optional, Dict, Any, Callable, Iterator
+from typing_extensions import AsyncIterable
+from kubernetes.config import load_kube_config, list_kube_config_contexts
 from kubernetes.client import CustomObjectsApi
+from kubernetes.watch import Watch
 from appgate.types import entitlement_load, Event, policy_load, condition_load
 
 DOMAIN = 'beta.appgate.com'
@@ -30,20 +32,19 @@ def get_crds() -> CustomObjectsApi:
 
 
 def init_kubernetes() -> Optional[str]:
-    kubernetes.config.load_kube_config()
-    return kubernetes.config.list_kube_config_contexts()[1]['context'].get('namespace')
+    load_kube_config()
+    return list_kube_config_contexts()[1]['context'].get('namespace')
 
 
-async def event_loop(namespace: str, crd: str) -> AsyncGenerator[Dict[str, Any], None]:
-    w = kubernetes.watch.Watch()
+async def event_loop(namespace: str, crd: str) -> AsyncIterable[Dict[str, Any]]:
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     log.debug('test')
-    s = w.stream(get_crds().list_namespaced_custom_object, DOMAIN, 'v1',
+    s = Watch().stream(get_crds().list_namespaced_custom_object, DOMAIN, 'v1',
                  namespace, crd)
     loop = asyncio.get_event_loop()
     while True:
         event = await loop.run_in_executor(None, functools.partial(next, s))
-        yield event
+        yield event  # type: ignore
         await asyncio.sleep(0)
 
 
