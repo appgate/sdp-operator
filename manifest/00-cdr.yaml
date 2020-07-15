@@ -31,6 +31,30 @@ spec:
           type: boolean
         expression:
           type: string
+        entitlements:
+          type: array
+          items:
+            type: string
+        entitlementLinks:
+          type: array
+          items:
+            type: string
+        ringfenceRues:
+          type: array
+          items:
+            type: string
+        ringfenceRuleLinks:
+          type: array
+          items:
+            type: string
+        tamperProofing:
+          type: bool
+        overrideSite:
+          type: string
+        administrativeRoles:
+          type: array
+          items:
+            type: string
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -55,6 +79,8 @@ spec:
       properties:
         name:
           type: string
+        notes:
+          type: string
         tags:
           type: array
           items:
@@ -65,6 +91,20 @@ spec:
           type: array
           items:
             type: string
+        remedyMethods:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              message:
+                type: string
+              claimSuffix:
+                type: string
+              providerId:
+                type: string
+            
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -89,20 +129,24 @@ spec:
       properties:
         name:
           type: string
-        site:
+        notes:
           type: string
-        condition:
+        tags:
           type: array
           items:
             type: string
         disabled:
           type: boolean
-        tags:
+        site:
+          type: string
+        site_name:
+          type: string
+        conditionLogic:
+          type: string
+        conditions:
           type: array
           items:
             type: string
-        conditionLogic:
-          type: string
         actions:
           type: array
           items:
@@ -118,6 +162,17 @@ spec:
                 type: array
                 items:
                   type: string
+              ports:
+                type: array
+                items:
+                  type: string
+              monitor:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  timeout:
+                    type: integer
         appShortcut:
           type: object
           properties:
@@ -126,4 +181,4 @@ spec:
             url:
               type: string
             colorMode:
-              type: int
+              type: integer
