@@ -42,14 +42,19 @@ def init_kubernetes() -> Optional[str]:
     return list_kube_config_contexts()[1]['context'].get('namespace')
 
 
-async def init_environment(controller: str, user: str, password: str) -> AppgateState:
-    appgate_client = AppgateClient(controller=controller, user=user,
-                                   password=password)
+async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
+    appgate_client = AppgateClient(controller=controller, user=user, password=password)
     await appgate_client.login()
+    if not appgate_client.authenticated:
+        await appgate_client.close()
+        return None
+
     policies = await appgate_client.policies.get()
     entitlements = await appgate_client.entitlements.get()
     conditions = await appgate_client.conditions.get()
-
+    if policies is None or entitlements is None or conditions is None:
+        await appgate_client.close()
+        return None
     appgate_state = AppgateState(policies=set(cast(List[Policy], policies)),
                                  entitlements=set(cast(List[Entitlement], entitlements)),
                                  conditions=set(cast(List[Condition], conditions)))
@@ -96,12 +101,19 @@ async def conditions_loop(namespace: str, queue: Queue) -> None:
         await queue.put(AppgateEvent(op=ev.type, event=condition))
 
 
-async def main_loop(queue: Queue[AppgateEvent], controller: str, user: str, namespace: str,
+async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
                     password: str) -> None:
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
-    current_appgate_state = await init_environment(controller=controller, user=user,
-                                                   password=password)
+    while True:
+        current_appgate_state = await init_environment(controller=controller,
+                                                       user=user, password=password)
+        if current_appgate_state:
+            break
+        log.error('[appgate-operator/%s] Unable to get current state, trying in 30s',
+                  namespace)
+        await asyncio.sleep(30)
+
     expected_appgate_state = AppgateState()
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
              namespace)

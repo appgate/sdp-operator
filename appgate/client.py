@@ -2,6 +2,9 @@ import uuid
 from typing import Dict, Any, Optional, List
 import aiohttp
 import typedload
+from aiohttp import InvalidURL
+
+from appgate.logger import log
 from appgate.types import AppgateEntity
 
 __all__ = [
@@ -14,18 +17,24 @@ class EntityClient:
         self._client = appgate_client
         self.path = path
 
-    async def get(self) -> List[AppgateEntity]:
+    async def get(self) -> Optional[List[AppgateEntity]]:
         entities = await self._client.get(self.path)
+        if not entities:
+            return None
         return typedload.load(entities['data'], List[AppgateEntity])
 
-    async def post(self, entity: AppgateEntity) -> AppgateEntity:
+    async def post(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
         data = await self._client.post(self.path,
                                        body=typedload.dump(entity))
+        if not data:
+            return None
         return typedload.load(data, AppgateEntity)  # type: ignore
 
-    async def put(self, entity: AppgateEntity) -> AppgateEntity:
+    async def put(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
         data = await self._client.put(f'{self.path}/{entity.id}',
                                       body=typedload.dump(entity))
+        if not data:
+            return None
         return typedload.load(data, AppgateEntity)  # type: ignore
 
     async def delete(self, id: str) -> None:
@@ -50,7 +59,7 @@ class AppgateClient:
         return None
 
     async def request(self, verb: str, path:str,
-                      data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                      data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         verbs = {
             'POST': self._session.post,
             'DELETE': self._session.delete,
@@ -67,22 +76,27 @@ class AppgateClient:
         auth_header = self.auth_header()
         if auth_header:
             headers['Authorization'] = auth_header
-        async with method(url=f'{self.controller}/{path}',  # type: ignore
-                          headers=headers,
-                          json=data,
-                          ssl=False) as resp:
-            return await resp.json()
+        url = f'{self.controller}/{path}'
+        try:
+            async with method(url=url,  # type: ignore
+                              headers=headers,
+                              json=data,
+                              ssl=False) as resp:
+                return await resp.json()
+        except InvalidURL:
+            log.error('[appgate-client] Error preforming query: %s', url)
+            return None
 
-    async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('POST', path=path, data=body)
 
     async def get(self, path: str) -> Dict[str, Any]:
         return await self.request('GET', path=path)
 
-    async def put(self, path: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def put(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('PUT', path=path, data=body)
 
-    async def delete(self, path: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def delete(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('DELETE', path=path, data=body)
 
     async def login(self) -> None:
@@ -93,7 +107,12 @@ class AppgateClient:
             'deviceId': self.device_id
         }
         resp = await self.post('/admin/login', body=body)
-        self._token = resp['token']
+        if resp:
+            self._token = resp['token']
+
+    @property
+    def authenticated(self) -> bool:
+        return self._token is not None
 
     @property
     def policies(self) -> EntityClient:

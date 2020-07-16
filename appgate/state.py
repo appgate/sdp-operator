@@ -3,7 +3,7 @@ from typing import Set, TypeVar, Generic, Dict, Optional, Union, Callable, Type
 
 from attr import attrib, attrs, evolve
 
-from appgate.appgate import log
+from appgate.logger import log
 from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity
 
 
