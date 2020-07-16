@@ -82,7 +82,17 @@ class AppgateClient:
                               headers=headers,
                               json=data,
                               ssl=False) as resp:
-                return await resp.json()
+                status_code = resp.status // 100
+                if status_code == 2:
+                    return await resp.json()
+                else:
+                    data = await resp.text()
+                    if data:
+                        log.error('[aggpate-client] %s :: %s: %s', url, resp.status,
+                                  data)
+                    else:
+                        log.error('[aggpate-client] %s :: %s', url, resp.status)
+                    return None
         except InvalidURL:
             log.error('[appgate-client] Error preforming query: %s', url)
             return None
