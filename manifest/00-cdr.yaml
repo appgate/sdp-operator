@@ -139,8 +139,6 @@ spec:
           type: boolean
         site:
           type: string
-        site_name:
-          type: string
         conditionLogic:
           type: string
         conditions:
