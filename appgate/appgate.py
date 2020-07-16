@@ -2,7 +2,7 @@ import asyncio
 import functools
 import logging
 from asyncio import Queue
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, cast
 from typing_extensions import AsyncIterable
 from kubernetes.config import load_kube_config, list_kube_config_contexts
 from kubernetes.client import CustomObjectsApi
@@ -10,7 +10,8 @@ from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
 from appgate.state import AppgateState, create_appgate_plan, appgate_plan_summary
-from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent
+from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, Policy, Entitlement, \
+    Condition
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
@@ -49,9 +50,9 @@ async def init_environment(controller: str, user: str, password: str) -> Appgate
     entitlements = await appgate_client.entitlements.get()
     conditions = await appgate_client.conditions.get()
 
-    appgate_state = AppgateState(policies=set(policies),
-                                 entitlements=set(entitlements),
-                                 conditions=set(conditions))
+    appgate_state = AppgateState(policies=set(cast(List[Policy], policies)),
+                                 entitlements=set(cast(List[Entitlement], entitlements)),
+                                 conditions=set(cast(List[Condition], conditions)))
     await appgate_client.close()
     return appgate_state
 
@@ -95,7 +96,7 @@ async def conditions_loop(namespace: str, queue: Queue) -> None:
         await queue.put(AppgateEvent(op=ev.type, event=condition))
 
 
-async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
+async def main_loop(queue: Queue[AppgateEvent], controller: str, user: str, namespace: str,
                     password: str) -> None:
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)

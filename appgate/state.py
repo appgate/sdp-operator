@@ -1,8 +1,9 @@
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional, Union
+from typing import Set, TypeVar, Generic, Dict, Optional, Union, Callable, Type
 
 from attr import attrib, attrs, evolve
 
+from appgate.appgate import log
 from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity
 
 
@@ -41,8 +42,9 @@ class AppgateState:
         }
         entitites = known_entities.get(type(entity))
         if not entitites:
-            pass
-        entities_op(entitites(), entity, op)
+            log.error('[appgate-operator] Unknown entity type: %s', type(entity))
+            return
+        entities_op(entitites(), entity, op)  # type: ignore
 
 
 T = TypeVar('T', bound=Entity_T)

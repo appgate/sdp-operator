@@ -1,15 +1,12 @@
 import uuid
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List
 import aiohttp
 import typedload
-from appgate.types import Policy, Entitlement, Condition
+from appgate.types import AppgateEntity
 
 __all__ = [
     'AppgateClient',
 ]
-
-
-Entity_T = Union[Entitlement, Policy, Condition]
 
 
 class EntityClient:
@@ -17,19 +14,19 @@ class EntityClient:
         self._client = appgate_client
         self.path = path
 
-    async def get(self) -> List[Entity_T]:
+    async def get(self) -> List[AppgateEntity]:
         entities = await self._client.get(self.path)
-        return typedload.load(entities['data'], List[Entity_T])
+        return typedload.load(entities['data'], List[AppgateEntity])
 
-    async def post(self, entity: Entity_T) -> Entity_T:
-        entity = await self._client.post(self.path,
-                                         body=typedload.dump(entity))
-        return typedload.load(entity, Entity_T)
+    async def post(self, entity: AppgateEntity) -> AppgateEntity:
+        data = await self._client.post(self.path,
+                                       body=typedload.dump(entity))
+        return typedload.load(data, AppgateEntity)  # type: ignore
 
-    async def put(self, entity: Entity_T) -> Entity_T:
-        entity = await self._client.put(f'{self.path}/{entity.id}',
-                                        body=typedload.dump(entity))
-        return typedload.load(entity, Entity_T)
+    async def put(self, entity: AppgateEntity) -> AppgateEntity:
+        data = await self._client.put(f'{self.path}/{entity.id}',
+                                      body=typedload.dump(entity))
+        return typedload.load(data, AppgateEntity)  # type: ignore
 
     async def delete(self, id: str) -> None:
         await self._client.delete(f'{self.path}/{id}')
@@ -50,6 +47,7 @@ class AppgateClient:
     def auth_header(self) -> Optional[str]:
         if self._token:
             return f'Bearer {self._token}'
+        return None
 
     async def request(self, verb: str, path:str,
                       data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -69,7 +67,7 @@ class AppgateClient:
         auth_header = self.auth_header()
         if auth_header:
             headers['Authorization'] = auth_header
-        async with method(url=f'{self.controller}/{path}',
+        async with method(url=f'{self.controller}/{path}',  # type: ignore
                           headers=headers,
                           json=data,
                           ssl=False) as resp:
