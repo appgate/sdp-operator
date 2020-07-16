@@ -1,8 +1,12 @@
 import asyncio
 import functools
 import logging
+import sys
 from asyncio import Queue
 from typing import Optional, Dict, Any, List, cast
+
+from kubernetes.client.rest import ApiException
+from typedload.exceptions import TypedloadTypeError
 from typing_extensions import AsyncIterable
 from kubernetes.config import load_kube_config, list_kube_config_contexts
 from kubernetes.client import CustomObjectsApi
@@ -62,43 +66,56 @@ async def init_environment(controller: str, user: str, password: str) -> Optiona
     return appgate_state
 
 
-async def event_loop(namespace: str, crd: str) -> AsyncIterable[Dict[str, Any]]:
+async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[str, Any]]]:
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     log.debug('test')
     s = Watch().stream(get_crds().list_namespaced_custom_object, DOMAIN, 'v1',
                        namespace, crd)
     loop = asyncio.get_event_loop()
     while True:
-        event = await loop.run_in_executor(None, functools.partial(next, s))
-        yield event  # type: ignore
-        await asyncio.sleep(0)
+        try:
+            event = await loop.run_in_executor(None, functools.partial(lambda i: next(i, None), s))
+            yield event  # type: ignore
+            await asyncio.sleep(0)
+        except ApiException:
+            log.exception('[appgate-operator/%s] Error when subscribing events in k8s.', namespace)
+            sys.exit(1)
 
 
 async def policies_loop(namespace: str, queue: Queue):
     async for event in event_loop(namespace, 'policies'):
+        if not event:
+            continue
         ev = K8SEvent(event)
         policy = policy_load(ev.object.spec)
-        log.info('[policies/%s}] K8SEvent type: %s: %s', namespace,
-                 ev.type, policy)
+        log.debug('[policies/%s}] K8SEvent type: %s: %s', namespace,
+                  ev.type, policy)
         await queue.put(AppgateEvent(op=ev.type, event=policy))
 
 
 async def entitlements_loop(namespace: str, queue: Queue) -> None:
     async for event in event_loop(namespace, 'entitlements'):
+        if not event:
+            continue
         ev = K8SEvent(event)
         entitlement = entitlement_load(ev.object.spec)
         log.info('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
-                 ev.type, entitlement)
+                  ev.type, entitlement)
         await queue.put(AppgateEvent(op=ev.type, event=entitlement))
 
 
 async def conditions_loop(namespace: str, queue: Queue) -> None:
     async for event in event_loop(namespace, 'conditions'):
-        ev = K8SEvent(event)
-        condition = condition_load(ev.object.spec)
-        log.info('[conditions/%s}] K8SEvent type: %s: %s', namespace,
-                 ev.type, condition)
-        await queue.put(AppgateEvent(op=ev.type, event=condition))
+        try:
+            if not event:
+                continue
+            ev = K8SEvent(event)
+            condition = condition_load(ev.object.spec)
+            log.debug('[conditions/%s}] K8SEvent type: %s: %s', namespace,
+                      ev.type, condition)
+            await queue.put(AppgateEvent(op=ev.type, event=condition))
+        except TypedloadTypeError:
+            log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
 async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
@@ -110,7 +127,7 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
                                                        user=user, password=password)
         if current_appgate_state:
             break
-        log.error('[appgate-operator/%s] Unable to get current state, trying in 30s',
+        log.error('[appgate-operator/%s] Unable to get current state, trying in 30 seconds',
                   namespace)
         await asyncio.sleep(30)
 

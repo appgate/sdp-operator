@@ -57,10 +57,10 @@ class Entity_T:
 class Action:
     subtype: str = attrib()
     action: str = attrib()
-    types: str = attrib()
     hosts: FrozenSet[str] = attrib()
-    ports: FrozenSet[str] = attrib()
-    monitor: ActionMonitor = attrib()
+    types: FrozenSet[str] = attrib(default=frozenset)
+    ports: Optional[FrozenSet[str]] = attrib(default=None)
+    monitor: Optional[ActionMonitor] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)
@@ -142,7 +142,6 @@ class RemedyMethod:
 
 @attrs(slots=True, frozen=True)
 class Condition(Entity_T):
-    id: Optional[str] = attrib()
     name: str = attrib()
     expression: str = attrib()
     notes: Optional[str] = attrib(default=None)
@@ -153,6 +152,7 @@ class Condition(Entity_T):
     remedy_methods: Optional[FrozenSet[RemedyMethod]] = attrib(metadata={
         'name': 'remedyMethods'
     }, default=None)
+    id: Optional[str] = attrib(default=None)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
