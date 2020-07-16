@@ -100,7 +100,7 @@ async def entitlements_loop(namespace: str, queue: Queue) -> None:
         ev = K8SEvent(event)
         entitlement = entitlement_load(ev.object.spec)
         log.info('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
-                  ev.type, entitlement)
+                 ev.type, entitlement)
         await queue.put(AppgateEvent(op=ev.type, event=entitlement))
 
 
