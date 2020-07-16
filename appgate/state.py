@@ -15,6 +15,9 @@ __all__ = [
 ]
 
 
+BUILTIN_TAG = 'builtin'
+
+
 def entities_op(entities: Set[AppgateEntity], entity: AppgateEntity, op: str) -> None:
     if op == 'CREATE':
         entities.add(entity)
@@ -127,7 +130,9 @@ def compare_entities(current: Set[T],
     current_ids_by_name = {e.name: e.id for e in current if e.id}
     expected_names = {e.name for e in expected}
     shared_names = current_names.intersection(expected_names)
-    to_delete = set(filter(lambda e: e.name not in expected_names, current))
+    to_delete = set(filter(lambda e: e.name not in expected_names and
+                                     BUILTIN_TAG not in (e.tags or frozenset()),
+                           current))
     to_create = set(filter(lambda e: e.name not in current_names and e.name not in shared_names,
                            expected))
     to_modify = set(map(lambda e: evolve(e, id=current_ids_by_name.get(e.name)),

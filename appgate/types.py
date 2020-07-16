@@ -48,6 +48,10 @@ class Entity_T:
     def id(self) -> Optional[str]:
         raise NotImplementedError()
 
+    @property
+    def tags(self) -> Optional[FrozenSet[str]]:
+        raise NotImplementedError
+
 
 @attrs(slots=True, frozen=True)
 class Action:
