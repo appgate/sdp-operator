@@ -136,7 +136,7 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
              namespace)
     while True:
         try:
-            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=5.0)
+            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=30.0)
             log.info('[appgate-operator/%s}] Event op: %s: %s', namespace,
                      event.op, event)
             expected_appgate_state.with_entity(event.event, event.op)
