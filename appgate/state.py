@@ -1,19 +1,48 @@
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional
+from typing import Set, TypeVar, Generic, Dict, Optional, Union
 
 from attr import attrib, attrs, evolve
 
-from appgate.types import Policy, Condition, Entitlement, Entity_T
+from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity
+
+
+__all__ = [
+    'AppgateState',
+    'AppgatePlan',
+    'create_appgate_plan',
+    'appgate_plan_summary',
+]
+
+
+def entities_op(entities: Set[AppgateEntity], entity: AppgateEntity, op: str) -> None:
+    if op == 'CREATE':
+        entities.add(entity)
+    elif op == 'DESTROY':
+        entities.remove(entity)
+    elif op == 'MODIFY':
+        id = entity.id
+        if not id:
+            pass
+        entities = {e for e in entities if e.id != id}
+        entities.add(entity)
 
 
 @attrs()
 class AppgateState:
-    controller: str = attrib()
-    token: str = attrib()
-    user: str = attrib()
-    policies: Set[Policy] = attrib()
-    conditions: Set[Condition] = attrib()
-    entitlements: Set[Entitlement] = attrib()
+    policies: Set[Policy] = attrib(factory=set)
+    conditions: Set[Condition] = attrib(factory=set)
+    entitlements: Set[Entitlement] = attrib(factory=set)
+
+    def with_entity(self, entity: AppgateEntity, op: str) -> None:
+        known_entities = {
+            Policy: lambda: self.policies,
+            Entitlement: lambda: self.entitlements,
+            Condition: lambda: self.conditions,
+        }
+        entitites = known_entities.get(type(entity))
+        if not entitites:
+            pass
+        entities_op(entitites(), entity, op)
 
 
 T = TypeVar('T', bound=Entity_T)
@@ -45,6 +74,17 @@ class Plan(Generic[T]):
                                     self.modify.union(self.share))))
 
 
+def plan_summary(plan: Plan) -> None:
+    for e in plan.create:
+        print(f' + {e}')
+    for e in plan.modify:
+        print(f' * {e}')
+    for e in plan.delete:
+        print(f' - {e}')
+    for e in plan.share:
+        print(f' = {e}')
+
+
 # Policies have entitlements that have conditions, so conditions always first.
 @attrs
 class AppgatePlan:
@@ -67,6 +107,16 @@ class AppgatePlan:
         Set with all the condition names in the system after the plan is applied
         """
         return self.entitlements.expected_names
+
+
+def appgate_plan_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
+    print('AppgatePlan Summary:')
+    print(' CONDITIONS')
+    plan_summary(appgate_plan.conditions)
+    print(' ENTITLEMENTS')
+    plan_summary(appgate_plan.entitlements)
+    print(' POLICIES')
+    plan_summary(appgate_plan.policies)
 
 
 def compare_entities(current: Set[T],

@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+from asyncio import Queue
 from typing import Optional, Dict, Any
 from typing_extensions import AsyncIterable
 from kubernetes.config import load_kube_config, list_kube_config_contexts
@@ -8,7 +9,8 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.types import entitlement_load, Event, policy_load, condition_load
+from appgate.state import AppgateState, create_appgate_plan, appgate_plan_summary
+from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
@@ -18,7 +20,7 @@ __all__ = [
     'entitlements_loop',
     'conditions_loop',
     'init_kubernetes',
-    'init_environment',
+    'main_loop'
 ]
 
 
@@ -39,7 +41,7 @@ def init_kubernetes() -> Optional[str]:
     return list_kube_config_contexts()[1]['context'].get('namespace')
 
 
-async def init_environment(controller: str, user: str, password: str) -> None:
+async def init_environment(controller: str, user: str, password: str) -> AppgateState:
     appgate_client = AppgateClient(controller=controller, user=user,
                                    password=password)
     await appgate_client.login()
@@ -47,7 +49,11 @@ async def init_environment(controller: str, user: str, password: str) -> None:
     entitlements = await appgate_client.entitlements.get()
     conditions = await appgate_client.conditions.get()
 
+    appgate_state = AppgateState(policies=set(policies),
+                                 entitlements=set(entitlements),
+                                 conditions=set(conditions))
     await appgate_client.close()
+    return appgate_state
 
 
 async def event_loop(namespace: str, crd: str) -> AsyncIterable[Dict[str, Any]]:
@@ -62,25 +68,50 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Dict[str, Any]]:
         await asyncio.sleep(0)
 
 
-async def policies_loop(namespace: str):
+async def policies_loop(namespace: str, queue: Queue):
     async for event in event_loop(namespace, 'policies'):
-        ev = Event(event)
+        ev = K8SEvent(event)
         policy = policy_load(ev.object.spec)
-        log.info('[policies/%s}] Event type: %s: %s', namespace,
+        log.info('[policies/%s}] K8SEvent type: %s: %s', namespace,
                  ev.type, policy)
+        await queue.put(AppgateEvent(op=ev.type, event=policy))
 
 
-async def entitlements_loop(namespace: str) -> None:
+async def entitlements_loop(namespace: str, queue: Queue) -> None:
     async for event in event_loop(namespace, 'entitlements'):
-        ev = Event(event)
+        ev = K8SEvent(event)
         entitlement = entitlement_load(ev.object.spec)
-        log.info('[entitlements/%s}] Event type: %s: %s', namespace,
+        log.info('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
                  ev.type, entitlement)
+        await queue.put(AppgateEvent(op=ev.type, event=entitlement))
 
 
-async def conditions_loop(namespace: str) -> None:
+async def conditions_loop(namespace: str, queue: Queue) -> None:
     async for event in event_loop(namespace, 'conditions'):
-        ev = Event(event)
+        ev = K8SEvent(event)
         condition = condition_load(ev.object.spec)
-        log.info('[conditions/%s}] Event type: %s: %s', namespace,
+        log.info('[conditions/%s}] K8SEvent type: %s: %s', namespace,
                  ev.type, condition)
+        await queue.put(AppgateEvent(op=ev.type, event=condition))
+
+
+async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
+                    password: str) -> None:
+    log.info('[appgate-operator/%s] Getting current state from controller',
+             namespace)
+    current_appgate_state = await init_environment(controller=controller, user=user,
+                                                   password=password)
+    expected_appgate_state = AppgateState()
+    log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
+             namespace)
+    while True:
+        try:
+            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=5.0)
+            log.info('[appgate-operator/%s}] Event op: %s: %s', namespace,
+                     event.op, event)
+            expected_appgate_state.with_entity(event.event, event.op)
+        except asyncio.exceptions.TimeoutError:
+            log.info('[appgate-operator/%s] No more events for a while, creating a plan',
+                     namespace)
+            plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
+            appgate_plan_summary(appgate_plan=plan, namespace=namespace)

@@ -1,9 +1,9 @@
 from attr import attrib, attrs
-from typing import List, Dict, Any, Optional, FrozenSet
+from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union
 from typedload import load
 
 __all__ = [
-    'Event',
+    'K8SEvent',
     'EventObject',
     'AppShortcut',
     'Action',
@@ -13,7 +13,9 @@ __all__ = [
     'policy_load',
     'Condition',
     'condition_load',
-    'Entity_T'
+    'Entity_T',
+    'AppgateEvent',
+    'AppgateEntity'
 ]
 
 
@@ -25,7 +27,7 @@ class EventObject:
         self.spec = data['spec']
 
 
-class Event:
+class K8SEvent:
     def __init__(self, data: Dict[str, Any]) -> None:
         self.type = data['type']
         self.object = EventObject(data['object'])
@@ -144,10 +146,19 @@ class Condition(Entity_T):
     repeat_schedules: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'repeatSchedules'
     }, default=None)
-    remedy_methods: Optional[List[RemedyMethod]] = attrib(metadata={
+    remedy_methods: Optional[FrozenSet[RemedyMethod]] = attrib(metadata={
         'name': 'remedyMethods'
     }, default=None)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
     return load(data, Condition)
+
+
+AppgateEntity = Union[Entitlement, Policy, Condition]
+
+
+@attrs(slots=True, frozen=True)
+class AppgateEvent:
+    op: str = attrib()
+    event: AppgateEntity = attrib()
