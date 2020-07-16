@@ -75,8 +75,9 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[st
     while True:
         try:
             event = await loop.run_in_executor(None, functools.partial(lambda i: next(i, None), s))
-            yield event  # type: ignore
-            await asyncio.sleep(0)
+            if event:
+                yield event  # type: ignore
+            await asyncio.sleep(1)
         except ApiException:
             log.exception('[appgate-operator/%s] Error when subscribing events in k8s.', namespace)
             sys.exit(1)
@@ -84,24 +85,30 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[st
 
 async def policies_loop(namespace: str, queue: Queue):
     async for event in event_loop(namespace, 'policies'):
-        if not event:
-            continue
-        ev = K8SEvent(event)
-        policy = policy_load(ev.object.spec)
-        log.debug('[policies/%s}] K8SEvent type: %s: %s', namespace,
-                  ev.type, policy)
-        await queue.put(AppgateEvent(op=ev.type, event=policy))
+        try:
+            if not event:
+                continue
+            ev = K8SEvent(event)
+            policy = policy_load(ev.object.spec)
+            log.debug('[policies/%s}] K8SEvent type: %s: %s', namespace,
+                      ev.type, policy)
+            await queue.put(AppgateEvent(op=ev.type, entity=policy))
+        except TypedloadTypeError:
+            log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
 async def entitlements_loop(namespace: str, queue: Queue) -> None:
     async for event in event_loop(namespace, 'entitlements'):
-        if not event:
-            continue
-        ev = K8SEvent(event)
-        entitlement = entitlement_load(ev.object.spec)
-        log.info('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
-                 ev.type, entitlement)
-        await queue.put(AppgateEvent(op=ev.type, event=entitlement))
+        try:
+            if not event:
+                continue
+            ev = K8SEvent(event)
+            entitlement = entitlement_load(ev.object.spec)
+            log.debug('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
+                     ev.type, entitlement)
+            await queue.put(AppgateEvent(op=ev.type, entity=entitlement))
+        except TypedloadTypeError:
+            log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
 async def conditions_loop(namespace: str, queue: Queue) -> None:
