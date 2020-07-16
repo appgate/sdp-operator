@@ -19,11 +19,11 @@ BUILTIN_TAG = 'builtin'
 
 
 def entities_op(entities: Set[AppgateEntity], entity: AppgateEntity, op: str) -> None:
-    if op == 'CREATE':
+    if op == 'ADDED':
         entities.add(entity)
-    elif op == 'DESTROY':
+    elif op == 'DELETED':
         entities.remove(entity)
-    elif op == 'MODIFY':
+    elif op == 'MODIFIED':
         id = entity.id
         if not id:
             pass
