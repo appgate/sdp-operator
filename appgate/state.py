@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, List, Optional
+from typing import Set, TypeVar, Generic, Dict, Optional
 
 from attr import attrib, attrs, evolve
 
