@@ -1,15 +1,38 @@
 import uuid
-from typing import Dict, Any, Optional, List, TypeVar
+from typing import Dict, Any, Optional, List, Union
 import aiohttp
 import typedload
-from appgate.types import Policy, Entitlement, Condition, Entity_T
+from appgate.types import Policy, Entitlement, Condition
 
 __all__ = [
     'AppgateClient',
 ]
 
 
-T = TypeVar('T', bound=Entity_T)
+Entity_T = Union[Entitlement, Policy, Condition]
+
+
+class EntityClient:
+    def __init__(self, path: str, appgate_client: 'AppgateClient') -> None:
+        self._client = appgate_client
+        self.path = path
+
+    async def get(self) -> List[Entity_T]:
+        entities = await self._client.get(self.path)
+        return typedload.load(entities['data'], List[Entity_T])
+
+    async def post(self, entity: Entity_T) -> Entity_T:
+        entity = await self._client.post(self.path,
+                                         body=typedload.dump(entity))
+        return typedload.load(entity, Entity_T)
+
+    async def put(self, entity: Entity_T) -> Entity_T:
+        entity = await self._client.put(f'{self.path}/{entity.id}',
+                                        body=typedload.dump(entity))
+        return typedload.load(entity, Entity_T)
+
+    async def delete(self, id: str) -> None:
+        await self._client.delete(f'{self.path}/{id}')
 
 
 class AppgateClient:
@@ -74,14 +97,15 @@ class AppgateClient:
         resp = await self.post('/admin/login', body=body)
         self._token = resp['token']
 
-    async def get_policies(self) -> List[Policy]:
-        policies = await self.get('/admin/policies')
-        return typedload.load(policies['data'], List[Policy])
+    @property
+    def policies(self) -> EntityClient:
+        return EntityClient(appgate_client=self, path='/admin/policies')
 
-    async def get_entitlements(self) -> List[Entitlement]:
-        entitlements = await self.get('/admin/entitlements')
-        return typedload.load(entitlements['data'], List[Entitlement])
+    @property
+    def entitlements(self) -> EntityClient:
+        return EntityClient(appgate_client=self, path='/admin/entitlements')
 
-    async def get_conditions(self) -> List[Condition]:
-        conditions = await self.get('/admin/conditions')
-        return typedload.load(conditions['data'], List[Condition])
+    @property
+    def conditions(self) -> EntityClient:
+        return EntityClient(appgate_client=self, path='/admin/conditions')
+

@@ -43,9 +43,10 @@ async def init_environment(controller: str, user: str, password: str) -> None:
     appgate_client = AppgateClient(controller=controller, user=user,
                                    password=password)
     await appgate_client.login()
-    policies = await appgate_client.get_policies()
-    entitlements = await appgate_client.get_entitlements()
-    conditions = await appgate_client.get_policies()
+    policies = await appgate_client.policies.get()
+    entitlements = await appgate_client.entitlements.get()
+    conditions = await appgate_client.conditions.get()
+
     await appgate_client.close()
 
 
