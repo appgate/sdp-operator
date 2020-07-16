@@ -1,11 +1,13 @@
 import asyncio
 import functools
 import logging
-from typing import Optional, Dict, Any, Callable, Iterator
+from typing import Optional, Dict, Any
 from typing_extensions import AsyncIterable
 from kubernetes.config import load_kube_config, list_kube_config_contexts
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
+
+from appgate.client import AppgateClient
 from appgate.types import entitlement_load, Event, policy_load, condition_load
 
 DOMAIN = 'beta.appgate.com'
@@ -15,7 +17,8 @@ __all__ = [
     'policies_loop',
     'entitlements_loop',
     'conditions_loop',
-    'init_kubernetes'
+    'init_kubernetes',
+    'init_environment',
 ]
 
 
@@ -36,11 +39,22 @@ def init_kubernetes() -> Optional[str]:
     return list_kube_config_contexts()[1]['context'].get('namespace')
 
 
+async def init_environment(controller: str, user: str, password: str) -> None:
+    appgate_client = AppgateClient(controller=controller, user=user,
+                                   password=password)
+    await appgate_client.login()
+    policies = await appgate_client.policies.get()
+    entitlements = await appgate_client.entitlements.get()
+    conditions = await appgate_client.conditions.get()
+
+    await appgate_client.close()
+
+
 async def event_loop(namespace: str, crd: str) -> AsyncIterable[Dict[str, Any]]:
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     log.debug('test')
     s = Watch().stream(get_crds().list_namespaced_custom_object, DOMAIN, 'v1',
-                 namespace, crd)
+                       namespace, crd)
     loop = asyncio.get_event_loop()
     while True:
         event = await loop.run_in_executor(None, functools.partial(next, s))

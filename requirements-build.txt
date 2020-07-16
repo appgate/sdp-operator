@@ -1,5 +1,7 @@
 kubernetes>=11.0.0
 typedload>=2.2
 attrs>=17.0
+aiohttp>=3.6.2.0
+typing-extensions
 pytest
 
