@@ -165,4 +165,4 @@ AppgateEntity = Union[Entitlement, Policy, Condition]
 @attrs(slots=True, frozen=True)
 class AppgateEvent:
     op: str = attrib()
-    event: AppgateEntity = attrib()
+    entity: AppgateEntity = attrib()

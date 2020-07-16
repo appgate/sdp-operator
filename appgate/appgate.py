@@ -13,7 +13,7 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.state import AppgateState, create_appgate_plan, appgate_plan_summary
+from appgate.state import AppgateState, create_appgate_plan, appgate_plan_summary, appgate_plan_errors_summary
 from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, Policy, Entitlement, \
     Condition
 
@@ -120,7 +120,7 @@ async def conditions_loop(namespace: str, queue: Queue) -> None:
             condition = condition_load(ev.object.spec)
             log.debug('[conditions/%s}] K8SEvent type: %s: %s', namespace,
                       ev.type, condition)
-            await queue.put(AppgateEvent(op=ev.type, event=condition))
+            await queue.put(AppgateEvent(op=ev.type, entity=condition))
         except TypedloadTypeError:
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
@@ -144,11 +144,17 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
     while True:
         try:
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=30.0)
-            log.info('[appgate-operator/%s}] Event op: %s: %s', namespace,
-                     event.op, event)
-            expected_appgate_state.with_entity(event.event, event.op)
+            log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
+                     event.op, str(type(event.entity)), event.entity.name)
+            expected_appgate_state.with_entity(event.entity, event.op)
         except asyncio.exceptions.TimeoutError:
-            log.info('[appgate-operator/%s] No more events for a while, creating a plan',
-                     namespace)
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
-            appgate_plan_summary(appgate_plan=plan, namespace=namespace)
+            if plan.policy_errors or plan.entitlement_errors:
+                log.error('[appgate-operator/%s] Found errors in expected state and plan can' 
+                          ' not be applied', namespace)
+                appgate_plan_errors_summary(appgate_plan=plan, namespace=namespace)
+            else:
+                log.info('[appgate-operator/%s] No more events for a while, creating a plan',
+                         namespace)
+                appgate_plan_summary(appgate_plan=plan, namespace=namespace)
+
