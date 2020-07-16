@@ -134,8 +134,8 @@ def compare_entities(current: Set[T],
                         filter(lambda e: e.name in shared_names and e not in current,
                                expected)))
     to_share = set(map(lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
-                        filter(lambda e: e.name in shared_names and e in current,
-                               expected)))
+                       filter(lambda e: e.name in shared_names and e in current,
+                              expected)))
     return Plan(delete=to_delete,
                 create=to_create,
                 modify=to_modify,
