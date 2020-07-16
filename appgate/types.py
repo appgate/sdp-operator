@@ -1,5 +1,5 @@
 from attr import attrib, attrs
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, FrozenSet
 from typedload import load
 
 __all__ = [
@@ -52,8 +52,8 @@ class Action:
     subtype: str = attrib()
     action: str = attrib()
     types: str = attrib()
-    hosts: List[str] = attrib()
-    ports: List[str] = attrib()
+    hosts: FrozenSet[str] = attrib()
+    ports: FrozenSet[str] = attrib()
     monitor: ActionMonitor = attrib()
 
 
@@ -67,25 +67,22 @@ class AppShortcut:
 
 
 @attrs(slots=True, frozen=True)
-class Entitlement(Entity):
-    id: Optional[str] = attrib()
+class Entitlement(Entity_T):
     name: str = attrib()
     site: str = attrib()
-    conditions: List[str] = attrib()
-    actions: List[Action] = attrib()
-    notes: Optional[str] = attrib()
-    tags: Optional[List[str]] = attrib()
-    site_name: str = attrib(metadata={
-        'name': 'siteName'
-    })
+    conditions: FrozenSet[str] = attrib(factory=frozenset)
+    actions: FrozenSet[Action] = attrib(factory=frozenset)
+    notes: Optional[str] = attrib(default=None)
+    tags: Optional[FrozenSet[str]] = attrib(default=None)
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
-    })
+    }, default="and")
     app_shortcut: Optional[AppShortcut] = attrib(metadata={
         'name': 'appShortcut'
-    })
-    app_shortcut_scripts: Optional[List[str]] = attrib()
+    }, default=None)
+    app_shortcut_scripts: Optional[List[str]] = attrib(default=None)
     disabled: Optional[bool] = attrib(default=False)
+    id: Optional[str] = attrib(default=None)
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -93,25 +90,25 @@ def entitlement_load(data: Dict[str, Any]) -> Entitlement:
 
 
 @attrs(slots=True, frozen=True)
-class Policy(Entity):
+class Policy(Entity_T):
     name: str = attrib()
     expression: str = attrib()
     notes: Optional[str] = attrib(default=None)
     override_site: Optional[str] = attrib(metadata={
         'name': 'overrideSite'
     }, default=None)
-    tags: Optional[List[str]] = attrib(default=None)
-    entitlements: Optional[List[str]] = attrib(default=None)
-    entitlement_links: Optional[List[str]] = attrib(metadata={
+    tags: Optional[FrozenSet[str]] = attrib(default=None)
+    entitlements: Optional[FrozenSet[str]] = attrib(default=None)
+    entitlement_links: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'entitlementLinks'
     }, default=None)
-    ringfence_rules: Optional[List[str]] = attrib(metadata={
+    ringfence_rules: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'ringfenceRules'
     }, default=None)
-    ringfence_rule_links: Optional[List[str]] = attrib(metadata={
+    ringfence_rule_links: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'ringfenceRuleLinks'
     }, default=None)
-    administrative_roles: Optional[List[str]] = attrib(metadata={
+    administrative_roles: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'administrativeRoles'
     }, default=None)
     disabled: bool = attrib(default=False)
@@ -138,18 +135,18 @@ class RemedyMethod:
 
 
 @attrs(slots=True, frozen=True)
-class Condition(Entity):
+class Condition(Entity_T):
     id: Optional[str] = attrib()
     name: str = attrib()
     expression: str = attrib()
-    notes: Optional[str] = attrib()
-    tags: Optional[List[str]] = attrib()
-    repeat_schedules: Optional[List[str]] = attrib(metadata={
+    notes: Optional[str] = attrib(default=None)
+    tags: Optional[FrozenSet[str]] = attrib(default=None)
+    repeat_schedules: Optional[FrozenSet[str]] = attrib(metadata={
         'name': 'repeatSchedules'
-    })
+    }, default=None)
     remedy_methods: Optional[List[RemedyMethod]] = attrib(metadata={
         'name': 'remedyMethods'
-    })
+    }, default=None)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
