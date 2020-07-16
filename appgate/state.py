@@ -12,6 +12,7 @@ __all__ = [
     'AppgatePlan',
     'create_appgate_plan',
     'appgate_plan_summary',
+    'appgate_plan_errors_summary',
 ]
 
 
@@ -79,15 +80,15 @@ class Plan(Generic[T]):
                                     self.modify.union(self.share))))
 
 
-def plan_summary(plan: Plan) -> None:
+def plan_summary(plan: Plan, namespace: str) -> None:
     for e in plan.create:
-        print(f' + {e}')
+        log.info('[appgate-operator/%s] + %s', namespace, e)
     for e in plan.modify:
-        print(f' * {e}')
+        log.info('[appgate-operator/%s] * %s', namespace, e)
     for e in plan.delete:
-        print(f' - {e}')
+        log.info('[appgate-operator/%s] - %s', namespace, e)
     for e in plan.share:
-        print(f' = {e}')
+        log.info('[appgate-operator/%s] = %s', namespace, e)
 
 
 # Policies have entitlements that have conditions, so conditions always first.
@@ -115,13 +116,27 @@ class AppgatePlan:
 
 
 def appgate_plan_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
-    print('AppgatePlan Summary:')
-    print(' CONDITIONS')
-    plan_summary(appgate_plan.conditions)
-    print(' ENTITLEMENTS')
-    plan_summary(appgate_plan.entitlements)
-    print(' POLICIES')
+    log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
+    log.info('[appgate-operator/%s] Conditions:', namespace)
+    plan_summary(appgate_plan.conditions, namespace)
+    log.info('[appgate-operator/%s] Entitlements')
+    plan_summary(appgate_plan.entitlements, namespace)
+    log.info('[appgate-operator/%s] Policies', namespace)
     plan_summary(appgate_plan.policies)
+
+
+def appgate_plan_errors_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
+    if appgate_plan.entitlement_errors:
+        for entitlement, conditions in appgate_plan.entitlement_errors.items():
+            p1 = "they are" if len(conditions) > 1 else "it is"
+            log.error('[appgate-operator/%s] Entitlement: %s references conditions: %s, but %s not defined '
+                      'in the system.', namespace, entitlement, ','.join(conditions), p1)
+
+    if appgate_plan.policy_errors:
+        for policy, entitlements in appgate_plan.policy_errors.items():
+            p1 = "they are" if len(entitlements) > 1 else "it is"
+            log.error('[appgate-operator/%s] Policy: %s references entitlements: %s, but %s not defined '
+                      'in the system.', namespace, policy, ','.join(entitlements), p1)
 
 
 def compare_entities(current: Set[T],
