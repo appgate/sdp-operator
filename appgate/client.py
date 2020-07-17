@@ -9,6 +9,7 @@ from appgate.types import AppgateEntity, Policy, Entitlement, Condition
 
 __all__ = [
     'AppgateClient',
+    'EntityClient',
 ]
 
 
