@@ -100,7 +100,16 @@ class Plan(Generic[T]):
     delete: Set[T] = attrib(factory=set)
     create: Set[T] = attrib(factory=set)
     modify: Set[T] = attrib(factory=set)
-    errors: Optional[Set[T]] = attrib(default=None)
+    errors: Optional[Set[str]] = attrib(default=None)
+
+    @cached_property
+    def entities(self) -> Set[T]:
+        entities = set()
+        entities.update(self.share)
+        entities.update({e for e in self.modify if e.id not in self.errors})
+        entities.update({e for e in self.create if e.id not in self.errors})
+        entities.update({e for e in self.delete if e.id in self.errors})
+        return entities
 
     @cached_property
     def expected_names(self) -> Set[str]:
@@ -125,7 +134,7 @@ class Plan(Generic[T]):
         return len(self.delete or self.create or self.modify) > 0
 
 
-# TODO: Deal with errors and repeted code
+# TODO: Deal with errors and repeated code
 async def plan_apply(plan: Plan, namespace: str,
                      entity_client: Optional[EntityClient] = None) -> Plan:
     errors = set()
@@ -136,7 +145,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.post(cast(AppgateEntity, e)):
-                errors.add(e)
+                errors.add(e.id)
     for e in plan.modify:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to modify instance %s without id',
@@ -145,7 +154,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.put(cast(AppgateEntity, e)):
-                errors.add(e)
+                errors.add(e.id)
     for e in plan.delete:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to delete instance %s without id',
@@ -154,7 +163,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] - %s %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.delete(e.id):
-                errors.add(e)
+                errors.add(e.id)
 
     for e in plan.share:
         if not e.id:
@@ -163,11 +172,12 @@ async def plan_apply(plan: Plan, namespace: str,
             continue
         log.info('[appgate-operator/%s] = %s %s [%s]', namespace, type(e), e.name, e.id)
 
+    has_errors = len(errors) > 0
     return Plan(create=plan.create,
                 share=plan.share,
                 delete=plan.delete,
                 modify=plan.modify,
-                errors=errors if len(errors) > 0 else None)
+                errors=errors if has_errors else None)
 
 
 # Policies have entitlements that have conditions, so conditions always first.
@@ -195,12 +205,9 @@ class AppgatePlan:
 
     @cached_property
     def appgate_state(self) -> AppgateState:
-        policies = self.policies.share.union(self.policies.modify).union(
-            self.policies.create)
-        entitlements = self.entitlements.share.union(self.entitlements.modify).union(
-            self.entitlements.create)
-        conditions = self.conditions.share.union(self.conditions.modify).union(
-            self.conditions.create)
+        policies = self.policies.entities
+        entitlements = self.entitlements.entities
+        conditions = self.conditions.entities
         return AppgateState(
             policies=EntitiesSet(policies),
             entitlements=EntitiesSet(entitlements),

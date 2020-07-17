@@ -110,7 +110,7 @@ async def entitlements_loop(namespace: str, queue: Queue) -> None:
             ev = K8SEvent(event)
             entitlement = entitlement_load(ev.object.spec)
             log.debug('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
-                     ev.type, entitlement)
+                      ev.type, entitlement)
             await queue.put(AppgateEvent(op=ev.type, entity=entitlement))
         except TypedloadTypeError:
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
@@ -175,13 +175,4 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
 
                 if appgate_client:
                     current_appgate_state = new_plan.appgate_state
-                    if new_plan.conditions.errors:
-                        for c in new_plan.conditions.errors:
-                            current_appgate_state.conditions.delete(c)
-                    if new_plan.entitlements.errors:
-                        for c in new_plan.entitlements.errors:
-                            current_appgate_state.entitlements.delete(c)
-                    if new_plan.policies.errors:
-                        for c in new_plan.policies.errors:
-                            current_appgate_state.policies.delete(c)
                     await appgate_client.close()
