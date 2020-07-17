@@ -1,8 +1,11 @@
+import uuid
+from copy import deepcopy
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional, Union, Callable, Type
+from typing import Set, TypeVar, Generic, Dict, Optional, Union, Callable, Type, cast, Iterable
 
 from attr import attrib, attrs, evolve
 
+from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
 from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity
 
@@ -11,34 +14,74 @@ __all__ = [
     'AppgateState',
     'AppgatePlan',
     'create_appgate_plan',
-    'appgate_plan_summary',
+    'appgate_plan_apply',
     'appgate_plan_errors_summary',
+    'appgate_plan_apply',
 ]
 
 
 BUILTIN_TAG = 'builtin'
 
 
-def entities_op(entities: Set[AppgateEntity], entity: AppgateEntity, op: str) -> None:
+T = TypeVar('T', bound=Entity_T)
+
+
+class EntitiesSet(Generic[T]):
+    def __init__(self, entities: Set[Entity_T],
+                 entities_by_name: Optional[Dict[str, T]] = None) -> None:
+        self.entities = entities
+        if entities_by_name:
+            self.entities_by_name = entities_by_name
+        else:
+            self.entities_by_name = {}
+            for e in entities:
+                self.entities_by_name[e.name] = e
+
+    def __copy__(self) -> 'EntitiesSet[T]':
+        return EntitiesSet(entities=deepcopy(self.entities),
+                           entities_by_name=deepcopy(self.entities_by_name))
+
+    def add(self, entity: T) -> None:
+        if entity.name in self.entities_by_name:
+            # Entity is already registered, so this is in the best case a modification
+            return self.modify(entity)
+        if not entity.id:
+            entity = evolve(entity, id=str(uuid.uuid4()))
+        self.entities.add(entity)
+        self.entities_by_name[entity.name] = entity
+
+    def delete(self, entity: T) -> None:
+        self.entities.remove(entity)
+        if entity.name in self.entities_by_name:
+            del self.entities_by_name[entity.name]
+
+    def modify(self, entity: T) -> None:
+        if entity.name not in self.entities_by_name:
+            return self.add(entity)
+        self.entities = {e for e in self.entities if e.name != entity.name}
+        self.entities.add(evolve(entity, id=self.entities_by_name[entity.name].id))
+
+
+def entities_op(entity_set: EntitiesSet, entity: AppgateEntity, op: str) -> None:
     if op == 'ADDED':
-        entities.add(entity)
+        entity_set.add(entity)
     elif op == 'DELETED':
-        entities.remove(entity)
+        entity_set.delete(entity)
     elif op == 'MODIFIED':
-        id = entity.id
-        if not id:
-            pass
-        entities = {e for e in entities if e.id != id}
-        entities.add(entity)
+        entity_set.modify(entity)
 
 
 @attrs()
 class AppgateState:
-    policies: Set[Policy] = attrib(factory=set)
-    conditions: Set[Condition] = attrib(factory=set)
-    entitlements: Set[Entitlement] = attrib(factory=set)
+    policies: EntitiesSet[Policy] = attrib(factory=EntitiesSet)
+    conditions: EntitiesSet[Condition] = attrib(factory=EntitiesSet)
+    entitlements: EntitiesSet[Entitlement] = attrib(factory=EntitiesSet)
 
     def with_entity(self, entity: AppgateEntity, op: str) -> None:
+        """
+        Get the entity with op and register in the current state
+        These entities are coming from k8s so they don't have any id
+        """
         known_entities = {
             Policy: lambda: self.policies,
             Entitlement: lambda: self.entitlements,
@@ -49,9 +92,6 @@ class AppgateState:
             log.error('[appgate-operator] Unknown entity type: %s', type(entity))
             return
         entities_op(entitites(), entity, op)  # type: ignore
-
-
-T = TypeVar('T', bound=Entity_T)
 
 
 @attrs
@@ -79,16 +119,49 @@ class Plan(Generic[T]):
         return set(filter(None, map(lambda c: c.id,
                                     self.modify.union(self.share))))
 
+    @cached_property
+    def needs_apply(self) -> bool:
+        return len(self.delete or self.create or self.modify) > 0
 
-def plan_summary(plan: Plan, namespace: str) -> None:
+
+# TODO: Deal with errors and repeted code
+async def plan_apply(plan: Plan, namespace: str,
+                     entity_client: Optional[EntityClient] = None) -> Plan:
     for e in plan.create:
-        log.info('[appgate-operator/%s] + %s', namespace, e)
+        if not e.id:
+            log.error('[appgate-operator/%s] Trying to create instance %s without id',
+                      namespace, e)
+        log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
+        if entity_client:
+            await entity_client.post(cast(AppgateEntity, e))
     for e in plan.modify:
-        log.info('[appgate-operator/%s] * %s', namespace, e)
+        if not e.id:
+            log.error('[appgate-operator/%s] Trying to modify instance %s without id',
+                      namespace, e)
+            continue
+        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
+        if entity_client:
+            await entity_client.put(cast(AppgateEntity, e))
     for e in plan.delete:
-        log.info('[appgate-operator/%s] - %s', namespace, e)
+        if not e.id:
+            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
+                      namespace, e)
+            continue
+        log.info('[appgate-operator/%s] - %s %s %s [%s]', namespace, type(e), e.name, e.id)
+        if entity_client:
+            await entity_client.delete(e.id)
+
     for e in plan.share:
-        log.info('[appgate-operator/%s] = %s', namespace, e)
+        if not e.id:
+            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
+                      namespace, e)
+            continue
+        log.info('[appgate-operator/%s] = %s %s [%s]', namespace, type(e), e.name, e.id)
+
+    return Plan(create=plan.create,
+                share=plan.share,
+                delete=plan.delete,
+                modify=plan.modify)
 
 
 # Policies have entitlements that have conditions, so conditions always first.
@@ -114,15 +187,34 @@ class AppgatePlan:
         """
         return self.entitlements.expected_names
 
+    @cached_property
+    def appgate_state(self) -> AppgateState:
+        policies = self.policies.share.union(self.policies.modify).union(
+            self.policies.create)
+        entitlements = self.entitlements.share.union(self.entitlements.modify).union(
+            self.entitlements.create)
+        conditions = self.conditions.share.union(self.conditions.modify).union(
+            self.conditions.create)
+        return AppgateState(
+            policies=EntitiesSet(policies),
+            entitlements=EntitiesSet(entitlements),
+            conditions=EntitiesSet(conditions))
 
-def appgate_plan_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
+
+# TODO: Deal with errors here
+async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
+                             appgate_client: Optional[AppgateClient] = None) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    log.info('[appgate-operator/%s] Conditions:', namespace)
-    plan_summary(appgate_plan.conditions, namespace)
-    log.info('[appgate-operator/%s] Entitlements')
-    plan_summary(appgate_plan.entitlements, namespace)
-    log.info('[appgate-operator/%s] Policies', namespace)
-    plan_summary(appgate_plan.policies)
+    conditions_plan = await plan_apply(appgate_plan.conditions, namespace,
+                                       entity_client=appgate_client.conditions if appgate_client else None)
+    entitlements_plan = await plan_apply(appgate_plan.entitlements, namespace,
+                                         entity_client=appgate_client.entitlements if appgate_client else None)
+    policies_plan = await plan_apply(appgate_plan.policies, namespace=namespace,
+                                     entity_client=appgate_client.policies if appgate_client else None)
+
+    return AppgatePlan(conditions=conditions_plan,
+                       entitlements=entitlements_plan,
+                       policies=policies_plan)
 
 
 def appgate_plan_errors_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
@@ -201,12 +293,16 @@ def create_appgate_plan(current_state: AppgateState,
     """
     Creates a new AppgatePlan to apply
     """
-    conditions_plan = compare_entities(current_state.conditions,
-                                       expected_state.conditions)
-    entitlements_plan = compare_entities(current_state.entitlements,
-                                         expected_state.entitlements)
+    conditions_plan = cast(Plan[Condition],
+                           compare_entities(current_state.conditions.entities,
+                                            expected_state.conditions.entities))
+    entitlements_plan = cast(Plan[Entitlement],
+                             compare_entities(current_state.entitlements.entities,
+                                              expected_state.entitlements.entities))
     entitlement_errors = check_entitlements(entitlements_plan, conditions_plan)
-    policies_plan = compare_entities(current_state.policies, expected_state.policies)
+    policies_plan = cast(Plan[Policy],
+                         compare_entities(current_state.policies.entities,
+                                          expected_state.policies.entities))
     policy_errors = check_policies(policies_plan, entitlements_plan)
 
     return AppgatePlan(policies=policies_plan,
@@ -214,3 +310,4 @@ def create_appgate_plan(current_state: AppgateState,
                        conditions=conditions_plan,
                        entitlement_errors=entitlement_errors,
                        policy_errors=policy_errors)
+
