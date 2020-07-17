@@ -100,6 +100,7 @@ class Plan(Generic[T]):
     delete: Set[T] = attrib(factory=set)
     create: Set[T] = attrib(factory=set)
     modify: Set[T] = attrib(factory=set)
+    errors: Optional[Dict[str, T]] = attrib(default=None)
 
     @cached_property
     def expected_names(self) -> Set[str]:
@@ -127,13 +128,15 @@ class Plan(Generic[T]):
 # TODO: Deal with errors and repeted code
 async def plan_apply(plan: Plan, namespace: str,
                      entity_client: Optional[EntityClient] = None) -> Plan:
+    errors = {}
     for e in plan.create:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to create instance %s without id',
                       namespace, e)
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
-            await entity_client.post(cast(AppgateEntity, e))
+            if not await entity_client.post(cast(AppgateEntity, e)):
+                errors['modify'] = e
     for e in plan.modify:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to modify instance %s without id',
@@ -141,7 +144,8 @@ async def plan_apply(plan: Plan, namespace: str,
             continue
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
-            await entity_client.put(cast(AppgateEntity, e))
+            if not await entity_client.put(cast(AppgateEntity, e)):
+                errors['modify'] = e
     for e in plan.delete:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to delete instance %s without id',
@@ -149,7 +153,8 @@ async def plan_apply(plan: Plan, namespace: str,
             continue
         log.info('[appgate-operator/%s] - %s %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
-            await entity_client.delete(e.id)
+            if not await entity_client.delete(e.id):
+                errors['delete'] = e
 
     for e in plan.share:
         if not e.id:
@@ -161,7 +166,8 @@ async def plan_apply(plan: Plan, namespace: str,
     return Plan(create=plan.create,
                 share=plan.share,
                 delete=plan.delete,
-                modify=plan.modify)
+                modify=plan.modify,
+                errors=errors if len(errors) > 0 else None)
 
 
 # Policies have entitlements that have conditions, so conditions always first.
