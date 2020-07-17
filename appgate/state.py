@@ -27,7 +27,7 @@ T = TypeVar('T', bound=Entity_T)
 
 
 class EntitiesSet(Generic[T]):
-    def __init__(self, entities: Set[Entity_T],
+    def __init__(self, entities: Set[T],
                  entities_by_name: Optional[Dict[str, T]] = None) -> None:
         self.entities = entities
         if entities_by_name:
@@ -45,8 +45,6 @@ class EntitiesSet(Generic[T]):
         if entity.name in self.entities_by_name:
             # Entity is already registered, so this is in the best case a modification
             return self.modify(entity)
-        if not entity.id:
-            entity = evolve(entity, id=str(uuid.uuid4()))
         self.entities.add(entity)
         self.entities_by_name[entity.name] = entity
 
@@ -73,9 +71,9 @@ def entities_op(entity_set: EntitiesSet, entity: AppgateEntity, op: str) -> None
 
 @attrs()
 class AppgateState:
-    policies: EntitiesSet[Policy] = attrib(factory=EntitiesSet)
-    conditions: EntitiesSet[Condition] = attrib(factory=EntitiesSet)
-    entitlements: EntitiesSet[Entitlement] = attrib(factory=EntitiesSet)
+    policies: EntitiesSet[Policy] = attrib()
+    conditions: EntitiesSet[Condition] = attrib()
+    entitlements: EntitiesSet[Entitlement] = attrib()
 
     def with_entity(self, entity: AppgateEntity, op: str) -> None:
         """
@@ -94,6 +92,16 @@ class AppgateState:
         entities_op(entitites(), entity, op)  # type: ignore
 
 
+def merge_entities(share: Set[T], create: Set[T], modify: Set[T],
+                   errors: Optional[Set[str]] = None) -> Set[T]:
+    entities = set()
+    errors = errors or set()
+    entities.update(share)
+    entities.update({e for e in modify if e.id not in errors})
+    entities.update({e for e in create if e.id not in errors})
+    return entities
+
+
 @attrs
 class Plan(Generic[T]):
     share: Set[T] = attrib(factory=set)
@@ -103,31 +111,25 @@ class Plan(Generic[T]):
     errors: Optional[Set[str]] = attrib(default=None)
 
     @cached_property
-    def entities(self) -> Set[T]:
-        entities = set()
-        entities.update(self.share)
-        entities.update({e for e in self.modify if e.id not in self.errors})
-        entities.update({e for e in self.create if e.id not in self.errors})
-        entities.update({e for e in self.delete if e.id in self.errors})
-        return entities
-
-    @cached_property
-    def expected_names(self) -> Set[str]:
+    def expected_entities(self) -> Set[T]:
         """
         Set with all the names in the system in this plan
         """
-        names = {c.name for c in self.modify}
-        names.update({c.name for c in self.create})
-        names.update({c.name for c in self.share})
-        return names
+        return merge_entities(self.share, self.create, self.modify, errors=set())
 
     @cached_property
-    def expected_ids(self) -> Set[str]:
+    def entities(self) -> Set[T]:
+        entities = merge_entities(self.share, self.create, self.modify,
+                                  errors=self.errors)
+        entities.update({e for e in self.delete if e.id in (self.errors or set())})
+        return entities
+
+    @cached_property
+    def expected_names(self) -> Dict[str, str]:
         """
-        Set with all the known id names in the system in this plan
+        Set with all the names in the system in this plan
         """
-        return set(filter(None, map(lambda c: c.id,
-                                    self.modify.union(self.share))))
+        return {e.name: e.id for e in self.expected_entities}
 
     @cached_property
     def needs_apply(self) -> bool:
@@ -188,20 +190,6 @@ class AppgatePlan:
     conditions: Plan[Condition] = attrib()
     entitlement_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
     policy_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
-
-    @cached_property
-    def expected_condition_names(self) -> Set[str]:
-        """
-        Set with all the condition names in the system after the plan is applied
-        """
-        return self.conditions.expected_names
-
-    @cached_property
-    def expected_entitlement_names(self) -> Set[str]:
-        """
-        Set with all the condition names in the system after the plan is applied
-        """
-        return self.entitlements.expected_names
 
     @cached_property
     def appgate_state(self) -> AppgateState:
@@ -268,36 +256,43 @@ def compare_entities(current: Set[T],
 
 
 # TODO: These 2 functions do the same!
-def check_entitlements(entitlements: Plan[Entitlement],
-                       conditions: Plan[Condition]) -> Optional[Dict[str, Set[str]]]:
+def resolve_entitlements(entitlements: Plan[Entitlement],
+                         conditions: Plan[Condition]) -> Optional[Dict[str, Set[str]]]:
     missing_conditions: Dict[str, Set[str]] = {}
-    expected_entitlements = entitlements.create.union(entitlements.modify).union(entitlements.share)
-    for entitlement in expected_entitlements:
+    for entitlement in entitlements.expected_entities:
+        new_conditions = set()
         for condition in entitlement.conditions:
-            if condition not in conditions.expected_names:
+            condition_id = conditions.expected_names.get(condition)
+            if not condition_id:
                 if entitlement.name not in missing_conditions:
                     missing_conditions[entitlement.name] = set()
                 missing_conditions[entitlement.name].add(condition)
+            else:
+                new_conditions.add(condition_id)
+        evolve(entitlement, conditions=frozenset(new_conditions))
 
     if len(missing_conditions) > 0:
         return missing_conditions
     return None
 
 
-def check_policies(policies: Plan[Policy],
-                   entitlements: Plan[Entitlement]) -> Optional[Dict[str, Set[str]]]:
+def resolve_policies(policies: Plan[Policy],
+                     entitlements: Plan[Entitlement]) -> Optional[Dict[str, Set[str]]]:
     missing_entitlements: Dict[str, Set[str]] = {}
-    expected_policies = policies.create.union(policies.modify).union(policies.share)
-    for policy in expected_policies:
+    for policy in policies.expected_entities:
+        new_entitlements = set()
         for entitlement in (policy.entitlements or []):
-            if entitlement not in entitlements.expected_names:
+            entitlement_id = entitlements.expected_names.get(entitlement)
+            if not entitlement_id:
                 if policy.name not in missing_entitlements:
                     missing_entitlements[policy.name] = set()
                 missing_entitlements[policy.name].add(entitlement)
+            else:
+                new_entitlements.add(entitlement_id)
+        evolve(policy, entitlements=frozenset(new_entitlements))
 
     if len(missing_entitlements) > 0:
         return missing_entitlements
-
     return None
 
 
@@ -312,11 +307,11 @@ def create_appgate_plan(current_state: AppgateState,
     entitlements_plan = cast(Plan[Entitlement],
                              compare_entities(current_state.entitlements.entities,
                                               expected_state.entitlements.entities))
-    entitlement_conflicts = check_entitlements(entitlements_plan, conditions_plan)
+    entitlement_conflicts = resolve_entitlements(entitlements_plan, conditions_plan)
     policies_plan = cast(Plan[Policy],
                          compare_entities(current_state.policies.entities,
                                           expected_state.policies.entities))
-    policy_conflicts = check_policies(policies_plan, entitlements_plan)
+    policy_conflicts = resolve_policies(policies_plan, entitlements_plan)
 
     return AppgatePlan(policies=policies_plan,
                        entitlements=entitlements_plan,

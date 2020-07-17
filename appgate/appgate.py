@@ -137,8 +137,8 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
     while True:
         current_appgate_state = await init_environment(controller=controller,
                                                        user=user, password=password)
-        expected_appgate_state = deepcopy(current_appgate_state)
         if current_appgate_state:
+            expected_appgate_state = deepcopy(current_appgate_state)
             break
         log.error('[appgate-operator/%s] Unable to get current state, trying in 30 seconds',
                   namespace)
@@ -151,7 +151,7 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=5.0)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
-
+            assert expected_appgate_state
             expected_appgate_state.with_entity(event.entity, event.op)
         except asyncio.exceptions.TimeoutError:
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
