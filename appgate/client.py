@@ -39,8 +39,10 @@ class EntityClient:
             return None
         return self.loader(data)  # type: ignore
 
-    async def delete(self, id: str) -> None:
-        await self._client.delete(f'{self.path}/{id}')
+    async def delete(self, id: str) -> bool:
+        if not await self._client.delete(f'{self.path}/{id}'):
+            return False
+        return True
 
 
 class AppgateClient:
