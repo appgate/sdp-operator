@@ -3,6 +3,7 @@ import functools
 import logging
 import sys
 from asyncio import Queue
+from copy import deepcopy
 from typing import Optional, Dict, Any, List, cast
 
 from kubernetes.client.rest import ApiException
@@ -13,12 +14,15 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.state import AppgateState, create_appgate_plan, appgate_plan_summary, appgate_plan_errors_summary
+from appgate.state import AppgateState, create_appgate_plan, appgate_plan_errors_summary, \
+    appgate_plan_apply, EntitiesSet
 from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, Policy, Entitlement, \
     Condition
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
+DRY_MODE = True
+CLEANUP_ON_STARTUP = True
 
 __all__ = [
     'policies_loop',
@@ -59,9 +63,12 @@ async def init_environment(controller: str, user: str, password: str) -> Optiona
     if policies is None or entitlements is None or conditions is None:
         await appgate_client.close()
         return None
-    appgate_state = AppgateState(policies=set(cast(List[Policy], policies)),
-                                 entitlements=set(cast(List[Entitlement], entitlements)),
-                                 conditions=set(cast(List[Condition], conditions)))
+    policies_set = EntitiesSet(set(cast(List[Policy], policies)))
+    entitlements_set = EntitiesSet(set(cast(List[Entitlement], entitlements)))
+    conditions_set = EntitiesSet(set(cast(List[Condition], conditions)))
+    appgate_state = AppgateState(policies=policies_set,
+                                 entitlements=entitlements_set,
+                                 conditions=conditions_set)
     await appgate_client.close()
     return appgate_state
 
@@ -105,7 +112,7 @@ async def entitlements_loop(namespace: str, queue: Queue) -> None:
             ev = K8SEvent(event)
             entitlement = entitlement_load(ev.object.spec)
             log.debug('[entitlements/%s}] K8SEvent type: %s: %s', namespace,
-                     ev.type, entitlement)
+                      ev.type, entitlement)
             await queue.put(AppgateEvent(op=ev.type, entity=entitlement))
         except TypedloadTypeError:
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
@@ -133,28 +140,46 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
         current_appgate_state = await init_environment(controller=controller,
                                                        user=user, password=password)
         if current_appgate_state:
+            if CLEANUP_ON_STARTUP:
+                expected_appgate_state = AppgateState(
+                    policies=current_appgate_state.policies.builtin_entities(),
+                    entitlements=current_appgate_state.entitlements.builtin_entities(),
+                    conditions=current_appgate_state.conditions.builtin_entities())
+            else:
+                expected_appgate_state = deepcopy(current_appgate_state)
             break
         log.error('[appgate-operator/%s] Unable to get current state, trying in 30 seconds',
                   namespace)
         await asyncio.sleep(30)
 
-    expected_appgate_state = AppgateState()
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
              namespace)
     while True:
         try:
-            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=30.0)
+            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=5.0)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
+            assert expected_appgate_state
             expected_appgate_state.with_entity(event.entity, event.op)
         except asyncio.exceptions.TimeoutError:
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
-            if plan.policy_errors or plan.entitlement_errors:
+            if plan.policy_conflicts or plan.entitlement_conflicts:
                 log.error('[appgate-operator/%s] Found errors in expected state and plan can' 
                           ' not be applied', namespace)
                 appgate_plan_errors_summary(appgate_plan=plan, namespace=namespace)
             else:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
-                appgate_plan_summary(appgate_plan=plan, namespace=namespace)
+                appgate_client = None
+                if not DRY_MODE:
+                    appgate_client = AppgateClient(controller=controller, user=user, password=password)
+                    await appgate_client.login()
+                else:
+                    log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
+                                namespace)
+                new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
+                                                    appgate_client=appgate_client)
 
+                if appgate_client:
+                    current_appgate_state = new_plan.appgate_state
+                    await appgate_client.close()

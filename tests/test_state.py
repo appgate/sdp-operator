@@ -1,6 +1,6 @@
 import pytest
 
-from appgate.state import compare_entities, Plan, check_entitlements, check_policies
+from appgate.state import compare_entities, Plan, resolve_entitlements, resolve_policies
 from appgate.types import Policy, Entitlement, Condition
 from tests.utils import entitlement, condition, policy
 
@@ -186,7 +186,7 @@ def test_compare_policies_4():
 def test_normalize_entitlements_0():
     entitlements = Plan()
     conditions = Plan()
-    assert check_entitlements(entitlements, conditions) is None
+    assert resolve_entitlements(entitlements, conditions) is None
 
 
 def test_normalize_entitlements_1():
@@ -203,7 +203,7 @@ def test_normalize_entitlements_1():
         ]),
     })
     conditions = Plan()
-    assert check_entitlements(entitlements, conditions) == {
+    assert resolve_entitlements(entitlements, conditions) == {
         'entitlement-1': {'condition1', 'condition2', 'condition3'},
         'entitlement-2': {'condition1', 'condition2', 'condition3'},
     }
@@ -231,7 +231,7 @@ def test_normalize_entitlements_2():
             condition(name='condition5'),
         }
     )
-    assert check_entitlements(entitlements, conditions) is None
+    assert resolve_entitlements(entitlements, conditions) is None
 
 
 def test_normalize_entitlements_3():
@@ -256,13 +256,13 @@ def test_normalize_entitlements_3():
             condition(id='id5', name='condition5'),
         }
     )
-    assert check_entitlements(entitlements, conditions) is None
+    assert resolve_entitlements(entitlements, conditions) is None
 
 
 def test_normalize_policies_0():
     policies = Plan()
     entitlements = Plan()
-    assert check_policies(policies, entitlements) is None
+    assert resolve_policies(policies, entitlements) is None
 
 
 def test_normalize_policies_1():
@@ -279,7 +279,7 @@ def test_normalize_policies_1():
         ]),
     })
     entitlements = Plan()
-    assert check_policies(policies, entitlements) == {
+    assert resolve_policies(policies, entitlements) == {
         'policy-1': {'entitlement1', 'entitlement2', 'entitlement3'},
         'policy-2': {'entitlement1', 'entitlement2', 'entitlement3'}
     }
@@ -307,7 +307,7 @@ def test_normalize_policies_2():
             entitlement(name='entitlement5'),
         }
     )
-    assert check_policies(policies, entitlements) is None
+    assert resolve_policies(policies, entitlements) is None
 
 
 def test_normalize_policies_3():
@@ -334,4 +334,4 @@ def test_normalize_policies_3():
             entitlement(id='id5', name='entitlement5')
         }
     )
-    assert check_policies(policies, entitlements) is None
+    assert resolve_policies(policies, entitlements) is None

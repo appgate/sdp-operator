@@ -1,4 +1,6 @@
-from attr import attrib, attrs
+import uuid
+
+from attr import attrib, attrs, evolve
 from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union
 from typedload import load
 
@@ -45,11 +47,11 @@ class Entity_T:
         raise NotImplementedError()
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str:
         raise NotImplementedError()
 
     @property
-    def tags(self) -> Optional[FrozenSet[str]]:
+    def tags(self) -> FrozenSet[str]:
         raise NotImplementedError
 
 
@@ -78,17 +80,17 @@ class Entitlement(Entity_T):
     site: str = attrib()
     conditions: FrozenSet[str] = attrib(factory=frozenset)
     actions: FrozenSet[Action] = attrib(factory=frozenset)
-    notes: Optional[str] = attrib(default=None)
-    tags: Optional[FrozenSet[str]] = attrib(default=None)
+    notes: Optional[str] = attrib(default='')
+    tags: FrozenSet[str] = attrib(factory=frozenset)
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     }, default="and")
     app_shortcut: Optional[AppShortcut] = attrib(metadata={
         'name': 'appShortcut'
     }, default=None)
-    app_shortcut_scripts: Optional[List[str]] = attrib(default=None)
+    app_shortcut_scripts: FrozenSet[str] = attrib(factory=frozenset)
     disabled: Optional[bool] = attrib(default=False)
-    id: Optional[str] = attrib(default=None)
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -99,29 +101,29 @@ def entitlement_load(data: Dict[str, Any]) -> Entitlement:
 class Policy(Entity_T):
     name: str = attrib()
     expression: str = attrib()
-    notes: Optional[str] = attrib(default=None)
+    notes: Optional[str] = attrib(default='')
     override_site: Optional[str] = attrib(metadata={
         'name': 'overrideSite'
-    }, default=None)
-    tags: Optional[FrozenSet[str]] = attrib(default=None)
-    entitlements: Optional[FrozenSet[str]] = attrib(default=None)
-    entitlement_links: Optional[FrozenSet[str]] = attrib(metadata={
+    }, default='')
+    tags: FrozenSet[str] = attrib(default=None)
+    entitlements: FrozenSet[str] = attrib(factory=frozenset)
+    entitlement_links: FrozenSet[str] = attrib(metadata={
         'name': 'entitlementLinks'
-    }, default=None)
-    ringfence_rules: Optional[FrozenSet[str]] = attrib(metadata={
+    }, factory=frozenset)
+    ringfence_rules: FrozenSet[str] = attrib(metadata={
         'name': 'ringfenceRules'
-    }, default=None)
-    ringfence_rule_links: Optional[FrozenSet[str]] = attrib(metadata={
+    }, factory=frozenset)
+    ringfence_rule_links: FrozenSet[str] = attrib(metadata={
         'name': 'ringfenceRuleLinks'
-    }, default=None)
-    administrative_roles: Optional[FrozenSet[str]] = attrib(metadata={
+    }, factory=frozenset)
+    administrative_roles: FrozenSet[str] = attrib(metadata={
         'name': 'administrativeRoles'
-    }, default=None)
+    }, factory=frozenset)
     disabled: bool = attrib(default=False)
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
-    id: Optional[str] = attrib(default=None, eq=False)
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
@@ -144,15 +146,15 @@ class RemedyMethod:
 class Condition(Entity_T):
     name: str = attrib()
     expression: str = attrib()
-    notes: Optional[str] = attrib(default=None)
-    tags: Optional[FrozenSet[str]] = attrib(default=None)
-    repeat_schedules: Optional[FrozenSet[str]] = attrib(metadata={
+    notes: Optional[str] = attrib(default='')
+    tags: FrozenSet[str] = attrib(factory=frozenset)
+    repeat_schedules: FrozenSet[str] = attrib(metadata={
         'name': 'repeatSchedules'
-    }, default=None)
-    remedy_methods: Optional[FrozenSet[RemedyMethod]] = attrib(metadata={
+    }, factory=frozenset)
+    remedy_methods: FrozenSet[RemedyMethod] = attrib(metadata={
         'name': 'remedyMethods'
-    }, default=None)
-    id: Optional[str] = attrib(default=None)
+    }, factory=frozenset)
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
