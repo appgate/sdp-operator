@@ -21,6 +21,8 @@ from appgate.types import entitlement_load, K8SEvent, policy_load, condition_loa
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
+DRY_MODE = True
+CLEANUP_ON_STARTUP = True
 
 __all__ = [
     'policies_loop',
@@ -138,7 +140,13 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
         current_appgate_state = await init_environment(controller=controller,
                                                        user=user, password=password)
         if current_appgate_state:
-            expected_appgate_state = deepcopy(current_appgate_state)
+            if CLEANUP_ON_STARTUP:
+                expected_appgate_state = AppgateState(
+                    policies=current_appgate_state.policies.builtin_entities(),
+                    entitlements=current_appgate_state.entitlements.builtin_entities(),
+                    conditions=current_appgate_state.conditions.builtin_entities())
+            else:
+                expected_appgate_state = deepcopy(current_appgate_state)
             break
         log.error('[appgate-operator/%s] Unable to get current state, trying in 30 seconds',
                   namespace)
@@ -162,9 +170,8 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
             else:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
-                dry_mode = False
                 appgate_client = None
-                if not dry_mode:
+                if not DRY_MODE:
                     appgate_client = AppgateClient(controller=controller, user=user, password=password)
                     await appgate_client.login()
                 else:

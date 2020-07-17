@@ -41,6 +41,9 @@ class EntitiesSet(Generic[T]):
         return EntitiesSet(entities=deepcopy(self.entities),
                            entities_by_name=deepcopy(self.entities_by_name))
 
+    def builtin_entities(self) -> 'EntitiesSet[T]':
+        return EntitiesSet(entities={e for e in self.entities if 'builtin' in e.tags})
+
     def add(self, entity: T) -> None:
         if entity.name in self.entities_by_name:
             # Entity is already registered, so this is in the best case a modification

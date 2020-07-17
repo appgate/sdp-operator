@@ -90,7 +90,7 @@ class Entitlement(Entity_T):
     }, default=None)
     app_shortcut_scripts: FrozenSet[str] = attrib(factory=frozenset)
     disabled: Optional[bool] = attrib(default=False)
-    id: str = attrib(default=str(uuid.uuid4()))
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -123,7 +123,7 @@ class Policy(Entity_T):
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
-    id: str = attrib(default=str(uuid.uuid4()))
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
@@ -154,7 +154,7 @@ class Condition(Entity_T):
     remedy_methods: FrozenSet[RemedyMethod] = attrib(metadata={
         'name': 'remedyMethods'
     }, factory=frozenset)
-    id: str = attrib(default=str(uuid.uuid4()))
+    id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
