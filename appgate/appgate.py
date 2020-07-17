@@ -172,7 +172,16 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
                                 namespace)
                 new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
                                                     appgate_client=appgate_client)
+
                 if appgate_client:
                     current_appgate_state = new_plan.appgate_state
+                    if new_plan.conditions.errors:
+                        for c in new_plan.conditions.errors:
+                            current_appgate_state.conditions.delete(c)
+                    if new_plan.entitlements.errors:
+                        for c in new_plan.entitlements.errors:
+                            current_appgate_state.entitlements.delete(c)
+                    if new_plan.policies.errors:
+                        for c in new_plan.policies.errors:
+                            current_appgate_state.policies.delete(c)
                     await appgate_client.close()
-
