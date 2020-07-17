@@ -1,11 +1,11 @@
 import uuid
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 import typedload
 from aiohttp import InvalidURL
 
 from appgate.logger import log
-from appgate.types import AppgateEntity
+from appgate.types import AppgateEntity, Policy, Entitlement, Condition
 
 __all__ = [
     'AppgateClient',
@@ -13,29 +13,31 @@ __all__ = [
 
 
 class EntityClient:
-    def __init__(self, path: str, appgate_client: 'AppgateClient') -> None:
+    def __init__(self, path: str, appgate_client: 'AppgateClient',
+                 loader: Callable[[Dict[str, Any]], AppgateEntity]) -> None:
         self._client = appgate_client
         self.path = path
+        self.loader = loader
 
     async def get(self) -> Optional[List[AppgateEntity]]:
-        entities = await self._client.get(self.path)
-        if not entities:
+        data = await self._client.get(self.path)
+        if not data:
             return None
-        return typedload.load(entities['data'], List[AppgateEntity])
+        return [self.loader(e) for e in data['data']]
 
     async def post(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
         data = await self._client.post(self.path,
                                        body=typedload.dump(entity))
         if not data:
             return None
-        return typedload.load(data, AppgateEntity)  # type: ignore
+        return self.loader(data)  # type: ignore
 
     async def put(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
         data = await self._client.put(f'{self.path}/{entity.id}',
                                       body=typedload.dump(entity))
         if not data:
             return None
-        return typedload.load(data, AppgateEntity)  # type: ignore
+        return self.loader(data)  # type: ignore
 
     async def delete(self, id: str) -> None:
         await self._client.delete(f'{self.path}/{id}')
@@ -100,7 +102,7 @@ class AppgateClient:
     async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('POST', path=path, data=body)
 
-    async def get(self, path: str) -> Dict[str, Any]:
+    async def get(self, path: str) -> Optional[Dict[str, Any]]:
         return await self.request('GET', path=path)
 
     async def put(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
@@ -126,13 +128,16 @@ class AppgateClient:
 
     @property
     def policies(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/policies')
+        return EntityClient(appgate_client=self, path='/admin/policies',
+                            loader=lambda e: typedload.load(e, Policy))
 
     @property
     def entitlements(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/entitlements')
+        return EntityClient(appgate_client=self, path='/admin/entitlements',
+                            loader=lambda e: typedload.load(e, Entitlement))
 
     @property
     def conditions(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/conditions')
+        return EntityClient(appgate_client=self, path='/admin/conditions',
+                            loader=lambda e: typedload.load(e, Condition))
 
