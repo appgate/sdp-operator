@@ -305,15 +305,15 @@ def create_appgate_plan(current_state: AppgateState,
     entitlements_plan = cast(Plan[Entitlement],
                              compare_entities(current_state.entitlements.entities,
                                               expected_state.entitlements.entities))
-    entitlement_errors = check_entitlements(entitlements_plan, conditions_plan)
+    entitlement_conflicts = check_entitlements(entitlements_plan, conditions_plan)
     policies_plan = cast(Plan[Policy],
                          compare_entities(current_state.policies.entities,
                                           expected_state.policies.entities))
-    policy_errors = check_policies(policies_plan, entitlements_plan)
+    policy_conflicts = check_policies(policies_plan, entitlements_plan)
 
     return AppgatePlan(policies=policies_plan,
                        entitlements=entitlements_plan,
                        conditions=conditions_plan,
-                       entitlement_errors=entitlement_errors,
-                       policy_errors=policy_errors)
+                       entitlement_conflicts=entitlement_conflicts,
+                       policy_conflicts=policy_conflicts)
 
