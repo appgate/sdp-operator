@@ -165,7 +165,7 @@ async def plan_apply(plan: Plan, namespace: str,
             log.error('[appgate-operator/%s] Trying to delete instance %s without id',
                       namespace, e)
             continue
-        log.info('[appgate-operator/%s] - %s %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.delete(e.id):
                 errors.add(e.id)
