@@ -1,0 +1,176 @@
+* appgate-operator
+
+** Description
+This project implements a kubernetes operator to configure an appgate system.
+
+The operator reacts to changes in CRDs in the k8s cluster performing the
+required operations to keep the appgate environment in the state configured in
+k8s.
+
+This is a work in progress project right now and it only supports these entities:
+
+ - Policies :: reference *entitlements*
+ - Entitlements :: reference *conditions*
+ - Conditions
+
+Appgate entities are defined in terms of CRD in the k8s cluster so they can be
+managed (created, deleted or modified) using `kubctl` command with yaml files
+representing those CRD. (see the directory `examples`).
+
+** How it works
+We define the CRD that once applied to the k8s cluster allow administrators to
+manage those entities.
+
+The appgate-controller when running will listen for events on those CRD to
+change the status of the current environment.
+
+The operator listen events inside a namespaceqq
+
+When the controller starts it requires the current status from the appgate
+controller to know the initial state and from there it beings listening for events.
+
+On each event received it restores a timer, once the timer timeouts (meaning
+that no more events come in that specified time) the controller will proceed to
+apply compute a new `Plan`.
+
+A `Plan` is the difference between the current state and the desired state and
+it defines for each entity 4 subset of operations to perform:
+
+ - create :: a new entity needs to be created
+ - delete :: an existing entity needs to be deleted
+ - modify :: an existing entity needs to be modified
+ - share :: an entity that won't change
+
+*** Errors 
+There different sources of errors.
+
+Some entities reference another ones like `entitlements` using `conditions`. If
+one entity references another entity that is not in the expeted state after the
+`Plan` is applied then it's marked as a conflict error. If a plan contains
+errors it won't be applied.
+
+Another kind of error is when applying the plan for real. If the REST call to
+the controller fails, that entity is marked as failed as well. Then later when
+creating the new state those entity that failed will be removed from the new
+state (or added if the operation was `delete`).
+
+*** modes of operation and flags
+Right now there 2 flags that we use to control some of the operator's behaviour:
+
+ - DRY_MODE
+ - CLEANUP_ON_STARTUP
+
+Note that these flags are right now hardcoded in the code. We need to get the
+values from the cli and from the k8s namespace.
+
+**** DRY_MODE
+When this flag is on the operator will compute the plan to apply but it won't do
+any call.
+
+**** CLEANUP_ON_STARTUP
+When this flag is on the operator when initializing the state for first time
+will remove any entities that don't containe the tag `builtin` (we need to make
+this configurable as well). This will have in practice the effect of resetting
+everything to factory.
+
+***** Example 1
+We have an appgate system with a condition but we dont have any condition
+defined in kubernetes.
+
+#+BEGIN_EXAMPLE 
+  2020-07-17 17:14:38,940 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
+  2020-07-17 17:14:38,942 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
+  2020-07-17 17:14:38,943 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
+  2020-07-17 17:14:38,945 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
+  2020-07-17 17:14:39,228 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
+  2020-07-17 17:14:44,235 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
+  2020-07-17 17:14:44,235 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
+  2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
+  2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
+  2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
+  2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
+  2020-07-17 17:14:49,242 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
+  2020-07-17 17:14:49,243 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
+  2020-07-17 17:14:49,243 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
+  2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
+  2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
+  2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
+#+END_EXAMPLE
+
+As we can see in this example the new condition (not builtin) is detected when
+discovering the first state. Because we did not choose to cleanup on startup,
+the condition is kept there and not managed by the operator.
+
+***** Example 2
+Same example when cleanup is on.
+
+#+BEGIN_EXAMPLE 
+  2020-07-17 17:20:12,999 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
+  2020-07-17 17:20:13,001 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
+  2020-07-17 17:20:13,002 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
+  2020-07-17 17:20:13,005 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
+  2020-07-17 17:20:13,412 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
+  2020-07-17 17:20:18,419 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
+  2020-07-17 17:20:18,419 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
+  2020-07-17 17:20:18,419 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
+  2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] - <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
+  2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
+  2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
+#+END_EXAMPLE
+
+Now we can see that the condition was marked as a deletion because it's not defined in the cluster.
+
+If we have the cleanup option on BUT the cluster knows about those entities they are not deleted:
+
+#+BEGIN_EXAMPLE
+  2020-07-17 17:22:38,393 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
+  2020-07-17 17:22:38,396 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
+  2020-07-17 17:22:38,398 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
+  2020-07-17 17:22:38,403 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
+  2020-07-17 17:22:38,707 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
+  2020-07-17 17:22:39,020 [INFO] [appgate-operator/appgate-test-1}] Event op: ADDED <class 'appgate.types.Condition'> with name my-new-condition
+  2020-07-17 17:22:44,025 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
+  2020-07-17 17:22:44,025 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
+  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
+  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
+  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
+  2020-07-17 17:22:44,027 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
+#+END_EXAMPLE
+
+** Testing
+To test it follow these steps:
+ 
+ 1. Create a k8s cluster (and get the credentials)
+
+ 2. Create the namespace
+#+BEGIN_SRC shell
+  kubectl create -f manifest/00-namespace.yaml
+#+END_SRC
+
+ 3. Create the CRDs
+#+BEGIN_SRC shell
+  kubectl create -f manifest/00-crd.yaml
+#+END_SRC
+
+ 4. Start the operator
+#+BEGIN_SRC shell
+  make virtualenv
+  ./virtualenv/bin/python3 -m appgate appgate-test-1
+#+END_SRC
+
+ 5. Create the objects
+#+BEGIN_SRC shell
+  kubectl create -f examples/condition.yaml -n appgate-test-1
+  kubectl delete -f examples/condition.yaml -n appgate-test-1
+  # ....
+#+END_SRC
+
+** Status
+There are some tasks to finish:
+
+ - [ ] Configuration from the k8s cluster :: right now all the configuration is hardcoded in the code.
+ - [ ] Configuration from cli :: this way we could even use it using the cli.
+ - [ ] Discovery mode :: generating the CRD entries from a running environment
+      so we can dump the yaml contents into files and save in github for
+      example.
+ - [ ] Performance :: Right now it's very naive in the way it solves dependencies, it needs to be improved. 
