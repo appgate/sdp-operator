@@ -100,7 +100,7 @@ class Plan(Generic[T]):
     delete: Set[T] = attrib(factory=set)
     create: Set[T] = attrib(factory=set)
     modify: Set[T] = attrib(factory=set)
-    errors: Optional[Dict[str, T]] = attrib(default=None)
+    errors: Optional[Set[T]] = attrib(default=None)
 
     @cached_property
     def expected_names(self) -> Set[str]:
@@ -128,7 +128,7 @@ class Plan(Generic[T]):
 # TODO: Deal with errors and repeted code
 async def plan_apply(plan: Plan, namespace: str,
                      entity_client: Optional[EntityClient] = None) -> Plan:
-    errors = {}
+    errors = set()
     for e in plan.create:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to create instance %s without id',
@@ -136,7 +136,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.post(cast(AppgateEntity, e)):
-                errors['modify'] = e
+                errors.add(e)
     for e in plan.modify:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to modify instance %s without id',
@@ -145,7 +145,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.put(cast(AppgateEntity, e)):
-                errors['modify'] = e
+                errors.add(e)
     for e in plan.delete:
         if not e.id:
             log.error('[appgate-operator/%s] Trying to delete instance %s without id',
@@ -154,7 +154,7 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] - %s %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
             if not await entity_client.delete(e.id):
-                errors['delete'] = e
+                errors.add(e)
 
     for e in plan.share:
         if not e.id:
