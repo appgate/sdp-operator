@@ -1,7 +1,7 @@
 import uuid
 from copy import deepcopy
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional, Union, Callable, Type, cast, Iterable
+from typing import Set, TypeVar, Generic, Dict, Optional, cast
 
 from attr import attrib, attrs, evolve
 
