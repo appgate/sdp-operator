@@ -155,7 +155,7 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
             expected_appgate_state.with_entity(event.entity, event.op)
         except asyncio.exceptions.TimeoutError:
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
-            if plan.policy_errors or plan.entitlement_errors:
+            if plan.policy_conflicts or plan.entitlement_conflicts:
                 log.error('[appgate-operator/%s] Found errors in expected state and plan can' 
                           ' not be applied', namespace)
                 appgate_plan_errors_summary(appgate_plan=plan, namespace=namespace)

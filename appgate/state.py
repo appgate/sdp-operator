@@ -170,8 +170,8 @@ class AppgatePlan:
     policies: Plan[Policy] = attrib()
     entitlements: Plan[Entitlement] = attrib()
     conditions: Plan[Condition] = attrib()
-    entitlement_errors: Optional[Dict[str, Set[str]]] = attrib(default=None)
-    policy_errors: Optional[Dict[str, Set[str]]] = attrib(default=None)
+    entitlement_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
+    policy_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
 
     @cached_property
     def expected_condition_names(self) -> Set[str]:
@@ -218,14 +218,14 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
 
 
 def appgate_plan_errors_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
-    if appgate_plan.entitlement_errors:
-        for entitlement, conditions in appgate_plan.entitlement_errors.items():
+    if appgate_plan.entitlement_conflicts:
+        for entitlement, conditions in appgate_plan.entitlement_conflicts.items():
             p1 = "they are" if len(conditions) > 1 else "it is"
             log.error('[appgate-operator/%s] Entitlement: %s references conditions: %s, but %s not defined '
                       'in the system.', namespace, entitlement, ','.join(conditions), p1)
 
-    if appgate_plan.policy_errors:
-        for policy, entitlements in appgate_plan.policy_errors.items():
+    if appgate_plan.policy_conflicts:
+        for policy, entitlements in appgate_plan.policy_conflicts.items():
             p1 = "they are" if len(entitlements) > 1 else "it is"
             log.error('[appgate-operator/%s] Policy: %s references entitlements: %s, but %s not defined '
                       'in the system.', namespace, policy, ','.join(entitlements), p1)
