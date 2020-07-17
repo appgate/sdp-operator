@@ -1,3 +1,5 @@
+import uuid
+
 from attr import attrib, attrs, evolve
 from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union
 from typedload import load
@@ -45,7 +47,7 @@ class Entity_T:
         raise NotImplementedError()
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str:
         raise NotImplementedError()
 
     @property
@@ -79,16 +81,16 @@ class Entitlement(Entity_T):
     conditions: FrozenSet[str] = attrib(factory=frozenset)
     actions: FrozenSet[Action] = attrib(factory=frozenset)
     notes: Optional[str] = attrib(default='')
-    tags: Optional[FrozenSet[str]] = attrib(factory=frozenset)
+    tags: FrozenSet[str] = attrib(factory=frozenset)
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     }, default="and")
     app_shortcut: Optional[AppShortcut] = attrib(metadata={
         'name': 'appShortcut'
     }, default=None)
-    app_shortcut_scripts: Optional[FrozenSet[str]] = attrib(factory=frozenset)
+    app_shortcut_scripts: FrozenSet[str] = attrib(factory=frozenset)
     disabled: Optional[bool] = attrib(default=False)
-    id: Optional[str] = attrib(default='')
+    id: str = attrib(default=str(uuid.uuid4()))
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -103,25 +105,25 @@ class Policy(Entity_T):
     override_site: Optional[str] = attrib(metadata={
         'name': 'overrideSite'
     }, default='')
-    tags: Optional[FrozenSet[str]] = attrib(default=None)
-    entitlements: Optional[FrozenSet[str]] = attrib(factory=frozenset)
-    entitlement_links: Optional[FrozenSet[str]] = attrib(metadata={
+    tags: FrozenSet[str] = attrib(default=None)
+    entitlements: FrozenSet[str] = attrib(factory=frozenset)
+    entitlement_links: FrozenSet[str] = attrib(metadata={
         'name': 'entitlementLinks'
     }, factory=frozenset)
-    ringfence_rules: Optional[FrozenSet[str]] = attrib(metadata={
+    ringfence_rules: FrozenSet[str] = attrib(metadata={
         'name': 'ringfenceRules'
     }, factory=frozenset)
-    ringfence_rule_links: Optional[FrozenSet[str]] = attrib(metadata={
+    ringfence_rule_links: FrozenSet[str] = attrib(metadata={
         'name': 'ringfenceRuleLinks'
     }, factory=frozenset)
-    administrative_roles: Optional[FrozenSet[str]] = attrib(metadata={
+    administrative_roles: FrozenSet[str] = attrib(metadata={
         'name': 'administrativeRoles'
     }, factory=frozenset)
     disabled: bool = attrib(default=False)
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
-    id: Optional[str] = attrib(default=None, eq=False)
+    id: str = attrib(default=str(uuid.uuid4()))
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
@@ -145,14 +147,14 @@ class Condition(Entity_T):
     name: str = attrib()
     expression: str = attrib()
     notes: Optional[str] = attrib(default='')
-    tags: Optional[FrozenSet[str]] = attrib(factory=frozenset)
-    repeat_schedules: Optional[FrozenSet[str]] = attrib(metadata={
+    tags: FrozenSet[str] = attrib(factory=frozenset)
+    repeat_schedules: FrozenSet[str] = attrib(metadata={
         'name': 'repeatSchedules'
     }, factory=frozenset)
-    remedy_methods: Optional[FrozenSet[RemedyMethod]] = attrib(metadata={
+    remedy_methods: FrozenSet[RemedyMethod] = attrib(metadata={
         'name': 'remedyMethods'
     }, factory=frozenset)
-    id: Optional[str] = attrib(default=None)
+    id: str = attrib(default=str(uuid.uuid4()))
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
