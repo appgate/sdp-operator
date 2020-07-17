@@ -51,7 +51,7 @@ class Entity_T:
         raise NotImplementedError()
 
     @property
-    def tags(self) -> Optional[FrozenSet[str]]:
+    def tags(self) -> FrozenSet[str]:
         raise NotImplementedError
 
 
