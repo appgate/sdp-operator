@@ -275,32 +275,6 @@ def appgate_plan_errors_summary(appgate_plan: AppgatePlan, namespace: str) -> No
                       'in the system.', namespace, policy, ','.join(entitlements), p1)
 
 
-def compare_entities2(current: EntitiesSet[T],
-                     expected: EntitiesSet[T]) -> Plan[T]:
-    current_entities = current.entities
-    current_names = {e.name for e in current_entities}
-    current_ids_by_name = {e.name: e.id for e in current_entities if e.id}
-    expected_entities = expected.entities
-    expected_names = {e.name for e in expected_entities}
-    shared_names = current_names.intersection(expected_names)
-    to_delete = EntitiesSet(set(filter(
-        lambda e: e.name not in expected_names and BUILTIN_TAG not in (e.tags or frozenset()),
-        current_entities)))
-    to_create = EntitiesSet(set(filter(
-        lambda e: e.name not in current_names and e.name not in shared_names,
-        expected_entities)))
-    to_modify = EntitiesSet(set(map(
-        lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
-        filter(lambda e: e.name in shared_names and e not in current_entities, expected_entities))))
-    to_share = EntitiesSet(set(map(
-        lambda e: evolve(e, id=current_ids_by_name.get(e.name)),
-        filter(lambda e: e.name in shared_names and e in current_entities, expected_entities))))
-    return Plan(delete=to_delete,
-                create=to_create,
-                modify=to_modify,
-                share=to_share)
-
-
 def compare_entities(current: EntitiesSet[T],
                      expected: EntitiesSet[T]) -> Plan[T]:
     current_entities = current.entities
