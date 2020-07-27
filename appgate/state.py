@@ -134,10 +134,10 @@ def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: Entiti
 
 @attrs
 class Plan(Generic[T]):
-    share: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
-    delete: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
-    create: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
-    modify: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
+    share: EntitiesSet[T] = attrib(factory=EntitiesSet)
+    delete: EntitiesSet[T] = attrib(factory=EntitiesSet)
+    create: EntitiesSet[T] = attrib(factory=EntitiesSet)
+    modify: EntitiesSet[T] = attrib(factory=EntitiesSet)
     errors: Optional[Set[str]] = attrib(default=None)
 
     @cached_property
