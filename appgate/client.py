@@ -27,8 +27,10 @@ class EntityClient:
         return [self.loader(e) for e in data['data']]
 
     async def post(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
+        body = typedload.dump(entity)
+        body['id'] = entity.id
         data = await self._client.post(self.path,
-                                       body=typedload.dump(entity))
+                                       body=body)
         if not data:
             return None
         return self.loader(data)  # type: ignore
