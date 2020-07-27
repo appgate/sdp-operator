@@ -66,8 +66,7 @@ class AppgateClient:
         return None
 
     async def request(self, verb: str, path:str,
-                      data: Optional[Dict[str, Any]] = None,
-                      empty_response: bool = False) -> Optional[Dict[str, Any]]:
+                      data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         verbs = {
             'POST': self._session.post,
             'DELETE': self._session.delete,
@@ -92,8 +91,7 @@ class AppgateClient:
                               ssl=False) as resp:
                 status_code = resp.status // 100
                 if status_code == 2:
-                    # For some reason controller on DELETES returns nothing :O
-                    if empty_response:
+                    if resp.status == 204:
                         return {}
                     else:
                         return await resp.json()
@@ -119,7 +117,7 @@ class AppgateClient:
         return await self.request('PUT', path=path, data=body)
 
     async def delete(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        return await self.request('DELETE', path=path, data=body, empty_response=True)
+        return await self.request('DELETE', path=path, data=body)
 
     async def login(self) -> None:
         body = {
