@@ -7,7 +7,7 @@ from typedload import load
 __all__ = [
     'K8SEvent',
     'EventObject',
-    'AppShortcut',
+    'AppShortcuts',
     'Action',
     'Entitlement',
     'entitlement_load',
@@ -66,11 +66,11 @@ class Action:
 
 
 @attrs(slots=True, frozen=True)
-class AppShortcut:
+class AppShortcuts:
     name: str = attrib()
     url: str = attrib()
-    color_mode: str = attrib(metadata={
-        'name': 'colorMode'
+    color_code: int = attrib(metadata={
+        'name': 'colorCode'
     })
 
 
@@ -85,10 +85,12 @@ class Entitlement(Entity_T):
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     }, default="and")
-    app_shortcut: Optional[AppShortcut] = attrib(metadata={
-        'name': 'appShortcut'
-    }, default=None)
-    app_shortcut_scripts: FrozenSet[str] = attrib(factory=frozenset)
+    app_shortcuts: FrozenSet[AppShortcuts] = attrib(metadata={
+        'name': 'appShortcuts'
+    }, factory=frozenset)
+    app_shortcut_scripts: FrozenSet[str] = attrib(metadata={
+        'name': 'appShortcutScripts'
+    }, factory=frozenset)
     disabled: Optional[bool] = attrib(default=False)
     id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
