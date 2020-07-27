@@ -81,8 +81,7 @@ class EntitiesSet(Generic[T]):
 def entities_op(entity_set: EntitiesSet, entity: AppgateEntity, op: str,
                 current_entities: EntitiesSet[AppgateEntity]) -> None:
     # Current state should always containe the real id!!
-    cached_entity = current_entities.entities_by_name.get(entity.name)
-    assert cached_entity
+    cached_entity = current_entities.entities_by_name[entity.name]
     entity = evolve(entity, id=cached_entity.id)
     if op == 'ADDED':
         entity_set.add(entity)
