@@ -1,7 +1,7 @@
 import uuid
 
-from attr import attrib, attrs, evolve
-from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union, Tuple
+from attr import attrib, attrs
+from typing import Dict, Any, Optional, FrozenSet, Union, Tuple
 from typedload import load
 
 __all__ = [
