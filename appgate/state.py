@@ -145,7 +145,7 @@ class Plan(Generic[T]):
         """
         Set with all the names in the system in this plan
         """
-        return merge_entities(self.share, self.create, self.modify, errors=set())
+        return merge_entities(self.share, self.create, self.modify)
 
     @cached_property
     def entities(self) -> EntitiesSet[T]:
