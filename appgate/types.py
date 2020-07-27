@@ -1,7 +1,7 @@
 import uuid
 
 from attr import attrib, attrs, evolve
-from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union
+from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union, Tuple
 from typedload import load
 
 __all__ = [
@@ -88,9 +88,9 @@ class Entitlement(Entity_T):
     app_shortcuts: FrozenSet[AppShortcuts] = attrib(metadata={
         'name': 'appShortcuts'
     }, factory=frozenset)
-    app_shortcut_scripts: FrozenSet[str] = attrib(metadata={
+    app_shortcut_scripts: Tuple[str, ...] = attrib(metadata={
         'name': 'appShortcutScripts'
-    }, factory=frozenset)
+    }, factory=tuple)
     disabled: Optional[bool] = attrib(default=False)
     id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
