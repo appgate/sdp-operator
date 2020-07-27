@@ -29,21 +29,21 @@ T = TypeVar('T', bound=Entity_T)
 
 
 class EntitiesSet(Generic[T]):
-    def __init__(self, entities: Set[T],
+    def __init__(self, entities: Optional[Set[T]] = None,
                  entities_by_name: Optional[Dict[str, T]] = None,
                  entities_by_id: Optional[Dict[str, T]] = None) -> None:
-        self.entities = entities
+        self.entities: Set[T] = entities or set()
         if entities_by_name:
             self.entities_by_name = entities_by_name
         else:
             self.entities_by_name = {}
-            for e in entities:
+            for e in self.entities:
                 self.entities_by_name[e.name] = e
         if entities_by_id:
             self.entities_by_id = entities_by_id
         else:
             self.entities_by_id = {}
-            for e in entities:
+            for e in self.entities:
                 self.entities_by_id[e.id] = e
 
     def __str__(self) -> str:
@@ -81,7 +81,9 @@ class EntitiesSet(Generic[T]):
 def entities_op(entity_set: EntitiesSet, entity: AppgateEntity, op: str,
                 current_entities: EntitiesSet[AppgateEntity]) -> None:
     # Current state should always containe the real id!!
-    entity = evolve(entity, id=current_entities.entities_by_name.get(entity.name).id)
+    cached_entity = current_entities.entities_by_name.get(entity.name)
+    assert cached_entity
+    entity = evolve(entity, id=cached_entity.id)
     if op == 'ADDED':
         entity_set.add(entity)
     elif op == 'DELETED':
@@ -122,33 +124,33 @@ class AppgateState:
 
 
 def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: EntitiesSet[T],
-                   errors: Optional[EntitiesSet[T]] = None) -> EntitiesSet[T]:
+                   errors: Optional[Set[T]] = None) -> EntitiesSet[T]:
     entities = set()
     errors = errors or set()
     entities.update(share.entities)
-    entities.update({e for e in modify.entities if e.id not in errors.entities_by_id})
-    entities.update({e for e in create.entities if e.id not in errors.entities_by_id})
+    entities.update({e for e in modify.entities if e.id not in errors})
+    entities.update({e for e in create.entities if e.id not in errors})
     return EntitiesSet(entities)
 
 
 @attrs
 class Plan(Generic[T]):
-    share: EntitiesSet[T] = attrib(factory=set)
-    delete: EntitiesSet[T] = attrib(factory=set)
-    create: EntitiesSet[T] = attrib(factory=set)
-    modify: EntitiesSet[T] = attrib(factory=set)
-    errors: Optional[EntitiesSet[str]] = attrib(default=None)
+    share: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
+    delete: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
+    create: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
+    modify: EntitiesSet[T] = attrib(factory=lambda: EntitiesSet())
+    errors: Optional[Set[str]] = attrib(default=None)
 
     @cached_property
     def expected_entities(self) -> EntitiesSet[T]:
         """
         Set with all the names in the system in this plan
         """
-        return merge_entities(self.share, self.create, self.modify, errors=EntitiesSet(set()))
+        return merge_entities(self.share, self.create, self.modify, errors=set())
 
     @cached_property
     def entities(self) -> EntitiesSet[T]:
-        entities = merge_entities(self.share, self.create, self.modify,
+        entities = merge_entities(share=self.share, create=self.create, modify=self.modify,  # type: ignore
                                   errors=self.errors)
         entities.entities.update({e for e in self.delete.entities if e.id in (self.errors or set())})
         return entities
@@ -333,9 +335,9 @@ def resolve_entitlement(entitlement: Entitlement,
         if condition in ids:
             # condition is an id
             new_conditions.add(condition)
-        elif condition in names:
+        elif condition in names and names[condition].id:
             # condition is a name
-            new_conditions.add(names.get(condition).id)
+            new_conditions.add(names[condition].id)
         else:
             if entitlement.name not in missing_conditions:
                 missing_conditions[entitlement.name] = set()
@@ -373,11 +375,11 @@ def resolve_policy(policy: Policy,
     new_entitlements = set()
     for entitlement in policy.entitlements:
         if entitlement in ids:
-            # condition is an id
+            # entitlement is an id
             new_entitlements.add(entitlement)
-        elif entitlement in names:
-            # condition is a name
-            new_entitlements.add(names.get(entitlement).id)
+        elif entitlement in names and names[entitlement].id:
+            # entitlement is a name
+            new_entitlements.add(names[entitlement].id)
         else:
             if policy.name not in missing_entitlements:
                 missing_entitlements[policy.name] = set()
@@ -399,7 +401,7 @@ def resolve_policies(policies: EntitiesSet[Policy],
     for policy in policies_set:
         new_policy = resolve_policy(policy, names, ids, missing_entitlements)
         if new_policy:
-            to_remove.add(policies)
+            to_remove.add(policy)
             to_add.add(new_policy)
     policies_set.difference_update(to_remove)
     policies_set.update(to_add)

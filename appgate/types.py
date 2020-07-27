@@ -125,7 +125,7 @@ class Policy(Entity_T):
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
-    id: str = attrib(default=str(uuid.uuid4()), eq=False)
+    id: str = attrib(factory=lambda: str(uuid.uuid4()), eq=False)
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
