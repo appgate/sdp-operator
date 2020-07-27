@@ -1,6 +1,6 @@
 from copy import deepcopy
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional, cast, Tuple
+from typing import Set, TypeVar, Generic, Dict, Optional, cast, Tuple, Literal
 
 from attr import attrib, attrs, evolve
 
@@ -78,7 +78,8 @@ class EntitiesSet(Generic[T]):
         self.entities.add(evolve(entity, id=self.entities_by_name[entity.name].id))
 
 
-def entities_op(entity_set: EntitiesSet, entity: AppgateEntity, op: str,
+def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
+                op: Literal['ADDED', 'DELETED', 'MODIFIED'],
                 current_entities: EntitiesSet[AppgateEntity]) -> None:
     # Current state should always containe the real id!!
     cached_entity = current_entities.entities_by_name[entity.name]
