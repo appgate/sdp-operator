@@ -1,0 +1,27 @@
+spec:
+  containers:
+  - name: appgate-controller
+    image: appgate.docker-registry.com/appgate-controller:latest
+    imagePullSecrets:
+      - name: regcred
+    env:
+      - name: APPGATE_CONTROLLER_USER
+        valueFrom:
+          secretKeyRef:
+            name: appgate-controller-creds
+            key: appgate-controller-user
+      - name: APPGATE_CONTROLLER_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: appgate-controller-creds
+            key: appgate-controller-user
+      - name: APPGATE_CONTROLLER_HOST
+        valueFrom:
+          configMapKeyRef:
+            name: appgate-controller-config
+            key: appgate-controller-host
+      - name: APPGATE_CONTROLLER_TIMEOUT
+        valueFrom:
+          configMapKeyRef:
+            name: appgate-controller-config
+            key: appgate-controller-timeout
