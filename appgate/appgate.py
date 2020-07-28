@@ -7,6 +7,7 @@ from asyncio import Queue
 from copy import deepcopy
 from typing import Optional, Dict, Any, List, cast
 
+from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
 from typing_extensions import AsyncIterable
@@ -46,12 +47,31 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-def init_kubernetes() -> Optional[str]:
+@attrs()
+class Context:
+    namespace: str = attrib()
+    user: str = attrib()
+    password: str = attrib()
+    controller: str = attrib()
+    timeout: int = attrib()
+
+
+def init_kubernetes(argv: List[str]) -> Context:
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
     else:
         load_kube_config()
-    return list_kube_config_contexts()[1]['context'].get('namespace')
+    namespace = list_kube_config_contexts()[1]['context'].get('namespace')
+    user = os.getenv("APPGATE_CONTROLLER_USER")
+    password = os.getenv("APPGATE_CONTROLLER_PASSWORD")
+    controller = os.getenv("APPGATE_CONTROLLER")
+    timeout = os.getenv("APPGATE_CONTROLLER_TIMEOUT")
+    if not namespace and len(argv) == 1:
+        raise Exception('Unable to discover namespace, please provide it.')
+    if not user or not password or not controller:
+        raise Exception('Unable to create appgate-controller context')
+    return Context(namespace=namespace or argv[0], user=user, password=password,
+                   controller=controller, timeout=timeout or 30)
 
 
 async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
@@ -94,7 +114,8 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[st
             sys.exit(1)
 
 
-async def policies_loop(namespace: str, queue: Queue):
+async def policies_loop(ctx: Context, queue: Queue):
+    namespace = ctx.namespace
     async for event in event_loop(namespace, 'policies'):
         try:
             if not event:
@@ -108,7 +129,8 @@ async def policies_loop(namespace: str, queue: Queue):
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
-async def entitlements_loop(namespace: str, queue: Queue) -> None:
+async def entitlements_loop(ctx: Context, queue: Queue) -> None:
+    namespace = ctx.namespace
     async for event in event_loop(namespace, 'entitlements'):
         try:
             if not event:
@@ -122,7 +144,8 @@ async def entitlements_loop(namespace: str, queue: Queue) -> None:
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
-async def conditions_loop(namespace: str, queue: Queue) -> None:
+async def conditions_loop(ctx: Context, queue: Queue) -> None:
+    namespace = ctx.namespace
     async for event in event_loop(namespace, 'conditions'):
         try:
             if not event:
@@ -136,13 +159,13 @@ async def conditions_loop(namespace: str, queue: Queue) -> None:
             log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
 
 
-async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
-                    password: str) -> None:
+async def main_loop(queue: Queue, ctx: Context) -> None:
+    namespace = ctx.namespace
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     while True:
-        current_appgate_state = await init_environment(controller=controller,
-                                                       user=user, password=password)
+        current_appgate_state = await init_environment(controller=ctx.controller,
+                                                       user=ctx.user, password=ctx.password)
         if current_appgate_state:
             if CLEANUP_ON_STARTUP:
                 expected_appgate_state = AppgateState(
@@ -160,7 +183,7 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
              namespace)
     while True:
         try:
-            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=5.0)
+            event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
             assert expected_appgate_state

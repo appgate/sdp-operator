@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appgate-controller-conf
+  namespace: appgate-test-1
+data:
+  appgate-controller: "https://envy-172-17-122-1.devops:444"
+  appgate-controller-timeout: "5"

@@ -6,6 +6,7 @@ spec:
   name: my-new-condition
   tags: 
     - k8s
+    - automated
     - api-created
   expression: "
 var result = false;

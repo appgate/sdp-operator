@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: appgate-registry
+  namespace: namespace
+data:
+  .dockerconfigjson: base64loginfile
+type: kubernetes.io/dockerconfigjson
