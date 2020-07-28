@@ -7,6 +7,7 @@ from asyncio import Queue
 from copy import deepcopy
 from typing import Optional, Dict, Any, List, cast
 
+from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
 from typing_extensions import AsyncIterable
@@ -46,12 +47,26 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-def init_kubernetes() -> Optional[str]:
+@attrs()
+class Context:
+    namespace: Optional[str] = attrib()
+    user: str = attrib()
+    password: str = attrib()
+    controller: str = attrib()
+
+
+def init_kubernetes() -> Context:
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
     else:
         load_kube_config()
-    return list_kube_config_contexts()[1]['context'].get('namespace')
+    namespace = list_kube_config_contexts()[1]['context'].get('namespace')
+    user = os.getenv("APPGATE_CONTROLLER_USER")
+    password = os.getenv("APPGATE_CONTROLLER_PASSWORD")
+    controller = os.getenv("APPGATE_CONTROLLER")
+    if not user or not password or not controller:
+        raise Exception('Unable to create appgate-controller context')
+    return Context(namespace, user, password, controller)
 
 
 async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
