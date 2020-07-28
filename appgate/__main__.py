@@ -10,21 +10,13 @@ from appgate.types import AppgateEvent
 
 def main() -> None:
     set_level(log_level='info')
-    ctx = init_kubernetes()
-    if not ctx.namespace and len(sys.argv) == 1:
-        log.error('Unable to discover namespace, please provide it.')
-        sys.exit(1)
-    ns = ctx.namespace or sys.argv[1]
+    ctx = init_kubernetes(sys.argv)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
-    ioloop.create_task(policies_loop(ns, queue=events_queue))
-    ioloop.create_task(entitlements_loop(ns, queue=events_queue))
-    ioloop.create_task(conditions_loop(ns, queue=events_queue))
-    ioloop.create_task(main_loop(queue=events_queue,
-                                 controller=ctx.controller,
-                                 user=ctx.user,
-                                 password=ctx.password,
-                                 namespace=ns))
+    ioloop.create_task(policies_loop(ctx=ctx, queue=events_queue))
+    ioloop.create_task(entitlements_loop(ctx=ctx, queue=events_queue))
+    ioloop.create_task(conditions_loop(ctx=ctx, queue=events_queue))
+    ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
     ioloop.run_forever()
 
 
