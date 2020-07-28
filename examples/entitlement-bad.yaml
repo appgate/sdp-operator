@@ -4,20 +4,19 @@ metadata:
   name: my-new-entitlement
 spec:
   name: my-new-entitlement
-  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad40v$y
   tags: 
     - k8s
     - automated
     - api-created
   conditions: 
-    - my-new-condition
+    - condition-1
   disabled: true
   conditionLogic: and
   actions:
     - subtype: icmp_up
-      action: block
-      types:
-        - 0-16
+      action: allow
+      types: 0-16
       hosts:
         - 10.0.0.1
         - 10.0.0.0/24
@@ -25,12 +24,11 @@ spec:
         - dns://hostname.company.com
         - aws://security-group:accounting
     - subtype: icmp_up
-      action: allow
-      types:
-        - 0-16
+      action: deny
+      types: 0-16
       hosts:
         - 10.0.0.5
-  appShortcuts:
-    - name: ping
-      url: https://www.google.com
-      colorCode : 5
+  appShortcut:
+    name: ping
+    url: https://www.google.com
+    colorMode: 5
