@@ -1,9 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: appgate-controller
+  namespace: appgate-test-1
 spec:
   containers:
   - name: appgate-controller
     image: appgate.docker-registry.com/appgate-controller:latest
-    imagePullSecrets:
-      - name: regcred
     env:
       - name: APPGATE_CONTROLLER_USER
         valueFrom:
@@ -25,3 +28,5 @@ spec:
           configMapKeyRef:
             name: appgate-controller-config
             key: appgate-controller-timeout
+  imagePullSecrets:
+    - name: regcred
