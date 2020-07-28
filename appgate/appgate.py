@@ -15,9 +15,9 @@ from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
 from appgate.state import AppgateState, create_appgate_plan, appgate_plan_errors_summary, \
-    appgate_plan_apply, EntitiesSet
-from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, Policy, Entitlement, \
-    Condition
+    appgate_plan_apply, EntitiesSet, resolve_entitlements, resolve_policies
+from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, \
+    Policy, Entitlement, Condition
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
@@ -160,14 +160,26 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
             assert expected_appgate_state
-            expected_appgate_state.with_entity(event.entity, event.op)
+            expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
-            plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
+            # Resolve entities now
+            # First entitlements since we have conditions
+            # Second policies since we have entitlements
+            resolved_entitlements, entitlement_conflicts = resolve_entitlements(
+                expected_appgate_state.entitlements, expected_appgate_state.conditions)
+            resolved_policies, policies_conflicts = resolve_policies(
+                expected_appgate_state.policies, expected_appgate_state.entitlements)
+            # Create a plan
+            plan = create_appgate_plan(current_appgate_state,
+                                       expected_appgate_state.copy(
+                                           entitlements=resolved_entitlements,
+                                           policies=resolved_policies),
+                                       entitlement_conflicts, policies_conflicts)
             if plan.policy_conflicts or plan.entitlement_conflicts:
                 log.error('[appgate-operator/%s] Found errors in expected state and plan can' 
                           ' not be applied', namespace)
                 appgate_plan_errors_summary(appgate_plan=plan, namespace=namespace)
-            else:
+            elif plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
                 appgate_client = None
@@ -183,3 +195,5 @@ async def main_loop(queue: Queue, controller: str, user: str, namespace: str,
                 if appgate_client:
                     current_appgate_state = new_plan.appgate_state
                     await appgate_client.close()
+            else:
+                log.info('[appgate-operator/%s] Nothing changed! Keeping watching!', namespace)

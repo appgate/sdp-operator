@@ -1,13 +1,13 @@
 import uuid
 
-from attr import attrib, attrs, evolve
-from typing import List, Dict, Any, Optional, FrozenSet, TypeVar, Generic, Union
+from attr import attrib, attrs
+from typing import Dict, Any, Optional, FrozenSet, Union, Tuple
 from typedload import load
 
 __all__ = [
     'K8SEvent',
     'EventObject',
-    'AppShortcut',
+    'AppShortcuts',
     'Action',
     'Entitlement',
     'entitlement_load',
@@ -66,11 +66,11 @@ class Action:
 
 
 @attrs(slots=True, frozen=True)
-class AppShortcut:
+class AppShortcuts:
     name: str = attrib()
     url: str = attrib()
-    color_mode: str = attrib(metadata={
-        'name': 'colorMode'
+    color_code: int = attrib(metadata={
+        'name': 'colorCode'
     })
 
 
@@ -85,10 +85,12 @@ class Entitlement(Entity_T):
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     }, default="and")
-    app_shortcut: Optional[AppShortcut] = attrib(metadata={
-        'name': 'appShortcut'
-    }, default=None)
-    app_shortcut_scripts: FrozenSet[str] = attrib(factory=frozenset)
+    app_shortcuts: FrozenSet[AppShortcuts] = attrib(metadata={
+        'name': 'appShortcuts'
+    }, factory=frozenset)
+    app_shortcut_scripts: Tuple[str, ...] = attrib(metadata={
+        'name': 'appShortcutScripts'
+    }, factory=tuple)
     disabled: Optional[bool] = attrib(default=False)
     id: str = attrib(default=str(uuid.uuid4()), eq=False)
 
@@ -123,7 +125,7 @@ class Policy(Entity_T):
     tamper_proofing: bool = attrib(metadata={
         'name': 'tamperProofing'
     }, default=True)
-    id: str = attrib(default=str(uuid.uuid4()), eq=False)
+    id: str = attrib(factory=lambda: str(uuid.uuid4()), eq=False)
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
