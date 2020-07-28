@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import os
 import sys
 from asyncio import Queue
 from copy import deepcopy
@@ -9,7 +10,7 @@ from typing import Optional, Dict, Any, List, cast
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
 from typing_extensions import AsyncIterable
-from kubernetes.config import load_kube_config, list_kube_config_contexts
+from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
@@ -46,7 +47,10 @@ def get_crds() -> CustomObjectsApi:
 
 
 def init_kubernetes() -> Optional[str]:
-    load_kube_config()
+    if 'KUBERNETES_PORT' in os.environ:
+        load_incluster_config()
+    else:
+        load_kube_config()
     return list_kube_config_contexts()[1]['context'].get('namespace')
 
 
