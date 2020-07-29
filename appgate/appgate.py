@@ -23,8 +23,6 @@ from appgate.types import entitlement_load, K8SEvent, policy_load, condition_loa
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
-DRY_MODE = True
-CLEANUP_ON_STARTUP = True
 
 __all__ = [
     'policies_loop',
@@ -54,6 +52,8 @@ class Context:
     password: str = attrib()
     controller: str = attrib()
     timeout: int = attrib()
+    dry_run_mode: bool = attrib()
+    cleanup_mode = attrib()
 
 
 def init_kubernetes(argv: List[str]) -> Context:
@@ -71,12 +71,16 @@ def init_kubernetes(argv: List[str]) -> Context:
     password = os.getenv("APPGATE_CONTROLLER_PASSWORD")
     controller = os.getenv("APPGATE_CONTROLLER")
     timeout = os.getenv("APPGATE_CONTROLLER_TIMEOUT")
+    dry_run_mode = os.getenv("APPGATE_CONTROLLER_DRY_RUN")
+    cleanup_mode = os.getenv("APPGATE_CONTROLLER_CLEANUP")
     if not namespace and len(argv) == 1:
         raise Exception('Unable to discover namespace, please provide it.')
     if not user or not password or not controller:
         raise Exception('Unable to create appgate-controller context')
     return Context(namespace=namespace or argv[0], user=user, password=password,
-                   controller=controller, timeout=timeout or 30)
+                   controller=controller, timeout=int(timeout) if timeout else 30,
+                   dry_run_mode=dry_run_mode is not None or True,
+                   cleanup_mode=cleanup_mode is not None or True)
 
 
 async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
@@ -172,7 +176,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
         current_appgate_state = await init_environment(controller=ctx.controller,
                                                        user=ctx.user, password=ctx.password)
         if current_appgate_state:
-            if CLEANUP_ON_STARTUP:
+            if ctx.cleanup_mode:
                 expected_appgate_state = AppgateState(
                     policies=current_appgate_state.policies.builtin_entities(),
                     entitlements=current_appgate_state.entitlements.builtin_entities(),
@@ -215,8 +219,9 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
                 appgate_client = None
-                if not DRY_MODE:
-                    appgate_client = AppgateClient(controller=controller, user=user, password=password)
+                if not ctx.dry_run_mode:
+                    appgate_client = AppgateClient(controller=ctx.controller,
+                                                   user=ctx.user, password=ctx.password)
                     await appgate_client.login()
                 else:
                     log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
