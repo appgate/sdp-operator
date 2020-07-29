@@ -57,11 +57,16 @@ class Context:
 
 
 def init_kubernetes(argv: List[str]) -> Context:
+    namespace = None
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
+        # TODO: Discover it somehow
+        # https://github.com/kubernetes-client/python/issues/363
+        namespace = os.getenv("APPGATE_CONTROLLER_NAMESPACE")
     else:
         load_kube_config()
-    namespace = list_kube_config_contexts()[1]['context'].get('namespace')
+        namespace = list_kube_config_contexts()[1]['context'].get('namespace')
+
     user = os.getenv("APPGATE_CONTROLLER_USER")
     password = os.getenv("APPGATE_CONTROLLER_PASSWORD")
     controller = os.getenv("APPGATE_CONTROLLER")
