@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appgate-operator-deployment
+  namespace: appgate-test-1
+spec:
+  selector:
+    matchLabels:
+      app: appgate-operator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: appgate-operator
+    spec:
+      containers:
+        - name: appgate-operator
+          image: atuindev/appgate-operator:latest
+          env:
+            - name: APPGATE_OPERATOR_NAMESPACE
+              value: appgate-test-1
+            - name: APPGATE_OPERATOR_USER
+              valueFrom:
+                secretKeyRef:
+                  name: appgate-operator-creds
+                  key: appgate-operator-user
+            - name: APPGATE_OPERATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: appgate-operator-creds
+                  key: appgate-operator-password
+            - name: APPGATE_OPERATOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: appgate-operator-conf
+                  key: appgate-operator-host
+            - name: APPGATE_OPERATOR_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: appgate-operator-conf
+                  key: appgate-operator-timeout
+            - name: APPGATE_OPERATOR_DRY_RUN
+              valueFrom:
+                configMapKeyRef:
+                  name: appgate-operator-conf
+                  key: appgate-operator-dry-run
+            - name: APPGATE_OPERATOR_CLEANUP
+              valueFrom:
+                configMapKeyRef:
+                  name: appgate-operator-conf
+                  key: appgate-operator-cleanup
+      imagePullSecrets:
+        - name: appgate-registry
