@@ -1,9 +1,9 @@
 apiVersion: "beta.appgate.com/v1"
 kind: Entitlement
 metadata:
-  name: my-new-entitlement
+  name: my-new-entitlement-good
 spec:
-  name: my-new-entitlement
+  name: my-new-entitlement-good
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags: 
     - k8s
