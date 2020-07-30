@@ -1,32 +1,34 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: appgate-controller
+  name: appgate-operator
   namespace: appgate-test-1
 spec:
   containers:
-  - name: appgate-controller
-    image: appgate.docker-registry.com/appgate-controller:latest
+  - name: appgate-operator
+    image: atuindev/appgate-operator:latest
     env:
-      - name: APPGATE_CONTROLLER_USER
+      - name: APPGATE_OPERATOR_NAMESPACE
+        value: appgate-test-1
+      - name: APPGATE_OPERATOR_USER
         valueFrom:
           secretKeyRef:
-            name: appgate-controller-creds
-            key: appgate-controller-user
-      - name: APPGATE_CONTROLLER_PASSWORD
+            name: appgate-operator-creds
+            key: appgate-operator-user
+      - name: APPGATE_OPERATOR_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: appgate-controller-creds
-            key: appgate-controller-user
-      - name: APPGATE_CONTROLLER_HOST
+            name: appgate-operator-creds
+            key: appgate-operator-password
+      - name: APPGATE_OPERATOR_HOST
         valueFrom:
           configMapKeyRef:
-            name: appgate-controller-config
-            key: appgate-controller-host
-      - name: APPGATE_CONTROLLER_TIMEOUT
+            name: appgate-operator-conf
+            key: appgate-operator-host
+      - name: APPGATE_OPERATOR_TIMEOUT
         valueFrom:
           configMapKeyRef:
-            name: appgate-controller-config
-            key: appgate-controller-timeout
+            name: appgate-operator-conf
+            key: appgate-operator-timeout
   imagePullSecrets:
-    - name: regcred
+    - name: appgate-registry
