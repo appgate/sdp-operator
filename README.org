@@ -21,16 +21,16 @@ representing those CRD. (see the directory `examples`).
 We define the CRD that once applied to the k8s cluster allow administrators to
 manage those entities.
 
-The appgate-controller when running will listen for events on those CRD to
+The appgate-operator when running will listen for events on those CRD to
 change the status of the current environment.
 
 The operator listen events inside a namespaceqq
 
-When the controller starts it requires the current status from the appgate
-controller to know the initial state and from there it beings listening for events.
+When the operator starts it requires the current status from the appgate
+operator to know the initial state and from there it beings listening for events.
 
 On each event received it restores a timer, once the timer timeouts (meaning
-that no more events come in that specified time) the controller will proceed to
+that no more events come in that specified time) the operator will proceed to
 apply compute a new `Plan`.
 
 A `Plan` is the difference between the current state and the desired state and
@@ -50,7 +50,7 @@ one entity references another entity that is not in the expeted state after the
 errors it won't be applied.
 
 Another kind of error is when applying the plan for real. If the REST call to
-the controller fails, that entity is marked as failed as well. Then later when
+the operator fails, that entity is marked as failed as well. Then later when
 creating the new state those entity that failed will be removed from the new
 state (or added if the operation was `delete`).
 
@@ -137,7 +137,53 @@ If we have the cleanup option on BUT the cluster knows about those entities they
   2020-07-17 17:22:44,027 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
 #+END_EXAMPLE
 
-** Testing
+** Building
+To create the image and deploy it into a docker registry (hub docker) run:
+#+BEGIN_SRC shell
+  make docker-image && \
+      docker tag appgate-controller user/appgate-controller:latest && \
+      gdocker push user/appgate-controller:latest
+#+END_SRC
+
+*** Create the image
+** Configuration
+The appgate-operator gets its configuration from environment variables (normally
+specified in the pod yaml file).
+
+Before deploying it we MUST define these env variables:
+
+ - APPGATE_OPERATOR_NAMESPACE :: the namespace the appgate-operator will watch
+      events for.
+ - APPGATE_OPERATOR_CONTROLLER :: the controller host the appgate-operator will
+      be operating on.
+ - APPGATE_OPERATOR_USER :: the user used to authenticate the REST calls to the
+      controller.
+ - APPGATE_OPERATOR_PASSWORD :: the pass used to authenticate the REST calls to
+      the controller.
+ - APPGATE_OPERATOR_TIMEOUT :: Time without activity after which the appgate
+      operator will try to apply changes received into a plan. Every time a new
+      event is received this timer is reset to 0 again.
+ - APPGATE_OPERATOR_DRY_RUN :: When set to 1 the operator will run in dry run
+      mode. In this mode the operator will log all the actions but it won't
+      perform any real action (delete, create or modify) in the
+      conrtoller. Default value is 1.
+ - APPGATE_OPERATOR_CLEANUP :: When set to 1 the operator will try to set the
+      controller into the same state as the configuration. When set to 0 it
+      won't try to delete the entities that are already defined in a controller.
+      
+*** Configuration when runinng the operator locally
+In the case we run it locally for testing we only need to export those
+environment variables before launching the process.
+
+*** Configuration when running the operator incluster mode (inside k8s)
+In this case the pod specification will get `APPGATE_OPERATOR_USER` and
+`APPGATE_OPERATOR_PASSWORD` from a k8s Secret entry (see file
+~manifests/01-secrets.yaml~).
+
+The rest of environment variables are taken from a ConfigMap k8s entry (see
+~manifests/01-config.yaml~).
+
+** Testing locally against a k8s cluster
 To test it follow these steps:
  
  1. Create a k8s cluster (and get the credentials)
@@ -165,10 +211,64 @@ To test it follow these steps:
   # ....
 #+END_SRC
 
+** Deploying the operator on a cluster
+To deploy on a real k8s cluster follow these steps:
+
+ 1. Create a k8s cluster or use an existing one (and get credentials)
+
+ 2. Create the namespace
+#+BEGIN_SRC shell
+  kubectl create -f manifest/00-namespace.yaml
+#+END_SRC
+
+ 3. Create the CRDs
+#+BEGIN_SRC shell
+  kubectl create -f manifest/00-crd.yaml
+#+END_SRC
+
+ 4. Create the needed config
+ See [[configuration]] section for details about how to configure it.
+
+#+BEGIN_SRC shell
+  kubectl create -f manifest/01-config.yaml
+  kubectl create -f manifest/01-secrets.yaml
+#+END_SRC
+
+ 5. Configure the registry if needed
+ This step is only needed if you are deploying the appgate-operator image from a
+ private docker registry (or from a private repository).
+
+#+BEGIN_SRC shell
+  kubectl create -f manifest/01-registry.yaml
+#+END_SRC
+
+ 6. Add permissions to get/watch/list the CRD entities in appgate-operator
+#+BEGIN_SRC shell
+  kubectl create -f manifest/01-role.yaml
+#+END_SRC
+
+ 7. Deploy the appgate-operator
+#+BEGIN_SRC shell
+  kubectl create -f manifest/02-appgate-operator.yaml
+#+END_SRC
+
+*** Debugging
+We can get the status of the operator like this (appgate-test-1 is the namespace
+we are using):
+#+BEGIN_SRC shell
+  kubectl -n appgate-test-1 describe appgate-operator
+#+END_SRC
+
+We can get the logs of the operator like this (appgate-test-1 is the namespace
+we are using):
+#+BEGIN_SRC shell
+  kubectl -n appgate-test-1 logs appgate-operator
+#+END_SRC
+
 ** Status
 There are some tasks to finish:
 
- - [ ] Configuration from the k8s cluster :: right now all the configuration is hardcoded in the code.
+ - [X] Configuration from the k8s cluster :: right now all the configuration is hardcoded in the code.
  - [ ] Configuration from cli :: this way we could even use it using the cli.
  - [ ] Discovery mode :: generating the CRD entries from a running environment
       so we can dump the yaml contents into files and save in github for
