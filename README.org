@@ -141,8 +141,8 @@ If we have the cleanup option on BUT the cluster knows about those entities they
 To create the image and deploy it into a docker registry (hub docker) run:
 #+BEGIN_SRC shell
   make docker-image && \
-      docker tag appgate-controller user/appgate-controller:latest && \
-      gdocker push user/appgate-controller:latest
+      docker tag appgate-operator user/appgate-operator:latest && \
+      gdocker push user/appgate-operator:latest
 #+END_SRC
 
 *** Create the image
@@ -150,7 +150,7 @@ To create the image and deploy it into a docker registry (hub docker) run:
 The appgate-operator gets its configuration from environment variables (normally
 specified in the pod yaml file).
 
-Before deploying it we MUST define these env variables:
+Before deploying it MUST define these env variables:
 
  - APPGATE_OPERATOR_NAMESPACE :: the namespace the appgate-operator will watch
       events for.
