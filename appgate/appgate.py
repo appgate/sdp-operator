@@ -23,6 +23,13 @@ from appgate.types import entitlement_load, K8SEvent, policy_load, condition_loa
 
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
+USER_ENV = 'APPGATE_OPERATOR_USER'
+PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
+TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
+HOST_ENV = 'APPGATE_OPERATOR_HOST'
+DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
+CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
+NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 
 __all__ = [
     'policies_loop',
@@ -62,25 +69,31 @@ def init_kubernetes(argv: List[str]) -> Context:
         load_incluster_config()
         # TODO: Discover it somehow
         # https://github.com/kubernetes-client/python/issues/363
-        namespace = os.getenv("APPGATE_CONTROLLER_NAMESPACE")
+        namespace = os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
         namespace = list_kube_config_contexts()[1]['context'].get('namespace')
 
-    user = os.getenv("APPGATE_CONTROLLER_USER")
-    password = os.getenv("APPGATE_CONTROLLER_PASSWORD")
-    controller = os.getenv("APPGATE_CONTROLLER")
-    timeout = os.getenv("APPGATE_CONTROLLER_TIMEOUT")
-    dry_run_mode = os.getenv("APPGATE_CONTROLLER_DRY_RUN")
-    cleanup_mode = os.getenv("APPGATE_CONTROLLER_CLEANUP")
+    user = os.getenv(USER_ENV)
+    password = os.getenv(PASSWORD_ENV)
+    controller = os.getenv(HOST_ENV)
+    timeout = os.getenv(TIMEOUT_ENV)
+    dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
+    cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
     if not namespace and len(argv) == 1:
         raise Exception('Unable to discover namespace, please provide it.')
+
     if not user or not password or not controller:
-        raise Exception('Unable to create appgate-controller context')
+        missing_envs = ','.join([x[0]
+                                 for x in [(USER_ENV, user),
+                                           (PASSWORD_ENV, password),
+                                           (HOST_ENV, controller)]
+                                 if x[1] is None])
+        raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
     return Context(namespace=namespace or argv[0], user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
-                   dry_run_mode=dry_run_mode is not None or True,
-                   cleanup_mode=cleanup_mode is not None or True)
+                   dry_run_mode=dry_run_mode == '1',
+                   cleanup_mode=cleanup_mode == '1')
 
 
 async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
@@ -170,6 +183,13 @@ async def conditions_loop(ctx: Context, queue: Queue) -> None:
 
 async def main_loop(queue: Queue, ctx: Context) -> None:
     namespace = ctx.namespace
+    log.info('[appgate-operator/%s] Main loop started:', namespace)
+    log.info('[appgate-operator/%s]   + namespace: %s', namespace, namespace)
+    log.info('[appgate-operator/%s]   + host: %s', namespace, ctx.controller)
+    log.info('[appgate-operator/%s]   + timeout: %s', namespace, ctx.timeout)
+    log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
+    log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
+
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     while True:
