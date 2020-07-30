@@ -12,5 +12,5 @@ lint:
 test:
 	./virtualenv/bin/python -m pytest tests
 
-docker-image:
+docker-image: lint test
 	docker build -f docker/Dockerfile . -t appgate-controller
