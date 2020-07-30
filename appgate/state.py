@@ -62,19 +62,26 @@ class EntitiesSet(Generic[T]):
             # Entity is already registered, so this is in the best case a modification
             return self.modify(entity)
         self.entities.add(entity)
+        # Register it in the maps of ids and names
         self.entities_by_name[entity.name] = entity
         self.entities_by_id[entity.id] = entity
 
     def delete(self, entity: T) -> None:
         self.entities.remove(entity)
         if entity.name in self.entities_by_name:
+            registered_id = self.entities_by_name[entity.name].id
             del self.entities_by_name[entity.name]
+            del self.entities_by_id[registered_id]
+        if entity.id in self.entities_by_id:
             del self.entities_by_id[entity.id]
 
     def modify(self, entity: T) -> None:
         if entity.name not in self.entities_by_name:
+            # Not yet in the system, register it with its own id
             return self.add(entity)
+        # All the entities expect the one being modified
         self.entities = {e for e in self.entities if e.name != entity.name}
+        # Replace always the id with the one registered in the system
         self.entities.add(evolve(entity, id=self.entities_by_name[entity.name].id))
 
 
@@ -82,8 +89,9 @@ def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
                 op: Literal['ADDED', 'DELETED', 'MODIFIED'],
                 current_entities: EntitiesSet[AppgateEntity]) -> None:
     # Current state should always contain the real id!!
-    cached_entity = current_entities.entities_by_name[entity.name]
-    entity = evolve(entity, id=cached_entity.id)
+    cached_entity = current_entities.entities_by_name.get(entity.name)
+    if cached_entity:
+        entity = evolve(entity, id=cached_entity.id)
     if op == 'ADDED':
         entity_set.add(entity)
     elif op == 'DELETED':
