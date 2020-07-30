@@ -2,7 +2,7 @@ import sys
 import asyncio
 from asyncio import Queue
 
-from appgate.logger import log, set_level
+from appgate.logger import set_level
 from appgate.appgate import policies_loop, entitlements_loop, conditions_loop, \
     init_kubernetes, main_loop
 from appgate.types import AppgateEvent
