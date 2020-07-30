@@ -137,6 +137,15 @@ If we have the cleanup option on BUT the cluster knows about those entities they
   2020-07-17 17:22:44,027 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
 #+END_EXAMPLE
 
+** Building
+To create the image and deploy it into a docker registry (hub docker) run:
+#+BEGIN_SRC shell
+  make docker-image && \
+      docker tag appgate-controller user/appgate-controller:latest && \
+      gdocker push user/appgate-controller:latest
+#+END_SRC
+
+*** Create the image
 ** Configuration
 The appgate-operator gets its configuration from environment variables (normally
 specified in the pod yaml file).
