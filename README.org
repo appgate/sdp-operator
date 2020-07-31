@@ -145,7 +145,6 @@ To create the image and deploy it into a docker registry (hub docker) run:
       gdocker push user/appgate-operator:latest
 #+END_SRC
 
-*** Create the image
 ** Configuration
 The appgate-operator gets its configuration from environment variables (normally
 specified in the pod yaml file).
@@ -191,23 +190,19 @@ The rest of environment variables are taken from a ConfigMap k8s entry (see
 To test it follow these steps:
  
  1. Create a k8s cluster (and get the credentials)
-
  2. Create the namespace
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-namespace.yaml
 #+END_SRC
-
  3. Create the CRDs
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-crd.yaml
 #+END_SRC
-
  4. Start the operator
 #+BEGIN_SRC shell
   make virtualenv
   ./virtualenv/bin/python3 -m appgate appgate-test-1
 #+END_SRC
-
  5. Create the objects
 #+BEGIN_SRC shell
   kubectl create -f examples/condition.yaml -n appgate-test-1
@@ -219,38 +214,30 @@ To test it follow these steps:
 To deploy on a real k8s cluster follow these steps:
 
  1. Create a k8s cluster or use an existing one (and get credentials)
-
  2. Create the namespace
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-namespace.yaml
 #+END_SRC
-
  3. Create the CRDs
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-crd.yaml
 #+END_SRC
-
  4. Create the needed config
  See [[configuration]] section for details about how to configure it.
-
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-config.yaml
   kubectl create -f manifest/01-secrets.yaml
 #+END_SRC
-
  5. Configure the registry if needed
  This step is only needed if you are deploying the appgate-operator image from a
  private docker registry (or from a private repository).
-
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-registry.yaml
 #+END_SRC
-
  6. Add permissions to get/watch/list the CRD entities in appgate-operator
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-role.yaml
 #+END_SRC
-
  7. Deploy the appgate-operator
 #+BEGIN_SRC shell
   kubectl create -f manifest/02-appgate-operator.yaml
