@@ -204,8 +204,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     while True:
-        current_appgate_state = await init_environment(controller=ctx.controller,
-                                                       user=ctx.user, password=ctx.password)
+        current_appgate_state = await init_environment(ctx=ctx)
         if current_appgate_state:
             if ctx.cleanup_mode:
                 expected_appgate_state = AppgateState(
@@ -223,10 +222,9 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
              namespace)
     while True:
         try:
-            if ctx.two_ways_sync:
+            if ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
-                current_appgate_state = await init_environment(controller=ctx.controller,
-                                                               user=ctx.user, password=ctx.password)
+                current_appgate_state = await init_environment(ctx=ctx)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
