@@ -1,13 +1,16 @@
 from copy import deepcopy
+import datetime
 from functools import cached_property
-from typing import Set, TypeVar, Generic, Dict, Optional, cast, Tuple, Literal
+from pathlib import Path
+from typing import Set, TypeVar, Generic, Dict, Optional, cast, Tuple, Literal, Any, Iterable
 
+import typedload
+import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
-from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity
-
+from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity, DOMAIN, RESOURCE_VERSION
 
 __all__ = [
     'AppgateState',
@@ -100,6 +103,25 @@ def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
         entity_set.modify(entity)
 
 
+def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
+     return {
+        'apiVersion': f'{DOMAIN}/{RESOURCE_VERSION}',
+        'kind': entity_type,
+        'metadata': {
+            'name': entity.name
+        },
+        'spec': typedload.dump(entity)
+    }
+
+
+def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str) -> None:
+    if entities:
+        with dump_file.open('w') as f:
+            for e in entities:
+                f.write(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
+                f.write('---\n')
+
+
 @attrs()
 class AppgateState:
     policies: EntitiesSet[Policy] = attrib()
@@ -121,6 +143,7 @@ class AppgateState:
         if not entitites:
             log.error('[appgate-operator] Unknown entity type: %s', type(entity))
             return
+        # TODO: Fix linter here!
         entities_op(entitites(self), entity, op, entitites(current_appgate_state))  # type: ignore
 
     def copy(self, entitlements: Optional[EntitiesSet[Entitlement]] = None,
@@ -129,6 +152,13 @@ class AppgateState:
         return AppgateState(policies=policies or self.policies,
                             entitlements=entitlements or self.entitlements,
                             conditions=conditions or self.conditions)
+
+    def dump(self, path: Optional[Path] = None) -> None:
+        dump_dir = path or Path(str(datetime.date.today()))
+        dump_dir.mkdir(exist_ok=True)
+        dump_entities(self.conditions.entities, dump_dir / 'conditions.yaml', 'CONDITION')
+        dump_entities(self.entitlements.entities, dump_dir / 'entitlements.yaml', 'ENTITLEMENT')
+        dump_entities(self.policies.entities, dump_dir / 'policies.yaml', 'POLICY')
 
 
 def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: EntitiesSet[T],
