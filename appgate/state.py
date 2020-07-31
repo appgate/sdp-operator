@@ -156,9 +156,10 @@ class AppgateState:
     def dump(self, path: Optional[Path] = None) -> None:
         dump_dir = path or Path(str(datetime.date.today()))
         dump_dir.mkdir(exist_ok=True)
-        dump_entities(self.conditions.entities, dump_dir / 'conditions.yaml', 'CONDITION')
-        dump_entities(self.entitlements.entities, dump_dir / 'entitlements.yaml', 'ENTITLEMENT')
-        dump_entities(self.policies.entities, dump_dir / 'policies.yaml', 'POLICY')
+        # TODO: Discover the entity kind
+        dump_entities(self.conditions.entities, dump_dir / 'conditions.yaml', 'Condition')
+        dump_entities(self.entitlements.entities, dump_dir / 'entitlements.yaml', 'Entitlement')
+        dump_entities(self.policies.entities, dump_dir / 'policies.yaml', 'Policy')
 
 
 def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: EntitiesSet[T],
