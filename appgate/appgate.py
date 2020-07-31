@@ -222,15 +222,14 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
              namespace)
     while True:
         try:
-            if ctx.two_way_sync:
-                # use current appgate state from controller instead of from memory
-                current_appgate_state = await get_current_appgate_state(ctx=ctx)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
-            assert expected_appgate_state
             expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
+            if ctx.two_way_sync:
+                # use current appgate state from controller instead of from memory
+                current_appgate_state = await get_current_appgate_state(ctx=ctx)
             # Resolve entities now
             # First entitlements since we have conditions
             # Second policies since we have entitlements
