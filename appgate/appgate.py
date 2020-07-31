@@ -30,6 +30,8 @@ HOST_ENV = 'APPGATE_OPERATOR_HOST'
 DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
 CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
+TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
+
 
 __all__ = [
     'policies_loop',
@@ -58,6 +60,7 @@ class Context:
     user: str = attrib()
     password: str = attrib()
     controller: str = attrib()
+    two_way_sync: bool = attrib()
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode = attrib()
@@ -78,6 +81,7 @@ def init_kubernetes(argv: List[str]) -> Context:
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
     timeout = os.getenv(TIMEOUT_ENV)
+    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
     if not namespace and len(argv) == 1:
@@ -93,11 +97,18 @@ def init_kubernetes(argv: List[str]) -> Context:
     return Context(namespace=namespace or argv[0], user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1')
+                   cleanup_mode=cleanup_mode == '1',
+                   two_way_sync=two_way_sync == '1')
 
 
-async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
-    appgate_client = AppgateClient(controller=controller, user=user, password=password)
+async def init_environment(ctx: Context) -> Optional[AppgateState]:
+    """
+    Gets the current AppgateState for controller
+    """
+    log.info('[appgate-operator/%s] Updating current state from controller',
+             ctx.namespace)
+    appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
+                                   password=ctx.password)
     await appgate_client.login()
     if not appgate_client.authenticated:
         await appgate_client.close()
@@ -212,6 +223,10 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
              namespace)
     while True:
         try:
+            if ctx.two_ways_sync:
+                # use current appgate state from controller instead of from memory
+                current_appgate_state = await init_environment(controller=ctx.controller,
+                                                               user=ctx.user, password=ctx.password)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
