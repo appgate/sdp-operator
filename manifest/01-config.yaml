@@ -8,3 +8,4 @@ data:
   appgate-operator-timeout: "5"
   appgate-operator-dry-run: "0"
   appgate-operator-cleanup: "1"
+  appgate-operator-two-way-sync: "1"

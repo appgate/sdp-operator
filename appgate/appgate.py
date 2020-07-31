@@ -30,6 +30,8 @@ HOST_ENV = 'APPGATE_OPERATOR_HOST'
 DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
 CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
+TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
+
 
 __all__ = [
     'policies_loop',
@@ -58,6 +60,7 @@ class Context:
     user: str = attrib()
     password: str = attrib()
     controller: str = attrib()
+    two_way_sync: bool = attrib()
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode = attrib()
@@ -78,6 +81,7 @@ def init_kubernetes(argv: List[str]) -> Context:
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
     timeout = os.getenv(TIMEOUT_ENV)
+    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
     if not namespace and len(argv) == 1:
@@ -93,22 +97,35 @@ def init_kubernetes(argv: List[str]) -> Context:
     return Context(namespace=namespace or argv[0], user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1')
+                   cleanup_mode=cleanup_mode == '1',
+                   two_way_sync=two_way_sync == '1')
 
 
-async def init_environment(controller: str, user: str, password: str) -> Optional[AppgateState]:
-    appgate_client = AppgateClient(controller=controller, user=user, password=password)
+async def get_current_appgate_state(ctx: Context) -> AppgateState:
+    """
+    Gets the current AppgateState for controller
+    """
+    appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
+                                   password=ctx.password)
+    log.info('[appgate-operator/%s] Updating current state from controller',
+             ctx.namespace)
+
     await appgate_client.login()
     if not appgate_client.authenticated:
+        log.error('[appgate-operator/%s] Unable to authenticate with controller',
+                  ctx.namespace)
         await appgate_client.close()
-        return None
+        raise Exception('Error authenticating')
 
     policies = await appgate_client.policies.get()
     entitlements = await appgate_client.entitlements.get()
     conditions = await appgate_client.conditions.get()
     if policies is None or entitlements is None or conditions is None:
+        log.error('[appgate-operator/%s] Unable to get entities from controller',
+                  ctx.namespace)
         await appgate_client.close()
-        return None
+        raise Exception('Error reading current state')
+
     policies_set = EntitiesSet(set(cast(List[Policy], policies)))
     entitlements_set = EntitiesSet(set(cast(List[Entitlement], entitlements)))
     conditions_set = EntitiesSet(set(cast(List[Condition], conditions)))
@@ -189,24 +206,18 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s]   + timeout: %s', namespace, ctx.timeout)
     log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
     log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
+    log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
 
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
-    while True:
-        current_appgate_state = await init_environment(controller=ctx.controller,
-                                                       user=ctx.user, password=ctx.password)
-        if current_appgate_state:
-            if ctx.cleanup_mode:
-                expected_appgate_state = AppgateState(
-                    policies=current_appgate_state.policies.builtin_entities(),
-                    entitlements=current_appgate_state.entitlements.builtin_entities(),
-                    conditions=current_appgate_state.conditions.builtin_entities())
-            else:
-                expected_appgate_state = deepcopy(current_appgate_state)
-            break
-        log.error('[appgate-operator/%s] Unable to get current state, trying in 30 seconds',
-                  namespace)
-        await asyncio.sleep(30)
+    current_appgate_state = await get_current_appgate_state(ctx=ctx)
+    if ctx.cleanup_mode:
+        expected_appgate_state = AppgateState(
+            policies=current_appgate_state.policies.builtin_entities(),
+            entitlements=current_appgate_state.entitlements.builtin_entities(),
+            conditions=current_appgate_state.conditions.builtin_entities())
+    else:
+        expected_appgate_state = deepcopy(current_appgate_state)
 
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
              namespace)
@@ -215,9 +226,11 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
-            assert expected_appgate_state
             expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
+            if ctx.two_way_sync:
+                # use current appgate state from controller instead of from memory
+                current_appgate_state = await get_current_appgate_state(ctx=ctx)
             # Resolve entities now
             # First entitlements since we have conditions
             # Second policies since we have entitlements

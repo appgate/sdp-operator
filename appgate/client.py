@@ -23,6 +23,8 @@ class EntityClient:
     async def get(self) -> Optional[List[AppgateEntity]]:
         data = await self._client.get(self.path)
         if not data:
+            log.error('[aggpate-client] GET %s :: Expecting a response but we got empty data',
+                      self.path)
             return None
         return [self.loader(e) for e in data['data']]
 
@@ -32,6 +34,8 @@ class EntityClient:
         data = await self._client.post(self.path,
                                        body=body)
         if not data:
+            log.error('[aggpate-client] POST %s :: Expecting a response but we got empty data',
+                      self.path)
             return None
         return self.loader(data)  # type: ignore
 
@@ -39,6 +43,8 @@ class EntityClient:
         data = await self._client.put(f'{self.path}/{entity.id}',
                                       body=typedload.dump(entity))
         if not data:
+            log.error('[aggpate-client] PUT %s :: Expecting a response but we got empty data',
+                      self.path)
             return None
         return self.loader(data)  # type: ignore
 

@@ -170,6 +170,10 @@ Before deploying it MUST define these env variables:
  - APPGATE_OPERATOR_CLEANUP :: When set to 1 the operator will try to set the
       controller into the same state as the configuration. When set to 0 it
       won't try to delete the entities that are already defined in a controller.
+ - APPGATE_OPERATOR_TWO_WAY_SYNC :: When set to 1 it will read the current
+      configuration from the controller just before computing the new plan. This
+      basically means that whatever has been added / modified / deleted using
+      the ui and not in the state represented in github will be discarded.
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
