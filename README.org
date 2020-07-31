@@ -54,15 +54,7 @@ the operator fails, that entity is marked as failed as well. Then later when
 creating the new state those entity that failed will be removed from the new
 state (or added if the operation was `delete`).
 
-*** modes of operation and flags
-Right now there 2 flags that we use to control some of the operator's behaviour:
-
- - DRY_MODE
- - CLEANUP_ON_STARTUP
-
-Note that these flags are right now hardcoded in the code. We need to get the
-values from the cli and from the k8s namespace.
-
+*** Modes of operation
 **** DRY_MODE
 When this flag is on the operator will compute the plan to apply but it won't do
 any call.
@@ -136,6 +128,14 @@ If we have the cleanup option on BUT the cluster knows about those entities they
   2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
   2020-07-17 17:22:44,027 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
 #+END_EXAMPLE
+
+**** TWO_WAY_SYNC
+This flag makes the appgate-operator to read the current state from the
+controller before computing the new plan. Basically whatever entity
+created/deleted/modified manually will be reverted.
+
+When it's not set it will just compute the plan against the current state in
+memory (which could be different from the one in the controller).
 
 ** Building
 To create the image and deploy it into a docker registry (hub docker) run:
