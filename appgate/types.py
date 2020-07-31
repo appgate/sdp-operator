@@ -17,9 +17,14 @@ __all__ = [
     'condition_load',
     'Entity_T',
     'AppgateEvent',
-    'AppgateEntity'
+    'AppgateEntity',
+    'DOMAIN',
+    'RESOURCE_VERSION'
 ]
 
+
+DOMAIN = 'beta.appgate.com'
+RESOURCE_VERSION = 'v1'
 
 class EventObject:
     def __init__(self, data: Dict[str, Any]) -> None:

@@ -19,10 +19,8 @@ from appgate.client import AppgateClient
 from appgate.state import AppgateState, create_appgate_plan, appgate_plan_errors_summary, \
     appgate_plan_apply, EntitiesSet, resolve_entitlements, resolve_policies
 from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, \
-    Policy, Entitlement, Condition
+    Policy, Entitlement, Condition, DOMAIN
 
-DOMAIN = 'beta.appgate.com'
-RESOURCE_VERSION = 'v1'
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
 TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
@@ -38,7 +36,10 @@ __all__ = [
     'entitlements_loop',
     'conditions_loop',
     'init_kubernetes',
-    'main_loop'
+    'main_loop',
+    'get_context',
+    'get_current_appgate_state',
+    'Context',
 ]
 
 
@@ -66,17 +67,7 @@ class Context:
     cleanup_mode = attrib()
 
 
-def init_kubernetes(argv: List[str]) -> Context:
-    namespace = None
-    if 'KUBERNETES_PORT' in os.environ:
-        load_incluster_config()
-        # TODO: Discover it somehow
-        # https://github.com/kubernetes-client/python/issues/363
-        namespace = os.getenv(NAMESPACE_ENV)
-    else:
-        load_kube_config()
-        namespace = list_kube_config_contexts()[1]['context'].get('namespace')
-
+def get_context(namespace: str) -> Context:
     user = os.getenv(USER_ENV)
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
@@ -84,9 +75,6 @@ def init_kubernetes(argv: List[str]) -> Context:
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
-    if not namespace and len(argv) == 1:
-        raise Exception('Unable to discover namespace, please provide it.')
-
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
                                  for x in [(USER_ENV, user),
@@ -94,11 +82,26 @@ def init_kubernetes(argv: List[str]) -> Context:
                                            (HOST_ENV, controller)]
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
-    return Context(namespace=namespace or argv[0], user=user, password=password,
+    return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1')
+
+
+def init_kubernetes(namespace: Optional[str]=None) -> Context:
+    if 'KUBERNETES_PORT' in os.environ:
+        load_incluster_config()
+        # TODO: Discover it somehow
+        # https://github.com/kubernetes-client/python/issues/363
+        namespace = namespace or os.getenv(NAMESPACE_ENV)
+    else:
+        load_kube_config()
+        namespace = namespace or list_kube_config_contexts()[1]['context'].get('namespace')
+
+    if not namespace:
+        raise Exception('Unable to discover namespace, please provide it.')
+    return get_context(namespace)
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:

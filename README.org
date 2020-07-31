@@ -440,12 +440,67 @@ we are using):
   kubectl -n appgate-test-1 logs appgate-operator
 #+END_SRC
 
+** Dump current entities in an environment
+To get the current entities from an existing environment we can call the
+appgate-operator from the cli like this:
+
+#+BEGIN_SRC shell
+  APPGATE_OPERATOR_USER=user \
+		       APPGATE_OPERATOR_PASSWORD=password \
+		       APPGATE_OPERATOR_HOST=https:/controller:444 \
+		       ./virtualenv/bin/python3 -m appgate --get-entities
+#+END_SRC
+
+That command will generate a new directory (with the current date as name)
+containing all the entities discovered in the system:
+
+#+BEGIN_EXAMPLE
+atuin ⊢ ls 2020-07-31
+conditions.yaml  entitlements.yaml  policies.yaml
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+atuin ⊢ cat 2020-07-31/conditions.yaml
+apiVersion: beta.appgate.com/v1
+kind: CONDITION
+metadata:
+  name: my-new-condition
+spec:
+  expression: ' var result = false; /*password*/ if (claims.user.hasPassword(''test'',
+    60)) { return true; } /*end password*/ return result; '
+  id: 5283e6a7-7732-4260-a195-831f3e5ab6a5
+  name: my-new-condition
+  remedyMethods: []
+  repeatSchedules:
+  - '13:32'
+  - 1h
+  tags:
+  - api-created
+  - k8s
+  - automated
+---
+apiVersion: beta.appgate.com/v1
+kind: CONDITION
+metadata:
+  name: Always
+spec:
+  expression: return true;
+  id: ee7b7e6f-e904-4b4f-a5ec-b3bef040643e
+  name: Always
+  notes: Condition for built-in usage.
+  remedyMethods: []
+  repeatSchedules: []
+  tags:
+  - builtin
+---
+#+END_EXAMPLE
+
 ** Status
 There are some tasks to finish:
 
  - [X] Configuration from the k8s cluster :: right now all the configuration is hardcoded in the code.
  - [ ] Configuration from cli :: this way we could even use it using the cli.
- - [ ] Discovery mode :: generating the CRD entries from a running environment
+ - [X] Discovery mode :: generating the CRD entries from a running environment
       so we can dump the yaml contents into files and save in github for
       example.
  - [ ] Performance :: Right now it's very naive in the way it solves dependencies, it needs to be improved. 
