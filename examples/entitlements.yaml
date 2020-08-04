@@ -1,0 +1,112 @@
+apiVersion: "beta.appgate.com/v1"
+kind: Entitlement
+metadata:
+  name: entitlement-1
+spec:
+  name: entitlement-1 
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  conditions: 
+    - condition-1
+  disabled: true
+  conditionLogic: and
+  actions:
+    - subtype: icmp_up
+      action: block
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.1
+        - 10.0.0.0/24
+        - hostname.company.com
+        - dns://hostname.company.com
+        - aws://security-group:accounting
+    - subtype: icmp_up
+      action: allow
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.5
+  appShortcuts:
+    - name: ping
+      url: https://www.google.com
+      colorCode : 5
+---
+apiVersion: "beta.appgate.com/v1"
+kind: Entitlement
+metadata:
+  name: entitlement-2
+spec:
+  name: entitlement-2
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  conditions: 
+    - condition-2
+  disabled: true
+  conditionLogic: and
+  actions:
+    - subtype: icmp_up
+      action: block
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.1
+        - 10.0.0.0/24
+        - hostname.company.com
+        - dns://hostname.company.com
+        - aws://security-group:accounting
+    - subtype: icmp_up
+      action: allow
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.5
+  appShortcuts:
+    - name: ping2
+      url: https://www.google.com
+      colorCode : 5
+---
+apiVersion: "beta.appgate.com/v1"
+kind: Entitlement
+metadata:
+  name: entitlement-3
+spec:
+  name: entitlement-3
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  conditions: 
+    - condition-1
+    - condition-2
+    - condition-3
+  disabled: true
+  conditionLogic: and
+  actions:
+    - subtype: icmp_up
+      action: block
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.1
+        - 10.0.0.0/24
+        - hostname.company.com
+        - dns://hostname.company.com
+        - aws://security-group:accounting
+    - subtype: icmp_up
+      action: allow
+      types:
+        - 0-16
+      hosts:
+        - 10.0.0.5
+  appShortcuts:
+    - name: ping3
+      url: https://www.google.com
+      colorCode : 5

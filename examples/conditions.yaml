@@ -1,0 +1,73 @@
+apiVersion: "beta.appgate.com/v1"
+kind: Condition
+metadata:
+  name: condition-1
+spec:
+  name: condition-1
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  expression: "
+var result = false;
+/*password*/
+if (claims.user.hasPassword('condition-1', 60)) {
+  return true;
+}
+/*end password*/
+return result;
+"
+  repeatSchedules:
+    - 1h
+    - 13:32
+---
+apiVersion: "beta.appgate.com/v1"
+kind: Condition
+metadata:
+  name: condition-2
+spec:
+  name: condition-2
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  expression: "
+var result = false;
+/*password*/
+if (claims.user.hasPassword('condition-2', 60)) {
+  return true;
+}
+/*end password*/
+return result;
+"
+  repeatSchedules:
+    - 1h
+    - 13:32
+  remedyMethods:
+    - type: "PasswordAuthentication"
+      message: "test"
+      claimSuffix: "test"
+      provider_id: "b5ea7cf0-6e75-11e4-9803-0800200c9a66"
+---
+apiVersion: "beta.appgate.com/v1"
+kind: Condition
+metadata:
+  name: condition-3
+spec:
+  name: condition-3
+  tags: 
+    - k8s
+    - automated
+    - api-created
+  expression: "
+var result = false;
+/*password*/
+if (claims.user.hasPassword('condition-3', 60)) {
+  return true;
+}
+/*end password*/
+return result;
+"
+  repeatSchedules:
+    - 1h
+    - 13:32
