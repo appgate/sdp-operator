@@ -7,7 +7,8 @@ The operator reacts to changes in CRDs in the k8s cluster performing the
 required operations to keep the appgate environment in the state configured in
 k8s.
 
-This is a work in progress project right now and it only supports these entities:
+This is a work in progress project right now and it only supports these
+entities:
 
  - Policies :: reference *entitlements*
  - Entitlements :: reference *conditions*
@@ -21,13 +22,13 @@ representing those CRD. (see the directory `examples`).
 We define the CRD that once applied to the k8s cluster allow administrators to
 manage those entities.
 
-The appgate-operator when running will listen for events on those CRD to
-change the status of the current environment.
+The appgate-operator when running will listen for events on those CRD to change
+the status of the current environment.
 
-The operator listen events inside a namespaceqq
+The operator listen events inside a namespace.
 
-When the operator starts it requires the current status from the appgate
-operator to know the initial state and from there it beings listening for events.
+When the operator starts, it gets the actual state from the appgate controller
+and from there it starts listening for events.
 
 On each event received it restores a timer, once the timer timeouts (meaning
 that no more events come in that specified time) the operator will proceed to
@@ -41,8 +42,13 @@ it defines for each entity 4 subset of operations to perform:
  - modify :: an existing entity needs to be modified
  - share :: an entity that won't change
 
+All the entities are identified by name, that way we don't need to save real
+uuids in the configuration. Entities referencing other entities (entitlements
+reference conditions for instance) do it by name also, the operator resolves
+those names into real uuids when doing the queries.
+
 *** Errors 
-There different sources of errors.
+There are different sources of errors.
 
 Some entities reference another ones like `entitlements` using `conditions`. If
 one entity references another entity that is not in the expeted state after the
@@ -61,7 +67,7 @@ any call.
 
 **** CLEANUP_ON_STARTUP
 When this flag is on the operator when initializing the state for first time
-will remove any entities that don't containe the tag `builtin` (we need to make
+will remove any entities that don't contain the tag `builtin` (we need to make
 this configurable as well). This will have in practice the effect of resetting
 everything to factory.
 
@@ -142,7 +148,7 @@ To create the image and deploy it into a docker registry (hub docker) run:
 #+BEGIN_SRC shell
   make docker-image && \
       docker tag appgate-operator user/appgate-operator:latest && \
-      gdocker push user/appgate-operator:latest
+      docker push user/appgate-operator:latest
 #+END_SRC
 
 ** Configuration
@@ -157,8 +163,8 @@ Before deploying it MUST define these env variables:
       be operating on.
  - APPGATE_OPERATOR_USER :: the user used to authenticate the REST calls to the
       controller.
- - APPGATE_OPERATOR_PASSWORD :: the pass used to authenticate the REST calls to
-      the controller.
+ - APPGATE_OPERATOR_PASSWORD :: the password used to authenticate the REST calls
+      to the controller.
  - APPGATE_OPERATOR_TIMEOUT :: Time without activity after which the appgate
       operator will try to apply changes received into a plan. Every time a new
       event is received this timer is reset to 0 again.
@@ -168,11 +174,13 @@ Before deploying it MUST define these env variables:
       conrtoller. Default value is 1.
  - APPGATE_OPERATOR_CLEANUP :: When set to 1 the operator will try to set the
       controller into the same state as the configuration. When set to 0 it
-      won't try to delete the entities that are already defined in a controller.
+      won't try to delete the entities that are already defined in a
+      controller. Default value is 1.
  - APPGATE_OPERATOR_TWO_WAY_SYNC :: When set to 1 it will read the current
       configuration from the controller just before computing the new plan. This
       basically means that whatever has been added / modified / deleted using
-      the ui and not in the state represented in github will be discarded.
+      the ui and not in the state represented in github will be
+      discarded. Default value is 1.
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
@@ -201,6 +209,17 @@ To test it follow these steps:
   kubectl create -f manifest/00-crd.yaml
 #+END_SRC
 
+ - Create the configuration/secets
+#+BEGIN_SRC shell
+  kubectl create -f manifest/01-config.yaml
+  kubectl create -f manifest/01-secrets.yaml
+#+END_SRC
+
+ - Add permissions to get/watch/list the CRD entities in appgate-operator
+#+BEGIN_SRC shell
+  kubectl create -f manifest/01-role.yaml
+#+END_SRC
+
  - Start the operator
 #+BEGIN_SRC shell
   make virtualenv
@@ -209,8 +228,8 @@ To test it follow these steps:
 
  - Create the objects
 #+BEGIN_SRC shell
-  kubectl create -f examples/condition.yaml -n appgate-test-1
-  kubectl delete -f examples/condition.yaml -n appgate-test-1
+  kubectl create -f examples/conditions.yaml -n appgate-test-1
+  kubectl delete -f examples/conditions.yaml -n appgate-test-1
   # ....
 #+END_SRC
 
@@ -218,30 +237,36 @@ To test it follow these steps:
 To deploy on a real k8s cluster follow these steps:
 
  - Create a k8s cluster or use an existing one (and get credentials)
+
  - Create the namespace
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-namespace.yaml
 #+END_SRC
+
  - Create the CRDs
 #+BEGIN_SRC shell
   kubectl create -f manifest/00-crd.yaml
 #+END_SRC
+
  - Create the needed config
  See [[configuration]] section for details about how to configure it.
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-config.yaml
   kubectl create -f manifest/01-secrets.yaml
 #+END_SRC
+
  - Configure the registry if needed
  This step is only needed if you are deploying the appgate-operator image from a
  private docker registry (or from a private repository).
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-registry.yaml
 #+END_SRC
+
  - Add permissions to get/watch/list the CRD entities in appgate-operator
 #+BEGIN_SRC shell
   kubectl create -f manifest/01-role.yaml
 #+END_SRC
+
  - Deploy the appgate-operator
 #+BEGIN_SRC shell
   kubectl create -f manifest/02-appgate-operator.yaml
@@ -283,7 +308,7 @@ This process is well explained in the argo web but let's summarized it:
 
   # Login into argocd
   argocd login $ARGOCD_IP
-
+  
   # Change password, current password is in $ARGOCD_PWD
   argocd account update-password
 #+END_SRC
@@ -294,7 +319,7 @@ We will create the namespace and the needed CRD for the appgate-operator.
 - We will create first a new namespace in our cluster.
 - Then we will register the CRD data in k8s.
 - Finally we create the role allowing our pod to listen new events from the new
-   CRD data.
+  CRD data.
 
 #+BEGIN_SRC shell
   alias k="kubectl -n appgate-test-1"
@@ -306,6 +331,11 @@ We will create the namespace and the needed CRD for the appgate-operator.
 We need now to prepare the secrets in the namespace to be there ready for when
 the deployment is done. If you have an automated way of dealing with secrets you
 can omit this step.
+
+The registry entry is only needed if we deploy the operator from a private
+registry (we only have it in a private one right now). If it's coming from a
+public one it's not needed and the deployment should be changed not to use the
+credentials from here (see the k8s [[https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/][documentation]] for more details).
 
 #+BEGIN_SRC shell
   # Only needed if you use a private docker repository
@@ -389,15 +419,15 @@ in the git repository at this moment):
 
 *** Updating image
 If we have a new image for the appgate-operator we want to deploy we can just
-delete the current pod (using the argocd web ui) or the kubectl command:
+delete the current pod (using the argocd web ui or the kubectl command):
 
 #+BEGIN_SRC shell
   k delete pod $(k get pods | awk '$3 ~ /Running/ {print($1)}')
   k logs $(k get pods | awk '$3 ~ /Running/ {print($1)}') -f
 #+END_SRC
 
-Since our operator runs as a deployment with replica 1 k8s will create a new one
-pulling the new image from the docker registry.
+Since our operator runs as a deployment with replica 1, k8s will create a new
+one pulling the new image from the docker registry.
 
 *** Changing configuration manually
 When synced for first time argocd will create the configmap with the
@@ -408,7 +438,7 @@ If we want to make it operate in normal mode we can just change the
 configuration in the github repo, merge it and click sync again (the gitops
 thing).
 
-But we can also do it manually from argocdd:
+But we can also do it manually from argocd:
 
 1. In the application view click the box representing the configmap.
 2. There click edit and change the dry-run variable to "0"
@@ -420,8 +450,8 @@ the value has changed:
   k get configmap appgate-operator-conf -o json|jq '.data["appgate-operator-dry-run"]'
 #+END_SRC
 
-Now we can just delete the pod again and a new one reading the config will be
-deployed.
+Now we can just delete the pod again and a new one (using the new config) will
+be deployed.
 
 #+BEGIN_SRC shell
   k delete pod $(k get pods | awk '$3 ~ /Running/ {print($1)}')
@@ -447,7 +477,7 @@ appgate-operator from the cli like this:
 #+BEGIN_SRC shell
   APPGATE_OPERATOR_USER=user \
 		       APPGATE_OPERATOR_PASSWORD=password \
-		       APPGATE_OPERATOR_HOST=https:/controller:444 \
+		       APPGATE_OPERATOR_HOST=https://controller:444 \
 		       ./virtualenv/bin/python3 -m appgate --get-entities
 #+END_SRC
 
