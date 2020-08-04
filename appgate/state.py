@@ -111,7 +111,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
             'name': entity.name
         },
         'spec': typedload.dump(entity)
-    }
+     }
 
 
 def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str) -> None:
