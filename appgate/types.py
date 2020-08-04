@@ -97,7 +97,7 @@ class Entitlement(Entity_T):
         'name': 'appShortcutScripts'
     }, factory=tuple)
     disabled: Optional[bool] = attrib(default=False)
-    id: str = attrib(default=str(uuid.uuid4()), eq=False)
+    id: str = attrib(factory=lambda: str(uuid.uuid4()), eq=False)
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
@@ -161,7 +161,7 @@ class Condition(Entity_T):
     remedy_methods: FrozenSet[RemedyMethod] = attrib(metadata={
         'name': 'remedyMethods'
     }, factory=frozenset)
-    id: str = attrib(default=str(uuid.uuid4()), eq=False)
+    id: str = attrib(factory=lambda: str(uuid.uuid4()), eq=False)
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
