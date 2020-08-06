@@ -83,7 +83,7 @@ class AppgateClient:
         if not method:
             raise Exception(f'Unknown HTTP method: {verb}')
         headers = {
-            'Accept': 'application/vnd.appgate.peer-v13+json',
+            'Accept': 'application/vnd.appgate.peer-v12+json',
             'Content-Type': 'application/json'
         }
         auth_header = self.auth_header()

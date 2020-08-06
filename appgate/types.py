@@ -26,6 +26,7 @@ __all__ = [
 DOMAIN = 'beta.appgate.com'
 RESOURCE_VERSION = 'v1'
 
+
 class EventObject:
     def __init__(self, data: Dict[str, Any]) -> None:
         self.kind = data['kind']
@@ -90,12 +91,6 @@ class Entitlement(Entity_T):
     condition_logic: Optional[str] = attrib(metadata={
         'name': 'conditionLogic'
     }, default="and")
-    app_shortcuts: FrozenSet[AppShortcuts] = attrib(metadata={
-        'name': 'appShortcuts'
-    }, factory=frozenset)
-    app_shortcut_scripts: Tuple[str, ...] = attrib(metadata={
-        'name': 'appShortcutScripts'
-    }, factory=tuple)
     disabled: Optional[bool] = attrib(default=False)
     id: str = attrib(factory=lambda: str(uuid.uuid4()), eq=False)
 
