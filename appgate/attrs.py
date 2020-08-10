@@ -74,7 +74,7 @@ def get_entry(entities: Dict[str, Any], entity: str, entry: List[str],
     if not v:
         print(f'reading entity from disk: {entity}')
         with p.open('r') as f:
-            entities[p.name] = yaml.load(f.read())
+            entities[p.name] = yaml.safe_load(f.read())
     if entry:
         return get_keys(entities, [p.name] + entry)
     return v
