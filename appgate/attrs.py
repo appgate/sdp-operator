@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable
 from attr import make_class, attrib, attrs
 import yaml
 
+from appgate.logger import log
+
 
 __all__ = [
     'Entity_T',
@@ -84,7 +86,7 @@ def get_entry(entities: Dict[str, Any], entity: str, entry: List[str],
     p = (spec_dir or Path(SPEC_DIR)) / entity
     v = get_keys(entities, [p.name])
     if not v:
-        print(f'reading entity from disk: {entity}')
+        log.debug('Reading entity from disk: %s', entity)
         with p.open('r') as f:
             entities[p.name] = yaml.safe_load(f.read())
     if entry:
@@ -97,7 +99,7 @@ def make_attrib(entity_name: str, attrib_name: str, attrib_props: Dict[str, Any]
     """
     Returns an attribs dictionary used later to call attrs.attrib
     """
-    print(f'Creating attribute {entity_name}.{attrib_name}')
+    log.debug(f'Creating attribute %s.%s', entity_name, attrib_name)
     required = attrib_name in required_fields
     tpe, factory = make_type(entity_name, attrib_name, attrib_props, level)
     attribs = {
@@ -173,7 +175,7 @@ def make_entity(entity: str, spec_dir: Optional[Path] = None) -> type:
     for s in scheme:
         if is_ref(s):
             p, k = s['$ref'].split('#', maxsplit=2)
-            print(f'resolving reference: {p} {k}')
+            log.debug('Resolving reference: %s: %s', p, k)
             resolved_ref = get_entry(entities=data, entity=p, spec_dir=spec_dir,
                                      entry=[x for x in k.split('/') if x])
             attributes.append(resolved_ref)
