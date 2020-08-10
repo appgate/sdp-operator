@@ -46,18 +46,11 @@ class ActionMonitor:
     timeout: int = attrib()
 
 
+@attrs()
 class Entity_T:
-    @property
-    def name(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def id(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def tags(self) -> FrozenSet[str]:
-        raise NotImplementedError
+    name: str = attrib()
+    id: int = attrib()
+    tags: FrozenSet[str] = attrib()
 
 
 @attrs(slots=True, frozen=True)

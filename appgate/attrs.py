@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional, cast, FrozenSet, Tuple, Callable
 
 from attr import make_class, attrib
 import yaml
-from typedload import load
 
+from appgate.types import Entity_T
 
 SPEC_DIR = 'api_specs'
 
@@ -166,4 +166,5 @@ def make_entity(entity: str, spec_dir: Optional[Path] = None) -> type:
             attributes.append(resolved_ref)
         elif is_object(s):
             attributes.append(s)
-    return make_class(entity_name, make_attribs(entity_name, attributes, 0))
+    attrs = make_attribs(entity_name, attributes, 0)
+    return make_class(entity_name, attrs, bases=(Entity_T,))
