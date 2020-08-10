@@ -1,11 +1,16 @@
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast, FrozenSet, Tuple, Callable
+from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable
 
-from attr import make_class, attrib
+from attr import make_class, attrib, attrs
 import yaml
 
-from appgate.types import Entity_T
+
+__all__ = [
+    'Entity_T',
+    'make_entity',
+]
+
 
 SPEC_DIR = 'api_specs'
 
@@ -15,6 +20,13 @@ TYPES_MAP = {
     'boolean': bool,
     'integer': int,
 }
+
+
+@attrs()
+class Entity_T:
+    name: str = attrib()
+    id: int = attrib()
+    tags: FrozenSet[str] = attrib()
 
 
 def get_keys(data: Dict[str, Any], keys: List[str]) -> Optional[Any]:
@@ -142,7 +154,8 @@ def make_type(entity_name: str, attrib_name: str, data,
     elif is_object(data):
         # Indirect recursion here.
         name = f'{entity_name}_{attrib_name.capitalize()}'
-        return make_class(name, make_attribs(entity_name, [data], level + 1)), None
+        return make_class(name, make_attribs(entity_name, [data], level + 1),
+                          frozen=True, slots=True), None
     else:
         raise Exception(f'Unknown type: {tpe}')
 
@@ -167,4 +180,4 @@ def make_entity(entity: str, spec_dir: Optional[Path] = None) -> type:
         elif is_object(s):
             attributes.append(s)
     attrs = make_attribs(entity_name, attributes, 0)
-    return make_class(entity_name, attrs, bases=(Entity_T,))
+    return make_class(entity_name, attrs, bases=(Entity_T,), slots=True, frozen=True)

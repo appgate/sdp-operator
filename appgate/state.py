@@ -8,9 +8,11 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
+from appgate.attrs import Entity_T
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
-from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity, DOMAIN, RESOURCE_VERSION
+from appgate.types import Policy, Condition, Entitlement, AppgateEntity, DOMAIN,\
+    RESOURCE_VERSION
 
 __all__ = [
     'AppgateState',
