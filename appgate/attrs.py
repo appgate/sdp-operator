@@ -16,11 +16,19 @@ __all__ = [
 
 SPEC_DIR = 'api_specs'
 
+IGNORED_ATTRIBUTES = {'updated', 'created'}
+IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
+
 
 TYPES_MAP = {
     'string': str,
     'boolean': bool,
     'integer': int,
+}
+
+DEFAULT_MAP = {
+    'string': '',
+    'array': frozenset,
 }
 
 
@@ -101,16 +109,19 @@ def make_attrib(entity_name: str, attrib_name: str, attrib_props: Dict[str, Any]
     """
     log.debug(f'Creating attribute %s.%s', entity_name, attrib_name)
     required = attrib_name in required_fields
-    tpe, factory = make_type(entity_name, attrib_name, attrib_props, level)
+    tpe, default, factory = make_type(entity_name, attrib_name, attrib_props, level)
     attribs = {
         'type': tpe if required else Optional[tpe],
     }
     if level == 0 and attrib_name == 'id':
         attribs['factory'] = lambda: str(uuid.uuid4())
-    elif not required:
-        attribs['default'] = None
     elif factory:
         attribs['factory'] = factory
+    elif not required:
+        attribs['default'] = default
+
+    if attrib_name in IGNORED_EQ_ATTRIBUTES:
+        attribs['eq'] = False
 
     return attribs
 
@@ -132,7 +143,8 @@ def make_attribs(entity_name: str, attributes, level: int) -> Dict[str, int]:
         required_fields = s.get('required', [])
         properties = s['properties']
         for attrib_name, attrib_props in properties.items():
-            entity_attrs[attrib_name] = make_attrib(entity_name, attrib_name, attrib_props, required_fields, level)
+            if attrib_name not in IGNORED_ATTRIBUTES:
+                entity_attrs[attrib_name] = make_attrib(entity_name, attrib_name, attrib_props, required_fields, level)
 
     # We need to create then in order. Those with default values at the end
     for attrib_name, attrib_attrs in {k: v for k,v in entity_attrs.items()
@@ -145,24 +157,24 @@ def make_attribs(entity_name: str, attributes, level: int) -> Dict[str, int]:
 
 
 def make_type(entity_name: str, attrib_name: str, data,
-              level: int) -> Tuple[type, Optional[Callable[[], Any]]]:
+              level: int) -> Tuple[type, Optional[type], Optional[Callable[[], Any]]]:
     tpe = data['type']
     if tpe in TYPES_MAP:
-        return TYPES_MAP[tpe], None
+        return TYPES_MAP[tpe], DEFAULT_MAP.get(tpe), None
     elif is_array(data):
         # Recursion here, we parse the items as a type
-        array_tpe, _ = make_type(attrib_name, attrib_name, data['items'], level)
-        return FrozenSet[array_tpe], frozenset  # type: ignore
+        array_tpe, _, _ = make_type(attrib_name, attrib_name, data['items'], level)
+        return FrozenSet[array_tpe], None, frozenset  # type: ignore
     elif is_object(data):
         # Indirect recursion here.
         name = f'{entity_name}_{attrib_name.capitalize()}'
-        return make_class(name, make_attribs(entity_name, [data], level + 1),
-                          frozen=True, slots=True), None
+        entity_attribs = make_attribs(entity_name, [data], level + 1)
+        return make_class(name, entity_attribs, frozen=True, slots=True), None, None
     else:
         raise Exception(f'Unknown type: {tpe}')
 
 
-def make_entity(entity: str, spec_dir: Optional[Path] = None) -> type:
+def make_entity(entity: str, spec_dir: Optional[Path] = None) -> Type[Entity_T]:
     """
     Function that creates an entity class from a yaml specification
     """
