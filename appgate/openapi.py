@@ -16,7 +16,6 @@ __all__ = [
 
 
 SPEC_DIR = 'api_specs'
-IGNORED_ATTRIBUTES = {'updated', 'created'}
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
@@ -174,9 +173,10 @@ def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
         required_fields = s.get('required', [])
         properties = s['properties']
         for attrib_name, attrib_props in properties.items():
-            if attrib_name not in IGNORED_ATTRIBUTES:
-                entity_attrs[attrib_name] = make_attrib(entities, data, entity_name, attrib_name,
-                                                        attrib_props, required_fields, level)
+            if 'readOnly' in attrib_props:
+                continue
+            entity_attrs[attrib_name] = make_attrib(entities, data, entity_name, attrib_name,
+                                                    attrib_props, required_fields, level)
 
     # We need to create then in order. Those with default values at the end
     for attrib_name, attrib_attrs in {k: v for k,v in entity_attrs.items()
