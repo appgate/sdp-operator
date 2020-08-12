@@ -258,7 +258,6 @@ def parse_definition(entities: dict, data: Dict[str, Any], name: str,
         return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level)
     elif is_array(definition):
         attrs = make_attribs(entities, data, name, [definition['items']], level)
-        print(attrs)
         log.info(f'Registering new class {name}')
         if name in entities['classes']:
             log.warning(f'Entity %s already registered, overwriting', name)

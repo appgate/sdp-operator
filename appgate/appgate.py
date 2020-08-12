@@ -19,7 +19,7 @@ from appgate.client import AppgateClient
 from appgate.state import AppgateState, create_appgate_plan, appgate_plan_errors_summary, \
     appgate_plan_apply, EntitiesSet, resolve_entitlements, resolve_policies
 from appgate.types import entitlement_load, K8SEvent, policy_load, condition_load, AppgateEvent, \
-    Policy, Entitlement, Condition, DOMAIN
+    Policy, Entitlement, Condition, IdentityProvider
 
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
@@ -123,7 +123,10 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     policies = await appgate_client.policies.get()
     entitlements = await appgate_client.entitlements.get()
     conditions = await appgate_client.conditions.get()
-    if policies is None or entitlements is None or conditions is None:
+    identity_providers = await appgate_client.identity_providers.get()
+
+    if policies is None or entitlements is None or conditions is None or \
+            identity_providers is None:
         log.error('[appgate-operator/%s] Unable to get entities from controller',
                   ctx.namespace)
         await appgate_client.close()
@@ -132,9 +135,11 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     policies_set = EntitiesSet(set(cast(List[Policy], policies)))
     entitlements_set = EntitiesSet(set(cast(List[Entitlement], entitlements)))
     conditions_set = EntitiesSet(set(cast(List[Condition], conditions)))
+    identity_providers_set = EntitiesSet(set(cast(List[IdentityProvider], identity_providers)))
     appgate_state = AppgateState(policies=policies_set,
                                  entitlements=entitlements_set,
-                                 conditions=conditions_set)
+                                 conditions=conditions_set,
+                                 identity_providers=identity_providers_set)
     await appgate_client.close()
     return appgate_state
 
