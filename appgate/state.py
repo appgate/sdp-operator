@@ -8,11 +8,10 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
-from appgate.types import Policy, Condition, Entitlement, AppgateEntity, DOMAIN,\
-    RESOURCE_VERSION
+from appgate.types import Policy, Condition, Entitlement, AppgateEntity, IdentityProvider
 
 __all__ = [
     'AppgateState',
@@ -107,7 +106,7 @@ def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
 
 def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
      return {
-        'apiVersion': f'{DOMAIN}/{RESOURCE_VERSION}',
+        'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': {
             'name': entity.name
@@ -129,6 +128,7 @@ class AppgateState:
     policies: EntitiesSet[Policy] = attrib()
     conditions: EntitiesSet[Condition] = attrib()
     entitlements: EntitiesSet[Entitlement] = attrib()
+    identity_providers: EntitiesSet[IdentityProvider] = attrib()
 
     def with_entity(self, entity: AppgateEntity, op: str,
                     current_appgate_state: 'AppgateState') -> None:
@@ -140,6 +140,7 @@ class AppgateState:
             Policy: lambda s: s.policies,
             Entitlement: lambda s: s.entitlements,
             Condition: lambda s: s.conditions,
+            IdentityProvider: lambda s: s.identity_providers
         }
         entitites = known_entities.get(type(entity))
         if not entitites:
@@ -150,10 +151,12 @@ class AppgateState:
 
     def copy(self, entitlements: Optional[EntitiesSet[Entitlement]] = None,
              policies: Optional[EntitiesSet[Policy]] = None,
-             conditions: Optional[EntitiesSet[Condition]] = None) -> 'AppgateState':
+             conditions: Optional[EntitiesSet[Condition]] = None,
+             identity_providers: Optional[EntitiesSet[IdentityProvider]] = None) -> 'AppgateState':
         return AppgateState(policies=policies or self.policies,
                             entitlements=entitlements or self.entitlements,
-                            conditions=conditions or self.conditions)
+                            conditions=conditions or self.conditions,
+                            identity_providers=identity_providers or self.identity_providers)
 
     def dump(self, path: Optional[Path] = None) -> None:
         dump_dir = path or Path(str(datetime.date.today()))
@@ -162,6 +165,7 @@ class AppgateState:
         dump_entities(self.conditions.entities, dump_dir / 'conditions.yaml', 'Condition')
         dump_entities(self.entitlements.entities, dump_dir / 'entitlements.yaml', 'Entitlement')
         dump_entities(self.policies.entities, dump_dir / 'policies.yaml', 'Policy')
+        dump_entities(self.identity_providers.entities, dump_dir / 'identity_probiders.yaml', 'IdentityProvider')
 
 
 def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: EntitiesSet[T],

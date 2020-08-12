@@ -5,7 +5,7 @@ import typedload
 from aiohttp import InvalidURL
 
 from appgate.logger import log
-from appgate.types import AppgateEntity, Policy, Entitlement, Condition
+from appgate.types import AppgateEntity, Policy, Entitlement, Condition, IdentityProvider
 
 __all__ = [
     'AppgateClient',
@@ -154,4 +154,10 @@ class AppgateClient:
     def conditions(self) -> EntityClient:
         return EntityClient(appgate_client=self, path='/admin/conditions',
                             loader=lambda e: typedload.load(e, Condition))
+
+    @property
+    def identity_providers(self) -> EntityClient:
+        return EntityClient(appgate_client=self, path='/admin/identity-providers',
+                            loader=lambda e: typedload.load(e, IdentityProvider))
+
 

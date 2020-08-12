@@ -16,11 +16,12 @@ __all__ = [
 
 
 SPEC_DIR = 'api_specs'
-
 IGNORED_ATTRIBUTES = {'updated', 'created'}
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
-
-
+K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
+K8S_CRD_KIND = 'CustomResourceDefinition'
+K8S_APPGATE_DOMAIN = 'beta.appgate.com'
+K8S_APPGATE_VERSION = 'v1'
 TYPES_MAP = {
     'string': str,
     'boolean': bool,
@@ -97,6 +98,10 @@ def is_rest_api(entry: Dict[str, Any]) -> bool:
 def is_compound(entry: Dict[str, Any]) -> bool:
     composite = {'allOf'}
     return any(filter(lambda c: c in entry, composite))
+
+
+def tpe_is_attr(tpe: type) -> bool:
+    return hasattr(tpe, '__attrs_attrs__')
 
 
 def attrs_has_default(attrs) -> bool:
@@ -188,7 +193,7 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
     if is_ref(type_data):
         resolved_ref, name = resolve_ref(entities=entities, data=data, ref=type_data['$ref'],
                                          spec_dir=Path('api_specs)'))
-        return parse_definition(entities, data, name, resolved_ref), None, None
+        return parse_definition(entities, data, name, resolved_ref, level + 1)
     else:
         tpe = type_data['type']
         if tpe in TYPES_MAP:
@@ -226,7 +231,7 @@ def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
 
 
 def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
-                 all_of: List[Dict[str, Any]]):
+                 all_of: List[Dict[str, Any]], level: int):
     attributes = []
     for s in all_of:
         if is_ref(s):
@@ -237,32 +242,38 @@ def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
             attributes.append(s)
         elif is_array(s):
             attributes.append(s['items'])
-    attrs = make_attribs(entities, data, entity_name, attributes, 0)
+    attrs = make_attribs(entities, data, entity_name, attributes, level)
 
     log.info(f'Registering new class {entity_name}')
     if entity_name in entities['classes']:
         log.warning(f'Entity %s already registered, overwriting', entity_name)
     entities['classes'][entity_name] = make_class(entity_name, attrs, bases=(Entity_T,),
                                                   slots=True, frozen=True)
-    return entities['classes'][entity_name]
+    return entities['classes'][entity_name], None, None
 
 
 def parse_definition(entities: dict, data: Dict[str, Any], name: str,
-                     definition: Dict[str, Any]):
+                     definition: Dict[str, Any], level: int):
     if is_compound(definition):
-        return parse_all_of(entities, data, name, get_keys(definition, ['allOf']))
-    else:
-        return parse_all_of(entities, data, name, [definition])
+        return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level)
+    elif is_array(definition):
+        attrs = make_attribs(entities, data, name, [definition['items']], level)
+        print(attrs)
+        log.info(f'Registering new class {name}')
+        if name in entities['classes']:
+            log.warning(f'Entity %s already registered, overwriting', name)
+        entities['classes'][name] = make_class(name, attrs, slots=True, frozen=True)
+        return FrozenSet[entities['classes'][name]], None, frozenset
 
 
 def parse_definitions(entities: dict, data: Dict[str, Any],
-                      definitions: Dict[str, Any]):
+                      definitions: Dict[str, Any], level: int):
     for definition, value in definitions.items():
         log.debug('Parsing: %s', definition)
         if definition in entities['classes']:
             log.info('Definition already defined: %s, reusing it', definition)
         else:
-            parse_definition(entities, data, definition, value)
+            parse_definition(entities, data, definition, value, level)
 
 
 def parse(data: Dict[str, Any], entities: Optional[dict] = None):
@@ -273,7 +284,7 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
 
     for k, v in data.items():
         if k == 'definitions':
-            parse_definitions(entities, data, get_keys(data, ['definitions']))
+            parse_definitions(entities, data, get_keys(data, ['definitions']), 0)
         if is_rest_api(v):
             pass
 
@@ -286,3 +297,43 @@ def parse_files(files: List[Path]):
         with f.open('r') as f:
             parse(yaml.safe_load(f.read()), entities=entities)
     return entities['classes']
+
+
+def generate_crd(entity):
+    name = entity.__name__
+    singular_name = name.lower()
+    if singular_name.endswith('y'):
+        plural_name = f'{singular_name[:-1]}ies'
+    else:
+        plural_name = f'{singular_name}s'
+    crd = {
+        'apiVersion': K8S_API_VERSION,
+        'kind': K8S_CRD_KIND,
+        'metadata': {
+            'name': f'{plural_name}.{K8S_APPGATE_DOMAIN}',
+        },
+        'spec': {
+            'group': K8S_APPGATE_DOMAIN,
+            'versions': [{
+                'name': K8S_APPGATE_VERSION,
+                'served': True,
+                'storage': True
+            }],
+            'scope': 'Namespaced',
+            'names': {
+                'singular': singular_name,
+                'plural': plural_name,
+                'kind': name,
+                'shortNames': [
+                    name[0:3].lower()
+                ]
+            }
+        }
+    }
+    """
+    TODO: Iterate over all attributes here to generate the spec
+    for a in entity.__attrs_attrs__:
+        spec = a.metadata['spec']
+        str[a.name] = spec()
+    """
+    return yaml.safe_dump(crd)

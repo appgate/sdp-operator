@@ -4,6 +4,9 @@ from attr import attrib, attrs
 from typing import Dict, Any, Union
 from typedload import load
 
+from appgate.openapi import parse_files
+
+
 __all__ = [
     'K8SEvent',
     'EventObject',
@@ -11,16 +14,8 @@ __all__ = [
     'Policy',
     'Condition',
     'AppgateEvent',
-    'AppgateEntity',
-    'DOMAIN',
-    'RESOURCE_VERSION'
+    'AppgateEntity'
 ]
-
-from appgate.openapi import Entity_T, parse_files
-
-DOMAIN = 'beta.appgate.com'
-RESOURCE_VERSION = 'v1'
-
 
 class EventObject:
     def __init__(self, data: Dict[str, Any]) -> None:
@@ -43,6 +38,13 @@ SPEC_FILES = [
     Path('api_specs/condition.yml')
 ]
 cls = parse_files(SPEC_FILES)
+
+IdentityProvider = cls['IdentityProvider']
+
+
+def identity_provider_load(data: Dict[str, Any]) -> IdentityProvider:
+    return load(data, IdentityProvider)
+
 
 Entitlement = cls['Entitlement']
 
