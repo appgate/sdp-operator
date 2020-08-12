@@ -8,7 +8,7 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import Entity_T
+from appgate.openapi import Entity_T
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
 from appgate.types import Policy, Condition, Entitlement, AppgateEntity, DOMAIN,\
