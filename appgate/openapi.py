@@ -94,6 +94,13 @@ def is_rest_api(entry: Dict[str, Any]) -> bool:
     return any(filter(lambda m: m in entry, methods))
 
 
+def is_post_rest_api(entry: Dict[str, Any]) -> bool:
+    """
+    Checks ig entry is an rest api
+    """
+    return is_rest_api(entry) and 'post' in entry
+
+
 def is_compound(entry: Dict[str, Any]) -> bool:
     composite = {'allOf'}
     return any(filter(lambda c: c in entry, composite))
@@ -204,7 +211,7 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
     if is_ref(type_data):
         resolved_ref, name = resolve_ref(entities=entities, data=data, ref=type_data['$ref'],
                                          spec_dir=Path('api_specs)'))
-        return parse_definition(entities, data, name, resolved_ref, level + 1)
+        return parse_definition(entities, data, name, resolved_ref, level + 1, None)
     else:
         tpe = type_data['type']
         if tpe in TYPES_MAP:
@@ -220,7 +227,7 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
         elif is_object(type_data):
             # Indirect recursion here.
             name = f'{entity_name}_{attrib_name.capitalize()}'
-            entity_attribs = make_attribs(entities, data, entity_name, [type_data], level + 1)
+            entity_attribs, _ = make_attribs(entities, data, entity_name, [type_data], level + 1)
             cls = make_class(name, entity_attribs, frozen=True, slots=True)
             log.debug('Creating new attribute %s.%s: %s', entity_name, attrib_name, cls)
             return cls, None, None
@@ -242,21 +249,22 @@ def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
 
 
 def register_entity(entities: dict, entity_name: str, attrs: dict,
-                    dependencies: Dict[str, Set[str]]):
+                    dependencies: Dict[str, Set[str]],
+                    level: int, api_path: Optional[str]):
     log.info(f'Registering new class {entity_name}')
     if entity_name in entities['classes']:
-        log.warning(f'Entity %s already registered, overwriting', entity_name)
-    entities['classes'][entity_name] = make_class(entity_name, attrs, bases=(Entity_T,),
-                                                  slots=True, frozen=True)
-    for f, cs in dependencies.items():
-        if not entity_name in entities['dependencies']:
-            entities['dependencies'][entity_name] = []
-        entities['dependencies'][entity_name].append((f, cs))
+        log.warning(f'Entity %s already registered, ignoring it', entity_name)
+        return entities['classes'][entity_name]
+
+    cls =  make_class(entity_name, attrs, bases=(Entity_T,), slots=True, frozen=True)
+    deps = [(k, v) for k, v in dependencies.items()]
+    entities['classes'][entity_name] = (cls, deps, api_path, level)
+
     return entities['classes'][entity_name]
 
 
 def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
-                 all_of: List[Dict[str, Any]], level: int):
+                 all_of: List[Dict[str, Any]], level: int, api_path: Optional[str]):
     attributes = []
     for s in all_of:
         if is_ref(s):
@@ -268,17 +276,19 @@ def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
         elif is_array(s):
             attributes.append(s['items'])
     attrs, dependencies = make_attribs(entities, data, entity_name, attributes, level)
-    return register_entity(entities, entity_name, attrs, dependencies), None, None
+    return register_entity(entities, entity_name, attrs, dependencies, level, api_path)[0], None, None
 
 
 def parse_definition(entities: dict, data: Dict[str, Any], name: str,
-                     definition: Dict[str, Any], level: int):
+                     definition: Dict[str, Any], level: int,
+                     api_path: Optional[str]):
     if is_compound(definition):
-        return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level)
+        return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level,
+                            api_path)
     elif is_array(definition):
         attrs, dependencies = make_attribs(entities, data, name, [definition['items']], level)
-        register_entity(entities, name, attrs, dependencies)
-        return FrozenSet[entities['classes'][name]], None, frozenset
+        register_entity(entities, name, attrs, dependencies, level, api_path)
+        return FrozenSet[entities['classes'][name][0]], None, frozenset
 
 
 def parse_definitions(entities: dict, data: Dict[str, Any],
@@ -288,7 +298,7 @@ def parse_definitions(entities: dict, data: Dict[str, Any],
         if definition in entities['classes']:
             log.info('Definition already defined: %s, reusing it', definition)
         else:
-            parse_definition(entities, data, definition, value, level)
+            parse_definition(entities, data, definition, value, level, None)
 
 
 def parse(data: Dict[str, Any], entities: Optional[dict] = None):
@@ -299,11 +309,23 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
     if not 'dependencies' in entities:
         entities['dependencies'] = {}
 
+    # Parse API first
     for k, v in data.items():
-        if k == 'definitions':
-            parse_definitions(entities, data, get_keys(data, ['definitions']), 0)
-        if is_rest_api(v):
-            pass
+        if not is_rest_api(v):
+            continue
+        # This is ugly, make it better
+        # Bsically some times we have 2 references, we should make it generic.
+        v = get_keys(v, ['post', 'responses', 200])
+        if v and is_ref(v):
+            v, _ = resolve_ref(entities=entities, data=data, ref=v['$ref'],
+                                            spec_dir=Path('api_spec'))
+        v = get_keys(v or {}, ['content', 'application/json', 'schema'])
+        if v and is_ref(v):
+            resolved_ref, name = resolve_ref(entities=entities, data=data, ref=v['$ref'],
+                                             spec_dir=Path('api_spec'))
+            parse_definition(entities, data, name, resolved_ref, 0, api_path=k)
+    # Parse definitions
+    parse_definitions(entities, data, get_keys(data, ['definitions']) or [], 0)
 
 
 def parse_files(files: List[Path]):
@@ -324,7 +346,7 @@ def parse_files(files: List[Path]):
                     errors = True
     if errors:
         raise Exception('Error validating yaml entities.')
-    return entities['classes'], entities['dependencies']
+    return entities['classes']
 
 
 def generate_crd(entity):

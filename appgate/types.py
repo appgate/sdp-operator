@@ -38,30 +38,31 @@ SPEC_FILES = [
     Path('api_specs/policy.yml'),
     Path('api_specs/condition.yml')
 ]
-cls, deps = parse_files(SPEC_FILES)
+cls = parse_files(SPEC_FILES)
 
-IdentityProvider = cls['IdentityProvider']
+
+IdentityProvider = cls['IdentityProvider'][0]
 
 
 def identity_provider_load(data: Dict[str, Any]) -> IdentityProvider:
     return load(data, IdentityProvider)
 
 
-Entitlement = cls['Entitlement']
+Entitlement = cls['Entitlement'][0]
 
 
 def entitlement_load(data: Dict[str, Any]) -> Entitlement:
     return load(data, Entitlement)
 
 
-Policy = cls['Policy']
+Policy = cls['Policy'][0]
 
 
 def policy_load(data: Dict[str, Any]) -> Policy:
     return load(data, Policy)
 
 
-Condition = cls['Condition']
+Condition = cls['Condition'][0]
 
 
 def condition_load(data: Dict[str, Any]) -> Condition:
