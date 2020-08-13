@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable
+from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, get_origin, Set
 
 from attr import make_class, attrib, attrs
 import yaml
@@ -156,6 +156,8 @@ def make_attrib(entities: dict, data: dict, entity_name: str, attrib_name: str,
         else:
             attribs['metadata']['example'] = attrib_props['example']
 
+    if 'x-appgate-entity' in attrib_props:
+        attribs['metadata']['x-appgate-entity'] = attrib_props['x-appgate-entity']
     if attrib_name in IGNORED_EQ_ATTRIBUTES:
         attribs['eq'] = False
 
@@ -169,6 +171,7 @@ def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
     """
     entity_attrs = {}
     entity_attrs_attrib = {}
+    dependencies = {}
     for s in attributes:
         required_fields = s.get('required', [])
         properties = s['properties']
@@ -179,13 +182,21 @@ def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
                                                     attrib_props, required_fields, level)
 
     # We need to create then in order. Those with default values at the end
-    for attrib_name, attrib_attrs in {k: v for k,v in entity_attrs.items()
+    for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
                                       if not attrs_has_default(v)}.items():
         entity_attrs_attrib[attrib_name] = attrib(**attrib_attrs)
+        if 'x-appgate-entity' in attrib_attrs['metadata']:
+            if not attrib_name in dependencies:
+                dependencies[attrib_name] = set()
+            dependencies[attrib_name].add(attrib_attrs['metadata']['x-appgate-entity'])
     for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
                                       if attrs_has_default(v)}.items():
         entity_attrs_attrib[attrib_name] = attrib(**attrib_attrs)
-    return entity_attrs_attrib
+        if 'x-appgate-entity' in attrib_attrs['metadata']:
+            if not attrib_name in dependencies:
+                dependencies[attrib_name] = set()
+            dependencies[attrib_name].add(attrib_attrs['metadata']['x-appgate-entity'])
+    return entity_attrs_attrib, dependencies
 
 
 def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, type_data,
@@ -230,6 +241,20 @@ def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
     return resolved_ref, [x for x in k.split('/') if x][-1]
 
 
+def register_entity(entities: dict, entity_name: str, attrs: dict,
+                    dependencies: Dict[str, Set[str]]):
+    log.info(f'Registering new class {entity_name}')
+    if entity_name in entities['classes']:
+        log.warning(f'Entity %s already registered, overwriting', entity_name)
+    entities['classes'][entity_name] = make_class(entity_name, attrs, bases=(Entity_T,),
+                                                  slots=True, frozen=True)
+    for f, cs in dependencies.items():
+        if not entity_name in entities['dependencies']:
+            entities['dependencies'][entity_name] = []
+        entities['dependencies'][entity_name].append((f, cs))
+    return entities['classes'][entity_name]
+
+
 def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
                  all_of: List[Dict[str, Any]], level: int):
     attributes = []
@@ -242,14 +267,8 @@ def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
             attributes.append(s)
         elif is_array(s):
             attributes.append(s['items'])
-    attrs = make_attribs(entities, data, entity_name, attributes, level)
-
-    log.info(f'Registering new class {entity_name}')
-    if entity_name in entities['classes']:
-        log.warning(f'Entity %s already registered, overwriting', entity_name)
-    entities['classes'][entity_name] = make_class(entity_name, attrs, bases=(Entity_T,),
-                                                  slots=True, frozen=True)
-    return entities['classes'][entity_name], None, None
+    attrs, dependencies = make_attribs(entities, data, entity_name, attributes, level)
+    return register_entity(entities, entity_name, attrs, dependencies), None, None
 
 
 def parse_definition(entities: dict, data: Dict[str, Any], name: str,
@@ -257,11 +276,8 @@ def parse_definition(entities: dict, data: Dict[str, Any], name: str,
     if is_compound(definition):
         return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level)
     elif is_array(definition):
-        attrs = make_attribs(entities, data, name, [definition['items']], level)
-        log.info(f'Registering new class {name}')
-        if name in entities['classes']:
-            log.warning(f'Entity %s already registered, overwriting', name)
-        entities['classes'][name] = make_class(name, attrs, slots=True, frozen=True)
+        attrs, dependencies = make_attribs(entities, data, name, [definition['items']], level)
+        register_entity(entities, name, attrs, dependencies)
         return FrozenSet[entities['classes'][name]], None, frozenset
 
 
@@ -280,6 +296,8 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
         entities = {}
     if not 'classes' in entities:
         entities['classes'] = {}
+    if not 'dependencies' in entities:
+        entities['dependencies'] = {}
 
     for k, v in data.items():
         if k == 'definitions':
@@ -290,12 +308,23 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
 
 def parse_files(files: List[Path]):
     entities = {
-        'classes': {}
+        'classes': {},
+        'dependencies': {},
     }
     for f in files:
         with f.open('r') as f:
             parse(yaml.safe_load(f.read()), entities=entities)
-    return entities['classes']
+    # validate dependencies
+    errors = False
+    for e, deps in entities['dependencies'].items():
+        for _, ds in deps:
+            for d in ds:
+                if not d in entities['classes']:
+                    log.error(f'Entity %s is a dependency for %s, but it was not registered.', d, e)
+                    errors = True
+    if errors:
+        raise Exception('Error validating yaml entities.')
+    return entities['classes'], entities['dependencies']
 
 
 def generate_crd(entity):

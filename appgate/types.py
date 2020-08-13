@@ -17,6 +17,7 @@ __all__ = [
     'AppgateEntity'
 ]
 
+
 class EventObject:
     def __init__(self, data: Dict[str, Any]) -> None:
         self.kind = data['kind']
@@ -37,7 +38,7 @@ SPEC_FILES = [
     Path('api_specs/policy.yml'),
     Path('api_specs/condition.yml')
 ]
-cls = parse_files(SPEC_FILES)
+cls, deps = parse_files(SPEC_FILES)
 
 IdentityProvider = cls['IdentityProvider']
 
