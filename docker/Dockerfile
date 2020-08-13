@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:rc-slim
 ADD appgate /root/appgate/
 ADD requirements.txt /root/
 RUN python3 -m venv /root/venv && \
