@@ -4,18 +4,22 @@ from attr import attrib, attrs
 from typing import Dict, Any, Union
 from typedload import load
 
-from appgate.openapi import parse_files
+from appgate.client import AppgateClient, EntityClient
+from appgate.logger import set_level
+from appgate.openapi import parse_files, Entity_T
 
+set_level(log_level='debug')
 
 __all__ = [
     'K8SEvent',
     'EventObject',
-    'Entitlement',
-    'Policy',
-    'Condition',
     'AppgateEvent',
-    'AppgateEntity'
+    'generate_entities',
+    'generate_entity_clients',
 ]
+
+
+generated_entities = None
 
 
 class EventObject:
@@ -38,41 +42,26 @@ SPEC_FILES = [
     Path('api_specs/policy.yml'),
     Path('api_specs/condition.yml')
 ]
-cls = parse_files(SPEC_FILES)
 
 
-IdentityProvider = cls['IdentityProvider'][0]
+def generate_entities():
+    print('aaa')
+    global generated_entities
+    if not generated_entities:
+        generated_entities = parse_files(SPEC_FILES)
+    return generated_entities
 
 
-def identity_provider_load(data: Dict[str, Any]) -> IdentityProvider:
-    return load(data, IdentityProvider)
-
-
-Entitlement = cls['Entitlement'][0]
-
-
-def entitlement_load(data: Dict[str, Any]) -> Entitlement:
-    return load(data, Entitlement)
-
-
-Policy = cls['Policy'][0]
-
-
-def policy_load(data: Dict[str, Any]) -> Policy:
-    return load(data, Policy)
-
-
-Condition = cls['Condition'][0]
-
-
-def condition_load(data: Dict[str, Any]) -> Condition:
-    return load(data, Condition)
-
-
-AppgateEntity = Union[Entitlement, Policy, Condition]
+def generate_entity_clients(client: AppgateClient) -> Dict[str, EntityClient]:
+    generated_entities = generate_entities()
+    generated_clients = {}
+    for name, entity_t in generated_entities.items():
+        if entity_t[2]:
+            generated_clients[name] = client.entity_client(entity_t[0], entity_t[2])
+    return generated_clients
 
 
 @attrs(slots=True, frozen=True)
 class AppgateEvent:
     op: str = attrib()
-    entity: AppgateEntity = attrib()
+    entity: Entity_T = attrib()

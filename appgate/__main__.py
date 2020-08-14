@@ -6,9 +6,9 @@ from typing import Optional
 
 from appgate.openapi import generate_crd
 from appgate.logger import set_level
-from appgate.appgate import policies_loop, entitlements_loop, conditions_loop, \
-    init_kubernetes, main_loop, get_context, get_current_appgate_state, Context, log
-from appgate.types import AppgateEvent, Entitlement, Condition, IdentityProvider, Policy
+from appgate.appgate import  init_kubernetes, main_loop, get_context, get_current_appgate_state, \
+    Context
+from appgate.types import AppgateEvent
 
 
 def main_k8s(namespace: Optional[str]) -> None:
@@ -16,9 +16,9 @@ def main_k8s(namespace: Optional[str]) -> None:
     ctx = init_kubernetes(namespace)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
-    ioloop.create_task(policies_loop(ctx=ctx, queue=events_queue))
-    ioloop.create_task(entitlements_loop(ctx=ctx, queue=events_queue))
-    ioloop.create_task(conditions_loop(ctx=ctx, queue=events_queue))
+    #ioloop.create_task(policies_loop(ctx=ctx, queue=events_queue))
+    #ioloop.create_task(entitlements_loop(ctx=ctx, queue=events_queue))
+    #ioloop.create_task(conditions_loop(ctx=ctx, queue=events_queue))
     ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
     ioloop.run_forever()
 
