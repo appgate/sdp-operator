@@ -14,6 +14,7 @@ __all__ = [
     'parse',
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
+    'generate_crd',
 ]
 
 
