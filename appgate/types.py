@@ -7,7 +7,6 @@ from appgate.client import AppgateClient, EntityClient
 from appgate.logger import set_level
 from appgate.openapi import parse_files, Entity_T
 
-set_level(log_level='debug')
 
 __all__ = [
     'K8SEvent',

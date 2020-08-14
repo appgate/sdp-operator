@@ -1,8 +1,6 @@
 from typing import List, Optional
 
-from appgate.logger import set_level
 from appgate.types import generate_entities
-set_level('debug')
 entities = generate_entities()
 
 Policy = entities['Policy'][0]

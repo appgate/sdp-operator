@@ -11,7 +11,6 @@ from appgate.types import AppgateEvent, generate_entities
 
 
 def main_k8s(namespace: Optional[str]) -> None:
-    set_level(log_level='info')
     ctx = init_kubernetes(namespace)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
@@ -69,5 +68,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    set_level(log_level='debug')
     main()

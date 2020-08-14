@@ -5,9 +5,6 @@ from appgate.types import generate_entities
 from tests.utils import entitlement, condition, policy
 from appgate.logger import set_level, log
 
-
-set_level('debug')
-log.info('aaatn')
 entities = generate_entities()
 
 Policy = entities['Policy'][0]
