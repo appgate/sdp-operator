@@ -11,11 +11,11 @@ IdentityProvider = entities['IdentityProvider'][0]
 
 def entitlement(name: str, id: str = None, site: str = 'site-example',
                 conditions: Optional[List[str]] = None,
-                displayName: Optional[str] = None) -> Entitlement:
+                display_name: Optional[str] = None) -> Entitlement:
     return Entitlement(id=id,
                        name=name,
                        site=site,
-                       displayName=displayName or 'some-name',
+                       displayName=display_name or 'some-name',
                        conditions=frozenset(conditions) if conditions else frozenset())
 
 
