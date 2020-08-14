@@ -12,6 +12,8 @@ __all__ = [
     'Entity_T',
     'parse_files',
     'parse',
+    'K8S_APPGATE_DOMAIN',
+    'K8S_APPGATE_VERSION',
 ]
 
 
