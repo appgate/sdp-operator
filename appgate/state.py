@@ -275,12 +275,12 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
     return AppgatePlan(entities_plan=entities_plan)
 
 
-def entities_conflict_summary(conflicts: Dict[str, Optional[Dict[str, Set[str]]]],
+def entities_conflict_summary(conflicts: Dict[str, Optional[Dict[str, Tuple[str, Set[str]]]]],
                               namespace: str) -> None:
-    for k, xs in conflicts.items():
-        p1 = "they are" if len(xs) > 1 else "it is"
-        log.error('[appgate-operator/%s] Entity: %s references entity: %s, but %s not defined '
-                  'in the system.', namespace, k, ','.join(xs), p1)
+    for k, (field, values) in conflicts.items():
+        p1 = "they are" if len(values) > 1 else "it is"
+        log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
+                  'in the system.', namespace, k, ', '.join(values), field, p1)
 
 
 def compare_entities(current: EntitiesSet,
@@ -310,8 +310,9 @@ def resolve_entity(entity: Entity_T,
                    field: str,
                    names: Dict[str, Entity_T],
                    ids: Dict[str, Entity_T],
-                   missing_dependencies: Dict[str, Set[str]]) -> Optional[Entity_T]:
+                   missing_dependencies: Dict[str, Tuple[str, Set[str]]]) -> Optional[Entity_T]:
     new_dependencies = set()
+    missing_dependencies_set = set()
     if not hasattr(entity, field):
         raise Exception(f'Object {entity} has not field {field}.')
     dependencies = getattr(entity, field)
@@ -324,18 +325,22 @@ def resolve_entity(entity: Entity_T,
             new_dependencies.add(names[dependency].id)
         else:
             if entity.name not in missing_dependencies:
-                missing_dependencies[entity.name] = set()
-            missing_dependencies[entity.name].add(dependency)
+                missing_dependencies_set.add(dependency)
+
+    if missing_dependencies_set:
+        if entity.name not in missing_dependencies:
+            missing_dependencies[entity.name] = (field, missing_dependencies_set)
     if new_dependencies:
         return evolve(entity, **{field: frozenset(new_dependencies)})
     return None
 
 
 def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str) -> Tuple[EntitiesSet,
-                                                                            Optional[Dict[str, Set[str]]]]:
+                                                                            Optional[Dict[str, Tuple[str,
+                                                                                                     Set[str]]]]]:
     to_remove = set()
     to_add = set()
-    missing_entities: Dict[str, Set[str]] = {}
+    missing_entities: Dict[str, Tuple[str, Set[str]]] = {}
     e1_set = e1.entities.copy()
     names = e2.entities_by_name
     ids = e2.entities_by_id
