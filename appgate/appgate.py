@@ -5,7 +5,7 @@ import os
 import sys
 from asyncio import Queue
 from copy import deepcopy
-from typing import Optional, Dict, Any, List, cast
+from typing import Optional, Dict, Any
 
 from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
@@ -22,6 +22,17 @@ from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, resolve_entities, entities_conflict_summary
 from appgate.types import K8SEvent, AppgateEvent, generate_entities, generate_entity_clients
 
+
+__all__ = [
+    'init_kubernetes',
+    'main_loop',
+    'get_context',
+    'get_current_appgate_state',
+    'Context',
+    'entity_loop',
+]
+
+
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
 TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
@@ -30,15 +41,6 @@ DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
 CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
-
-
-__all__ = [
-    'init_kubernetes',
-    'main_loop',
-    'get_context',
-    'get_current_appgate_state',
-    'Context',
-]
 
 
 crds: Optional[CustomObjectsApi] = None
