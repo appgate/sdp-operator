@@ -9,7 +9,7 @@ import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
-from appgate.client import AppgateClient, EntityClient
+from appgate.client import EntityClient
 from appgate.logger import log
 
 __all__ = [
@@ -270,18 +270,17 @@ class AppgatePlan:
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
                              entity_clients: Dict[str, EntityClient]) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    entities_plan = {k: plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
+    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
                      for k, v in appgate_plan.entities_plan.items()}
     return AppgatePlan(entities_plan=entities_plan)
 
 
 def entities_conflict_summary(conflicts: Dict[str, Optional[Dict[str, Set[str]]]],
                               namespace: str) -> None:
-    for k, v in conflicts.items():
-        for e, xs in v.items():
-            p1 = "they are" if len(xs) > 1 else "it is"
-            log.error('[appgate-operator/%s] Entity: %s references entity: %s, but %s not defined '
-                      'in the system.', namespace, e, ','.join(xs), p1)
+    for k, xs in conflicts.items():
+        p1 = "they are" if len(xs) > 1 else "it is"
+        log.error('[appgate-operator/%s] Entity: %s references entity: %s, but %s not defined '
+                  'in the system.', namespace, k, ','.join(xs), p1)
 
 
 def compare_entities(current: EntitiesSet,
