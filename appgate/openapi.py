@@ -261,6 +261,7 @@ def register_entity(entities: dict, entity_name: str, attrs: dict,
 
     cls =  make_class(entity_name, attrs, bases=(Entity_T,), slots=True, frozen=True)
     deps = [(k, v) for k, v in dependencies.items()]
+    # (class, dependencies, path, level)
     entities['classes'][entity_name] = (cls, deps, api_path, level)
 
     return entities['classes'][entity_name]
