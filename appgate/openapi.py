@@ -352,13 +352,18 @@ def parse_files(files: List[Path]):
     return entities['classes']
 
 
-def generate_crd(entity):
+def entity_names(entity: type) -> Tuple[str, str, str]:
     name = entity.__name__
     singular_name = name.lower()
     if singular_name.endswith('y'):
         plural_name = f'{singular_name[:-1]}ies'
     else:
         plural_name = f'{singular_name}s'
+    return name, singular_name, plural_name
+
+
+def generate_crd(entity):
+    name, singular_name, plural_name = entity_names(entity)
     crd = {
         'apiVersion': K8S_API_VERSION,
         'kind': K8S_CRD_KIND,

@@ -3,12 +3,11 @@ from argparse import ArgumentParser
 from asyncio import Queue
 from typing import Optional
 
-
-from appgate.openapi import generate_crd
+from appgate.openapi import generate_crd, entity_names
 from appgate.logger import set_level
-from appgate.appgate import  init_kubernetes, main_loop, get_context, get_current_appgate_state, \
-    Context
-from appgate.types import AppgateEvent
+from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
+    Context, entity_loop
+from appgate.types import AppgateEvent, generate_entities
 
 
 def main_k8s(namespace: Optional[str]) -> None:
@@ -16,9 +15,10 @@ def main_k8s(namespace: Optional[str]) -> None:
     ctx = init_kubernetes(namespace)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
-    #ioloop.create_task(policies_loop(ctx=ctx, queue=events_queue))
-    #ioloop.create_task(entitlements_loop(ctx=ctx, queue=events_queue))
-    #ioloop.create_task(conditions_loop(ctx=ctx, queue=events_queue))
+    entities = generate_entities()
+    for e in [e for e in entities if e[2] is not None]:
+        _, _, plural_name = entity_names(e)
+        entity_loop(ctx=ctx, queue=events_queue, crd_path=plural_name, entity_type=e[0])
     ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
     ioloop.run_forever()
 
