@@ -254,13 +254,14 @@ def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
 
 def register_entity(entities: dict, entity_name: str, attrs: dict,
                     dependencies: Dict[str, Set[str]],
-                    level: int, api_path: Optional[str]):
+                    level: int, api_path: Optional[str],
+                    bases: Optional[Tuple[type, ...]] = None):
     log.info(f'Registering new class {entity_name}')
     if entity_name in entities['classes']:
         log.warning(f'Entity %s already registered, ignoring it', entity_name)
         return entities['classes'][entity_name]
 
-    cls =  make_class(entity_name, attrs, bases=(Entity_T,), slots=True, frozen=True)
+    cls =  make_class(entity_name, attrs, bases=bases or tuple(), slots=True, frozen=True)
     deps = [(k, v) for k, v in dependencies.items()]
     # (class, dependencies, path, level)
     entities['classes'][entity_name] = (cls, deps, api_path, level)
