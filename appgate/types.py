@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from attr import attrib, attrs
-from typing import Dict, Any, Union
-from typedload import load
+from typing import Dict, Any
 
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import set_level
@@ -19,7 +18,8 @@ __all__ = [
 ]
 
 
-generated_entities = None
+_generated_entities = None
+_api_version = None
 
 
 class EventObject:
@@ -43,13 +43,21 @@ SPEC_FILES = [
     Path('api_specs/condition.yml')
 ]
 
+VERSION_SPEC_FILE = 'api_specs/api_specs.yml'
+
 
 def generate_entities():
-    print('aaa')
-    global generated_entities
-    if not generated_entities:
-        generated_entities = parse_files(SPEC_FILES)
-    return generated_entities
+    global _generated_entities, _api_version
+    if not _generated_entities or not _api_version:
+        _generated_entities, _api_version = parse_files(SPEC_FILES)
+    return _generated_entities, _api_version
+
+
+def api_version():
+    global _api_version
+    if not _api_version:
+        _, _api_version = generate_entities()
+    return _api_version
 
 
 def generate_entity_clients(client: AppgateClient) -> Dict[str, EntityClient]:

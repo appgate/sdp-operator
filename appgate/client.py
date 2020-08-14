@@ -56,13 +56,14 @@ class EntityClient:
 
 
 class AppgateClient:
-    def __init__(self, controller: str, user: str, password: str) -> None:
+    def __init__(self, controller: str, user: str, password: str, version: int) -> None:
         self.controller = controller
         self.user = user
         self.password = password
         self._session = aiohttp.ClientSession()
         self.device_id = str(uuid.uuid4())
         self._token = None
+        self.version = version
 
     async def close(self) -> None:
         await self._session.close()
@@ -84,7 +85,7 @@ class AppgateClient:
         if not method:
             raise Exception(f'Unknown HTTP method: {verb}')
         headers = {
-            'Accept': 'application/vnd.appgate.peer-v12+json',
+            'Accept': f'application/vnd.appgate.peer-v{self.version}+json',
             'Content-Type': 'application/json'
         }
         auth_header = self.auth_header()

@@ -17,6 +17,7 @@ __all__ = [
     'generate_crd',
 ]
 
+from appgate.types import VERSION_SPEC_FILE
 
 SPEC_DIR = 'api_specs'
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
@@ -345,12 +346,16 @@ def parse_files(files: List[Path]):
     for e, deps in entities['dependencies'].items():
         for _, ds in deps:
             for d in ds:
-                if not d in entities['classes']:
+                if d not in entities['classes']:
                     log.error(f'Entity %s is a dependency for %s, but it was not registered.', d, e)
                     errors = True
+    # Now parse the API version
+    with VERSION_SPEC_FILE.open('r') as f:
+        data = yaml.safe_load(f.read())
+        api_version = data['info']['version'].split('')[2]
     if errors:
         raise Exception('Error validating yaml entities.')
-    return entities['classes']
+    return entities['classes'], api_version
 
 
 def entity_names(entity: type) -> Tuple[str, str, str]:

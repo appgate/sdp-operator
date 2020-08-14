@@ -11,7 +11,6 @@ from attr import attrib, attrs, evolve
 from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
-from appgate.types import generate_entities
 
 __all__ = [
     'AppgateState',
@@ -268,12 +267,10 @@ class AppgatePlan:
         return any(v.needs_apply for v in self.entities_plan.values())
 
 
-# TODO: Deal with errors here
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
-                             appgate_client: Optional[AppgateClient] = None) -> AppgatePlan:
+                             entity_clients: Dict[str, EntityClient]) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    entities_plan = {k: plan_apply(v, namespace=namespace,
-                                   entity_client=appgate_client.entity_client() if appgate_client else None)
+    entities_plan = {k: plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
                      for k, v in appgate_plan.entities_plan.items()}
     return AppgatePlan(entities_plan=entities_plan)
 
