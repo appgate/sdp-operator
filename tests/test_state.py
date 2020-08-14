@@ -1,9 +1,6 @@
-import pytest
-
 from appgate.state import compare_entities, EntitiesSet, resolve_entities
 from appgate.types import generate_entities
 from tests.utils import entitlement, condition, policy
-from appgate.logger import set_level, log
 
 entities = generate_entities()
 
