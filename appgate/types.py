@@ -4,7 +4,6 @@ from attr import attrib, attrs
 from typing import Dict, Any
 
 from appgate.client import AppgateClient, EntityClient
-from appgate.logger import set_level
 from appgate.openapi import parse_files, Entity_T
 
 
@@ -47,13 +46,13 @@ def generate_entities():
     global _generated_entities, _api_version
     if not _generated_entities or not _api_version:
         _generated_entities, _api_version = parse_files(SPEC_FILES)
-    return _generated_entities, _api_version
+    return _generated_entities
 
 
 def api_version():
     global _api_version
     if not _api_version:
-        _, _api_version = generate_entities()
+        _generated_entities, _api_version = parse_files(SPEC_FILES)
     return _api_version
 
 

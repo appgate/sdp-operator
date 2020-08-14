@@ -352,7 +352,8 @@ def parse_files(files: List[Path]):
     # Now parse the API version
     with VERSION_SPEC_FILE.open('r') as f:
         data = yaml.safe_load(f.read())
-        api_version = data['info']['version'].split('')[2]
+        # TODO: Check for errors :D
+        api_version = data['info']['version'].split(' ')[2]
     if errors:
         raise Exception('Error validating yaml entities.')
     return entities['classes'], api_version
