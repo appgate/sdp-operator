@@ -42,8 +42,6 @@ SPEC_FILES = [
     Path('api_specs/condition.yml')
 ]
 
-VERSION_SPEC_FILE = 'api_specs/api_specs.yml'
-
 
 def generate_entities():
     global _generated_entities, _api_version

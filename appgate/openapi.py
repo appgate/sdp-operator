@@ -17,9 +17,9 @@ __all__ = [
     'generate_crd',
 ]
 
-from appgate.types import VERSION_SPEC_FILE
 
 SPEC_DIR = 'api_specs'
+VERSION_SPEC_FILE = Path(SPEC_DIR) / 'api_specs.yml'
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
