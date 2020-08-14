@@ -15,9 +15,10 @@ def main_k8s(namespace: Optional[str]) -> None:
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
     entities = generate_entities()
-    for e in [e for e in entities if e[2] is not None]:
-        _, _, plural_name = entity_names(e)
-        entity_loop(ctx=ctx, queue=events_queue, crd_path=plural_name, entity_type=e[0])
+    for e in [e for e in entities.values() if e[2] is not None]:
+        _, _, plural_name = entity_names(e[0])
+        ioloop.create_task(entity_loop(ctx=ctx, queue=events_queue, crd_path=plural_name,
+                                       entity_type=e[0]))
     ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
     ioloop.run_forever()
 
