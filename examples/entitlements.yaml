@@ -3,7 +3,8 @@ kind: Entitlement
 metadata:
   name: entitlement-1
 spec:
-  name: entitlement-1 
+  name: entitlement-1
+  displayName: entitlement-1
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags: 
     - k8s
@@ -41,6 +42,7 @@ metadata:
   name: entitlement-2
 spec:
   name: entitlement-2
+  displayName: entitlement-1
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags: 
     - k8s
@@ -78,6 +80,7 @@ metadata:
   name: entitlement-3
 spec:
   name: entitlement-3
+  displayName: entitlement-3
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags: 
     - k8s
