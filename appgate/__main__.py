@@ -35,9 +35,13 @@ def main_dump_entities() -> None:
 
 def main_dump_crd() -> None:
     entities = generate_entities()
-    for e in [e[0] for e in entities if e[3] == 0]:
+    c = 0
+    for e in [e[0] for e in entities.values()
+              if e[3] == 0 and e[2] is not None]:
+        if c > 0:
+            print('---')
         print(generate_crd(e))
-        print('---')
+        c += 1
 
 
 def main() -> None:
