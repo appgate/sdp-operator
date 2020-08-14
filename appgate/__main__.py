@@ -43,7 +43,7 @@ def main() -> None:
     set_level(log_level='info')
     parser = ArgumentParser('appgate-operator')
     parser.add_argument('-l', '--log-level', choices=['DEBUG', 'INFO'],
-                        default='DEBUG')
+                        default='INFO')
     subparsers = parser.add_subparsers(dest='cmd')
     # run
     run = subparsers.add_parser('run')
