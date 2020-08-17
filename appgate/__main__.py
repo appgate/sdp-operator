@@ -1,6 +1,7 @@
 import asyncio
 from argparse import ArgumentParser
 from asyncio import Queue
+from pathlib import Path
 from typing import Optional
 
 from appgate.openapi import generate_crd, entity_names
@@ -24,23 +25,24 @@ def main_k8s(namespace: Optional[str]) -> None:
     ioloop.run_forever()
 
 
-async def dump_entities(ctx: Context) -> None:
+async def dump_entities(ctx: Context, output_dir: Optional[Path],
+                        stdout: bool = False) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
-    entities_order = entities_sorted()
-    entities = generate_entities()
-    total_conflits = {}
     total_conflicts = resolve_appgate_state(appgate_state=current_appgate_state,
                                             reverse=True)
-    if total_conflits:
+    if total_conflicts:
         log.error('[dump-entities] Found errors when getting current state')
-        entities_conflict_summary(conflicts=total_conflits, namespace='cli')
+        entities_conflict_summary(conflicts=total_conflicts,
+                                  namespace=ctx.namespace)
     else:
-        current_appgate_state.dump(stdout=True)
+        current_appgate_state.dump(output_dir=output_dir, stdout=stdout)
 
 
-def main_dump_entities() -> None:
+def main_dump_entities(stdout: bool, output_dir: Optional[Path]) -> None:
     ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(dump_entities(ctx=get_context('none')))
+    ioloop.run_until_complete(dump_entities(ctx=get_context('cli'),
+                                            stdout=stdout,
+                                            output_dir=Path(output_dir) if output_dir else None))
 
 
 def main_dump_crd() -> None:
@@ -67,6 +69,11 @@ def main() -> None:
     # dump entities
     dump_entities = subparsers.add_parser('dump-entities')
     dump_entities.set_defaults(cmd='dump-entities')
+    dump_entities.add_argument('--stdout', action='store_true', default=False,
+                               help='Dump entities into stdout')
+    dump_entities.add_argument('--directory', help='Directory where to dump entities. '
+                               'Default value: ',
+                               default=None)
     # dump crd
     # dump entities
     dump_crd = subparsers.add_parser('dump-crd')
@@ -77,9 +84,11 @@ def main() -> None:
     if args.cmd == 'run':
         main_k8s(args.namespace)
     elif args.cmd == 'dump-entities':
-        main_dump_entities()
+        main_dump_entities(stdout=args.stdout, output_dir=args.directory)
     elif args.cmd == 'dump-crd':
         main_dump_crd()
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":

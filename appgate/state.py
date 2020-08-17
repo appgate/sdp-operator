@@ -1,3 +1,4 @@
+import sys
 from copy import deepcopy
 import datetime
 from functools import cached_property
@@ -116,17 +117,18 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
      }
 
 
-def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str,
-                  stdout: bool = False) -> None:
-    if entities:
-        if stdout:
-            for e in entities:
-                print(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
-                print('---\n')
-        with dump_file.open('w') as f:
-            for e in entities:
-                f.write(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
-                f.write('---\n')
+def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
+                  entity_type: str) -> None:
+    f = dump_file.open('w') if dump_file else sys.stdout
+    c = 0
+    for e in entities:
+        if c > 0:
+            f.write('---\n')
+        yaml_dump = yaml.dump(dump_entity(e, entity_type), default_flow_style=False)
+        f.write(yaml_dump)
+        c += 1
+    if dump_file:
+        f.close()
 
 
 @attrs()
@@ -155,13 +157,18 @@ class AppgateState:
                 new_entities_set[k] = v
         return AppgateState(new_entities_set)
 
-    def dump(self, path: Optional[Path] = None, stdout: bool = False) -> None:
-        dump_dir = path or Path(str(datetime.date.today()))
-        dump_dir.mkdir(exist_ok=True)
-        # TODO: Discover the entity kind
+    def dump(self, output_dir: Optional[Path] = None, stdout: bool = False) -> None:
+        dump_dir = None
+        if not stdout:
+            dump_dir = output_dir or Path(str(datetime.date.today()))
+            dump_dir.mkdir(exist_ok=True)
+        c = 0
         for k, v in self.entities_set.items():
-            dump_entities(self.entities_set[k].entities, dump_dir / f'{k.lower()}.yaml',
-                          k, stdout=stdout)
+            if stdout and c > 0:
+                print('---\n')
+            c += 1
+            p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
+            dump_entities(self.entities_set[k].entities, p, k)
 
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
