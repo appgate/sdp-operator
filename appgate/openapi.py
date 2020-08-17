@@ -15,6 +15,7 @@ __all__ = [
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
     'generate_crd',
+    'entity_names',
 ]
 
 
