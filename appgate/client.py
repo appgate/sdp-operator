@@ -31,7 +31,6 @@ class EntityClient:
         if 'data' in data:
             return [self.loader(e) for e in data['data']]
         else:
-            print(data)
             return [self.loader(data)]
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
