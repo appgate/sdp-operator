@@ -248,6 +248,7 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
             return FrozenSet[array_tpe], None, frozenset  # type: ignore
         elif is_object(type_data):
             # Indirect recursion here.
+            # Those classes are never registered
             name = f'{entity_name}_{attrib_name.capitalize()}'
             entity_attribs, _ = make_attribs(entities, data, entity_name, [type_data], level + 1)
             cls = make_class(name, entity_attribs, frozen=True, slots=True)
@@ -278,8 +279,7 @@ def register_entity(entities: dict, entity_name: str, attrs: dict,
     if entity_name in entities['classes']:
         log.warning(f'Entity %s already registered, ignoring it', entity_name)
         return entities['classes'][entity_name]
-
-    cls =  make_class(entity_name, attrs, bases=bases or tuple(), slots=True, frozen=True)
+    cls = make_class(entity_name, attrs, bases=bases or tuple(), slots=True, frozen=True)
     deps = [(k, v) for k, v in dependencies.items()]
     # (class, dependencies, path, level)
     entities['classes'][entity_name] = (cls, deps, api_path, level)
