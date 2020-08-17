@@ -27,7 +27,12 @@ class EntityClient:
             log.error('[aggpate-client] GET %s :: Expecting a response but we got empty data',
                       self.path)
             return None
-        return [self.loader(e) for e in data['data']]
+        # TODO: We should discover this from the api spec
+        if 'data' in data:
+            return [self.loader(e) for e in data['data']]
+        else:
+            print(data)
+            return [self.loader(data)]
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         body = typedload.dump(entity)
