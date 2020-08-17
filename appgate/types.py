@@ -41,6 +41,10 @@ class K8SEvent:
 SPEC_FILES = [
     Path('api_specs/identity_provider.yml'),
     Path('api_specs/administrative_role.yml'),
+    Path('api_specs/device_script.yml'),
+    Path('api_specs/global_settings.yml'),
+    Path('api_specs/criteria_script.yml'),
+    Path('api_specs/entitlement_script.yml'),
     Path('api_specs/entitlement.yml'),
     Path('api_specs/policy.yml'),
     Path('api_specs/condition.yml')
