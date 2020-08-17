@@ -1,6 +1,7 @@
 import sys
 from copy import deepcopy
 import datetime
+import time
 from functools import cached_property
 from pathlib import Path
 from typing import Set, TypeVar, Dict, Optional, Tuple, Literal, Any, Iterable
@@ -160,7 +161,8 @@ class AppgateState:
     def dump(self, output_dir: Optional[Path] = None, stdout: bool = False) -> None:
         dump_dir = None
         if not stdout:
-            dump_dir = output_dir or Path(str(datetime.date.today()))
+            output_dir_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-entities'
+            dump_dir = output_dir or Path(output_dir_format)
             dump_dir.mkdir(exist_ok=True)
         c = 0
         for k, v in self.entities_set.items():

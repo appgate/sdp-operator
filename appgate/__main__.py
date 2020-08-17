@@ -1,8 +1,11 @@
 import asyncio
+import sys
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
 from typing import Optional
+import datetime
+import time
 
 from appgate.openapi import generate_crd, entity_names
 from appgate.logger import set_level
@@ -38,21 +41,26 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
         current_appgate_state.dump(output_dir=output_dir, stdout=stdout)
 
 
-def main_dump_entities(stdout: bool, output_dir: Optional[Path]) -> None:
+def main_dump_entities(stdout: bool, output_dir: Optional[str]) -> None:
     ioloop = asyncio.get_event_loop()
     ioloop.run_until_complete(dump_entities(ctx=get_context('cli'),
                                             stdout=stdout,
                                             output_dir=Path(output_dir) if output_dir else None))
 
 
-def main_dump_crd() -> None:
+def main_dump_crd(stdout: bool, output_file: Optional[str]) -> None:
     entities = generate_entities()
+    if not stdout:
+        output_file_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-crd.yml'
+        f = (Path(output_file) if output_file else Path(output_file_format)).open('w')
+    else:
+        f = sys.stdout
     c = 0
     for e in [e[0] for e in entities.values()
               if e[3] == 0 and e[2] is not None]:
         if c > 0:
-            print('---')
-        print(generate_crd(e))
+            f.write('---\n')
+        f.write(generate_crd(e))
         c += 1
 
 
@@ -72,12 +80,16 @@ def main() -> None:
     dump_entities.add_argument('--stdout', action='store_true', default=False,
                                help='Dump entities into stdout')
     dump_entities.add_argument('--directory', help='Directory where to dump entities. '
-                               'Default value: ',
+                               'Default value: "YYYY-MM-DD_HH-MM-entities"',
                                default=None)
     # dump crd
-    # dump entities
     dump_crd = subparsers.add_parser('dump-crd')
     dump_crd.set_defaults(cmd='dump-crd')
+    dump_crd.add_argument('--stdout', action='store_true', default=False,
+                          help='Dump entities into stdout')
+    dump_crd.add_argument('--file', help='File where to dump CRD definitions. '
+                                         'Default value: "YYYY-MM-DD_HH-MM-crd.yaml"',
+                          default=None)
     args = parser.parse_args()
     set_level(log_level=args.log_level.lower())
 
@@ -86,7 +98,7 @@ def main() -> None:
     elif args.cmd == 'dump-entities':
         main_dump_entities(stdout=args.stdout, output_dir=args.directory)
     elif args.cmd == 'dump-crd':
-        main_dump_crd()
+        main_dump_crd(stdout=args.stdout, output_file=args.file)
     else:
         parser.print_help()
 

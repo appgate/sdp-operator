@@ -157,8 +157,25 @@ def make_attrib(entities: dict, data: dict, entity_name: str, attrib_name: str,
     elif not required:
         attribs['default'] = attrib_props.get('default', default)
 
+    # TODO: Generate here a function that returns recursively the spec
+    if get_origin(tpe) == frozenset:
+        if tpe_is_attr(tpe.__args__[0]):
+            pass
+            #items = tpe.__args__[0].__attrs_attrs__.metadata['spec']()
+        else:
+            items = {
+                'type': str(tpe.__args__[0])
+            }
+        tpe_str = lambda: {
+            'type': 'array',
+            'items': items
+        }
+    elif tpe_is_attr(tpe):
+        tpe_str = lambda: generate_crd(tpe)
+    else:
+        tpe_str = lambda: {'type': str(tpe)}
     attribs['metadata'] = {
-        'type': str(tpe) if required else str(Optional[tpe])
+        'type': str(tpe) if required else str(Optional[tpe]),
     }
     if 'description' in attrib_props:
         attribs['metadata']['description'] = attrib_props['description']
