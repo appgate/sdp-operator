@@ -30,6 +30,7 @@ TYPES_MAP = {
     'string': str,
     'boolean': bool,
     'integer': int,
+    'number': int,
 }
 
 DEFAULT_MAP = {
