@@ -10,7 +10,7 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t
 from appgate.client import EntityClient
 from appgate.logger import log
 
@@ -45,13 +45,15 @@ class EntitiesSet:
         else:
             self.entities_by_name = {}
             for e in self.entities:
-                self.entities_by_name[e.name] = e
+                if is_entity_t(e):
+                    self.entities_by_name[e.name] = e
         if entities_by_id:
             self.entities_by_id = entities_by_id
         else:
             self.entities_by_id = {}
             for e in self.entities:
-                self.entities_by_id[e.id] = e
+                if is_entity_t(e):
+                    self.entities_by_id[e.id] = e
 
     def __str__(self) -> str:
         return str(self.entities)
@@ -108,14 +110,15 @@ def entities_op(entity_set: EntitiesSet, entity: Entity_T,
 
 
 def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
-     return {
+    entity_name = entity.name if is_entity_t(entity_type) else entity_type.lower()
+    return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': {
-            'name': entity.name
+            'name': entity_name
         },
         'spec': typedload.dump(entity)
-     }
+    }
 
 
 def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
