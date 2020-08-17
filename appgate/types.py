@@ -44,6 +44,7 @@ SPEC_FILES = [
     Path('api_specs/device_script.yml'),
     Path('api_specs/client_connections.yml'),
     Path('api_specs/global_settings.yml'),
+    Path('api_specs/appliance.yml'),
     Path('api_specs/criteria_script.yml'),
     Path('api_specs/entitlement_script.yml'),
     Path('api_specs/entitlement.yml'),
