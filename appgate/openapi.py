@@ -46,6 +46,10 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
 
 
+def is_entity_t(e: Any) -> bool:
+    return hasattr(e, 'name') and hasattr(e, 'id')
+
+
 def get_keys(data: Dict[str, Any], keys: List[str]) -> Optional[Any]:
     """
     gets key0.key1... entry in `data`
