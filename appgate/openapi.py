@@ -344,10 +344,11 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
             continue
         # This is ugly, make it better
         # Bsically some times we have 2 references, we should make it generic.
-        v = get_keys(v, ['post', 'responses', 200])
+        # v = get_keys(v, ['post', 'responses', 200]) or get_keys(v, ['put', 'responses', 200])
+        v = get_keys(v, ['post', 'requestBody']) or get_keys(v, ['put', 'requestBody'])
         if v and is_ref(v):
             v, _ = resolve_ref(entities=entities, data=data, ref=v['$ref'],
-                                            spec_dir=Path('api_spec'))
+                               spec_dir=Path('api_spec'))
         v = get_keys(v or {}, ['content', 'application/json', 'schema'])
         if v and is_ref(v):
             resolved_ref, name = resolve_ref(entities=entities, data=data, ref=v['$ref'],
