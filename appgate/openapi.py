@@ -1,3 +1,4 @@
+import re
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, get_origin, Set
@@ -35,11 +36,11 @@ TYPES_MAP = {
     'integer': int,
     'number': int,
 }
-
 DEFAULT_MAP = {
     'string': '',
     'array': frozenset,
 }
+NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
 
 
 @attrs()
@@ -173,25 +174,9 @@ def make_attrib(entities: dict, data: dict, entity_name: str, attrib_name: str,
     elif not required:
         attribs['default'] = attrib_props.get('default', default)
 
-    # TODO: Generate here a function that returns recursively the spec
-    if get_origin(tpe) == frozenset:
-        if tpe_is_attr(tpe.__args__[0]):
-            pass
-            #items = tpe.__args__[0].__attrs_attrs__.metadata['spec']()
-        else:
-            items = {
-                'type': str(tpe.__args__[0])
-            }
-        tpe_str = lambda: {
-            'type': 'array',
-            'items': items
-        }
-    elif tpe_is_attr(tpe):
-        tpe_str = lambda: generate_crd(tpe)
-    else:
-        tpe_str = lambda: {'type': str(tpe)}
     attribs['metadata'] = {
         'type': str(tpe) if required else str(Optional[tpe]),
+        'name': attrib_name
     }
     if 'description' in attrib_props:
         attribs['metadata']['description'] = attrib_props['description']
@@ -209,6 +194,12 @@ def make_attrib(entities: dict, data: dict, entity_name: str, attrib_name: str,
     return attribs
 
 
+def normalize_attrib_name(name: str) -> str:
+    if NAMES_REGEXP.match(name):
+        return re.sub(r'\.', '_', name)
+    return name
+
+
 def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
                  level: int) -> Dict[str, int]:
     """
@@ -221,10 +212,12 @@ def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
         required_fields = s.get('required', [])
         properties = s['properties']
         for attrib_name, attrib_props in properties.items():
+            norm_name = normalize_attrib_name(attrib_name)
             if 'readOnly' in attrib_props:
+                log.debug('Ignoring read only attribute %s', attrib_name)
                 continue
-            entity_attrs[attrib_name] = make_attrib(entities, data, entity_name, attrib_name,
-                                                    attrib_props, required_fields, level)
+            entity_attrs[norm_name] = make_attrib(entities, data, entity_name, attrib_name,
+                                                  attrib_props, required_fields, level)
 
     # We need to create then in order. Those with default values at the end
     for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
@@ -267,8 +260,8 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
             # Those classes are never registered
             name = f'{entity_name}_{attrib_name.capitalize()}'
             entity_attribs, _ = make_attribs(entities, data, entity_name, [type_data], level + 1)
-            cls = make_class(name, entity_attribs, frozen=True, slots=True)
-            log.debug('Creating new attribute %s.%s: %s', entity_name, attrib_name, cls)
+            cls, _, _, _ = register_entity(entities, name, entity_attribs, {}, level + 1, None)
+            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name, cls)
             return cls, None, None
     raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
                     type_data)
