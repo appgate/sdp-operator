@@ -313,6 +313,10 @@ def parse_definition(entities: dict, data: Dict[str, Any], name: str,
         attrs, dependencies = make_attribs(entities, data, name, [definition['items']], level)
         register_entity(entities, name, attrs, dependencies, level, api_path)
         return FrozenSet[entities['classes'][name][0]], None, frozenset
+    elif is_object(definition):
+        attrs, dependencies = make_attribs(entities, data, name, [definition], level)
+        register_entity(entities, name, attrs, dependencies, level, api_path)
+        return entities['classes'][name][0], None, None
 
 
 def parse_definitions(entities: dict, data: Dict[str, Any],
