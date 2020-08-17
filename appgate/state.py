@@ -10,7 +10,7 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name
 from appgate.client import EntityClient
 from appgate.logger import log
 
@@ -110,7 +110,7 @@ def entities_op(entity_set: EntitiesSet, entity: Entity_T,
 
 
 def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
-    entity_name = entity.name if is_entity_t(entity_type) else entity_type.lower()
+    entity_name = entity.name if has_name(entity) else entity_type.lower()
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,

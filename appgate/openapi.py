@@ -17,6 +17,8 @@ __all__ = [
     'generate_crd',
     'entity_names',
     'is_entity_t',
+    'has_id',
+    'has_name'
 ]
 
 
@@ -47,8 +49,16 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
 
 
+def has_name(e: Any) -> bool:
+    return hasattr(e, 'name')
+
+
+def has_id(e: Any) -> bool:
+    return hasattr(e, 'id')
+
+
 def is_entity_t(e: Any) -> bool:
-    return hasattr(e, 'name') and hasattr(e, 'id')
+    return has_name(e) and has_id(e)
 
 
 def get_keys(data: Dict[str, Any], keys: List[str]) -> Optional[Any]:
