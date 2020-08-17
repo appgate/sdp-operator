@@ -19,9 +19,9 @@ from kubernetes.watch import Watch
 from appgate.client import AppgateClient
 from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
 from appgate.state import AppgateState, create_appgate_plan, \
-    appgate_plan_apply, EntitiesSet, resolve_entities, entities_conflict_summary
-from appgate.types import K8SEvent, AppgateEvent, generate_entities, generate_entity_clients, \
-    api_version, entities_sorted
+    appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
+from appgate.types import K8SEvent, AppgateEvent, generate_entity_clients, \
+    api_version
 
 __all__ = [
     'init_kubernetes',
@@ -30,6 +30,7 @@ __all__ = [
     'get_current_appgate_state',
     'Context',
     'entity_loop',
+    'log',
 ]
 
 
@@ -197,27 +198,13 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
             # Resolve entities now, in order
-            # ths will be the Topological sort
-            entities_order = entities_sorted()
-            entities = generate_entities()
-            total_conflits = {}
-            log.info('Validating expected state entities')
-            log.debug('Resolving dependencies in order: %s', entities_order)
-            for i in entities_order:
-                for field, deps in entities[i][1]:
-                    log.debug('Checking dependencies %s for of type %s.%s', deps, i, field)
-                    for d in deps:
-                        e1 = expected_appgate_state.entities_set[i]
-                        e2 = expected_appgate_state.entities_set[d]
-                        new_e1, conflicts = resolve_entities(e1, e2, field)
-                        if conflicts:
-                            total_conflits.update(conflicts)
-                        expected_appgate_state.entities_set[i] = new_e1
-
-            if total_conflits:
+            # this will be the Topological sort
+            total_conflicts = resolve_appgate_state(appgate_state=expected_appgate_state,
+                                                    reverse=False)
+            if total_conflicts:
                 log.error('[appgate-operator/%s] Found errors in expected state and plan can'
                           ' not be applied.', namespace)
-                entities_conflict_summary(conflicts=total_conflits, namespace=namespace)
+                entities_conflict_summary(conflicts=total_conflicts, namespace=namespace)
                 log.info('[appgate-operator/%s] Waiting for more events that can fix the state.',
                          namespace)
                 continue

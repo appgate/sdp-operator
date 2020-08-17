@@ -6,8 +6,9 @@ from typing import Optional
 from appgate.openapi import generate_crd, entity_names
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
-    Context, entity_loop
-from appgate.types import AppgateEvent, generate_entities
+    Context, entity_loop, log
+from appgate.state import entities_conflict_summary, resolve_appgate_state
+from appgate.types import AppgateEvent, generate_entities, entities_sorted
 
 
 def main_k8s(namespace: Optional[str]) -> None:
@@ -25,7 +26,16 @@ def main_k8s(namespace: Optional[str]) -> None:
 
 async def dump_entities(ctx: Context) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
-    current_appgate_state.dump()
+    entities_order = entities_sorted()
+    entities = generate_entities()
+    total_conflits = {}
+    total_conflicts = resolve_appgate_state(appgate_state=current_appgate_state,
+                                            reverse=True)
+    if total_conflits:
+        log.error('[dump-entities] Found errors when getting current state')
+        entities_conflict_summary(conflicts=total_conflits, namespace='cli')
+    else:
+        current_appgate_state.dump(stdout=True)
 
 
 def main_dump_entities() -> None:

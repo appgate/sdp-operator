@@ -22,8 +22,10 @@ __all__ = [
     'appgate_plan_apply',
     'resolve_entity',
     'resolve_entities',
+    'resolve_appgate_state',
 ]
 
+from appgate.types import entities_sorted, generate_entities
 
 BUILTIN_TAG = 'builtin'
 
@@ -114,8 +116,13 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
      }
 
 
-def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str) -> None:
+def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str,
+                  stdout: bool = False) -> None:
     if entities:
+        if stdout:
+            for e in entities:
+                print(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
+                print('---\n')
         with dump_file.open('w') as f:
             for e in entities:
                 f.write(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
@@ -148,12 +155,13 @@ class AppgateState:
                 new_entities_set[k] = v
         return AppgateState(new_entities_set)
 
-    def dump(self, path: Optional[Path] = None) -> None:
+    def dump(self, path: Optional[Path] = None, stdout: bool = False) -> None:
         dump_dir = path or Path(str(datetime.date.today()))
         dump_dir.mkdir(exist_ok=True)
         # TODO: Discover the entity kind
         for k, v in self.entities_set.items():
-            dump_entities(self.entities_set[k].entities, dump_dir / f'{k.lower()}.yaml', k)
+            dump_entities(self.entities_set[k].entities, dump_dir / f'{k.lower()}.yaml',
+                          k, stdout=stdout)
 
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
@@ -275,7 +283,7 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
     return AppgatePlan(entities_plan=entities_plan)
 
 
-def entities_conflict_summary(conflicts: Dict[str, Optional[Dict[str, Tuple[str, Set[str]]]]],
+def entities_conflict_summary(conflicts: Dict[str, Tuple[str, Set[str]]],
                               namespace: str) -> None:
     for k, (field, values) in conflicts.items():
         p1 = "they are" if len(values) > 1 else "it is"
@@ -310,7 +318,8 @@ def resolve_entity(entity: Entity_T,
                    field: str,
                    names: Dict[str, Entity_T],
                    ids: Dict[str, Entity_T],
-                   missing_dependencies: Dict[str, Tuple[str, Set[str]]]) -> Optional[Entity_T]:
+                   missing_dependencies: Dict[str, Tuple[str, Set[str]]],
+                   reverse: bool = False) -> Optional[Entity_T]:
     new_dependencies = set()
     missing_dependencies_set = set()
     if not hasattr(entity, field):
@@ -319,10 +328,16 @@ def resolve_entity(entity: Entity_T,
     for dependency in dependencies:
         if dependency in ids:
             # dependency is an id
-            new_dependencies.add(dependency)
+            if reverse:
+                new_dependencies.add(ids[dependency].name)
+            else:
+                new_dependencies.add(dependency)
         elif dependency in names and names[dependency].id:
             # dependency is a name
-            new_dependencies.add(names[dependency].id)
+            if reverse:
+                new_dependencies.add(dependency)
+            else:
+                new_dependencies.add(names[dependency].id)
         else:
             if entity.name not in missing_dependencies:
                 missing_dependencies_set.add(dependency)
@@ -335,9 +350,10 @@ def resolve_entity(entity: Entity_T,
     return None
 
 
-def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str) -> Tuple[EntitiesSet,
-                                                                            Optional[Dict[str, Tuple[str,
-                                                                                                     Set[str]]]]]:
+def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
+                     reverse: bool = False) -> Tuple[EntitiesSet,
+                                                     Optional[Dict[str,
+                                                                   Tuple[str, Set[str]]]]]:
     to_remove = set()
     to_add = set()
     missing_entities: Dict[str, Tuple[str, Set[str]]] = {}
@@ -345,7 +361,7 @@ def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str) -> Tuple[Enti
     names = e2.entities_by_name
     ids = e2.entities_by_id
     for e in e1_set:
-        new_e = resolve_entity(e, field, names, ids, missing_entities)
+        new_e = resolve_entity(e, field, names, ids, missing_entities, reverse)
         if new_e:
             to_remove.add(e)
             to_add.add(new_e)
@@ -354,6 +370,26 @@ def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str) -> Tuple[Enti
     if len(missing_entities) > 0:
         return EntitiesSet(e1_set), missing_entities,
     return EntitiesSet(e1_set), None
+
+
+def resolve_appgate_state(appgate_state: AppgateState,
+                          reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
+    entities_order = entities_sorted()
+    entities = generate_entities()
+    total_conflicts = {}
+    log.info('[appgate-state] Validating expected state entities')
+    log.debug('[appgate-state] Resolving dependencies in order: %s', entities_order)
+    for i in entities_order:
+        for field, deps in entities[i][1]:
+            log.debug('[appgate-state] Checking dependencies %s for of type %s.%s', deps, i, field)
+            for d in deps:
+                e1 = appgate_state.entities_set[i]
+                e2 = appgate_state.entities_set[d]
+                new_e1, conflicts = resolve_entities(e1, e2, field, reverse)
+                if conflicts:
+                    total_conflicts.update(conflicts)
+                appgate_state.entities_set[i] = new_e1
+    return total_conflicts
 
 
 def create_appgate_plan(current_state: AppgateState,
