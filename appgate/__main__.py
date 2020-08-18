@@ -56,8 +56,8 @@ def main_dump_crd(stdout: bool, output_file: Optional[str]) -> None:
     else:
         f = sys.stdout
     c = 0
-    for e in [e[0] for e in entities.values()
-              if e[3] == 0 and e[2] is not None]:
+    for e in [e.cls for e in entities.values()
+              if e.level == 0 and e.api_path is not None]:
         if c > 0:
             f.write('---\n')
         f.write(generate_crd(e))
