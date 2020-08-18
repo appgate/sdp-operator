@@ -15,17 +15,20 @@ from appgate.state import entities_conflict_summary, resolve_appgate_state
 from appgate.types import AppgateEvent, generate_api_spec
 
 
-def main_k8s(namespace: Optional[str]) -> None:
+async def run_k8s(namespace: Optional[str]) -> None:
     ctx = init_kubernetes(namespace)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    ioloop = asyncio.get_event_loop()
-    entities = ctx.api_spec.entities
-    for e in [e for e in entities.values() if e.api_path]:
-        _, _, plural_name = entity_names(e.cls)
-        ioloop.create_task(entity_loop(ctx=ctx, queue=events_queue, crd_path=plural_name,
-                                       entity_type=e.cls))
-    ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
-    ioloop.run_forever()
+    tasks = [entity_loop(ctx=ctx, queue=events_queue,
+                         crd_path=entity_names(e.cls)[2],
+                         entity_type=e.cls)
+             for e in ctx.api_spec.entities.values()
+             if e.api_path] + \
+            [main_loop(queue=events_queue, ctx=ctx)]
+    await asyncio.gather(*tasks)
+
+
+def main_run(namespace: Optional[str]) -> None:
+    asyncio.run(run_k8s(namespace))
 
 
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
@@ -43,10 +46,9 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
 
 
 def main_dump_entities(stdout: bool, output_dir: Optional[str]) -> None:
-    ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(dump_entities(ctx=get_context('cli'),
-                                            stdout=stdout,
-                                            output_dir=Path(output_dir) if output_dir else None))
+    asyncio.run(dump_entities(ctx=get_context('cli'),
+                              stdout=stdout,
+                              output_dir=Path(output_dir) if output_dir else None))
 
 
 def main_dump_crd(stdout: bool, output_file: Optional[str]) -> None:
@@ -94,7 +96,7 @@ def main() -> None:
     set_level(log_level=args.log_level.lower())
 
     if args.cmd == 'run':
-        main_k8s(args.namespace)
+        main_run(args.namespace)
     elif args.cmd == 'dump-entities':
         main_dump_entities(stdout=args.stdout, output_dir=args.directory)
     elif args.cmd == 'dump-crd':
