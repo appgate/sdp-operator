@@ -243,9 +243,11 @@ def normalize_attrib_name(name: str) -> str:
 
 
 def make_attribs(entities: _EntitiesDict, data: dict, entity_name: str, attributes,
-                 level: int) -> Dict[str, int]:
+                 level: int) -> Tuple[Dict[str, int], Dict[str, Set[str]]]:
     """
-    Returns the attr.attrib data needed to use attr.make_class
+    Returns the attr.attrib data needed to use attr.make_class with the
+    dependencies for this attribute.
+    TODO: Return a list of EntityDependencies instead of a Dict
     """
     entity_attrs = {}
     entity_attrs_attrib = {}
