@@ -170,7 +170,7 @@ def is_compound(entry: Dict[str, Any]) -> bool:
     return any(filter(lambda c: c in entry, composite))
 
 
-def tpe_is_attr(tpe: type) -> bool:
+def type_is_attr(tpe: type) -> bool:
     return hasattr(tpe, '__attrs_attrs__')
 
 
