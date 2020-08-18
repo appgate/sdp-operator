@@ -55,13 +55,11 @@ def main_dump_crd(stdout: bool, output_file: Optional[str]) -> None:
         f = (Path(output_file) if output_file else Path(output_file_format)).open('w')
     else:
         f = sys.stdout
-    c = 0
-    for e in [e.cls for e in entities.values()
-              if e.level == 0 and e.api_path is not None]:
-        if c > 0:
+    for i, e in enumerate([e.cls for e in entities.values()
+                           if e.level == 0 and e.api_path is not None]):
+        if i > 0:
             f.write('---\n')
         f.write(generate_crd(e))
-        c += 1
 
 
 def main() -> None:

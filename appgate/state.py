@@ -124,13 +124,11 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
 def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
                   entity_type: str) -> None:
     f = dump_file.open('w') if dump_file else sys.stdout
-    c = 0
-    for e in entities:
-        if c > 0:
+    for i, e in enumerate(entities):
+        if i > 0:
             f.write('---\n')
         yaml_dump = yaml.dump(dump_entity(e, entity_type), default_flow_style=False)
         f.write(yaml_dump)
-        c += 1
     if dump_file:
         f.close()
 
@@ -167,11 +165,10 @@ class AppgateState:
             output_dir_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-entities'
             dump_dir = output_dir or Path(output_dir_format)
             dump_dir.mkdir(exist_ok=True)
-        c = 0
-        for k, v in self.entities_set.items():
-            if stdout and c > 0:
+
+        for (i, (k, v)) in enumerate(self.entities_set.items()):
+            if stdout and i > 0:
                 print('---\n')
-            c += 1
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
             dump_entities(self.entities_set[k].entities, p, k)
 
