@@ -312,7 +312,17 @@ def make_type(entities: _EntitiesDict, data: dict, entity_name: str, attrib_name
                     type_data)
 
 
-def resolve_ref(entities: _EntitiesDict, data: dict, ref: str, spec_dir: Path):
+def resolve_ref(entities: _EntitiesDict, data: Dict[str, Any], ref: str,
+                spec_dir: Path) -> Tuple[Optional[Dict[str, Any]], str]:
+    """
+    Resolves openapi reference `ref` in `data`.
+    ref can be a reference in file (inside data, first case of the if) or
+    a reference in another file (else branch), in this case the new file
+    is used to get the reference.
+
+    Returns a pair of an optional dictionary (with the resolved reference
+    if it was possible and the name of the entity being resolved).
+    """
     p, k = ref.split('#', maxsplit=2)
     if not p:
         # Resolve in file (data)
@@ -352,7 +362,7 @@ def parse_all_of(entities: _EntitiesDict, data: Dict[str, Any], entity_name: str
     attributes = []
     for s in all_of:
         if is_ref(s):
-            attrs, n = resolve_ref(entities=entities, data=data, ref=s['$ref'],
+            attrs, _ = resolve_ref(entities=entities, data=data, ref=s['$ref'],
                                    spec_dir=Path('api_specs'))
             attributes.append(attrs)
         elif is_object(s):
