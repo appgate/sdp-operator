@@ -17,7 +17,7 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, ApiSpec
+from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
 from appgate.types import K8SEvent, AppgateEvent, generate_api_spec_clients, \
@@ -66,7 +66,7 @@ class Context:
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode: bool = attrib()
-    api_spec: ApiSpec = attrib()
+    api_spec: APISpec = attrib()
 
 
 def get_context(namespace: str) -> Context:

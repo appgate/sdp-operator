@@ -6,7 +6,7 @@ from typing import Dict, Any
 from attr import attrib, attrs
 
 from appgate.client import AppgateClient, EntityClient
-from appgate.openapi import parse_files, Entity_T, ApiSpec
+from appgate.openapi import parse_files, Entity_T, APISpec
 
 __all__ = [
     'K8SEvent',
@@ -47,7 +47,7 @@ SPEC_FILES = [
 ]
 
 
-def generate_api_spec() -> ApiSpec:
+def generate_api_spec() -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
     TODO: Choose the directory so we can support different versions.
@@ -55,7 +55,7 @@ def generate_api_spec() -> ApiSpec:
     return parse_files(SPEC_FILES)
 
 
-def generate_api_spec_clients(api_spec: ApiSpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
+def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     return {
         n: appgate_client.entity_client(e.cls, e.api_path)
         for n, e in api_spec.entities.items()

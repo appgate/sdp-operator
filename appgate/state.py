@@ -10,7 +10,7 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name, ApiSpec
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name, APISpec
 from appgate.client import EntityClient
 from appgate.logger import log
 
@@ -382,7 +382,7 @@ def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
 
 
 def resolve_appgate_state(appgate_state: AppgateState,
-                          api_spec: ApiSpec,
+                          api_spec: APISpec,
                           reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
     entities = api_spec.entities
     entities_sorted = api_spec.entities_sorted
