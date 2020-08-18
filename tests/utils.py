@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from appgate.types import generated_entities
+from appgate.types import generate_api_spec
 
-
-entities = generated_entities().entities
+api_spec = generate_api_spec()
+entities = api_spec.entities
 
 Policy = entities['Policy'].cls
 Entitlement = entities['Entitlement'].cls

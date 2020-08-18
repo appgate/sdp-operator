@@ -17,11 +17,11 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
+from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, ApiSpec
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, generate_entity_clients, \
-    generated_entities
+from appgate.types import K8SEvent, AppgateEvent, generate_api_spec_clients, \
+    generate_api_spec
 
 __all__ = [
     'init_kubernetes',
@@ -65,7 +65,8 @@ class Context:
     two_way_sync: bool = attrib()
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
-    cleanup_mode = attrib()
+    cleanup_mode: bool = attrib()
+    api_spec: ApiSpec = attrib()
 
 
 def get_context(namespace: str) -> Context:
@@ -83,11 +84,13 @@ def get_context(namespace: str) -> Context:
                                            (HOST_ENV, controller)]
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
+    api_spec = generate_api_spec()
     return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
-                   two_way_sync=two_way_sync == '1')
+                   two_way_sync=two_way_sync == '1',
+                   api_spec=api_spec)
 
 
 def init_kubernetes(namespace: Optional[str]=None) -> Context:
@@ -109,9 +112,10 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     """
     Gets the current AppgateState for controller
     """
+    api_spec = generate_api_spec()
     appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
                                    password=ctx.password,
-                                   version=generated_entities().api_version)
+                                   version=api_spec.api_version)
     log.info('[appgate-operator/%s] Updating current state from controller',
              ctx.namespace)
 
@@ -122,7 +126,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         await appgate_client.close()
         raise Exception('Error authenticating')
 
-    entity_clients = generate_entity_clients(appgate_client)
+    entity_clients = generate_api_spec_clients(api_spec=api_spec,
+                                               appgate_client=appgate_client)
     entities_set = {}
     for entity, client in entity_clients.items():
         entities = await client.get()
@@ -201,7 +206,8 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             # Resolve entities now, in order
             # this will be the Topological sort
             total_conflicts = resolve_appgate_state(appgate_state=expected_appgate_state,
-                                                    reverse=False)
+                                                    reverse=False,
+                                                    api_spec=ctx.api_spec)
             if total_conflicts:
                 log.error('[appgate-operator/%s] Found errors in expected state and plan can'
                           ' not be applied.', namespace)
@@ -225,13 +231,15 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 if not ctx.dry_run_mode:
                     appgate_client = AppgateClient(controller=ctx.controller,
                                                    user=ctx.user, password=ctx.password,
-                                                   version=generated_entities().api_version)
+                                                   version=ctx.api_spec.api_version)
                     await appgate_client.login()
                 else:
                     log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
                                 namespace)
                 new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
-                                                    entity_clients=generate_entity_clients(appgate_client)
+                                                    entity_clients=generate_api_spec_clients(
+                                                        api_spec=ctx.api_spec,
+                                                        appgate_client=appgate_client)
                                                     if appgate_client else {})
 
                 if appgate_client:

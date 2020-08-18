@@ -4,10 +4,10 @@ from pathlib import Path
 import yaml
 from typedload import load
 
-from appgate.types import generated_entities
+from appgate.types import generate_api_spec
 
-
-entities = generated_entities().entities
+api_spec = generate_api_spec()
+entities = api_spec.entities
 
 
 def test_load_entities_v12():

@@ -6,20 +6,16 @@ from typing import Dict, Any
 from attr import attrib, attrs
 
 from appgate.client import AppgateClient, EntityClient
-from appgate.openapi import parse_files, Entity_T, GeneratedEntities
+from appgate.openapi import parse_files, Entity_T, ApiSpec
 
 __all__ = [
     'K8SEvent',
     'EventObject',
     'AppgateEvent',
-    'generated_entities',
-    'generate_entity_clients',
+    'generate_api_spec',
+    'generate_api_spec_clients',
 ]
 
-
-_generated_entities = None
-_api_version = None
-_entities_sorted = None
 
 
 class EventObject:
@@ -51,17 +47,18 @@ SPEC_FILES = [
 ]
 
 
-def generated_entities() -> GeneratedEntities:
-    global _generated_entities
-    if not _generated_entities:
-        _generated_entities = parse_files(SPEC_FILES)
-    return _generated_entities
+def generate_api_spec() -> ApiSpec:
+    """
+    Parses openapi yaml files and generates the ApiSpec.
+    TODO: Choose the directory so we can support different versions.
+    """
+    return parse_files(SPEC_FILES)
 
 
-def generate_entity_clients(client: AppgateClient) -> Dict[str, EntityClient]:
+def generate_api_spec_clients(api_spec: ApiSpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     return {
-        n: client.entity_client(e.cls, e.api_path)
-        for n, e in generated_entities().entities.items()
+        n: appgate_client.entity_client(e.cls, e.api_path)
+        for n, e in api_spec.entities.items()
         if e.api_path
     }
 

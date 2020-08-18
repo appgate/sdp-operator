@@ -1,8 +1,9 @@
 from appgate.state import compare_entities, EntitiesSet, resolve_entities
-from appgate.types import generated_entities
+from appgate.types import generate_api_spec
 from tests.utils import entitlement, condition, policy
 
-entities = generated_entities().entities
+api_spec = generate_api_spec()
+entities = api_spec.entities
 
 Policy = entities['Policy'].cls
 Entitlement = entities['Policy'].cls

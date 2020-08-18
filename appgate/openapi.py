@@ -76,7 +76,7 @@ _EntitiesDict = Dict[str, Union[EntitiesDict, type]]
 
 
 @attrs()
-class GeneratedEntities:
+class ApiSpec:
     entities: EntitiesDict = attrib()
     api_version: int = attrib()
 
@@ -432,7 +432,7 @@ def parse(data: Dict[str, Any], entities: Optional[_EntitiesDict] = None) -> Non
     parse_definitions(entities, data, get_keys(data, ['definitions']) or [], 0)
 
 
-def parse_files(files: List[Path]) -> GeneratedEntities:
+def parse_files(files: List[Path]) -> ApiSpec:
     entities = {
         'classes': {},
         'dependencies': {},
@@ -455,8 +455,8 @@ def parse_files(files: List[Path]) -> GeneratedEntities:
         api_version = data['info']['version'].split(' ')[2]
     if errors:
         raise Exception('Error validating yaml entities.')
-    return GeneratedEntities(entities=entities['classes'],
-                             api_version=api_version)
+    return ApiSpec(entities=entities['classes'],
+                   api_version=api_version)
 
 
 def entity_names(entity: type) -> Tuple[str, str, str]:

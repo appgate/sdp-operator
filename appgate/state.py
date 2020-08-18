@@ -10,7 +10,7 @@ import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name, ApiSpec
 from appgate.client import EntityClient
 from appgate.logger import log
 
@@ -27,7 +27,7 @@ __all__ = [
     'resolve_appgate_state',
 ]
 
-from appgate.types import generated_entities
+from appgate.types import generate_api_spec
 
 BUILTIN_TAG = 'builtin'
 
@@ -382,9 +382,10 @@ def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
 
 
 def resolve_appgate_state(appgate_state: AppgateState,
+                          api_spec: ApiSpec,
                           reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
-    entities = generated_entities().entities
-    entities_sorted = generated_entities().entities_sorted
+    entities = api_spec.entities
+    entities_sorted = api_spec.entities_sorted
     total_conflicts = {}
     log.info('[appgate-state] Validating expected state entities')
     log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
