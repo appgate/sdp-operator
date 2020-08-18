@@ -27,7 +27,7 @@ __all__ = [
     'resolve_appgate_state',
 ]
 
-from appgate.types import entities_sorted, generate_entities
+from appgate.types import generated_entities
 
 BUILTIN_TAG = 'builtin'
 
@@ -386,21 +386,24 @@ def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
 
 def resolve_appgate_state(appgate_state: AppgateState,
                           reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
-    entities_order = entities_sorted()
-    entities = generate_entities()
+    entities = generated_entities().entities
+    entities_sorted = generated_entities().entities_sorted
     total_conflicts = {}
     log.info('[appgate-state] Validating expected state entities')
-    log.debug('[appgate-state] Resolving dependencies in order: %s', entities_order)
-    for i in entities_order:
-        for field, deps in entities[i][1]:
-            log.debug('[appgate-state] Checking dependencies %s for of type %s.%s', deps, i, field)
-            for d in deps:
-                e1 = appgate_state.entities_set[i]
+    log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
+    for entity_name in entities_sorted:
+        for entity_dependency in entities[entity_name].entity_dependencies:
+            log.debug('[appgate-state] Checking dependencies %s for of type %s.%s',
+                      entity_dependency.dependencies, entity_name,
+                      entity_dependency.field)
+            for d in entity_dependency.dependencies:
+                e1 = appgate_state.entities_set[entity_name]
                 e2 = appgate_state.entities_set[d]
-                new_e1, conflicts = resolve_entities(e1, e2, field, reverse)
+                new_e1, conflicts = resolve_entities(e1, e2, entity_dependency.field,
+                                                     reverse)
                 if conflicts:
                     total_conflicts.update(conflicts)
-                appgate_state.entities_set[i] = new_e1
+                appgate_state.entities_set[entity_name] = new_e1
     return total_conflicts
 
 

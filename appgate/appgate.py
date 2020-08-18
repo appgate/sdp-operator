@@ -21,7 +21,7 @@ from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
 from appgate.types import K8SEvent, AppgateEvent, generate_entity_clients, \
-    api_version
+    generated_entities
 
 __all__ = [
     'init_kubernetes',
@@ -110,7 +110,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     Gets the current AppgateState for controller
     """
     appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
-                                   password=ctx.password, version=api_version())
+                                   password=ctx.password,
+                                   version=generated_entities().api_version)
     log.info('[appgate-operator/%s] Updating current state from controller',
              ctx.namespace)
 
@@ -224,7 +225,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 if not ctx.dry_run_mode:
                     appgate_client = AppgateClient(controller=ctx.controller,
                                                    user=ctx.user, password=ctx.password,
-                                                   version=api_version())
+                                                   version=generated_entities().api_version)
                     await appgate_client.login()
                 else:
                     log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',

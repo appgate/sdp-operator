@@ -12,18 +12,18 @@ from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, entity_loop, log
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent, generate_entities, entities_sorted
+from appgate.types import AppgateEvent, generated_entities
 
 
 def main_k8s(namespace: Optional[str]) -> None:
     ctx = init_kubernetes(namespace)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     ioloop = asyncio.get_event_loop()
-    entities = generate_entities()
-    for e in [e for e in entities.values() if e[2] is not None]:
-        _, _, plural_name = entity_names(e[0])
+    entities = generated_entities().entities
+    for e in [e for e in entities.values() if e.api_path]:
+        _, _, plural_name = entity_names(e.cls)
         ioloop.create_task(entity_loop(ctx=ctx, queue=events_queue, crd_path=plural_name,
-                                       entity_type=e[0]))
+                                       entity_type=e.cls))
     ioloop.create_task(main_loop(queue=events_queue, ctx=ctx))
     ioloop.run_forever()
 
@@ -49,7 +49,7 @@ def main_dump_entities(stdout: bool, output_dir: Optional[str]) -> None:
 
 
 def main_dump_crd(stdout: bool, output_file: Optional[str]) -> None:
-    entities = generate_entities()
+    entities = generated_entities().entities
     if not stdout:
         output_file_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-crd.yml'
         f = (Path(output_file) if output_file else Path(output_file_format)).open('w')

@@ -1,7 +1,9 @@
+import itertools
 import re
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, get_origin, Set
+from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, get_origin, Set, Union
+from graphlib import TopologicalSorter
 
 from attr import make_class, attrib, attrs
 import yaml
@@ -48,6 +50,46 @@ class Entity_T:
     name: str = attrib()
     id: int = attrib()
     tags: FrozenSet[str] = attrib()
+
+
+@attrs()
+class EntityDependency:
+    field: str = attrib()
+    dependencies: Set[str] = attrib()
+
+
+@attrs()
+class GeneratedEntity:
+    cls: type = attrib()
+    level: int = attrib()
+    entity_dependencies: List[EntityDependency] = attrib(factory=list)
+    api_path: Optional[str] = attrib(default=None)
+
+
+# Dictionary with the top level entities, those that are "exported"
+EntitiesDict = Dict[str, GeneratedEntity]
+
+
+# Dictionary with all the entities discovered while parsing.
+# Used internally
+_EntitiesDict = Dict[str, Union[EntitiesDict, type]]
+
+
+@attrs()
+class GeneratedEntities:
+    entities: EntitiesDict = attrib()
+    api_version: int = attrib()
+
+    @property
+    def entities_sorted(self) -> List[str]:
+        entities_to_sort = {
+            entity_name: set(itertools.chain.from_iterable(map(lambda d: d.dependencies,
+                                                               entity.entity_dependencies)))
+            for entity_name, entity in self.entities.items()
+            if entity.level == 0 and entity.api_path is not None
+        }
+        ts = TopologicalSorter(entities_to_sort)
+        return list(ts.static_order())
 
 
 def has_name(e: Any) -> bool:
@@ -139,7 +181,7 @@ def attrs_has_default(attrs) -> bool:
     return 'default' in attrs or 'factory' in attrs
 
 
-def get_entry(entities: Dict[str, Any], entity: str, entry: List[str],
+def get_entry(entities: _EntitiesDict, entity: str, entry: List[str],
               spec_dir: Optional[Path] = None) -> Optional[Any]:
     """
     Resolves entity in entities, if it's not registered it tries to parse it
@@ -156,7 +198,7 @@ def get_entry(entities: Dict[str, Any], entity: str, entry: List[str],
     return v
 
 
-def make_attrib(entities: dict, data: dict, entity_name: str, attrib_name: str,
+def make_attrib(entities: _EntitiesDict, data: dict, entity_name: str, attrib_name: str,
                 attrib_props: Dict[str, Any], required_fields: List[str],
                 level: int) -> dict:
     """
@@ -200,7 +242,7 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
-def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
+def make_attribs(entities: _EntitiesDict, data: dict, entity_name: str, attributes,
                  level: int) -> Dict[str, int]:
     """
     Returns the attr.attrib data needed to use attr.make_class
@@ -237,8 +279,9 @@ def make_attribs(entities: dict, data: dict, entity_name: str, attributes,
     return entity_attrs_attrib, dependencies
 
 
-def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, type_data,
-              level: int) -> Tuple[type, Optional[type], Optional[Callable[[], Any]]]:
+def make_type(entities: _EntitiesDict, data: dict, entity_name: str, attrib_name: str,
+              type_data, level: int) -> Tuple[type, Optional[type],
+                                              Optional[Callable[[], Any]]]:
     if is_ref(type_data):
         resolved_ref, name = resolve_ref(entities=entities, data=data, ref=type_data['$ref'],
                                          spec_dir=Path('api_specs)'))
@@ -260,14 +303,16 @@ def make_type(entities: dict, data: dict, entity_name: str, attrib_name: str, ty
             # Those classes are never registered
             name = f'{entity_name}_{attrib_name.capitalize()}'
             entity_attribs, _ = make_attribs(entities, data, entity_name, [type_data], level + 1)
-            cls, _, _, _ = register_entity(entities, name, entity_attribs, {}, level + 1, None)
-            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name, cls)
-            return cls, None, None
+            generated_entity = register_entity(entities, name, entity_attribs,
+                                               {}, level + 1, None)
+            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
+                      generated_entity.cls)
+            return generated_entity.cls, None, None
     raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
                     type_data)
 
 
-def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
+def resolve_ref(entities: _EntitiesDict, data: dict, ref: str, spec_dir: Path):
     p, k = ref.split('#', maxsplit=2)
     if not p:
         # Resolve in file (data)
@@ -280,24 +325,30 @@ def resolve_ref(entities: dict, data: dict, ref: str, spec_dir: Path):
     return resolved_ref, [x for x in k.split('/') if x][-1]
 
 
-def register_entity(entities: dict, entity_name: str, attrs: dict,
+def register_entity(entities: _EntitiesDict, entity_name: str, attrs: dict,
                     dependencies: Dict[str, Set[str]],
                     level: int, api_path: Optional[str],
-                    bases: Optional[Tuple[type, ...]] = None):
+                    bases: Optional[Tuple[type, ...]] = None) -> GeneratedEntity:
     log.info(f'Registering new class {entity_name}')
     if entity_name in entities['classes']:
         log.warning(f'Entity %s already registered, ignoring it', entity_name)
         return entities['classes'][entity_name]
     cls = make_class(entity_name, attrs, bases=bases or tuple(), slots=True, frozen=True)
-    deps = [(k, v) for k, v in dependencies.items()]
-    # (class, dependencies, path, level)
-    entities['classes'][entity_name] = (cls, deps, api_path, level)
+    deps = [EntityDependency(field=f,
+                             dependencies=xs)
+            for f, xs in dependencies.items()]
+    generated_entity = GeneratedEntity(cls=cls,
+                                       entity_dependencies=deps,
+                                       api_path=api_path,
+                                       level=level)
+    entities['classes'][entity_name] = generated_entity
+    return generated_entity
 
-    return entities['classes'][entity_name]
 
-
-def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
-                 all_of: List[Dict[str, Any]], level: int, api_path: Optional[str]):
+def parse_all_of(entities: _EntitiesDict, data: Dict[str, Any], entity_name: str,
+                 all_of: List[Dict[str, Any]], level: int,
+                 api_path: Optional[str]) -> Tuple[type, Optional[type],
+                                                   Optional[Callable[[], Any]]]:
     attributes = []
     for s in all_of:
         if is_ref(s):
@@ -309,27 +360,30 @@ def parse_all_of(entities: dict, data: Dict[str, Any], entity_name: str,
         elif is_array(s):
             attributes.append(s['items'])
     attrs, dependencies = make_attribs(entities, data, entity_name, attributes, level)
-    return register_entity(entities, entity_name, attrs, dependencies, level, api_path)[0], None, None
+    return register_entity(entities, entity_name, attrs, dependencies, level, api_path).cls, None, None
 
 
-def parse_definition(entities: dict, data: Dict[str, Any], name: str,
+def parse_definition(entities: _EntitiesDict, data: Dict[str, Any], name: str,
                      definition: Dict[str, Any], level: int,
-                     api_path: Optional[str]):
+                     api_path: Optional[str]) -> Tuple[type, Optional[type],
+                                                       Optional[Callable[[], Any]]]:
     if is_compound(definition):
         return parse_all_of(entities, data, name, get_keys(definition, ['allOf']), level,
                             api_path)
     elif is_array(definition):
         attrs, dependencies = make_attribs(entities, data, name, [definition['items']], level)
-        register_entity(entities, name, attrs, dependencies, level, api_path)
-        return FrozenSet[entities['classes'][name][0]], None, frozenset
+        generated_entity = register_entity(entities, name, attrs, dependencies,
+                                          level, api_path)
+        return FrozenSet[generated_entity.cls], None, frozenset
     elif is_object(definition):
         attrs, dependencies = make_attribs(entities, data, name, [definition], level)
-        register_entity(entities, name, attrs, dependencies, level, api_path)
-        return entities['classes'][name][0], None, None
+        generated_entity = register_entity(entities, name, attrs, dependencies,
+                                           level, api_path)
+        return generated_entity.cls, None, None
 
 
-def parse_definitions(entities: dict, data: Dict[str, Any],
-                      definitions: Dict[str, Any], level: int):
+def parse_definitions(entities: _EntitiesDict, data: Dict[str, Any],
+                      definitions: Dict[str, Any], level: int) -> None:
     for definition, value in definitions.items():
         log.debug('Parsing: %s', definition)
         if definition in entities['classes']:
@@ -338,12 +392,12 @@ def parse_definitions(entities: dict, data: Dict[str, Any],
             parse_definition(entities, data, definition, value, level, None)
 
 
-def parse(data: Dict[str, Any], entities: Optional[dict] = None):
+def parse(data: Dict[str, Any], entities: Optional[_EntitiesDict] = None) -> None:
     if not entities:
         entities = {}
-    if not 'classes' in entities:
+    if 'classes' not in entities:
         entities['classes'] = {}
-    if not 'dependencies' in entities:
+    if 'dependencies' not in entities:
         entities['dependencies'] = {}
 
     # Parse API first
@@ -366,7 +420,7 @@ def parse(data: Dict[str, Any], entities: Optional[dict] = None):
     parse_definitions(entities, data, get_keys(data, ['definitions']) or [], 0)
 
 
-def parse_files(files: List[Path]):
+def parse_files(files: List[Path]) -> GeneratedEntities:
     entities = {
         'classes': {},
         'dependencies': {},
@@ -389,7 +443,8 @@ def parse_files(files: List[Path]):
         api_version = data['info']['version'].split(' ')[2]
     if errors:
         raise Exception('Error validating yaml entities.')
-    return entities['classes'], api_version
+    return GeneratedEntities(entities=entities['classes'],
+                             api_version=api_version)
 
 
 def entity_names(entity: type) -> Tuple[str, str, str]:

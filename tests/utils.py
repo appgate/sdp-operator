@@ -1,12 +1,14 @@
 from typing import List, Optional
 
-from appgate.types import generate_entities
-entities = generate_entities()
+from appgate.types import generated_entities
 
-Policy = entities['Policy'][0]
-Entitlement = entities['Entitlement'][0]
-Condition = entities['Condition'][0]
-IdentityProvider = entities['IdentityProvider'][0]
+
+entities = generated_entities().entities
+
+Policy = entities['Policy'].cls
+Entitlement = entities['Entitlement'].cls
+Condition = entities['Condition'].cls
+IdentityProvider = entities['IdentityProvider'].cls
 
 
 def entitlement(name: str, id: str = None, site: str = 'site-example',
