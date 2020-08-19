@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, Optional
 from attr import attrib, attrs
 
 from appgate.client import AppgateClient, EntityClient
@@ -42,12 +43,12 @@ SPEC_ENTITIES = {
 }
 
 
-def generate_api_spec() -> APISpec:
+def generate_api_spec(spec_directory: Optional[Path] = None) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
     TODO: Choose the directory so we can support different versions.
     """
-    return parse_files(SPEC_ENTITIES)
+    return parse_files(SPEC_ENTITIES, spec_directory=spec_directory)
 
 
 def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:

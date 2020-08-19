@@ -5,6 +5,7 @@ import os
 import sys
 from asyncio import Queue
 from copy import deepcopy
+from pathlib import Path
 from typing import Optional, Dict, Any
 
 from attr import attrib, attrs
@@ -17,7 +18,7 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec
+from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec, SPEC_DIR
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
 from appgate.types import K8SEvent, AppgateEvent, generate_api_spec_clients, \
@@ -42,6 +43,7 @@ DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
 CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
+SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -69,7 +71,7 @@ class Context:
     api_spec: APISpec = attrib()
 
 
-def get_context(namespace: str) -> Context:
+def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
     user = os.getenv(USER_ENV)
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
@@ -77,6 +79,7 @@ def get_context(namespace: str) -> Context:
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
+    spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
                                  for x in [(USER_ENV, user),
@@ -84,7 +87,7 @@ def get_context(namespace: str) -> Context:
                                            (HOST_ENV, controller)]
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
-    api_spec = generate_api_spec()
+    api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None)
     return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
@@ -93,7 +96,7 @@ def get_context(namespace: str) -> Context:
                    api_spec=api_spec)
 
 
-def init_kubernetes(namespace: Optional[str]=None) -> Context:
+def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
         # TODO: Discover it somehow
@@ -105,14 +108,14 @@ def init_kubernetes(namespace: Optional[str]=None) -> Context:
 
     if not namespace:
         raise Exception('Unable to discover namespace, please provide it.')
-    return get_context(namespace)
+    return get_context(namespace, spec_directory)
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
     """
     Gets the current AppgateState for controller
     """
-    api_spec = generate_api_spec()
+    api_spec = ctx.api_spec
     appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
                                    password=ctx.password,
                                    version=api_spec.api_version)

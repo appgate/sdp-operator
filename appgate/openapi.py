@@ -26,8 +26,7 @@ __all__ = [
 ]
 
 
-SPEC_DIR = 'api_specs'
-VERSION_SPEC_FILE = Path(SPEC_DIR) / 'api_specs.yml'
+SPEC_DIR = 'api_specs/v12'
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
@@ -119,6 +118,7 @@ class ParserContext:
         self.entity_name_by_path: Dict[str, str] = spec_entities
         self.entity_path_by_name: Dict[str, str] = {v: k for k, v in spec_entities.items()}
 
+
     def get_entity_path(self, entity_name: str) -> Optional[str]:
         return self.entity_path_by_name.get(entity_name)
 
@@ -139,7 +139,7 @@ class ParserContext:
             log.debug('Using cached namespace %s', path)
             return self.data[path.name]
         with path.open('r') as f:
-            log.debug('Loading namespace %s from disk', path)
+            log.info('Loading namespace %s from disk', path)
             self.data[path.name] = yaml.safe_load(f.read())
         return self.data[path.name]
 
@@ -449,9 +449,9 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
-def parse_files(spec_entities: Dict[str, str]) -> APISpec:
+def parse_files(spec_entities: Dict[str, str], spec_directory: Optional[Path] = None) -> APISpec:
     parser_context = ParserContext(spec_entities=spec_entities,
-                                   spec_api_path=Path(SPEC_DIR))
+                                   spec_api_path=spec_directory or Path(SPEC_DIR))
     parser = Parser(parser_context, 'api_specs.yml')
     # First parse those paths we are interested in
     for path, v in parser.data['paths'].items():
