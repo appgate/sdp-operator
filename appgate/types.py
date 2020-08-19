@@ -1,7 +1,3 @@
-import itertools
-from pathlib import Path
-from graphlib import TopologicalSorter
-
 from typing import Dict, Any
 from attr import attrib, attrs
 
@@ -15,7 +11,6 @@ __all__ = [
     'generate_api_spec',
     'generate_api_spec_clients',
 ]
-
 
 
 class EventObject:
@@ -32,19 +27,19 @@ class K8SEvent:
         self.object = EventObject(data['object'])
 
 
-SPEC_FILES = [
-    Path('api_specs/identity_provider.yml'),
-    Path('api_specs/administrative_role.yml'),
-    Path('api_specs/device_script.yml'),
-    Path('api_specs/client_connections.yml'),
-    Path('api_specs/global_settings.yml'),
-    Path('api_specs/appliance.yml'),
-    Path('api_specs/criteria_script.yml'),
-    Path('api_specs/entitlement_script.yml'),
-    Path('api_specs/entitlement.yml'),
-    Path('api_specs/policy.yml'),
-    Path('api_specs/condition.yml')
-]
+SPEC_ENTITIES = {
+    '/identity-providers': 'IdentityProvider',
+    '/administrative-roles': 'AdministrativeRole',
+    '/device-scripts': 'DeviceScript',
+    '/client-connections': 'ClientConnection',
+    '/global-settings': 'GlobalSettings',
+    '/appliances': 'Appliance',
+    '/criteria-scripts': 'CriteriaScripts',
+    '/entitlement-scripts': 'EntitlementScript',
+    '/policies': 'Policy',
+    '/conditions': 'Condition',
+    '/entitlements': 'Entitlement',
+}
 
 
 def generate_api_spec() -> APISpec:
@@ -52,7 +47,7 @@ def generate_api_spec() -> APISpec:
     Parses openapi yaml files and generates the ApiSpec.
     TODO: Choose the directory so we can support different versions.
     """
-    return parse_files(SPEC_FILES)
+    return parse_files(SPEC_ENTITIES)
 
 
 def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:

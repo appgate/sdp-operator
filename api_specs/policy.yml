@@ -169,7 +169,8 @@ definitions:
           entitlements:
             type: array
             description: List of Entitlement IDs in this Policy.
-            x-appgate-entity: Entitlement
+            x-appgate-entity:
+              - Entitlement
             items:
               type: string
               format: uuid

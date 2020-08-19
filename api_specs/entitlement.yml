@@ -180,7 +180,8 @@ definitions:
               - or
             default: and
           conditions:
-            x-appgate-entity: Condition 
+            x-appgate-entity:
+              - Condition 
             type: array
             description: List of Condition IDs applies to this Entitlement.
             items:
