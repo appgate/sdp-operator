@@ -1,0 +1,569 @@
+openapi: 3.0.0
+tags:
+  - name: AppGate SDP
+  - name: Controller
+info:
+  title: AppGate SDP Controller REST API
+  version: API version 13
+  description: |-
+    # About
+      This specification documents the REST API calls for the AppGate SDP Controller.
+
+      Please refer to the Integration chapter in the manual or contact AppGate support with any questions about
+      this functionality.
+    # Getting Started
+      Requirements for API scripting:
+      - Access to the peer interface (default port 444) of a Controller appliance.
+        (https://sdphelp.appgate.com/adminguide/appliances-configure.html?anchor=peer)
+      - An API user with relevant permissions.
+        (https://sdphelp.appgate.com/adminguide/administrative-roles-configure.html)
+      - In order to use the simple login API, Admin MFA must be disabled or the API user must be excluded.
+        (https://sdphelp.appgate.com/adminguide/mfa-for-admins.html)
+    # Base path
+      HTTPS requests must be sent to the Peer Interface hostname and port, with **/admin** path.
+
+      For example: **https://appgate.company.com:444/admin**
+
+      All requests must have the **Accept** header as:
+
+      **application/vnd.appgate.peer-v13+json**
+    # API Conventions
+      API conventions are  important to understand and follow strictly.
+
+      - While updating objects (via PUT), entire object must be sent with all fields.
+        - For example, if in order to add a remedy method to the condition below:
+          ```
+          {
+            "id": "12699e27-b584-464a-81ee-5b4784b6d425",
+            "name": "Test",
+            "notes": "Making a point",
+            "tags": ["test", "tag"],
+            "expression": "return true;",
+            "remedyMethods": []
+          }
+          ```
+        - send the entire object with updated and non-updated fields:
+          ```
+          {
+            "id": "12699e27-b584-464a-81ee-5b4784b6d425",
+            "name": "Test",
+            "notes": "Making a point",
+            "tags": ["test", "tag"],
+            "expression": "return true;",
+            "remedyMethods": [{"type": "DisplayMessage", "message": "test message"}]
+          }
+          ```
+
+      - In case Controller returns an error (non-2xx HTTP status code), response body is JSON.
+        The "message" field contains information about the error.
+        HTTP 422 "Unprocessable Entity" has extra `errors` field to list all the issues with specific fields.
+
+      - Empty string ("") is considered a different value than "null" or field being omitted from JSON.
+        Omitting the field is recommend if no value is intended.
+        Empty string ("") will be almost always rejected as invalid value.
+
+      - There are common pattern between many objects:
+        - **Configuration Objects**: There are many objects with common fields, namely "id", "name", "notes", "created"
+          and "updated". These entities are listed, queried, created, updated and deleted in a similar fashion.
+        - **Distinguished Name**: Users and Devices are identified with what is called Distinguished Names, as used in
+           LDAP. The distinguished format that identifies a device and a user combination is
+           "CN=\<Device ID\>,CN=\<username\>,OU=\<Identity Provider Name\>". Some objects have the
+           "userDistinguishedName" field, which does not include the CN for Device ID.
+           This identifies a user on every device.
+  x-logo:
+    url: data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTE1LjkgMjA5LjQiPjxzdHlsZT4uc3Qwe2ZpbGw6IzAwMjczY30uc3Qxe2ZpbGw6I2ExMTc4YX08L3N0eWxlPjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xODUuNCA2Ny4yaDExLjVsMjAuOCA1MS44aC0xMS44bC0zLjMtOC41aC0yMy4zTDE3NiAxMTloLTExLjFsMjAuNS01MS44em0xMy41IDMzLjlsLTguMS0yMC41LTguMSAyMC41aDE2LjJ6TTIyMC4yIDgwLjNsOC41LS42LjkgMy41YzIuMS0yLjUgNi00LjQgMTQuNC00LjQgMTMuNSAwIDE2LjggOS4yIDE2LjggMjAuNXMtMy41IDIwLjQtMTcuNCAyMC40Yy03LjEgMC0xMC40LTEuNC0xMi4yLTMuN3YxNC41aC0xMC45VjgwLjNoLS4xem0yOS41IDE5LjRjMC02LjMtMS40LTExLTguNS0xMS03LjUgMC0xMC4xIDMuNC0xMC4xIDExIDAgNy41IDIuMiAxMC43IDEwLjEgMTAuNyA3IDAgOC41LTQuNSA4LjUtMTAuN3pNMjY0LjcgODAuM2w4LjUtLjYuOSAzLjVjMi4xLTIuNSA2LTQuNCAxNC40LTQuNCAxMy41IDAgMTYuOCA5LjIgMTYuOCAyMC41cy0zLjUgMjAuNC0xNy40IDIwLjRjLTcuMSAwLTEwLjQtMS40LTEyLjItMy43djE0LjVoLTEwLjlsLS4xLTUwLjJ6bTI5LjUgMTkuNGMwLTYuMy0xLjQtMTEtOC41LTExLTcuNSAwLTEwLjEgMy40LTEwLjEgMTEgMCA3LjUgMi4yIDEwLjcgMTAuMSAxMC43IDcgMCA4LjUtNC41IDguNS0xMC43ek0zMDcuMyA5My4yYzAtMTguNiA5LjctMjYuNSAyNy4xLTI2LjUgMTAuNCAwIDE2LjcgMy4xIDIwLjggNy4zbC03LjggNy45Yy0yLjYtMi41LTYtNC43LTEzLjEtNC43LTExLjMgMC0xNS42IDUuNi0xNS42IDE2LjMgMCAxMS4zIDMuMSAxNi44IDE1LjUgMTYuOCAxMCAwIDEyLjktMy4zIDEyLjktMTAuNnYtMS4xaC0xNC40di05LjRoMjUuNnY4LjRjMCAxNC43LTUuOCAyMi4zLTI0LjcgMjIuMy0yMC42LS4yLTI2LjMtOS42LTI2LjMtMjYuN3pNMzc0LjUgMTE5LjZjLTEyLjIgMC0xNC44LTUuMy0xNC44LTEyLjIgMC0xMS4xIDcuOC0xMy44IDI1LjItMTMuOGgxLjZjLS4xLTMuNS0uOS01LjMtNy44LTUuMy00LjggMC05IDEuNy0xMS40IDMuMmwtNS40LThjMi44LTEuOSA5LjctNC44IDE4LTQuOCAxNC4yIDAgMTcuMSA0LjUgMTcuMSAxNS42djEyYzAgMy4xLjIgMy42IDMuNCAzLjZ2OC45Yy0uOC4yLTIuMi4zLTQuNi4zLTQuMiAwLTYtLjgtNy41LTMuOS0yIDIuNy02LjQgNC40LTEzLjggNC40em0xMi0xNi45di0xLjVoLS45Yy0xMy45IDAtMTUuNiAxLjEtMTUuNiA1LjMgMCAyLjkgMS42IDQuMyA2LjYgNC4zIDYuOS4xIDkuOS0yLjQgOS45LTguMXpNNDE4LjggMTE5LjFjLTEwLjYgMC0xMy43LTMuNi0xMy43LTEyLjRWODguOWgtNi41di05LjNoN2wxLjgtOS42IDguNS0xLjd2MTEuM2g5LjN2OS4zaC05LjN2MTYuMmMwIDMuMS40IDQuNyA1LjEgNC43aDQuMnY5LjFjLTEuNi4yLTQuNS4yLTYuNC4yek00NDcuMyAxMTkuN2MtMTcgMC0yMC41LTkuMy0yMC41LTIwLjUgMC0xMSAzLjYtMjAuNSAyMC40LTIwLjUgMTcuMyAwIDE3LjkgMTEuNSAxNy41IDI0LjdoLTI3LjRjLjYgNC43IDIuOSA3LjUgOS45IDcuNSA2IDAgOS40LTEuNSAxMi40LTMuNmw1LjUgNy4xYy01IDMuOC0xMCA1LjMtMTcuOCA1LjN6bS05LjktMjQuMWgxNy40Yy0uMy00LjUtMS4yLTcuOC03LjktNy44cy04LjkgMy05LjUgNy44eiIvPjxnPjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0zODcuOSAxNTUuOGwxLjktMi45YzMuMiAyLjEgNi41IDIuOSA5LjggMi45IDUuNiAwIDcuNy0xLjQgNy43LTQuOHMtMy00LTcuOC00LjhjLTYuMy0xLTEwLjMtMi4xLTEwLjMtNy44IDAtNS41IDMuNS03LjcgMTAuMy03LjcgNC42IDAgNy44IDEuMSAxMCAyLjVsLTIgMy4xYy0xLjktMS4zLTQuOS0yLjItOC0yLjItNC44IDAtNi42IDEuMi02LjYgNC4xIDAgMy4xIDIuNyAzLjcgNy41IDQuNSA2LjIgMSAxMC41IDIgMTAuNSA3LjkgMCA1LjUtMy40IDguMy0xMS4zIDguMy00LjMuMS04LjMtLjgtMTEuNy0zLjF6TTQxNS4yIDEzMS4xaDkuMmMxMC41IDAgMTQuNCAzIDE0LjQgMTMuNyAwIDEwLjUtNC4zIDEzLjgtMTQuOSAxMy44aC04LjhsLjEtMjcuNXptOSAyNC4xYzguNCAwIDEwLjktMi43IDEwLjktMTAuMyAwLTcuNy0yLjEtMTAuMi0xMC42LTEwLjJINDE5djIwLjVoNS4yek00NDIuNiAxMzEuMUg0NTVjNi45IDAgOS43IDIuOSA5LjcgOC41IDAgNS43LTIuNyA5LjEtOS44IDkuMWgtOC42djEwaC0zLjd2LTI3LjZ6bTEyLjMgMTQuMWMzLjkgMCA2LTEuNCA2LTUuNHMtMi01LjItNi4xLTUuMmgtOC42djEwLjZoOC43eiIvPjwvZz48cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTg5LjEgMTQ1aDE4OS44djMuNEgxODkuMXoiLz48cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTg5LjEgMTMwLjVoMy40djE2LjJoLTMuNHoiLz48Zz48bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjUwLjYyMjQiIHkxPSI1NTUuNjk1MSIgeDI9IjE1Mi44MjI0IiB5Mj0iNTU1LjY5NTEiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAtNDUzLjc5NTEpIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNkNzAwODciLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2NTAwOTIiLz48L2xpbmVhckdyYWRpZW50PjxwYXRoIGQ9Ik0xMDEuNyA1MC44Yy0yOC4yIDAtNTEuMSAyMi45LTUxLjEgNTEuMVM3My41IDE1MyAxMDEuNyAxNTNzNTEuMS0yMi45IDUxLjEtNTEuMS0yMi45LTUxLjEtNTEuMS01MS4xem0wIDk0Yy0yMy43IDAtNDIuOS0xOS4yLTQyLjktNDIuOVM3OCA1OSAxMDEuNyA1OXM0Mi45IDE5LjIgNDIuOSA0Mi45LTE5LjIgNDIuOS00Mi45IDQyLjl6IiBmaWxsPSJ1cmwoI1NWR0lEXzFfKSIvPjxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iNTAuNTM2NyIgeTE9IjU1NS42NDUxIiB4Mj0iMTUyLjk3MTgiIHkyPSI1NTUuNjQ1MSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgwIC00NTMuNzk1MSkiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2Q3MDA4NyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzY1MDA5MiIvPjwvbGluZWFyR3JhZGllbnQ+PHBhdGggZD0iTTExNi42IDExMC40TDk2IDg2LjZsNi44LTYuMSAxNy45IDIwLjVIMTM2Yy0uNC0xOC42LTE1LjYtMzMuNi0zNC40LTMzLjZzLTM0IDE1LTM0LjQgMzMuNmgxN2w4IDkuMmgtMjRjMy45IDE1LjEgMTcuNCAyNi4xIDMzLjUgMjYuMXMyOS42LTExIDMzLjMtMjUuOWgtMTguNHoiIGZpbGw9InVybCgjU1ZHSURfMl8pIi8+PC9nPjwvc3ZnPg==
+  contact:
+    name: AppGate SDP Support
+    url: https://sdphelp.appgate.com/adminguide/help-support.html
+    email: appgatesdp.support@appgate.com
+
+servers:
+  - url: 'https://appgate.company.com:444/admin'
+
+x-tagGroups:
+  - name: Authentication & Authorization
+    tags:
+      - Login
+  - name: Dashboard
+    tags:
+      - Admin Messages
+      - Appliance Stats
+      - Discovered Apps
+      - Top Entitlements
+      - Active Sessions
+      - User Logins Per Hour
+      - Devices On-Boarded Per Hour
+      - Failed Authentications Per Hour
+  - name: Operations
+    tags:
+      - Policies
+      - Conditions
+      - Entitlements
+      - Ringfence Rules
+  - name: System
+    tags:
+      - Appliances
+      - Sites
+      - IP Pools
+      - Identity Providers
+      - Local Users
+      - Administrative Roles
+      - MFA Providers
+      - Default Time-Based OTP Provider Seeds
+      - FIDO2 Devices
+      - MFA for Admins
+      - Trusted Certificates
+  - name: Scripts
+    tags:
+      - Criteria Scripts
+      - Device Scripts
+      - Entitlement Scripts
+      - Appliance Customizations
+  - name: Users & Devices
+    tags:
+      - Active Devices
+      - Blacklisted Users
+      - Licensed Users
+      - On-boarded Devices
+  - name: Settings
+    tags:
+      - Global Settings
+      - Client Connections
+      - Client Auto-Update
+      - CA
+      - License
+  - name: Utilities
+    tags:
+      - Appliance Upgrade
+      - Appliance Backup
+      - Appliance Metrics
+
+x-appgate-resolver:
+  - path: /identity-providers
+    entity: IdentityProvider
+
+paths:
+  /login:
+    $ref: './login.yml#/login'
+  /identity-providers/names:
+    $ref: './login.yml#/identity-provider-names'
+  /authentication:
+    $ref: './login.yml#/authentication'
+  /authentication/otp/initialize:
+    $ref: './login.yml#/authentication-otp-initialize'
+  /authentication/otp:
+    $ref: './login.yml#/authentication-otp'
+  /authorization:
+    $ref: './login.yml#/authorization'
+  /admin-messages:
+    $ref: './dashboard.yml#/admin-messages'
+  /admin-messages/summarize:
+    $ref: './dashboard.yml#/admin-messages-summarize'
+  /stats/appliances:
+    $ref: './dashboard.yml#/stats-appliances'
+  /stats/app-discovery:
+    $ref: './dashboard.yml#/app-discovery'
+  /stats/top-entitlements:
+    $ref: './dashboard.yml#/top-entitlements'
+  /stats/active-sessions:
+    $ref: './dashboard.yml#/active-sessions'
+  /session-info/{distinguished-name}:
+    $ref: './dashboard.yml#/session-info-distinguished-name'
+  /stats/user-logins:
+    $ref: './dashboard.yml#/user-logins'
+  /stats/on-boarded-devices:
+    $ref: './dashboard.yml#/on-boarded-devices'
+  /stats/failed-authentications:
+    $ref: './dashboard.yml#/failed-authentications'
+  /policies:
+    $ref: './policy.yml#/policies'
+  /policies/{id}:
+    $ref: './policy.yml#/policies-id'
+  /conditions:
+    $ref: './condition.yml#/conditions'
+  /conditions/{id}:
+    $ref: './condition.yml#/conditions-id'
+  /conditions/test:
+    $ref: './condition.yml#/conditions-test'
+  /claims/names:
+    $ref: './claim_names.yml#/claim-names'
+  /entitlements:
+    $ref: './entitlement.yml#/entitlements'
+  /entitlements/{id}:
+    $ref: './entitlement.yml#/entitlements-id'
+  /ringfence-rules:
+    $ref: './ringfence_rule.yml#/ringfence-rules'
+  /ringfence-rules/{id}:
+    $ref: './ringfence_rule.yml#/ringfence-rules-id'
+  /appliances:
+    $ref: './appliance.yml#/appliances'
+  /appliances/{id}:
+    $ref: './appliance.yml#/appliances-id'
+  /appliances/{id}/export:
+    $ref: './appliance.yml#/appliances-export'
+  /appliances/{id}/export/iso:
+    $ref: './appliance.yml#/appliances-export-iso'
+  /appliances/{id}/switch-partition:
+    $ref: './appliance.yml#/appliances-switch-partition'
+  /appliances/{id}/renew-certificate:
+    $ref: './appliance.yml#/appliances-renew-certificate'
+  /appliances/{id}/admin-interface-p12:
+    $ref: './appliance.yml#/appliances-admin-interface-p12'
+  /appliances/{id}/deactivate:
+    $ref: './appliance.yml#/appliances-deactivate'
+  /appliances/{id}/reboot:
+    $ref: './appliance.yml#/appliances-reboot'
+  /appliances/{id}/test-resolver-name:
+    $ref: './appliance.yml#/appliances-test-resolver-name'
+  /appliances/{id}/name-resolution-status:
+    $ref: './appliance.yml#/appliances-name-resolution-status'
+  /sites:
+    $ref: './site.yml#/sites'
+  /sites/{id}:
+    $ref: './site.yml#/sites-id'
+  /ip-pools:
+    $ref: './ip_pool.yml#/ip-pools'
+  /ip-pools/{id}:
+    $ref: './ip_pool.yml#/ip-pools-id'
+  /ip-pools/allocated-ips/by-dn/{distinguished-name}:
+    $ref: './ip_pool.yml#/allocated-ips-by-dn'
+  /ip-pools/allocated-ips:
+    $ref: './ip_pool.yml#/allocated-ips'
+  /identity-providers:
+    $ref: './identity_provider.yml#/identity-providers'
+  /identity-providers/{id}:
+    $ref: './identity_provider.yml#/identity-providers-id'
+  /identity-providers/test:
+    $ref: './identity_provider.yml#/identity-providers-test'
+  /identity-providers/{id}/attributes:
+    $ref: './identity_provider.yml#/identity-providers-id-attributes'
+  /local-users:
+    $ref: './local_user.yml#/local-users'
+  /local-users/{id}:
+    $ref: './local_user.yml#/local-users-id'
+  /administrative-roles:
+    $ref: './administrative_role.yml#/administrative-roles'
+  /administrative-roles/{id}:
+    $ref: './administrative_role.yml#/administrative-roles-id'
+  /administrative-roles/type-target-map:
+    $ref: './administrative_role.yml#/administrative-roles-type-target-map'
+  /mfa-providers:
+    $ref: './mfa_provider.yml#/mfa-providers'
+  /mfa-providers/{id}:
+    $ref: './mfa_provider.yml#/mfa-providers-id'
+  /mfa-providers/test:
+    $ref: './mfa_provider.yml#/mfa-providers-test'
+  /otp/seeds:
+    $ref: './otp_seed.yml#/otp-seeds'
+  /otp/seeds/{distinguished-name}:
+    $ref: './otp_seed.yml#/otp-seeds-distinguished-name'
+  /fido2-devices:
+    $ref: './fido2_device.yml#/fido2-devices'
+  /fido2-devices/{distinguished-name}:
+    $ref: './fido2_device.yml#/fido2-devices-distinguished-name'
+  /admin-mfa-settings:
+    $ref: './admin_mfa_settings.yml#/admin-mfa-settings'
+  /trusted-certificates:
+    $ref: './trusted_certificate.yml#/trusted-certificates'
+  /trusted-certificates/{id}:
+    $ref: './trusted_certificate.yml#/trusted-certificates-id'
+  /criteria-scripts:
+    $ref: './criteria_script.yml#/criteria-scripts'
+  /criteria-scripts/{id}:
+    $ref: './criteria_script.yml#/criteria-scripts-id'
+  /device-scripts:
+    $ref: './device_script.yml#/device-scripts'
+  /device-scripts/{id}:
+    $ref: './device_script.yml#/device-scripts-id'
+  /device-scripts/download/{id}:
+    $ref: './device_script.yml#/device-scripts-download-id'
+  /entitlement-scripts:
+    $ref: './entitlement_script.yml#/entitlement-scripts'
+  /entitlement-scripts/{id}:
+    $ref: './entitlement_script.yml#/entitlement-scripts-id'
+  /entitlement-scripts/test:
+    $ref: './entitlement_script.yml#/entitlement-scripts-test'
+  /appliance-customizations:
+    $ref: './appliance_customization.yml#/appliance-customizations'
+  /appliance-customizations/{id}:
+    $ref: './appliance_customization.yml#/appliance-customizations-id'
+  /token-records/dn:
+    $ref: './token_record.yml#/token-records-dn'
+  /token-records/revoked/by-dn/{distinguished-name}:
+    $ref: './token_record.yml#/token-records-revoked-by-dn'
+  /token-records/revoked/by-type/{token-type}:
+    $ref: './token_record.yml#/token-records-revoked-by-type'
+  /token-records/reeval/by-dn/{distinguished-name}:
+    $ref: './token_record.yml#/token-records-reeval-by-dn'
+  /blacklist:
+    $ref: './blacklist.yml#/blacklist'
+  /blacklist/{distinguished-name}:
+    $ref: './blacklist.yml#/blacklist-distinguished-name'
+  /license/users:
+    $ref: './user_license.yml#/license-users'
+  /license/users/{distinguished-name}:
+    $ref: './user_license.yml#/license-users-distinguished-name'
+  /on-boarded-devices:
+    $ref: 'on-boarded_device.yml#/on-boarded-devices'
+  /on-boarded-devices/{distinguished-name}:
+    $ref: 'on-boarded_device.yml#/on-boarded-devices-distinguished-name'
+  /global-settings:
+    $ref: './global_settings.yml#/global-settings'
+  /global-settings-backup-passphrase:
+    $ref: './global_settings.yml#/global-settings-backup-passphrase'
+  /client-connections:
+    $ref: './client_connections.yml#/client-connections'
+  /client-connections/{profileName}/url:
+    $ref: './client_connections.yml#/client-connections-url'
+  /client-connections/{profileName}/barcode:
+    $ref: './client_connections.yml#/client-connections-barcode'
+  /auto-update-settings:
+    $ref: './auto_update.yml#/auto-update-settings'
+  /certificate-authority/ca:
+    $ref: './ca.yml#/certificate-authority-ca'
+  /certificate-authority/ca/pem:
+    $ref: './ca.yml#/certificate-authority-ca-pem'
+  /certificate-authority/ca/next:
+    $ref: './ca.yml#/certificate-authority-ca-next'
+  /certificate-authority/ca/next/generate:
+    $ref: './ca.yml#/certificate-authority-ca-next-generate'
+  /certificate-authority/ca/next/switch:
+    $ref: './ca.yml#/certificate-authority-ca-next-switch'
+  /license:
+    $ref: './license.yml#/license'
+  /license/next:
+    $ref: './license.yml#/license-next'
+  /appliances/{id}/upgrade:
+    $ref: './appliance_upgrade.yml#/appliances-upgrade'
+  /appliances/{id}/upgrade/prepare:
+    $ref: './appliance_upgrade.yml#/appliances-upgrade-prepare'
+  /appliances/{id}/upgrade/complete:
+    $ref: './appliance_upgrade.yml#/appliances-upgrade-complete'
+  /appliances/{id}/upgrade/switch-partition:
+    $ref: './appliance_upgrade.yml#/appliances-upgrade-switch-partition'
+  /files:
+    $ref: './file.yml#/files'
+  /files/{filename}:
+    $ref: './file.yml#/files-filename'
+  /appliances/{id}/backup:
+    $ref: './appliance_backup.yml#/appliances-backup'
+  /appliances/{id}/backup/{backupId}:
+    $ref: './appliance_backup.yml#/appliances-backup-id'
+  /appliances/{id}/backup/{backupId}/status:
+    $ref: './appliance_backup.yml#/appliances-backup-id-status'
+  /appliances/{id}/metrics:
+    $ref: './appliance_metric.yml#/appliances-metrics'
+  /appliances/{id}/metrics/{name}:
+    $ref: './appliance_metric.yml#/appliances-metrics-id'
+
+# workaround for discriminator mappings not working properly when multiple files are involved.
+components:
+  schemas:
+    ConnectorProvider:
+      allOf:
+        - $ref: './common.yml#/definitions/BaseEntity'
+        - type: object
+          description: Represents a Connector Identity Provider.
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              description: The type of the Identity Provider.
+              enum:
+                - Connector
+            ipPoolV4:
+              type: string
+              format: uuid
+              description: >-
+                The IPv4 Pool ID the users in this Identity Provider are going to use to allocate IP addresses for
+                the tunnels.
+            ipPoolV6:
+              type: string
+              format: uuid
+              description: >-
+                The IPv6 Pool ID the users in this Identity Provider are going to use to allocate IP addresses for
+                the tunnels.
+            claimMappings:
+              $ref: './identity_provider.yml#/definitions/ClaimMappings'
+            onDemandClaimMappings:
+              $ref: './identity_provider.yml#/definitions/OnDemandClaimMappings'
+    LocalDatabaseProvider:
+      allOf:
+        - $ref: './identity_provider.yml#/definitions/IdentityProvider'
+        - type: object
+          description: Represents a Local Database Identity Provider.
+          properties:
+            userLockoutThreshold:
+              type: integer
+              description: After how many failed authentication attempts will a local user be locked out from authenticating again for 1 minute.
+              default: 5
+            minPasswordLength:
+              type: integer
+              description: Minimum password length requirement for local users.
+              default: 0
+    SamlProvider:
+      allOf:
+        - $ref: './identity_provider.yml#/definitions/IdentityProvider'
+        - type: object
+          description: Represents a SAML Identity Provider.
+          required:
+            - redirectUrl
+            - issuer
+            - audience
+            - providerCertificate
+          properties:
+            redirectUrl:
+              type: string
+              description: >-
+                The URL to redirect the user browsers to authenticate against the SAML Server.
+                Also known as Single Sign-on URL. AuthNRequest will be added automatically.
+              example: 'https://saml.company.com'
+            issuer:
+              type: string
+              description: SAML issuer ID to make sure the sender of the Token is the expected SAML provider.
+              example: 'http://adfs-test.company.com/adfs/services/trust'
+            audience:
+              type: string
+              description: SAML audience to make sure the recipient of the Token is this Controller.
+              example: Company AppGate SDP
+            providerCertificate:
+              type: string
+              description: The certificate of the SAML provider to verify the SAML tokens. In PEM format.
+              example: |-
+                -----BEGIN CERTIFICATE-----
+                ....
+                -----END CERTIFICATE-----
+            decryptionKey:
+              type: string
+              description: The private key to decrypt encrypted assertions if there is any. In PEM format.
+            forceAuthn:
+              type: boolean
+              description: >-
+                Enables ForceAuthn flag in the SAML Request.
+                If the SAML Provider supports this flag, it will require user to enter their credentials every time Client requires SAML authentication.
+    RadiusProvider:
+      allOf:
+        - $ref: './identity_provider.yml#/definitions/IdentityProvider'
+        - type: object
+          description: Represents a Radius Identity Provider.
+          required:
+            - hostnames
+            - sharedSecret
+          properties:
+            hostnames:
+              type: array
+              description: Hostnames/IP addresses to connect.
+              items:
+                type: string
+              example:
+                - 'radius.company.com'
+            port:
+              type: integer
+              description: Port to connect.
+              default: 1812
+            sharedSecret:
+              type: string
+              writeOnly: true
+              description: Radius shared secret to authenticate to the server.
+            authenticationProtocol:
+              type: string
+              description: Radius protocol to use while authenticating users.
+              enum:
+                - PAP
+                - CHAP
+              default: CHAP
+    LdapCertificateProvider:
+      allOf:
+        - $ref: '#/components/schemas/LdapProvider'
+        - type: object
+          description: Represents an LDAP Certificate Identity Provider.
+          required:
+            - caCertificates
+          properties:
+            caCertificates:
+              type: array
+              description: CA certificates to verify the Client certificates. In PEM format.
+              items:
+                type: string
+              example:
+                - >-
+                  -----BEGIN CERTIFICATE-----
+                  ....
+                  -----END CERTIFICATE-----
+            certificateUserAttribute:
+              type: string
+              description: The LDAP attribute to compare the Client certificate's Subject Alternative Name.
+              default: userPrincipalName
+    LdapProvider:
+      allOf:
+        - $ref: './identity_provider.yml#/definitions/IdentityProvider'
+        - type: object
+          description: Represents an LDAP Identity Provider.
+          required:
+            - hostnames
+            - port
+            - adminDistinguishedName
+          properties:
+            hostnames:
+              type: array
+              description: Hostnames/IP addresses to connect.
+              items:
+                type: string
+              example:
+                - 'dc.ad.company.com'
+            port:
+              type: integer
+              description: Port to connect.
+              example: 389
+            sslEnabled:
+              type: boolean
+              description: Whether to use LDAPS protocol or not.
+              default: false
+            adminDistinguishedName:
+              type: string
+              description: The Distinguished Name to login to LDAP and query users with.
+              example: 'CN=admin,OU=Users,DC=company,DC=com'
+            adminPassword:
+              type: string
+              description: The password to login to LDAP and query users with. Required on creation.
+              writeOnly: true
+              example: 'tSW3!QBv(rj{UuLY'
+            baseDn:
+              type: string
+              description: The subset of the LDAP server to search users from. If not set, root of the server is used.
+              example: 'OU=Users,DC=company,DC=com'
+            objectClass:
+              type: string
+              description: The object class of the users to be authenticated and queried.
+              default: 'user'
+            usernameAttribute:
+              type: string
+              description: The name of the attribute to get the exact username from the LDAP server.
+              default: 'sAMAccountName'
+            membershipFilter:
+              type: string
+              description: The filter to use while querying users' nested groups.
+              default: '(objectCategory=group)'
+            membershipBaseDn:
+              type: string
+              description: The subset of the LDAP server to search groups from. If not set, "baseDn" is used.
+              example: 'OU=Groups,DC=company,DC=com'
+            passwordWarning:
+              type: object
+              description: Password warning configuration for Active Directory. If enabled, the client will display the configured message before the password expiration.
+              properties:
+                enabled:
+                  type: boolean
+                  description: Whether to check and warn the users for password expiration.
+                thresholdDays:
+                  type: integer
+                  description: How many days before the password warning to be displayed to the user.
+                  default: 5
+                message:
+                  type: string
+                  description: >-
+                    The given message will be displayed to the user.
+                    Use this field to guide the users on how to change their passwords.
+                    The expiration time will displayed on the client on a separate section.
+                  example: Your password is about to expire. Please change it.

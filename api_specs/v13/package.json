@@ -1,0 +1,14 @@
+{
+  "name": "sdp_controller_api_spec_bundler",
+  "description": "It bundles API specs.",
+  "version": "5.2.0",
+  "dependencies": {
+    "redoc-cli": "0.9.7",
+    "speccy": "0.11.0",
+    "core-js": "3.6.5"
+  },
+  "scripts": {
+    "lint": "speccy lint api_specs.yml --skip operation-operationId",
+    "bundle": "redoc-cli bundle api_specs.yml -o ../build-artifacts/api_specs.html --title \"AppGate SDP Controller REST API OpenAPI Specification\" -t redoc-template.hbs"
+  }
+}
