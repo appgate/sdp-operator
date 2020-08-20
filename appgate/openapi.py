@@ -402,6 +402,14 @@ class Parser:
                                                     attribs=attribs,
                                                     dependencies=dependencies)
             return generated_entity
+        elif is_object(definition):
+            attribs, dependencies = self.make_attribs(entity_name, definition,
+                                                      top_level_entry=True)
+            generated_entity = self.register_entity(entity_name=entity_name,
+                                                    attribs=attribs,
+                                                    dependencies=dependencies)
+            return generated_entity
+
         log.error('Definition %s yet not supported', definition)
 
         return None
