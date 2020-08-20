@@ -502,18 +502,33 @@ def parse_files(spec_entities: Dict[str, str],
                    api_version=api_version)
 
 
-def entity_names(entity: type) -> Tuple[str, str, str]:
+def entity_names(entity: type, short_names: Dict[str, str]) -> Tuple[str, str, str, str]:
     name = entity.__name__
+    short_name = name[0:3].lower()
+    if short_name in short_names:
+        a = name
+        b = short_names[short_name]
+        rest = []
+        for i in range(2):
+            # Another CRD has the same short name
+            rest = a.split(b)
+            if len(rest) == 1:
+                a = short_names[short_name]
+                b = name
+        if len(rest) < 1:
+            raise OpenApiParserException('Unable to generate short name for entity %s', name)
+        short_name = rest[1].lower()[0:3]
+    short_names[short_name] = name
     singular_name = name.lower()
     if singular_name.endswith('y'):
         plural_name = f'{singular_name[:-1]}ies'
     else:
         plural_name = f'{singular_name}s'
-    return name, singular_name, plural_name
+    return name, singular_name, plural_name, short_name
 
 
-def generate_crd(entity) -> str:
-    name, singular_name, plural_name = entity_names(entity)
+def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
+    name, singular_name, plural_name, short_name = entity_names(entity, short_names)
     crd = {
         'apiVersion': K8S_API_VERSION,
         'kind': K8S_CRD_KIND,
@@ -533,7 +548,7 @@ def generate_crd(entity) -> str:
                 'plural': plural_name,
                 'kind': name,
                 'shortNames': [
-                    name[0:3].lower()
+                    short_name
                 ]
             }
         }
