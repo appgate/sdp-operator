@@ -108,12 +108,16 @@ def entities_op(entity_set: EntitiesSet, entity: Entity_T,
 
 
 def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
+    """
+    name sould match this regexp:
+       '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
+    """
     entity_name = entity.name if has_name(entity) else entity_type.lower()
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': {
-            'name': re.sub('\s+', '-', entity_name.strip())
+            'name': re.sub('\s+', '-', entity_name.strip()).lower()
         },
         'spec': typedload.dump(entity)
     }
