@@ -12,7 +12,7 @@ from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, entity_loop, log
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent, generate_api_spec, SPEC_ENTITIES
+from appgate.types import AppgateEvent, generate_api_spec
 
 
 async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
