@@ -115,7 +115,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     entity_name = entity.name if has_name(entity) else entity_type.lower()
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
-    entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip()).lower()
+    entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
