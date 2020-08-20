@@ -277,7 +277,7 @@ class Parser:
             # Indirect recursion here.
             # Those classes are never registered
             name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
-            attribs, _ = self.make_attribs(name, type_data)
+            attribs, _ = self.make_attribs(name, type_data, top_level_entry=False)
             generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -285,7 +285,8 @@ class Parser:
         elif is_compound(type_data):
             name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
             definition = self.parse_all_of(type_data['allOf'])
-            attribs, dependencies = self.make_attribs(entity_name, definition)
+            attribs, dependencies = self.make_attribs(entity_name, definition,
+                                                      top_level_entry=False)
             generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -329,8 +330,9 @@ class Parser:
 
         return attribs
 
-    def make_attribs(self, entity_name: str, definition) -> Tuple[Dict[str, Any],
-                                                                  Set[EntityDependency]]:
+    def make_attribs(self, entity_name: str, definition,
+                     top_level_entry: bool) -> Tuple[Dict[str, Any],
+                                                             Set[EntityDependency]]:
         """
         Returns the attr.attrib data needed to use attr.make_class with the
         dependencies for this attribute.
@@ -349,7 +351,8 @@ class Parser:
             entity_attrs[norm_name] = self.make_attrib(entity_name,
                                                        attrib_name,
                                                        attrib_props,
-                                                       required_fields)
+                                                       required_fields,
+                                                       top_level_entry)
 
         # We need to create then in order. Those with default values at the end
         for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
@@ -393,16 +396,17 @@ class Parser:
                 raise OpenApiParserException(', '.join(errors))
         if is_compound(definition):
             definition = self.parse_all_of(cast(dict, definition)['allOf'])
-            attribs, dependencies = self.make_attribs(entity_name, definition)
+            attribs, dependencies = self.make_attribs(entity_name, definition,
+                                                      top_level_entry=True)
             generated_entity = self.register_entity(entity_name=entity_name,
                                                     attribs=attribs,
                                                     dependencies=dependencies)
             return generated_entity
         elif is_array(definition):
             # resolve definiton
-            raise OpenApiParserException(f'Array definition {definition} not supported')
+            log.error('Array definition %s not supported', definition)
 
-        raise OpenApiParserException(f'Definition {definition} yet not supported')
+        log.error('Definition %s yet not supported', definition)
 
 
 
