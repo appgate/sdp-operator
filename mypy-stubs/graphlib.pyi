@@ -1,0 +1,6 @@
+from typing import List, Dict, Set
+
+
+class TopologicalSorter:
+    def __init__(self, entities_to_sort: Dict[str, Set[str]]) -> None: ...
+    def static_order(self) -> List[str]: ...

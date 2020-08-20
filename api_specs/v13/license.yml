@@ -1,0 +1,215 @@
+license:
+  get:
+    summary: Get the current License.
+    description: Get the current License.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      200:
+        $ref: '#/responses/LicenseDetails'
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Upload a new License.
+    description: Upload a new License and override the existing one.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      200:
+        $ref: '#/responses/License'
+      400:
+        $ref: './common.yml#/responses/JsonError'
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      422:
+        $ref: './common.yml#/responses/ValidationError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/LicenseImport'
+  delete:
+    summary: Delete the current License.
+    description: Delete the current License to revert to the Built-in License.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      204:
+        description: License was deleted successfully.
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+license-next:
+  get:
+    summary: Get the current License.
+    description: >-
+      Get the current License which will be activated when CA certificate switch occurs.
+      Licenses are bound to the CA Certificate.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      200:
+        $ref: '#/responses/LicenseDetails'
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      422:
+        $ref: './common.yml#/responses/ValidationError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Upload a new next License.
+    description: Upload a new next License to be switched when CA certificate is switched.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      200:
+        $ref: '#/responses/License'
+      400:
+        $ref: './common.yml#/responses/JsonError'
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      422:
+        $ref: './common.yml#/responses/ValidationError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/LicenseImport'
+  delete:
+    summary: Delete the next License.
+    description: Delete the next License.
+    tags:
+      - License
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      204:
+        description: License was deleted successfully.
+      401:
+        $ref: './common.yml#/responses/TokenError'
+      403:
+        $ref: './common.yml#/responses/PermissionError'
+      500:
+        $ref: './common.yml#/responses/UnexpectedError'
+
+responses:
+  LicenseDetails:
+    description: License details including usage.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/LicenseDetails'
+  License:
+    description: License details.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/License'
+
+requestBodies:
+  LicenseImport:
+    description: License import.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/LicenseImport'
+    required: true
+
+definitions:
+  LicenseDetails:
+    type: object
+    description: License details and current usage.
+    properties:
+      entitled:
+        $ref: '#/definitions/License'
+      requestCode:
+        type: string
+        description: Request code for the license. Use this code to get a license.
+          It's based on the CA certificate.
+      usage:
+        type: object
+        description: License usage information.
+        properties:
+          users:
+            type: number
+            description: The amount of licensed users in the system currently.
+            example: 152
+          sites:
+            type: number
+            description: The amount of sites in the system currently.
+            example: 3
+      error:
+        type: string
+        description: Error message if there is a problem with the license.
+        example: License is expired.
+      used:
+        allOf:
+          - $ref: '#/definitions/License'
+          - type: object
+            description: License usage information. Deprecated.
+            deprecated: true
+  License:
+    type: object
+    description: License details.
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: Unique ID for the license.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      type:
+        type: number
+        description: 'Type of the license. 1: production, 2: installation, 3: test, 4: built-in, 5: aws built-in'
+        example: 2
+      request:
+        type: string
+        description: >-
+          Request code for the license. If built-in license is in place, use this code to get a license.
+          It's based on the CA certificate.
+        example: 1675ab19fe2
+      expiration:
+        type: string
+        format: 'date-time'
+        description: The expiration date of the license.
+      maxUsers:
+        type: number
+        description: >-
+          The maximum users allowed by the license.
+          If it's the usage details, then it's the amount of licensed users in the system currently.
+        example: 200
+      maxSites:
+        type: number
+        description: >-
+          The maximum sites allowed by the license.
+          If it's the usage details, then it's the amount of sites in the system currently.
+        example: 5
+  LicenseImport:
+    type: object
+    description: Object to import a new license.
+    required:
+      - license
+    properties:
+      license:
+        type: string
+        description: The license file contents for this Controller (with the matching request code).

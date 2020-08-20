@@ -1,8 +1,14 @@
-import pytest
-
-from appgate.state import compare_entities, Plan, resolve_entitlements, resolve_policies, EntitiesSet
-from appgate.types import Policy, Entitlement, Condition
+from appgate.state import compare_entities, EntitiesSet, resolve_entities
+from appgate.types import generate_api_spec
 from tests.utils import entitlement, condition, policy
+
+api_spec = generate_api_spec()
+entities = api_spec.entities
+
+Policy = entities['Policy'].cls
+Entitlement = entities['Policy'].cls
+Condition = entities['Policy'].cls
+IdentityProvider = entities['Policy'].cls
 
 
 def test_compare_policies_0():
@@ -177,25 +183,12 @@ def test_compare_policies_4():
                name='policy2',
                expression='expression-3')
     }
-    # test that the ids are propagated when modifying
-    delete_ids = [p.id for p in plan.modify.entities]
-    assert len(list(filter(None, delete_ids))) == 2
-    delete_ids.sort()
-    assert delete_ids == ['id1', 'id2']
-    assert plan.share.entities == {Policy(id='id0',
-                                 name='policy0',
-                                 expression='expression-0')}
-    shared_ids = [p.id for p in plan.share.entities]
-    assert len(list(filter(None, shared_ids))) == 1
-    shared_ids.sort()
-
-    assert shared_ids == ['id0']
 
 
 def test_normalize_entitlements_0():
     entitlements = EntitiesSet()
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entitlements(entitlements, conditions)
+    entitlements_set, conflicts = resolve_entities(entitlements, conditions, 'conditions')
     assert entitlements_set.entities == set()
     assert conflicts is None
 
@@ -214,11 +207,11 @@ def test_normalize_entitlements_1():
         ]),
     })
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entitlements(entitlements, conditions)
+    entitlements_set, conflicts = resolve_entities(entitlements, conditions, 'conditions')
     assert entitlements_set.entities == entitlements.entities
     assert conflicts == {
-        'entitlement-1': {'condition1', 'condition2', 'condition3'},
-        'entitlement-2': {'condition1', 'condition2', 'condition3'},
+        'entitlement-1': ('conditions', {'condition1', 'condition2', 'condition3'}),
+        'entitlement-2': ('conditions', {'condition1', 'condition2', 'condition3'}),
     }
 
 
@@ -242,7 +235,7 @@ def test_normalize_entitlements_2():
         condition(id='c4', name='condition4'),
         condition(id='c5', name='condition5'),
     })
-    entitlements_set, conflicts = resolve_entitlements(entitlements, conditions)
+    entitlements_set, conflicts = resolve_entities(entitlements, conditions, 'conditions')
     assert entitlements_set.entities == {
         entitlement(name='entitlement-1', conditions=[
             'c1',
@@ -278,16 +271,16 @@ def test_normalize_entitlements_3():
         condition(name='condition4'),
         condition(name='condition5'),
     })
-    entitlements_set, conflicts = resolve_entitlements(entitlements, conditions)
+    entitlements_set, conflicts = resolve_entities(entitlements, conditions, 'conditions')
     assert conflicts == {
-        'entitlement-2': {'condition4', 'condition5'}
+        'entitlement-2': ('conditions', {'condition4', 'condition5'})
     }
 
 
 def test_normalize_policies_0():
     policies = EntitiesSet()
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_policies(policies, entitlements)
+    policies_set, conflicts = resolve_entities(policies, entitlements, 'entitlements')
     assert policies_set.entities == set()
     assert conflicts is None
 
@@ -306,10 +299,10 @@ def test_normalize_policies_1():
         ]),
     })
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_policies(policies, entitlements)
+    policies_set, conflicts = resolve_entities(policies, entitlements, 'entitlements')
     assert conflicts == {
-        'policy-1': {'entitlement1', 'entitlement2', 'entitlement3'},
-        'policy-2': {'entitlement1', 'entitlement2', 'entitlement3'}
+        'policy-1': ('entitlements', {'entitlement1', 'entitlement2', 'entitlement3'}),
+        'policy-2': ('entitlements', {'entitlement1', 'entitlement2', 'entitlement3'})
     }
 
 
@@ -333,7 +326,7 @@ def test_normalize_policies_2():
             entitlement(id='e4', name='entitlement4'),
             entitlement(id='e5', name='entitlement5'),
         })
-    policies_set, conflicts = resolve_policies(policies, entitlements)
+    policies_set, conflicts = resolve_entities(policies, entitlements, 'entitlements')
     assert conflicts is None
     assert policies_set.entities == {
         policy(name='policy-1', entitlements=[
@@ -368,8 +361,7 @@ def test_normalize_policies_3():
         entitlement(id='id3', name='entitlement3'),
         entitlement(name='entitlement5')
     })
-    policies_set, conflicts = resolve_policies(policies, entitlements)
-    print(conflicts)
+    policies_set, conflicts = resolve_entities(policies, entitlements, 'entitlements')
     assert conflicts == {
-        'policy-2': {'entitlement4', 'entitlement5'}
+        'policy-2': ('entitlements', {'entitlement4', 'entitlement5'})
     }

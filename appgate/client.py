@@ -5,7 +5,8 @@ import typedload
 from aiohttp import InvalidURL
 
 from appgate.logger import log
-from appgate.types import AppgateEntity, Policy, Entitlement, Condition
+from appgate.openapi import Entity_T
+
 
 __all__ = [
     'AppgateClient',
@@ -15,20 +16,24 @@ __all__ = [
 
 class EntityClient:
     def __init__(self, path: str, appgate_client: 'AppgateClient',
-                 loader: Callable[[Dict[str, Any]], AppgateEntity]) -> None:
+                 loader: Callable[[Dict[str, Any]], Entity_T]) -> None:
         self._client = appgate_client
         self.path = path
         self.loader = loader
 
-    async def get(self) -> Optional[List[AppgateEntity]]:
+    async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
         if not data:
             log.error('[aggpate-client] GET %s :: Expecting a response but we got empty data',
                       self.path)
             return None
-        return [self.loader(e) for e in data['data']]
+        # TODO: We should discover this from the api spec
+        if 'data' in data:
+            return [self.loader(e) for e in data['data']]
+        else:
+            return [self.loader(data)]
 
-    async def post(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
+    async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         body = typedload.dump(entity)
         body['id'] = entity.id
         data = await self._client.post(self.path,
@@ -39,7 +44,7 @@ class EntityClient:
             return None
         return self.loader(data)  # type: ignore
 
-    async def put(self, entity: AppgateEntity) -> Optional[AppgateEntity]:
+    async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         data = await self._client.put(f'{self.path}/{entity.id}',
                                       body=typedload.dump(entity))
         if not data:
@@ -55,13 +60,14 @@ class EntityClient:
 
 
 class AppgateClient:
-    def __init__(self, controller: str, user: str, password: str) -> None:
+    def __init__(self, controller: str, user: str, password: str, version: int) -> None:
         self.controller = controller
         self.user = user
         self.password = password
         self._session = aiohttp.ClientSession()
         self.device_id = str(uuid.uuid4())
         self._token = None
+        self.version = version
 
     async def close(self) -> None:
         await self._session.close()
@@ -83,7 +89,7 @@ class AppgateClient:
         if not method:
             raise Exception(f'Unknown HTTP method: {verb}')
         headers = {
-            'Accept': 'application/vnd.appgate.peer-v13+json',
+            'Accept': f'application/vnd.appgate.peer-v{self.version}+json',
             'Content-Type': 'application/json'
         }
         auth_header = self.auth_header()
@@ -140,18 +146,6 @@ class AppgateClient:
     def authenticated(self) -> bool:
         return self._token is not None
 
-    @property
-    def policies(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/policies',
-                            loader=lambda e: typedload.load(e, Policy))
-
-    @property
-    def entitlements(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/entitlements',
-                            loader=lambda e: typedload.load(e, Entitlement))
-
-    @property
-    def conditions(self) -> EntityClient:
-        return EntityClient(appgate_client=self, path='/admin/conditions',
-                            loader=lambda e: typedload.load(e, Condition))
-
+    def entity_client(self, entity: type, api_path: str) -> EntityClient:
+        return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
+                            loader=lambda e: typedload.load(e, entity))

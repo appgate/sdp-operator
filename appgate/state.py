@@ -1,16 +1,18 @@
+import sys
 from copy import deepcopy
 import datetime
+import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, TypeVar, Generic, Dict, Optional, cast, Tuple, Literal, Any, Iterable
+from typing import Set, TypeVar, Dict, Optional, Tuple, Literal, Any, Iterable
 
 import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.client import AppgateClient, EntityClient
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name, APISpec
+from appgate.client import EntityClient
 from appgate.logger import log
-from appgate.types import Policy, Condition, Entitlement, Entity_T, AppgateEntity, DOMAIN, RESOURCE_VERSION
 
 __all__ = [
     'AppgateState',
@@ -18,49 +20,50 @@ __all__ = [
     'EntitiesSet',
     'create_appgate_plan',
     'appgate_plan_apply',
-    'appgate_plan_errors_summary',
+    'entities_conflict_summary',
     'appgate_plan_apply',
-    'resolve_entitlements',
-    'resolve_policies',
+    'resolve_entity',
+    'resolve_entities',
+    'resolve_appgate_state',
 ]
 
+from appgate.types import generate_api_spec
 
 BUILTIN_TAG = 'builtin'
 
 
-T = TypeVar('T', bound=Entity_T)
-
-
-class EntitiesSet(Generic[T]):
-    def __init__(self, entities: Optional[Set[T]] = None,
-                 entities_by_name: Optional[Dict[str, T]] = None,
-                 entities_by_id: Optional[Dict[str, T]] = None) -> None:
-        self.entities: Set[T] = entities or set()
+class EntitiesSet:
+    def __init__(self, entities: Optional[Set[Entity_T]] = None,
+                 entities_by_name: Optional[Dict[str, Entity_T]] = None,
+                 entities_by_id: Optional[Dict[str, Entity_T]] = None) -> None:
+        self.entities: Set[Entity_T] = entities or set()
         if entities_by_name:
             self.entities_by_name = entities_by_name
         else:
             self.entities_by_name = {}
             for e in self.entities:
-                self.entities_by_name[e.name] = e
+                if is_entity_t(e):
+                    self.entities_by_name[e.name] = e
         if entities_by_id:
             self.entities_by_id = entities_by_id
         else:
             self.entities_by_id = {}
             for e in self.entities:
-                self.entities_by_id[e.id] = e
+                if is_entity_t(e):
+                    self.entities_by_id[e.id] = e
 
     def __str__(self) -> str:
         return str(self.entities)
 
-    def __copy__(self) -> 'EntitiesSet[T]':
+    def __copy__(self) -> 'EntitiesSet':
         return EntitiesSet(entities=deepcopy(self.entities),
                            entities_by_name=deepcopy(self.entities_by_name),
                            entities_by_id=deepcopy(self.entities_by_id))
 
-    def builtin_entities(self) -> 'EntitiesSet[T]':
+    def builtin_entities(self) -> 'EntitiesSet':
         return EntitiesSet(entities={e for e in self.entities if 'builtin' in e.tags})
 
-    def add(self, entity: T) -> None:
+    def add(self, entity: Entity_T) -> None:
         if entity.name in self.entities_by_name:
             # Entity is already registered, so this is in the best case a modification
             return self.modify(entity)
@@ -69,7 +72,7 @@ class EntitiesSet(Generic[T]):
         self.entities_by_name[entity.name] = entity
         self.entities_by_id[entity.id] = entity
 
-    def delete(self, entity: T) -> None:
+    def delete(self, entity: Entity_T) -> None:
         self.entities.remove(entity)
         if entity.name in self.entities_by_name:
             registered_id = self.entities_by_name[entity.name].id
@@ -78,7 +81,7 @@ class EntitiesSet(Generic[T]):
         if entity.id in self.entities_by_id:
             del self.entities_by_id[entity.id]
 
-    def modify(self, entity: T) -> None:
+    def modify(self, entity: Entity_T) -> None:
         if entity.name not in self.entities_by_name:
             # Not yet in the system, register it with its own id
             return self.add(entity)
@@ -88,9 +91,9 @@ class EntitiesSet(Generic[T]):
         self.entities.add(evolve(entity, id=self.entities_by_name[entity.name].id))
 
 
-def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
+def entities_op(entity_set: EntitiesSet, entity: Entity_T,
                 op: Literal['ADDED', 'DELETED', 'MODIFIED'],
-                current_entities: EntitiesSet[AppgateEntity]) -> None:
+                current_entities: EntitiesSet) -> None:
     # Current state should always contain the real id!!
     cached_entity = current_entities.entities_by_name.get(entity.name)
     if cached_entity:
@@ -104,66 +107,71 @@ def entities_op(entity_set: EntitiesSet, entity: AppgateEntity,
 
 
 def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
-     return {
-        'apiVersion': f'{DOMAIN}/{RESOURCE_VERSION}',
+    entity_name = entity.name if has_name(entity) else entity_type.lower()
+    return {
+        'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': {
-            'name': entity.name
+            'name': entity_name
         },
         'spec': typedload.dump(entity)
-     }
+    }
 
 
-def dump_entities(entities: Iterable[Entity_T], dump_file: Path, entity_type: str) -> None:
-    if entities:
-        with dump_file.open('w') as f:
-            for e in entities:
-                f.write(yaml.dump(dump_entity(e, entity_type), default_flow_style=False))
-                f.write('---\n')
+def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
+                  entity_type: str) -> None:
+    f = dump_file.open('w') if dump_file else sys.stdout
+    for i, e in enumerate(entities):
+        if i > 0:
+            f.write('---\n')
+        yaml_dump = yaml.dump(dump_entity(e, entity_type), default_flow_style=False)
+        f.write(yaml_dump)
+    if dump_file:
+        f.close()
 
 
 @attrs()
 class AppgateState:
-    policies: EntitiesSet[Policy] = attrib()
-    conditions: EntitiesSet[Condition] = attrib()
-    entitlements: EntitiesSet[Entitlement] = attrib()
+    entities_set: Dict[str, EntitiesSet] = attrib()
 
-    def with_entity(self, entity: AppgateEntity, op: str,
+    def with_entity(self, entity: Entity_T, op: str,
                     current_appgate_state: 'AppgateState') -> None:
         """
         Get the entity with op and register in the current state
         These entities are coming from k8s so they don't have any id
         """
-        known_entities = {
-            Policy: lambda s: s.policies,
-            Entitlement: lambda s: s.entitlements,
-            Condition: lambda s: s.conditions,
-        }
-        entitites = known_entities.get(type(entity))
+        entitites = lambda state: state.entities_set.get(type(entity).__name__)
         if not entitites:
             log.error('[appgate-operator] Unknown entity type: %s', type(entity))
             return
         # TODO: Fix linter here!
         entities_op(entitites(self), entity, op, entitites(current_appgate_state))  # type: ignore
 
-    def copy(self, entitlements: Optional[EntitiesSet[Entitlement]] = None,
-             policies: Optional[EntitiesSet[Policy]] = None,
-             conditions: Optional[EntitiesSet[Condition]] = None) -> 'AppgateState':
-        return AppgateState(policies=policies or self.policies,
-                            entitlements=entitlements or self.entitlements,
-                            conditions=conditions or self.conditions)
+    def copy(self, entities_set: Dict[str, EntitiesSet]) -> 'AppgateState':
+        new_entities_set = {}
+        for k, v in self.entities_set.items():
+            if k in entities_set:
+                new_entities_set[k] = entities_set[k]
+            else:
+                new_entities_set[k] = v
+        return AppgateState(new_entities_set)
 
-    def dump(self, path: Optional[Path] = None) -> None:
-        dump_dir = path or Path(str(datetime.date.today()))
-        dump_dir.mkdir(exist_ok=True)
-        # TODO: Discover the entity kind
-        dump_entities(self.conditions.entities, dump_dir / 'conditions.yaml', 'Condition')
-        dump_entities(self.entitlements.entities, dump_dir / 'entitlements.yaml', 'Entitlement')
-        dump_entities(self.policies.entities, dump_dir / 'policies.yaml', 'Policy')
+    def dump(self, output_dir: Optional[Path] = None, stdout: bool = False) -> None:
+        dump_dir = None
+        if not stdout:
+            output_dir_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-entities'
+            dump_dir = output_dir or Path(output_dir_format)
+            dump_dir.mkdir(exist_ok=True)
+
+        for (i, (k, v)) in enumerate(self.entities_set.items()):
+            if stdout and i > 0:
+                print('---\n')
+            p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
+            dump_entities(self.entities_set[k].entities, p, k)
 
 
-def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: EntitiesSet[T],
-                   errors: Optional[Set[T]] = None) -> EntitiesSet[T]:
+def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
+                   errors: Optional[Set[str]] = None) -> EntitiesSet:
     entities = set()
     errors = errors or set()
     entities.update(share.entities)
@@ -173,23 +181,23 @@ def merge_entities(share: EntitiesSet[T], create: EntitiesSet[T], modify: Entiti
 
 
 @attrs
-class Plan(Generic[T]):
-    share: EntitiesSet[T] = attrib(factory=EntitiesSet)
-    delete: EntitiesSet[T] = attrib(factory=EntitiesSet)
-    create: EntitiesSet[T] = attrib(factory=EntitiesSet)
-    modify: EntitiesSet[T] = attrib(factory=EntitiesSet)
+class Plan:
+    share: EntitiesSet = attrib(factory=EntitiesSet)
+    delete: EntitiesSet = attrib(factory=EntitiesSet)
+    create: EntitiesSet = attrib(factory=EntitiesSet)
+    modify: EntitiesSet = attrib(factory=EntitiesSet)
     errors: Optional[Set[str]] = attrib(default=None)
 
     @cached_property
-    def expected_entities(self) -> EntitiesSet[T]:
+    def expected_entities(self) -> EntitiesSet:
         """
         Set with all the names in the system in this plan
         """
         return merge_entities(self.share, self.create, self.modify)
 
     @cached_property
-    def entities(self) -> EntitiesSet[T]:
-        entities = merge_entities(share=self.share, create=self.create, modify=self.modify,  # type: ignore
+    def entities(self) -> EntitiesSet:
+        entities = merge_entities(share=self.share, create=self.create, modify=self.modify,
                                   errors=self.errors)
         entities.entities.update({e for e in self.delete.entities if e.id in (self.errors or set())})
         return entities
@@ -223,7 +231,7 @@ async def plan_apply(plan: Plan, namespace: str,
                       namespace, e)
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
-            if not await entity_client.post(cast(AppgateEntity, e)):
+            if not await entity_client.post(e):
                 errors.add(e.id)
     for e in plan.modify.entities:
         if not e.id:
@@ -232,7 +240,7 @@ async def plan_apply(plan: Plan, namespace: str,
             continue
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
         if entity_client:
-            if not await entity_client.put(cast(AppgateEntity, e)):
+            if not await entity_client.put(e):
                 errors.add(e.id)
     for e in plan.delete.entities:
         if not e.id:
@@ -262,61 +270,35 @@ async def plan_apply(plan: Plan, namespace: str,
 # Policies have entitlements that have conditions, so conditions always first.
 @attrs
 class AppgatePlan:
-    policies: Plan[Policy] = attrib()
-    entitlements: Plan[Entitlement] = attrib()
-    conditions: Plan[Condition] = attrib()
-    entitlement_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
-    policy_conflicts: Optional[Dict[str, Set[str]]] = attrib(default=None)
+    entities_plan: Dict[str, Plan] = attrib()
 
     @cached_property
     def appgate_state(self) -> AppgateState:
-        policies = self.policies.entities
-        entitlements = self.entitlements.entities
-        conditions = self.conditions.entities
-        return AppgateState(
-            policies=policies,
-            entitlements=entitlements,
-            conditions=conditions)
+        return AppgateState({k: v.entities for k, v in self.entities_plan.items()})
 
     @cached_property
     def needs_apply(self) -> bool:
-        return any([self.policies.needs_apply,
-                    self.entitlements.needs_apply,
-                    self.conditions.needs_apply])
+        return any(v.needs_apply for v in self.entities_plan.values())
 
 
-# TODO: Deal with errors here
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
-                             appgate_client: Optional[AppgateClient] = None) -> AppgatePlan:
+                             entity_clients: Dict[str, EntityClient]) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    conditions_plan = await plan_apply(appgate_plan.conditions, namespace,
-                                       entity_client=appgate_client.conditions if appgate_client else None)
-    entitlements_plan = await plan_apply(appgate_plan.entitlements, namespace,
-                                         entity_client=appgate_client.entitlements if appgate_client else None)
-    policies_plan = await plan_apply(appgate_plan.policies, namespace=namespace,
-                                     entity_client=appgate_client.policies if appgate_client else None)
-
-    return AppgatePlan(conditions=conditions_plan,
-                       entitlements=entitlements_plan,
-                       policies=policies_plan)
+    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
+                     for k, v in appgate_plan.entities_plan.items()}
+    return AppgatePlan(entities_plan=entities_plan)
 
 
-def appgate_plan_errors_summary(appgate_plan: AppgatePlan, namespace: str) -> None:
-    if appgate_plan.entitlement_conflicts:
-        for entitlement, conditions in appgate_plan.entitlement_conflicts.items():
-            p1 = "they are" if len(conditions) > 1 else "it is"
-            log.error('[appgate-operator/%s] Entitlement: %s references conditions: %s, but %s not defined '
-                      'in the system.', namespace, entitlement, ','.join(conditions), p1)
-
-    if appgate_plan.policy_conflicts:
-        for policy, entitlements in appgate_plan.policy_conflicts.items():
-            p1 = "they are" if len(entitlements) > 1 else "it is"
-            log.error('[appgate-operator/%s] Policy: %s references entitlements: %s, but %s not defined '
-                      'in the system.', namespace, policy, ','.join(entitlements), p1)
+def entities_conflict_summary(conflicts: Dict[str, Tuple[str, Set[str]]],
+                              namespace: str) -> None:
+    for k, (field, values) in conflicts.items():
+        p1 = "they are" if len(values) > 1 else "it is"
+        log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
+                  'in the system.', namespace, k, ', '.join(values), field, p1)
 
 
-def compare_entities(current: EntitiesSet[T],
-                     expected: EntitiesSet[T]) -> Plan[T]:
+def compare_entities(current: EntitiesSet,
+                     expected: EntitiesSet) -> Plan:
     current_entities = current.entities
     current_names = {e.name for e in current_entities}
     expected_entities = expected.entities
@@ -338,110 +320,95 @@ def compare_entities(current: EntitiesSet[T],
                 share=to_share)
 
 
-# TODO: These functions do the same!
-def resolve_entitlement(entitlement: Entitlement,
-                        names: Dict[str, Condition],
-                        ids: Dict[str, Condition],
-                        missing_conditions: Dict[str, Set[str]]) -> Optional[Entitlement]:
-    new_conditions = set()
-    for condition in entitlement.conditions:
-        if condition in ids:
-            # condition is an id
-            new_conditions.add(condition)
-        elif condition in names and names[condition].id:
-            # condition is a name
-            new_conditions.add(names[condition].id)
+def resolve_entity(entity: Entity_T,
+                   field: str,
+                   names: Dict[str, Entity_T],
+                   ids: Dict[str, Entity_T],
+                   missing_dependencies: Dict[str, Tuple[str, Set[str]]],
+                   reverse: bool = False) -> Optional[Entity_T]:
+    new_dependencies = set()
+    missing_dependencies_set = set()
+    if not hasattr(entity, field):
+        raise Exception(f'Object {entity} has not field {field}.')
+    dependencies = getattr(entity, field)
+    for dependency in dependencies:
+        if dependency in ids:
+            # dependency is an id
+            if reverse:
+                new_dependencies.add(ids[dependency].name)
+            else:
+                new_dependencies.add(dependency)
+        elif dependency in names and names[dependency].id:
+            # dependency is a name
+            if reverse:
+                new_dependencies.add(dependency)
+            else:
+                new_dependencies.add(names[dependency].id)
         else:
-            if entitlement.name not in missing_conditions:
-                missing_conditions[entitlement.name] = set()
-            missing_conditions[entitlement.name].add(condition)
-    if new_conditions:
-        return evolve(entitlement, conditions=frozenset(new_conditions))
+            if entity.name not in missing_dependencies:
+                missing_dependencies_set.add(dependency)
+
+    if missing_dependencies_set:
+        if entity.name not in missing_dependencies:
+            missing_dependencies[entity.name] = (field, missing_dependencies_set)
+    if new_dependencies:
+        return evolve(entity, **{field: frozenset(new_dependencies)})
     return None
 
 
-def resolve_entitlements(entitlements: EntitiesSet[Entitlement],
-                         conditions: EntitiesSet[Condition]) -> Tuple[EntitiesSet[Entitlement],
-                                                                      Optional[Dict[str, Set[str]]]]:
+def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
+                     reverse: bool = False) -> Tuple[EntitiesSet,
+                                                     Optional[Dict[str,
+                                                                   Tuple[str, Set[str]]]]]:
     to_remove = set()
     to_add = set()
-    missing_conditions: Dict[str, Set[str]] = {}
-    entitlements_set = entitlements.entities.copy()
-    names = conditions.entities_by_name
-    ids = conditions.entities_by_id
-    for entitlement in entitlements_set:
-        new_entitlement = resolve_entitlement(entitlement, names, ids, missing_conditions)
-        if new_entitlement:
-            to_remove.add(entitlement)
-            to_add.add(new_entitlement)
-    entitlements_set.difference_update(to_remove)
-    entitlements_set.update(to_add)
-    if len(missing_conditions) > 0:
-        return EntitiesSet(entitlements_set), missing_conditions,
-    return EntitiesSet(entitlements_set), None
+    missing_entities: Dict[str, Tuple[str, Set[str]]] = {}
+    e1_set = e1.entities.copy()
+    names = e2.entities_by_name
+    ids = e2.entities_by_id
+    for e in e1_set:
+        new_e = resolve_entity(e, field, names, ids, missing_entities, reverse)
+        if new_e:
+            to_remove.add(e)
+            to_add.add(new_e)
+    e1_set.difference_update(to_remove)
+    e1_set.update(to_add)
+    if len(missing_entities) > 0:
+        return EntitiesSet(e1_set), missing_entities,
+    return EntitiesSet(e1_set), None
 
 
-def resolve_policy(policy: Policy,
-                   names: Dict[str, Entitlement],
-                   ids: Dict[str, Entitlement],
-                   missing_entitlements: Dict[str, Set[str]]) -> Optional[Policy]:
-    new_entitlements = set()
-    for entitlement in policy.entitlements:
-        if entitlement in ids:
-            # entitlement is an id
-            new_entitlements.add(entitlement)
-        elif entitlement in names and names[entitlement].id:
-            # entitlement is a name
-            new_entitlements.add(names[entitlement].id)
-        else:
-            if policy.name not in missing_entitlements:
-                missing_entitlements[policy.name] = set()
-            missing_entitlements[policy.name].add(entitlement)
-    if new_entitlements:
-        return evolve(policy, entitlements=frozenset(new_entitlements))
-    return None
-
-
-def resolve_policies(policies: EntitiesSet[Policy],
-                     entitlements: EntitiesSet[Entitlement]) -> Tuple[EntitiesSet[Policy],
-                                                                      Optional[Dict[str, Set[str]]]]:
-    to_remove = set()
-    to_add = set()
-    missing_entitlements: Dict[str, Set[str]] = {}
-    policies_set = policies.entities.copy()
-    names = entitlements.entities_by_name
-    ids = entitlements.entities_by_id
-    for policy in policies_set:
-        new_policy = resolve_policy(policy, names, ids, missing_entitlements)
-        if new_policy:
-            to_remove.add(policy)
-            to_add.add(new_policy)
-    policies_set.difference_update(to_remove)
-    policies_set.update(to_add)
-    if len(missing_entitlements) > 0:
-        return EntitiesSet(policies_set), missing_entitlements,
-    return EntitiesSet(policies_set), None
+def resolve_appgate_state(appgate_state: AppgateState,
+                          api_spec: APISpec,
+                          reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
+    entities = api_spec.entities
+    entities_sorted = api_spec.entities_sorted
+    total_conflicts = {}
+    log.info('[appgate-state] Validating expected state entities')
+    log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
+    for entity_name in entities_sorted:
+        for entity_dependency in entities[entity_name].entity_dependencies:
+            log.debug('[appgate-state] Checking dependencies %s for of type %s.%s',
+                      entity_dependency.dependencies, entity_name,
+                      entity_dependency.field)
+            for d in entity_dependency.dependencies:
+                e1 = appgate_state.entities_set[entity_name]
+                e2 = appgate_state.entities_set[d]
+                new_e1, conflicts = resolve_entities(e1, e2, entity_dependency.field,
+                                                     reverse)
+                if conflicts:
+                    total_conflicts.update(conflicts)
+                appgate_state.entities_set[entity_name] = new_e1
+    return total_conflicts
 
 
 def create_appgate_plan(current_state: AppgateState,
-                        expected_state: AppgateState,
-                        entitlement_conflicts: Optional[Dict[str, Set[str]]],
-                        policy_conflicts: Optional[Dict[str, Set[str]]]) -> AppgatePlan:
+                        expected_state: AppgateState) -> AppgatePlan:
     """
     Creates a new AppgatePlan to apply
     """
-    conditions_plan = cast(Plan[Condition],
-                           compare_entities(current_state.conditions,
-                                            expected_state.conditions))
-    entitlements_plan = cast(Plan[Entitlement],
-                             compare_entities(current_state.entitlements,
-                                              expected_state.entitlements))
-    policies_plan = cast(Plan[Policy],
-                         compare_entities(current_state.policies,
-                                          expected_state.policies))
-    return AppgatePlan(policies=policies_plan,
-                       entitlements=entitlements_plan,
-                       conditions=conditions_plan,
-                       entitlement_conflicts=entitlement_conflicts,
-                       policy_conflicts=policy_conflicts)
+    entities_plan = {k: compare_entities(current_state.entities_set[k], v)
+                     for k, v in expected_state.entities_set.items()}
+    return AppgatePlan(entities_plan=entities_plan)
+
 

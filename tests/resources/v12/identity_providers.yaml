@@ -1,0 +1,109 @@
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: etewtew
+spec:
+  adminProvider: true
+  claimMappings:
+  - attributeName: memberOf
+    claimName: groups
+    list: true
+  - attributeName: sAMAccountName
+    claimName: username
+  - attributeName: objectGUID
+    claimName: userId
+  - attributeName: mail
+    claimName: emails
+    list: true
+  - attributeName: sn
+    claimName: lastName
+  - attributeName: givenName
+    claimName: firstName
+  clientProvider: true
+  displayName: etewtew
+  dnsSearchDomains: []
+  dnsServers:
+  - 127.123.123.1
+  id: 31e92c17-db36-45c6-8c96-e65fb2f57f3a
+  ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+  name: etewtew
+  notes: 'wradsdf
+
+    safd
+
+    ds
+
+    dfs
+
+    '
+  onDemandClaimMappings: []
+  tags: []
+  type: Ldap
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: local
+spec:
+  adminProvider: true
+  claimMappings:
+  - attributeName: username
+    claimName: username
+  - attributeName: firstName
+    claimName: firstName
+  - attributeName: phone
+    claimName: phone
+  - attributeName: tags
+    claimName: tags
+    list: true
+  - attributeName: id
+    claimName: id
+  - attributeName: email
+    claimName: emails
+    list: true
+  - attributeName: lastName
+    claimName: lastName
+  clientProvider: true
+  displayName: local
+  dnsSearchDomains: []
+  dnsServers: []
+  id: b5ea7cf0-6e75-11e4-9803-0800200c9a66
+  ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+  ipPoolV6: 6935b379-205d-4fdd-847f-a0b5f14aff53
+  name: local
+  notes: Built-in Identity Provider on local database.
+  onDemandClaimMappings: []
+  tags:
+  - builtin
+  type: LocalDatabase
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: IoT Connector
+spec:
+  claimMappings:
+  - attributeName: tags
+    claimName: tags
+    list: true
+  - attributeName: applianceApiVersion
+    claimName: applianceApiVersion
+  - attributeName: id
+    claimName: id
+  - attributeName: hostname
+    claimName: hostname
+  - attributeName: peerHostname
+    claimName: peerHostname
+  - attributeName: applianceName
+    claimName: applianceName
+  - attributeName: clientName
+    claimName: clientName
+  dnsSearchDomains: []
+  dnsServers: []
+  id: b2cdefce-1efe-4a7e-85d1-7976920f118f
+  name: IoT Connector
+  notes: Built-in IoT Connector provider.
+  onDemandClaimMappings: []
+  tags:
+  - builtin
+  type: IoTConnector

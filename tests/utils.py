@@ -1,13 +1,23 @@
 from typing import List, Optional
 
-from appgate.types import Entitlement, Condition, Policy
+from appgate.types import generate_api_spec
+
+api_spec = generate_api_spec()
+entities = api_spec.entities
+
+Policy = entities['Policy'].cls
+Entitlement = entities['Entitlement'].cls
+Condition = entities['Condition'].cls
+IdentityProvider = entities['IdentityProvider'].cls
 
 
 def entitlement(name: str, id: str = None, site: str = 'site-example',
-                conditions: Optional[List[str]] = None) -> Entitlement:
+                conditions: Optional[List[str]] = None,
+                display_name: Optional[str] = None) -> Entitlement:
     return Entitlement(id=id,
                        name=name,
                        site=site,
+                       displayName=display_name or 'some-name',
                        conditions=frozenset(conditions) if conditions else frozenset())
 
 
