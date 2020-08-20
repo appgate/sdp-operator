@@ -409,7 +409,6 @@ class Parser:
         log.error('Definition %s yet not supported', definition)
 
 
-
 def has_name(e: Any) -> bool:
     return hasattr(e, 'name')
 
