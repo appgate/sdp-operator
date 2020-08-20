@@ -3,7 +3,7 @@ import re
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, Set, \
-    Union
+    Union, Type, cast
 from graphlib import TopologicalSorter
 
 from attr import make_class, attrib, attrs
@@ -32,7 +32,9 @@ K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
 K8S_APPGATE_DOMAIN = 'beta.appgate.com'
 K8S_APPGATE_VERSION = 'v1'
-TYPES_MAP = {
+
+
+TYPES_MAP: Dict[str, Type] = {
     'string': str,
     'boolean': bool,
     'integer': int,
@@ -40,10 +42,10 @@ TYPES_MAP = {
 }
 
 
-BasicOpenApiType = Union[str, Callable[[], FrozenSet]]
+AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
 
 
-DEFAULT_MAP: Dict[str, BasicOpenApiType] = {
+DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
 }
@@ -57,7 +59,7 @@ class OpenApiParserException(Exception):
 @attrs()
 class Entity_T:
     name: str = attrib()
-    id: int = attrib()
+    id: str = attrib()
     tags: FrozenSet[str] = attrib()
 
 
@@ -74,18 +76,13 @@ class GeneratedEntity:
     api_path: Optional[str] = attrib(default=None)
 
 
-EntityData = Dict[str, Any]
+OpenApiDict = Dict[str, Any]
 AttributesDict = Dict[str, Any]
-Attribute = Any
-
+BasicOpenApiType = Union[str, int, bool]
+AnyOpenApiType = Union[BasicOpenApiType, Dict[str, BasicOpenApiType], List[BasicOpenApiType]]
 
 # Dictionary with the top level entities, those that are "exported"
 EntitiesDict = Dict[str, GeneratedEntity]
-
-
-# Dictionary with all the entities discovered while parsing.
-# Used internally
-_EntitiesDict = Dict[str, Union[EntitiesDict, type]]
 
 
 class EntitiesContext:
@@ -100,7 +97,7 @@ class APISpec:
 
     @property
     def entities_sorted(self) -> List[str]:
-        entities_to_sort = {
+        entities_to_sort: Dict[str, Set[str]] = {
             entity_name: set(itertools.chain.from_iterable(map(lambda d: d.dependencies,
                                                                entity.entity_dependencies)))
             for entity_name, entity in self.entities.items()
@@ -113,11 +110,10 @@ class APISpec:
 class ParserContext:
     def __init__(self, spec_entities: Dict[str, str], spec_api_path: Path) -> None:
         self.entities: Dict[str, GeneratedEntity] = {}
-        self.data = {}
+        self.data: OpenApiDict = {}
         self.spec_api_path: Path = spec_api_path
         self.entity_name_by_path: Dict[str, str] = spec_entities
         self.entity_path_by_name: Dict[str, str] = {v: k for k, v in spec_entities.items()}
-
 
     def get_entity_path(self, entity_name: str) -> Optional[str]:
         return self.entity_path_by_name.get(entity_name)
@@ -173,7 +169,7 @@ class Parser:
     def __init__(self, parser_context: ParserContext, namespace: str) -> None:
         self.namespace = namespace
         self.parser_context = parser_context
-        self.data = parser_context.load_namespace(namespace)
+        self.data: Dict[str, Any] = parser_context.load_namespace(namespace)
 
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split('#', maxsplit=2)
@@ -196,6 +192,7 @@ class Parser:
         data = self.data
         while True:
             try:
+                # TODO: This should be TRACE level or something
                 #log.debug('Trying %s in [%s]', '.'.join(keys),
                 #          ', '.join(data.keys()))
                 k = keys.pop(0)
@@ -227,7 +224,7 @@ class Parser:
                 log.debug('Key %s not found in [%s]', k, ', '.join(data.keys()))
                 return None
 
-    def resolve_definition(self, definition: EntityData) -> EntityData:
+    def resolve_definition(self, definition: OpenApiDict) -> OpenApiDict:
         if type(definition) is not dict:
             return definition
         for k, v in definition.items():
@@ -239,10 +236,10 @@ class Parser:
                 definition[k] = self.resolve_definition(v)
         return definition
 
-    def parse_all_of(self, definitions: List[EntityData]):
+    def parse_all_of(self, definitions: List[OpenApiDict]) -> OpenApiDict:
         for i, d in enumerate(definitions):
             definitions[i] = self.resolve_definition({'to-resolve': d})['to-resolve']
-        new_definition = {
+        new_definition: OpenApiDict = {
             'type': 'object',
             'required': [],
             'properties': {},
@@ -259,7 +256,10 @@ class Parser:
         new_definition['description'] = '.'.join(descriptions)
         return new_definition
 
-    def make_type(self, entity_name: str, attrib_name: str, type_data: EntityData):
+    def make_type(self, entity_name: str, attrib_name: str,
+                  type_data: OpenApiDict) -> Tuple[Type,
+                                                   Optional[AttribType],
+                                                   Optional[Callable[[], Type]]]:
         tpe = type_data.get('type')
         if not type:
             raise Exception('type field not found in %s', type_data)
@@ -293,8 +293,9 @@ class Parser:
         raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
                         type_data)
 
-    def make_attrib(self, entity_name: str, attrib_name: str, attrib_props: AttributesDict,
-                    required_fields: List[str], top_level_entity: bool = False) -> AttributesDict:
+    def make_attrib(self, entity_name: str, attrib_name: str,
+                    attrib_props: AttributesDict, required_fields: List[str],
+                    top_level_entity: bool = False) -> AttributesDict:
         """
         Returns an attribs dictionary used later to call attrs.attrib
         """
@@ -328,7 +329,8 @@ class Parser:
 
         return attribs
 
-    def make_attribs(self, entity_name: str, definition):
+    def make_attribs(self, entity_name: str, definition) -> Tuple[Dict[str, Any],
+                                                                  Set[EntityDependency]]:
         """
         Returns the attr.attrib data needed to use attr.make_class with the
         dependencies for this attribute.
@@ -344,7 +346,9 @@ class Parser:
             if 'readOnly' in attrib_props:
                 log.debug('Ignoring read only attribute %s', attrib_name)
                 continue
-            entity_attrs[norm_name] = self.make_attrib(entity_name, attrib_name, attrib_props,
+            entity_attrs[norm_name] = self.make_attrib(entity_name,
+                                                       attrib_name,
+                                                       attrib_props,
                                                        required_fields)
 
         # We need to create then in order. Those with default values at the end
@@ -375,27 +379,31 @@ class Parser:
                                             entity=generated_entity)
         return generated_entity
 
-    def parse_definition(self, keys: List[List[str]], entity_name: str) -> GeneratedEntity:
+    def parse_definition(self, keys: List[List[str]],
+                         entity_name: str) -> GeneratedEntity:
         while True:
-            errors = []
+            errors: List[str] = []
             try:
-                k = keys.pop()
+                k: List[str] = keys.pop()
                 definition = self.get_keys(k)
                 break
             except OpenApiParserException as e:
-                errors.append(str)
+                errors.append(str(e))
             except IndexError:
                 raise OpenApiParserException(', '.join(errors))
         if is_compound(definition):
-            definition = self.parse_all_of(definition['allOf'])
+            definition = self.parse_all_of(cast(dict, definition)['allOf'])
             attribs, dependencies = self.make_attribs(entity_name, definition)
-            self.register_entity(entity_name=entity_name,
-                                 attribs=attribs,
-                                 dependencies=dependencies)
+            generated_entity = self.register_entity(entity_name=entity_name,
+                                                    attribs=attribs,
+                                                    dependencies=dependencies)
+            return generated_entity
         elif is_array(definition):
             # resolve definiton
-            return definition
-        return definition
+            raise OpenApiParserException(f'Array definition {definition} not supported')
+
+        raise OpenApiParserException(f'Definition {definition} yet not supported')
+
 
 
 def has_name(e: Any) -> bool:
@@ -410,37 +418,44 @@ def is_entity_t(e: Any) -> bool:
     return has_name(e) and has_id(e)
 
 
-def is_ref(entry: EntityData) -> bool:
+def is_ref(entry: Any) -> bool:
     """
     Checks if entry is a reference
     """
-    return isinstance(entry, dict) and '$ref' in entry
+    return isinstance(entry, dict) \
+           and '$ref' in entry
 
 
-def is_object(entry: EntityData) -> bool:
+def is_object(entry: Any) -> bool:
     """
     Checks if entry is an object
     """
-    return 'type' in entry and entry['type'] == 'object'
+    return isinstance(entry, dict) \
+           and 'type' in entry \
+           and entry['type'] == 'object'
 
 
-def is_array(entry: EntityData) -> bool:
+def is_array(entry: Any) -> bool:
     """
     Checks if entry is an array
     """
-    return 'type' in entry and entry['type'] == 'array'
+    return isinstance(entry, dict) \
+           and 'type' in entry \
+           and entry['type'] == 'array'
 
 
-def is_compound(entry: EntityData) -> bool:
+def is_compound(entry: Any) -> bool:
     composite = {'allOf'}
-    return isinstance(entry, dict) and any(filter(lambda c: c in entry, composite))
+    return isinstance(entry, dict) \
+           and any(filter(lambda c: c in entry, composite))
 
 
-def has_default(data: EntityData) -> bool:
+def has_default(entry: Any) -> bool:
     """
     Checks if attrs as a default field value
     """
-    return 'default' in data or 'factory' in data
+    return isinstance(entry, dict) \
+           and ('default' in entry or 'factory' in entry)
 
 
 def normalize_attrib_name(name: str) -> str:
@@ -449,9 +464,11 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
-def parse_files(spec_entities: Dict[str, str], spec_directory: Optional[Path] = None) -> APISpec:
+def parse_files(spec_entities: Dict[str, str],
+                spec_directory: Optional[Path] = None) -> APISpec:
     parser_context = ParserContext(spec_entities=spec_entities,
-                                   spec_api_path=spec_directory or Path(SPEC_DIR))
+                                   spec_api_path=spec_directory \
+                                                 or Path(SPEC_DIR))
     parser = Parser(parser_context, 'api_specs.yml')
     # First parse those paths we are interested in
     for path, v in parser.data['paths'].items():
@@ -467,7 +484,13 @@ def parse_files(spec_entities: Dict[str, str], spec_directory: Optional[Path] = 
                                 ])
 
     # Now parse the API version
-    api_version = parser.get_keys(['info', 'version']).split(' ')[2]
+    api_version_str = parser.get_keys(['info', 'version'])
+    if not api_version_str:
+        raise OpenApiParserException('Unable to find Appgate API version')
+    try:
+        api_version = api_version_str.split(' ')[2]
+    except IndexError:
+        raise OpenApiParserException('Unable to find Appgate API version')
     return APISpec(entities=parser_context.entities,
                    api_version=api_version)
 
@@ -482,7 +505,7 @@ def entity_names(entity: type) -> Tuple[str, str, str]:
     return name, singular_name, plural_name
 
 
-def generate_crd(entity):
+def generate_crd(entity) -> str:
     name, singular_name, plural_name = entity_names(entity)
     crd = {
         'apiVersion': K8S_API_VERSION,

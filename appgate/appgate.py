@@ -6,7 +6,7 @@ import sys
 from asyncio import Queue
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Type
 
 from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
@@ -163,7 +163,7 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[st
             sys.exit(1)
 
 
-async def entity_loop(ctx: Context, queue: Queue, crd_path: str, entity_type: type):
+async def entity_loop(ctx: Context, queue: Queue, crd_path: str, entity_type: Type):
     namespace = ctx.namespace
     async for event in event_loop(namespace, crd_path):
         try:

@@ -32,14 +32,11 @@ from appgate.types import generate_api_spec
 BUILTIN_TAG = 'builtin'
 
 
-T = TypeVar('T', bound=Entity_T)
-
-
 class EntitiesSet:
     def __init__(self, entities: Optional[Set[Entity_T]] = None,
                  entities_by_name: Optional[Dict[str, Entity_T]] = None,
                  entities_by_id: Optional[Dict[str, Entity_T]] = None) -> None:
-        self.entities: Set[T] = entities or set()
+        self.entities: Set[Entity_T] = entities or set()
         if entities_by_name:
             self.entities_by_name = entities_by_name
         else:
@@ -174,7 +171,7 @@ class AppgateState:
 
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
-                   errors: Optional[Set[T]] = None) -> EntitiesSet:
+                   errors: Optional[Set[str]] = None) -> EntitiesSet:
     entities = set()
     errors = errors or set()
     entities.update(share.entities)
@@ -200,7 +197,7 @@ class Plan:
 
     @cached_property
     def entities(self) -> EntitiesSet:
-        entities = merge_entities(share=self.share, create=self.create, modify=self.modify,  # type: ignore
+        entities = merge_entities(share=self.share, create=self.create, modify=self.modify,
                                   errors=self.errors)
         entities.entities.update({e for e in self.delete.entities if e.id in (self.errors or set())})
         return entities
