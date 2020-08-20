@@ -1,3 +1,4 @@
+import re
 import sys
 from copy import deepcopy
 import datetime
@@ -112,7 +113,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': {
-            'name': entity_name
+            'name': re.sub('\s+', '-', entity_name.strip())
         },
         'spec': typedload.dump(entity)
     }
