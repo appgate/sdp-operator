@@ -383,7 +383,7 @@ class Parser:
         return generated_entity
 
     def parse_definition(self, keys: List[List[str]],
-                         entity_name: str) -> GeneratedEntity:
+                         entity_name: str) -> Optional[GeneratedEntity]:
         while True:
             errors: List[str] = []
             try:
@@ -402,12 +402,9 @@ class Parser:
                                                     attribs=attribs,
                                                     dependencies=dependencies)
             return generated_entity
-        elif is_array(definition):
-            # resolve definiton
-            log.error('Array definition %s not supported', definition)
-
         log.error('Definition %s yet not supported', definition)
 
+        return None
 
 def has_name(e: Any) -> bool:
     return hasattr(e, 'name')
