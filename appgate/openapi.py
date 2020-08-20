@@ -394,25 +394,24 @@ class Parser:
                 errors.append(str(e))
             except IndexError:
                 raise OpenApiParserException(', '.join(errors))
+
+        definition_to_use = None
         if is_compound(definition):
-            definition = self.parse_all_of(cast(dict, definition)['allOf'])
-            attribs, dependencies = self.make_attribs(entity_name, definition,
-                                                      top_level_entry=True)
-            generated_entity = self.register_entity(entity_name=entity_name,
-                                                    attribs=attribs,
-                                                    dependencies=dependencies)
-            return generated_entity
+            definition_to_use = self.parse_all_of(cast(dict, definition)['allOf'])
         elif is_object(definition):
-            attribs, dependencies = self.make_attribs(entity_name, definition,
-                                                      top_level_entry=True)
-            generated_entity = self.register_entity(entity_name=entity_name,
-                                                    attribs=attribs,
-                                                    dependencies=dependencies)
-            return generated_entity
+            definition_to_use = definition
 
-        log.error('Definition %s yet not supported', definition)
+        if not definition_to_use:
+            log.error('Definition %s yet not supported', definition)
+            return None
 
-        return None
+        attribs, dependencies = self.make_attribs(entity_name, definition_to_use,
+                                                  top_level_entry=True)
+        generated_entity = self.register_entity(entity_name=entity_name,
+                                                attribs=attribs,
+                                                dependencies=dependencies)
+        return generated_entity
+
 
 def has_name(e: Any) -> bool:
     return hasattr(e, 'name')
