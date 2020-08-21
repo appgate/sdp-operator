@@ -25,7 +25,6 @@ def test_compare_policies_0():
     })
     expected_policies = EntitiesSet(set())
     plan = compare_entities(current_policies, expected_policies)
-    print(plan.delete)
     assert plan.delete.entities == {
         Policy(id='id1',
                name='policy1',
