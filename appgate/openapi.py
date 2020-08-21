@@ -18,6 +18,7 @@ __all__ = [
     'APISpec',
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
+    'SPEC_DIR',
     'generate_crd',
     'entity_names',
     'is_entity_t',
