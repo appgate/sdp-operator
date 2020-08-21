@@ -35,7 +35,7 @@ K8S_CRD_KIND = 'CustomResourceDefinition'
 K8S_APPGATE_DOMAIN = 'beta.appgate.com'
 K8S_APPGATE_VERSION = 'v1'
 LIST_PROPERTIES = {'range', 'data', 'query', 'orderBy', 'descending', 'filterBy'}
-APPGATE_METADATA_ATTRIB_NAME = '__appgate_metadata__'
+APPGATE_METADATA_ATTRIB_NAME = '_appgate_metadata'
 BUILTIN_TAGS = frozenset({'builtin'})
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
