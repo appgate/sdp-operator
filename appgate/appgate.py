@@ -1,24 +1,22 @@
 import asyncio
-import functools
 import logging
 import os
 import sys
 from asyncio import Queue
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Dict, Any, Type
+from typing import Optional, Type
 
 from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload import load
 from typedload.exceptions import TypedloadTypeError
-from typing_extensions import AsyncIterable
 from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.client import AppgateClient
-from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec, SPEC_DIR
+from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec, SPEC_DIR, Entity_T
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
 from appgate.types import K8SEvent, AppgateEvent, generate_api_spec_clients, \
@@ -29,8 +27,8 @@ __all__ = [
     'main_loop',
     'get_context',
     'get_current_appgate_state',
+    'start_event_loop',
     'Context',
-    'entity_loop',
     'log',
 ]
 
@@ -147,37 +145,46 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     return appgate_state
 
 
-async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[str, Any]]]:
+def run_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
+                   loop: asyncio.AbstractEventLoop, queue: Queue[AppgateEvent]):
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
-    s = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
-                       K8S_APPGATE_VERSION, namespace, crd)
-    loop = asyncio.get_event_loop()
+    watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
+                             K8S_APPGATE_VERSION, namespace, crd)
     while True:
         try:
-            event = await loop.run_in_executor(None, functools.partial(lambda i: next(i, None), s))
+            event = next(watcher)
             if event:
-                yield event  # type: ignore
-            await asyncio.sleep(1)
+                ev = K8SEvent(event)
+                try:
+                    entity = load(ev.object.spec, entity_type)
+                except TypedloadTypeError:
+                    log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)
+                    continue
+                log.debug('[%s/%s] K8SEvent type: %s: %s', crd, namespace, ev.type, entity)
+                asyncio.run_coroutine_threadsafe(queue.put(AppgateEvent(op=ev.type, entity=entity)),
+                                                 loop)
         except ApiException:
             log.exception('[appgate-operator/%s] Error when subscribing events in k8s for %s',
                           namespace, crd)
             sys.exit(1)
+        except Exception:
+            log.exception('[appgate-operator/%s] Unhandled error for %s', namespace, crd)
+            sys.exit(1)
 
 
-async def entity_loop(ctx: Context, queue: Queue, crd_path: str, entity_type: Type):
-    namespace = ctx.namespace
-    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd_path, namespace,
-              crd_path)
-    async for event in event_loop(namespace, crd_path):
-        try:
-            if not event:
-                continue
-            ev = K8SEvent(event)
-            entity = load(ev.object.spec, entity_type)
-            log.debug('[%s/%s] K8SEvent type: %s: %s', crd_path, namespace, ev.type, entity)
-            await queue.put(AppgateEvent(op=ev.type, entity=entity))
-        except TypedloadTypeError:
-            log.exception('[%s/%s] Unable to parse event %s', crd_path, namespace, event)
+async def start_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
+                           queue: Queue[AppgateEvent]) -> None:
+    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, namespace,
+              crd)
+
+    def run(loop: asyncio.AbstractEventLoop) -> None:
+        import threading
+        t = threading.Thread(target=run_event_loop,
+                             args=(namespace, crd, entity_type, loop, queue),
+                             daemon=False)
+        t.start()
+
+    await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
 async def main_loop(queue: Queue, ctx: Context) -> None:
