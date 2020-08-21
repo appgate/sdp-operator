@@ -18,6 +18,7 @@ __all__ = [
     'APISpec',
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
+    'BUILTIN_TAGS',
     'SPEC_DIR',
     'generate_crd',
     'entity_names',
@@ -33,8 +34,9 @@ K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
 K8S_APPGATE_DOMAIN = 'beta.appgate.com'
 K8S_APPGATE_VERSION = 'v1'
-
-
+LIST_PROPERTIES = {'range', 'data', 'query', 'orderBy', 'descending', 'filterBy'}
+APPGATE_METADATA_ATTRIB_NAME = '__appgate_metadata__'
+BUILTIN_TAGS = frozenset({'builtin'})
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
     'boolean': bool,
@@ -166,6 +168,25 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
     return definition
 
 
+def join(sep: str, xs: List[Any]) -> str:
+    s = ''
+    for i, x in enumerate(xs):
+        if i > 0:
+            s = f'{s}{sep}{str(x)}'
+        else:
+            s = {str(x)}
+    return s
+
+
+def create_default_attrib(attrib_value: Any) -> AttributesDict:
+    return {
+        'type': type(attrib_value),
+        'repr': False,
+        'eq': False,
+        'default': attrib_value
+    }
+
+
 class Parser:
     def __init__(self, parser_context: ParserContext, namespace: str) -> None:
         self.namespace = namespace
@@ -179,10 +200,10 @@ class Parser:
             # Resolve in current namespace
             # Resolve in current namespace
             log.info('Resolving reference %s in current namespace: %s',
-                     '.'.join(new_keys), self.namespace)
+                     join('.', new_keys), self.namespace)
             resolved_ref = self.get_keys(new_keys)
         else:
-            log.info('Resolving reference %s in %s namespace', '.'.join(new_keys), path)
+            log.info('Resolving reference %s in %s namespace', join('.', new_keys), path)
             resolved_ref = Parser(self.parser_context, namespace=path).get_keys(new_keys)
         if not resolved_ref:
             raise OpenApiParserException(f'Unable to resolve reference {reference}')
@@ -194,11 +215,11 @@ class Parser:
         while True:
             try:
                 # TODO: This should be TRACE level or something
-                #log.debug('Trying %s in [%s]', '.'.join(keys),
-                #          ', '.join(data.keys()))
+                # log.debug('Trying %s in [%s]', join('.', keys),
+                #          join(', ', data.keys()))
                 k = keys.pop(0)
             except IndexError:
-                log.debug('Keys not found %s', '.'.join(keys_cp))
+                log.debug('Keys not found %s', join('.', keys_cp))
                 return None
             # Is the key there?
             if k in data:
@@ -222,7 +243,7 @@ class Parser:
                     return make_explicit_references(value, self.namespace)
             else:
                 # key not found
-                log.debug('Key %s not found in [%s]', k, ', '.join(data.keys()))
+                log.debug('Key %s not found in [%s]', k, join(', ', data.keys()))
                 return None
 
     def resolve_definition(self, definition: OpenApiDict) -> OpenApiDict:
@@ -383,8 +404,8 @@ class Parser:
                                             entity=generated_entity)
         return generated_entity
 
-    def parse_definition(self, keys: List[List[str]],
-                         entity_name: str) -> Optional[GeneratedEntity]:
+    def parse_definition(self, keys: List[List[str]], entity_name: str,
+                         singleton: bool) -> Optional[GeneratedEntity]:
         while True:
             errors: List[str] = []
             try:
@@ -408,6 +429,23 @@ class Parser:
 
         attribs, dependencies = self.make_attribs(entity_name, definition_to_use,
                                                   top_level_entry=True)
+        attribs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**{
+            'type': Dict[str, Any],
+            'repr': False,
+            'eq': False,
+            'default': {
+                'singleton': singleton
+            }
+        })
+        if 'name' not in attribs and singleton:
+            attribs['name'] = attrib(**(create_default_attrib(entity_name)))
+
+        if 'id' not in attribs and singleton:
+            attribs['id'] = attrib(**(create_default_attrib(entity_name)))
+
+        if 'tags' not in attribs and singleton:
+            attribs['tags'] = attrib(**(create_default_attrib(BUILTIN_TAGS)))
+
         generated_entity = self.register_entity(entity_name=entity_name,
                                                 attribs=attribs,
                                                 dependencies=dependencies)
@@ -485,11 +523,19 @@ def parse_files(spec_entities: Dict[str, str],
         entity_name = spec_entities[path]
         log.info('Generating entity %s for path %s', entity_name, path)
         keys = ['requestBody', 'content', 'application/json', 'schema']
+        # Check if path returns a singleton or a list of entities
+        get_schema = parser.get_keys(keys=['paths', path] + ['get', 'responses', 200, 'content',
+                                                             'application/json', 'schema'])
+        if is_compound(get_schema):
+            # TODO: when data.items is an compound method the references are not resolved.
+            get_schema = parser.parse_all_of(get_schema['allOf'])
+        singleton = not all(map(lambda f: f in get_schema['properties'], LIST_PROPERTIES))
         parser.parse_definition(entity_name=entity_name,
                                 keys=[
                                     ['paths', path] + ['post'] + keys,
                                     ['paths', path] + ['put'] + keys
-                                ])
+                                ],
+                                singleton=singleton)
 
     # Now parse the API version
     api_version_str = parser.get_keys(['info', 'version'])
