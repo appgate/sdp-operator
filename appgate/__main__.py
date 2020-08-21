@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 import datetime
 import time
 
@@ -12,14 +12,14 @@ from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, entity_loop, log
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent, generate_api_spec, SPEC_ENTITIES
+from appgate.types import AppgateEvent, generate_api_spec
 
 
 async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
     ctx = init_kubernetes(namespace, spec_directory=spec_directory)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     tasks = [entity_loop(ctx=ctx, queue=events_queue,
-                         crd_path=entity_names(e.cls)[2],
+                         crd_path=entity_names(e.cls, {})[2],
                          entity_type=e.cls)
              for e in ctx.api_spec.entities.values()
              if e.api_path] + \
@@ -62,11 +62,12 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
         f = (Path(output_file) if output_file else Path(output_file_format)).open('w')
     else:
         f = sys.stdout
+    short_names: Dict[str, str] = {}
     for i, e in enumerate([e.cls for e in entities.values()
                            if e.api_path is not None]):
         if i > 0:
             f.write('---\n')
-        f.write(generate_crd(e))
+        f.write(generate_crd(e, short_names))
 
 
 def main() -> None:

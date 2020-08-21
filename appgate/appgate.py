@@ -159,23 +159,25 @@ async def event_loop(namespace: str, crd: str) -> AsyncIterable[Optional[Dict[st
                 yield event  # type: ignore
             await asyncio.sleep(1)
         except ApiException:
-            log.exception('[appgate-operator/%s] Error when subscribing events in k8s.', namespace)
+            log.exception('[appgate-operator/%s] Error when subscribing events in k8s for %s',
+                          namespace, crd)
             sys.exit(1)
 
 
 async def entity_loop(ctx: Context, queue: Queue, crd_path: str, entity_type: Type):
     namespace = ctx.namespace
+    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd_path, namespace,
+              crd_path)
     async for event in event_loop(namespace, crd_path):
         try:
             if not event:
                 continue
             ev = K8SEvent(event)
             entity = load(ev.object.spec, entity_type)
-            log.debug('[policies/%s}] K8SEvent type: %s: %s', namespace,
-                      ev.type, entity)
+            log.debug('[%s/%s] K8SEvent type: %s: %s', crd_path, namespace, ev.type, entity)
             await queue.put(AppgateEvent(op=ev.type, entity=entity))
         except TypedloadTypeError:
-            log.exception('[conditions/%s] Unable to parse event %s', namespace, event)
+            log.exception('[%s/%s] Unable to parse event %s', crd_path, namespace, event)
 
 
 async def main_loop(queue: Queue, ctx: Context) -> None:
