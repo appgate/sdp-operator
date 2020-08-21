@@ -314,7 +314,7 @@ def compare_entities(current: EntitiesSet,
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
     to_delete = EntitiesSet(set(filter(
-        lambda e: e.name not in expected_names and is_builtin(e),
+        lambda e: e.name not in expected_names and not is_builtin(e),
         current_entities)))
     to_create = EntitiesSet(set(filter(
         lambda e: e.name not in current_names and e.name not in shared_names,
