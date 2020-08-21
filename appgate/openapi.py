@@ -174,7 +174,7 @@ def join(sep: str, xs: List[Any]) -> str:
         if i > 0:
             s = f'{s}{sep}{str(x)}'
         else:
-            s = {str(x)}
+            s = f'{str(x)}'
     return s
 
 
@@ -243,7 +243,7 @@ class Parser:
                     return make_explicit_references(value, self.namespace)
             else:
                 # key not found
-                log.debug('Key %s not found in [%s]', k, join(', ', data.keys()))
+                log.debug('Key %s not found in [%s]', k, ', '.join(data.keys()))
                 return None
 
     def resolve_definition(self, definition: OpenApiDict) -> OpenApiDict:
@@ -429,14 +429,11 @@ class Parser:
 
         attribs, dependencies = self.make_attribs(entity_name, definition_to_use,
                                                   top_level_entry=True)
-        attribs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**{
-            'type': Dict[str, Any],
-            'repr': False,
-            'eq': False,
-            'default': {
-                'singleton': singleton
-            }
-        })
+
+        attribs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**(create_default_attrib({
+            'singleton': singleton
+        })))
+
         if 'name' not in attribs and singleton:
             attribs['name'] = attrib(**(create_default_attrib(entity_name)))
 
@@ -526,10 +523,12 @@ def parse_files(spec_entities: Dict[str, str],
         # Check if path returns a singleton or a list of entities
         get_schema = parser.get_keys(keys=['paths', path] + ['get', 'responses', 200, 'content',
                                                              'application/json', 'schema'])
-        if is_compound(get_schema):
+        singleton = False
+        if isinstance(get_schema, dict) and is_compound(get_schema):
             # TODO: when data.items is an compound method the references are not resolved.
-            get_schema = parser.parse_all_of(get_schema['allOf'])
-        singleton = not all(map(lambda f: f in get_schema['properties'], LIST_PROPERTIES))
+            parsed_schema = parser.parse_all_of(get_schema['allOf'])
+            singleton = not all(map(lambda f: f in parsed_schema.get('properties', {}),
+                                    LIST_PROPERTIES))
         parser.parse_definition(entity_name=entity_name,
                                 keys=[
                                     ['paths', path] + ['post'] + keys,
