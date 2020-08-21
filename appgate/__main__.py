@@ -10,7 +10,7 @@ import time
 from appgate.openapi import generate_crd, entity_names
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
-    Context, entity_loop, log
+    Context, start_event_loop, log
 from appgate.state import entities_conflict_summary, resolve_appgate_state
 from appgate.types import AppgateEvent, generate_api_spec
 
@@ -18,12 +18,18 @@ from appgate.types import AppgateEvent, generate_api_spec
 async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
     ctx = init_kubernetes(namespace, spec_directory=spec_directory)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    tasks = [entity_loop(ctx=ctx, queue=events_queue,
-                         crd_path=entity_names(e.cls, {})[2],
-                         entity_type=e.cls)
-             for e in ctx.api_spec.entities.values()
-             if e.api_path] + \
-            [main_loop(queue=events_queue, ctx=ctx)]
+    tasks = [
+                start_event_loop(
+                    namespace=ctx.namespace,
+                    queue=events_queue,
+                    crd=entity_names(e.cls, {})[2],
+                    entity_type=e.cls)
+                for e in ctx.api_spec.entities.values()
+                if e.api_path
+            ] + [
+                main_loop(queue=events_queue, ctx=ctx)
+            ]
+
     await asyncio.gather(*tasks)
 
 
