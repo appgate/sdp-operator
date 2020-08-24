@@ -356,7 +356,7 @@ class Parser:
                                          'can not be required')
         else:
             attribs['type'] = tpe
-            attribs['bik']['type'] = str(tpe)
+            attribs['metadata']['type'] = str(tpe)
 
         return attribs
 
