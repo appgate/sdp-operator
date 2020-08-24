@@ -169,13 +169,7 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
 
 
 def join(sep: str, xs: List[Any]) -> str:
-    s = ''
-    for i, x in enumerate(xs):
-        if i > 0:
-            s = f'{s}{sep}{str(x)}'
-        else:
-            s = f'{str(x)}'
-    return s
+    return sep.join(map(str, xs))
 
 
 def create_default_attrib(attrib_value: Any) -> AttributesDict:
@@ -521,17 +515,17 @@ def parse_files(spec_entities: Dict[str, str],
         log.info('Generating entity %s for path %s', entity_name, path)
         keys = ['requestBody', 'content', 'application/json', 'schema']
         # Check if path returns a singleton or a list of entities
-        get_schema = parser.get_keys(keys=['paths', path] + ['get', 'responses', 200, 'content',
-                                                             'application/json', 'schema'])
+        get_schema = parser.get_keys(keys=['paths', path, 'get', 'responses', 200,
+                                           'content', 'application/json', 'schema'])
         if isinstance(get_schema, dict) and is_compound(get_schema):
-            # TODO: when data.items is an compound method the references are not resolved.
+            # TODO: when data.items is a compound method the references are not resolved.
             parsed_schema = parser.parse_all_of(get_schema['allOf'])
         elif isinstance(get_schema, dict):
             parsed_schema = get_schema
         else:
             parsed_schema = {}
         singleton = not all(map(lambda f: f in parsed_schema.get('properties', {}),
-                                    LIST_PROPERTIES))
+                                LIST_PROPERTIES))
         parser.parse_definition(entity_name=entity_name,
                                 keys=[
                                     ['paths', path] + ['post'] + keys,
