@@ -515,7 +515,7 @@ def parse_files(spec_entities: Dict[str, str],
         log.info('Generating entity %s for path %s', entity_name, path)
         keys = ['requestBody', 'content', 'application/json', 'schema']
         # Check if path returns a singleton or a list of entities
-        get_schema = parser.get_keys(keys=['paths', path, 'get', 'responses', 200,
+        get_schema = parser.get_keys(keys=['paths', path, 'get', 'responses', '200',
                                            'content', 'application/json', 'schema'])
         if isinstance(get_schema, dict) and is_compound(get_schema):
             # TODO: when data.items is a compound method the references are not resolved.
