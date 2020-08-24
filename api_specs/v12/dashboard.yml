@@ -10,7 +10,7 @@ admin-messages:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: List of Admin Messages.
         content:
           application/json:
@@ -55,11 +55,11 @@ admin-messages:
                         type: string
                         format: date-time
                         description: When the Admin Message generated.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   delete:
     summary: Delete all Admin Messages.
@@ -69,13 +69,13 @@ admin-messages:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      204:
+      '204':
         description: Admin messages were deleted successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 admin-messages-summarize:
   get:
@@ -89,7 +89,7 @@ admin-messages-summarize:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Summary of Admin Messages.
         content:
           application/json:
@@ -133,11 +133,11 @@ admin-messages-summarize:
                         type: number
                         description: Number of times this Admin Message was generated.
                         example: 152
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 stats-appliances:
@@ -152,7 +152,7 @@ stats-appliances:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Active Appliances stats.
         content:
           application/json:
@@ -313,7 +313,7 @@ app-discovery:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: Discovered Apps.
         content:
           application/json:
@@ -351,11 +351,11 @@ app-discovery:
                             items:
                               type: string
                               example: 10.10.10.2
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 top-entitlements:
   get:
@@ -375,7 +375,7 @@ top-entitlements:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: Top Entitlements.
         content:
           application/json:
@@ -408,11 +408,11 @@ top-entitlements:
                       example:
                         - accounting: 566837594
                         - active_directory: 34638
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 active-sessions:
   get:
@@ -430,7 +430,7 @@ active-sessions:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: >-
           Active Client Sessions per Gateway.
           Note that the AppGate SDP Admin UI aggregates this data to list device&users.
@@ -481,11 +481,11 @@ active-sessions:
                                 type: string
                                 description: Hostname or Device name reported by the Client as Device Claim.
                                 example: cmp325
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 session-info-distinguished-name:
   get:
@@ -500,7 +500,7 @@ session-info-distinguished-name:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/distinguishedName'
     responses:
-      200:
+      '200':
         description: >-
           Details of an Active Client Session per Gateway.
           Disconnected Clients disappear after 5 minutes.
@@ -634,13 +634,13 @@ session-info-distinguished-name:
                         type: string
                         description: The Site name for the Gateway.
                         example: AWS Site
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 user-logins:
   get:
@@ -652,7 +652,7 @@ user-logins:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: User Logins Per Hour.
         content:
           application/json:
@@ -678,11 +678,11 @@ user-logins:
                         1: {'controller1.company.com': '42', 'controller2.company.com': '100', 'total': '142'}
                         2: {'controller1.company.com': '165', 'total': '165'}
                         3: {'controller1.company.com': '25', 'controller2.company.com': '80', 'total': '105'}
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 on-boarded-devices:
   get:
@@ -694,7 +694,7 @@ on-boarded-devices:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Device On-Boardings Per Hour.
         content:
           application/json:
@@ -719,11 +719,11 @@ on-boarded-devices:
                         1: 142
                         2: 165
                         3: 105
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 failed-authentications:
   get:
@@ -735,7 +735,7 @@ failed-authentications:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Failed authentications per hour.
         content:
           application/json:
@@ -759,11 +759,11 @@ failed-authentications:
                         1: 142
                         2: 165
                         3: 105
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:

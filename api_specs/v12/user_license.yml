@@ -11,17 +11,17 @@ license-users:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: List of User Licenses.
         content:
           application/json:
             schema:
               $ref: '#/definitions/UserLicenseList'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 license-users-distinguished-name:
   delete:
@@ -39,15 +39,15 @@ license-users-distinguished-name:
           type: string
           example: 'CN=user,OU=ldap'
     responses:
-      204:
+      '204':
         description: User License was removed successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:

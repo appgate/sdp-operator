@@ -7,17 +7,17 @@ admin-mfa-settings:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Admin MFA settings.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AdminMfaSettings'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   delete:
     summary: Reset Admin MFA settings to disabled.
@@ -27,13 +27,13 @@ admin-mfa-settings:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      204:
+      '204':
         description: Admin MFA settings were reset successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   put:
     summary: Update Admin MFA settings.
@@ -43,17 +43,17 @@ admin-mfa-settings:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      204:
+      '204':
         description: Admin MFA settings were updated successfully.
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       content:

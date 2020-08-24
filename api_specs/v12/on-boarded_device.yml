@@ -11,17 +11,17 @@ on-boarded-devices:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: List of On-Boarded Devices.
         content:
           application/json:
             schema:
               $ref: '#/definitions/OnBoardedDeviceList'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 on-boarded-devices-distinguished-name:
   delete:
@@ -33,15 +33,15 @@ on-boarded-devices-distinguished-name:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/distinguishedName'
     responses:
-      204:
+      '204':
         description: On-Boarded Device was removed successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:

@@ -5,13 +5,14 @@ import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, TypeVar, Dict, Optional, Tuple, Literal, Any, Iterable
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable
 
 import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, has_name, APISpec
+from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, \
+    has_name, APISpec, BUILTIN_TAGS
 from appgate.client import EntityClient
 from appgate.logger import log
 
@@ -28,9 +29,9 @@ __all__ = [
     'resolve_appgate_state',
 ]
 
-from appgate.types import generate_api_spec
 
-BUILTIN_TAG = 'builtin'
+def is_builtin(entity: Entity_T) -> bool:
+    return any(map(lambda t: t in (entity.tags or frozenset()), BUILTIN_TAGS))
 
 
 class EntitiesSet:
@@ -62,7 +63,7 @@ class EntitiesSet:
                            entities_by_id=deepcopy(self.entities_by_id))
 
     def builtin_entities(self) -> 'EntitiesSet':
-        return EntitiesSet(entities={e for e in self.entities if 'builtin' in e.tags})
+        return EntitiesSet(entities={e for e in self.entities if is_builtin(e)})
 
     def add(self, entity: Entity_T) -> None:
         if entity.name in self.entities_by_name:
@@ -313,7 +314,7 @@ def compare_entities(current: EntitiesSet,
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
     to_delete = EntitiesSet(set(filter(
-        lambda e: e.name not in expected_names and BUILTIN_TAG not in (e.tags or frozenset()),
+        lambda e: e.name not in expected_names and not is_builtin(e),
         current_entities)))
     to_create = EntitiesSet(set(filter(
         lambda e: e.name not in current_names and e.name not in shared_names,

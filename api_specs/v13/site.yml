@@ -12,17 +12,17 @@ sites:
       - $ref: './common.yml#/parameters/descending'
       - $ref: './common.yml#/parameters/filterBy'
     responses:
-      200:
+      '200':
         description: List of Sites.
         content:
           application/json:
             schema:
               $ref: '#/definitions/SiteList'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   post:
     summary: Create a new Site.
@@ -32,25 +32,25 @@ sites:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Created Site.
         content:
           application/json:
             schema:
               $ref: '#/definitions/Site'
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      402:
+      '402':
         $ref: './common.yml#/responses/PaymentError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      409:
+      '409':
         $ref: './common.yml#/responses/ConflictError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       $ref: '#/requestBodies/Site'
@@ -64,19 +64,19 @@ sites-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Single Site.
         content:
           application/json:
             schema:
               $ref: '#/definitions/Site'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   put:
     summary: Update an existing Site.
@@ -87,23 +87,23 @@ sites-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Updated Site.
         content:
           application/json:
             schema:
               $ref: '#/definitions/Site'
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       $ref: '#/requestBodies/Site'
@@ -116,15 +116,15 @@ sites-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      204:
+      '204':
         description: Site was deleted successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 requestBodies:
