@@ -375,6 +375,9 @@ class Parser:
         properties = definition['properties']
         for attrib_name, attrib_props in properties.items():
             norm_name = normalize_attrib_name(attrib_name)
+            if attrib_props.get('deprecated', False):
+                log.debug('Ignoring deprecated attribute: %s', attrib_name)
+                continue
             entity_attrs[norm_name] = self.make_attrib(entity_name,
                                                        attrib_name,
                                                        attrib_props,
