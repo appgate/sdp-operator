@@ -10,20 +10,20 @@ appliances-metrics:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Appliance Metrics.
         content:
           text/plain:
             schema:
               type: string
               description: Appliance metrics.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 appliances-metrics-id:
   get:
@@ -44,7 +44,7 @@ appliances-metrics-id:
           example: vpn_total_sessions
         required: true
     responses:
-      200:
+      '200':
         description: Single Appliance metric.
         content:
           text/plain:
@@ -52,11 +52,11 @@ appliances-metrics-id:
               type: string
               description: Appliance metric.
               example: vpn_total_sessions 0.0
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'

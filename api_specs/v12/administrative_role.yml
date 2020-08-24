@@ -11,17 +11,17 @@ administrative-roles:
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
     responses:
-      200:
+      '200':
         description: List of Administrative Roles.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AdministrativeRoleList'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   post:
     summary: Create a new Administrative Role.
@@ -31,23 +31,23 @@ administrative-roles:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Created Administrative Role.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AdministrativeRole'
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      409:
+      '409':
         $ref: './common.yml#/responses/ConflictError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       $ref: '#/requestBodies/AdministrativeRole'
@@ -61,19 +61,19 @@ administrative-roles-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Single Administrative Role.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AdministrativeRole'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   put:
     summary: Update an existing Administrative Role.
@@ -84,23 +84,23 @@ administrative-roles-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Updated Administrative Role.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AdministrativeRole'
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       $ref: '#/requestBodies/AdministrativeRole'
@@ -113,15 +113,15 @@ administrative-roles-id:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      204:
+      '204':
         description: Administrative Role were deleted successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 administrative-roles-type-target-map:
@@ -133,7 +133,7 @@ administrative-roles-type-target-map:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Type Target map.
         content:
           application/json:
@@ -145,11 +145,11 @@ administrative-roles-type-target-map:
                     Administrative Privileges action matrix.
                     It is a static dictionary object that may change between Controller versions.
                   additionalProperties: true
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 requestBodies:

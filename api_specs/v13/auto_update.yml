@@ -7,17 +7,17 @@ auto-update-settings:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: Client Auto-Update settings.
         content:
           application/json:
             schema:
               $ref: '#/definitions/AutoUpdateSettings'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   put:
     summary: Update Client Auto-Update settings.
@@ -27,17 +27,17 @@ auto-update-settings:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      204:
+      '204':
         description: Client Auto-Update settings were updated successfully.
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      422:
+      '422':
         $ref: './common.yml#/responses/ValidationError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       content:

@@ -10,7 +10,7 @@ appliances-backup:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
     responses:
-      200:
+      '200':
         description: Appliance Backup has begun.
         content:
           application/json:
@@ -21,15 +21,15 @@ appliances-backup:
                   format: uuid
                   description: Appliance Backup ID to  be used as path parameter {backupId} to follow the progess.
                   example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
-      400:
+      '400':
         $ref: './common.yml#/responses/JsonError'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
       description: Appliance Backup parameters.
@@ -59,7 +59,7 @@ appliances-backup-id-status:
       - $ref: './common.yml#/parameters/id'
       - $ref: '#/parameters/backupId'
     responses:
-      200:
+      '200':
         description: Current status of the Applince Backup.
         content:
           application/json:
@@ -82,13 +82,13 @@ appliances-backup-id-status:
                   enum:
                     - processing
                     - done
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 appliances-backup-id:
   get:
@@ -104,7 +104,7 @@ appliances-backup-id:
       - $ref: './common.yml#/parameters/id'
       - $ref: '#/parameters/backupId'
     responses:
-      200:
+      '200':
         description: Backup file is being streamed.
         content:
           application/gpg:
@@ -112,15 +112,15 @@ appliances-backup-id:
               type: string
               format: binary
               description: The encrypted Appliance Backup file.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      410:
+      '410':
         description: Backup creation failed.
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
   delete:
     summary: Delete an Appliance Backup.
@@ -132,15 +132,15 @@ appliances-backup-id:
       - $ref: './common.yml#/parameters/id'
       - $ref: '#/parameters/backupId'
     responses:
-      204:
+      '204':
         description: Backup file was deleted successfully.
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      404:
+      '404':
         $ref: './common.yml#/responses/NotFoundError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 parameters:

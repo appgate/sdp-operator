@@ -9,7 +9,7 @@ claim-names:
     parameters:
       - $ref: './common.yml#/parameters/authorization'
     responses:
-      200:
+      '200':
         description: List of Claim Names.
         content:
           application/json:
@@ -23,11 +23,11 @@ claim-names:
                   $ref: '#/definitions/ClaimNames'
                 onDemand:
                   $ref: '#/definitions/ClaimNames'
-      401:
+      '401':
         $ref: './common.yml#/responses/TokenError'
-      403:
+      '403':
         $ref: './common.yml#/responses/PermissionError'
-      500:
+      '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:
