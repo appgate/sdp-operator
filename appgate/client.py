@@ -4,6 +4,7 @@ import aiohttp
 import typedload
 from aiohttp import InvalidURL
 
+from appgate.attrs import get_loader, PlatformType, get_dumper
 from appgate.logger import log
 from appgate.openapi import Entity_T
 
@@ -16,10 +17,12 @@ __all__ = [
 
 class EntityClient:
     def __init__(self, path: str, appgate_client: 'AppgateClient',
-                 loader: Callable[[Dict[str, Any]], Entity_T]) -> None:
+                 load: Callable[[Dict[str, Any]], Entity_T],
+                 dump: Callable[[Entity_T], Dict[str, Any]]) -> None:
         self._client = appgate_client
         self.path = path
-        self.loader = loader
+        self.load = load
+        self.dump = dump
 
     async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
@@ -29,12 +32,12 @@ class EntityClient:
             return None
         # TODO: We should discover this from the api spec
         if 'data' in data:
-            return [self.loader(e) for e in data['data']]
+            return [self.load(e) for e in data['data']]
         else:
-            return [self.loader(data)]
+            return [self.load(data)]
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
-        body = typedload.dump(entity)
+        body = self.dump(entity)
         body['id'] = entity.id
         data = await self._client.post(self.path,
                                        body=body)
@@ -42,16 +45,16 @@ class EntityClient:
             log.error('[aggpate-client] POST %s :: Expecting a response but we got empty data',
                       self.path)
             return None
-        return self.loader(data)  # type: ignore
+        return self.load(data)  # type: ignore
 
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         data = await self._client.put(f'{self.path}/{entity.id}',
-                                      body=typedload.dump(entity))
+                                      body=self.dump(entity))
         if not data:
             log.error('[aggpate-client] PUT %s :: Expecting a response but we got empty data',
                       self.path)
             return None
-        return self.loader(data)  # type: ignore
+        return self.load(data)  # type: ignore
 
     async def delete(self, id: str) -> bool:
         if not await self._client.delete(f'{self.path}/{id}'):
@@ -147,5 +150,8 @@ class AppgateClient:
         return self._token is not None
 
     def entity_client(self, entity: type, api_path: str) -> EntityClient:
+        loader = get_loader(PlatformType.APPGATE)
+        dumper = get_dumper(PlatformType.APPGATE)
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
-                            loader=lambda e: typedload.load(e, entity))
+                            load=lambda d: loader.load(d, entity),
+                            dump=lambda e: dumper.dump(e))

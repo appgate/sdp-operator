@@ -318,9 +318,10 @@ class Parser:
         """
         required = attrib_name in required_fields
         tpe, default, factory = self.make_type(entity_name, attrib_name, attrib_props)
-        attribs: AttributesDict = {
-            'type': tpe if required else Optional[tpe],
-        }
+        read_only = attrib_props.get('readOnly', False)
+        write_only = attrib_props.get('writeOnly', False)
+        attribs: AttributesDict = {}
+
         if top_level_entity and attrib_name == 'id':
             attribs['factory'] = lambda: str(uuid.uuid4())
         elif factory:
@@ -329,8 +330,10 @@ class Parser:
             attribs['default'] = attrib_props.get('default', default)
 
         attribs['metadata'] = {
-            'type': str(tpe) if required else str(Optional[tpe]),
-            'name': attrib_name
+            'name': attrib_name,
+            'readOnly': read_only,
+            'writeOnly': write_only,
+            'format': attrib_props.get('format', None),
         }
         if 'description' in attrib_props:
             attribs['metadata']['description'] = attrib_props['description']
@@ -341,8 +344,19 @@ class Parser:
                 attribs['metadata']['example'] = attrib_props['example']
         if 'x-appgate-entity' in attrib_props:
             attribs['metadata']['x-appgate-entity'] = attrib_props['x-appgate-entity']
-        if attrib_name in IGNORED_EQ_ATTRIBUTES:
+        if attrib_name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
             attribs['eq'] = False
+
+        # Set type
+        if not required or read_only or write_only:
+            attribs['type'] = Optional[tpe]
+            attribs['metadata']['type'] = str(Optional[tpe])
+        elif required and (read_only or write_only):
+            raise OpenApiParserException(f'readOnly/writeOnly attribute {attrib_name} '
+                                         'can not be required')
+        else:
+            attribs['type'] = tpe
+            attribs['bik']['type'] = str(tpe)
 
         return attribs
 
@@ -361,9 +375,6 @@ class Parser:
         properties = definition['properties']
         for attrib_name, attrib_props in properties.items():
             norm_name = normalize_attrib_name(attrib_name)
-            if 'readOnly' in attrib_props:
-                log.debug('Ignoring read only attribute %s', attrib_name)
-                continue
             entity_attrs[norm_name] = self.make_attrib(entity_name,
                                                        attrib_name,
                                                        attrib_props,

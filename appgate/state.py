@@ -7,10 +7,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable
 
-import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
+from appgate.attrs import get_dumper, PlatformType
 from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, \
     has_name, APISpec, BUILTIN_TAGS
 from appgate.client import EntityClient
@@ -113,6 +113,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     name sould match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
+    dumper = get_dumper(PlatformType.K8S)
     entity_name = entity.name if has_name(entity) else entity_type.lower()
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
@@ -123,7 +124,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
         'metadata': {
             'name': entity_name
         },
-        'spec': typedload.dump(entity)
+        'spec': dumper(entity)
     }
 
 
