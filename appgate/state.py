@@ -124,7 +124,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
         'metadata': {
             'name': entity_name
         },
-        'spec': dumper(entity)
+        'spec': dumper.dump(entity)
     }
 
 
