@@ -56,7 +56,7 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
                 r[name] = d.dump(attrval)
         return r
 
-    dumper = datadumper.Dumper(**{})
+    dumper = datadumper.Dumper(**{})  # type: ignore
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     return dumper
 
@@ -106,7 +106,7 @@ def get_loader(platform_type: PlatformType):
 
         return dataloader._namedtupleload(l, value, t)
 
-    loader = dataloader.Loader(**{})
+    loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
     return loader
 
