@@ -12,7 +12,8 @@ paths:
     $ref: '#/entity-test1'
   /entity-test2:
     $ref: '#/entity-test2'
-
+  /entity-test3:
+    $ref: '#/entity-test3'
     
 entity-test1:
   get:
@@ -43,6 +44,21 @@ entity-test2:
         application/json:
           schema:
             $ref: '#/definitions/EntityTest2'
+
+entity-test3:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest3'
 
 definitions:
   EntityTestList:
@@ -75,3 +91,16 @@ definitions:
         type: string
       fieldThree:
         type: string
+  EntityTest3:
+    type: object
+    properties:
+      fieldOne:
+        writeOnly: true
+        format:
+          type: bytes
+          checksum: fieldTwo
+        type: string
+      fieldTwo:
+        readOnly: true
+        type: string
+
