@@ -40,7 +40,10 @@ def get_dumper(platform_type: PlatformType):
         r = {}
         for attr in value.__attrs_attrs__:
             attrval = getattr(value, attr.name)
+            read_only = attr.metadata.get('readOnly', False)
             if not attr.repr:
+                continue
+            if read_only:
                 continue
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
@@ -65,8 +68,13 @@ def get_loader(platform_type: PlatformType):
 
         for attribute in type_.__attrs_attrs__:
             read_only = attribute.metadata.get('readOnly', False)
-            if read_only and platform_type.K8S:
+            write_only = attribute.metadata.get('writeOnly', False)
+            if read_only and platform_type == platform_type.K8S:
                 # Don't load attribute from K8S in read only mode even if
+                # it's defined
+                continue
+            if write_only and platform_type == platform_type.APPGATE:
+                # Don't load attribute from APPGATE in read only mode even if
                 # it's defined
                 continue
             names.append(attribute.name)

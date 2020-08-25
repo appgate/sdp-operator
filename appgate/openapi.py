@@ -321,14 +321,7 @@ class Parser:
         read_only = attrib_props.get('readOnly', False)
         write_only = attrib_props.get('writeOnly', False)
         attribs: AttributesDict = {}
-
-        if top_level_entity and attrib_name == 'id':
-            attribs['factory'] = lambda: str(uuid.uuid4())
-        elif factory:
-            attribs['factory'] = factory
-        elif not required:
-            attribs['default'] = attrib_props.get('default', default)
-
+        attribs: AttributesDict = {}
         attribs['metadata'] = {
             'name': attrib_name,
             'readOnly': read_only,
@@ -357,6 +350,15 @@ class Parser:
         else:
             attribs['type'] = tpe
             attribs['metadata']['type'] = str(tpe)
+
+        # set default value
+        if top_level_entity and attrib_name == 'id':
+            attribs['factory'] = lambda: str(uuid.uuid4())
+        elif factory and not (read_only or write_only):
+            attribs['factory'] = factory
+        elif not required or read_only or write_only:
+            attribs['default'] = attrib_props.get('default',
+                                                  None if (read_only or write_only) else default)
 
         return attribs
 
