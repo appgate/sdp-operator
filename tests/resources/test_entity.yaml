@@ -1,0 +1,77 @@
+openapi: 3.0.0
+tags:
+  - name: Appgate SDP Operator
+  - name: UnitTest
+info:
+  version: Appgate Operator 666
+  title: AppGate SDP Operator Unit Test
+  description: Unit Test files
+
+paths:
+  /entity-test1:
+    $ref: '#/entity-test1'
+  /entity-test2:
+    $ref: '#/entity-test2'
+
+    
+entity-test1:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest1'
+
+entity-test2:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest2'
+
+definitions:
+  EntityTestList:
+    type: array
+    items:
+      type: string
+  EntityTest1:
+    type: object
+    properties:
+      fieldOne:
+        readOnly: true
+        type: string
+      fieldTwo:
+        writeOnly: true
+        type: string
+      fieldThree:
+        deprecated: true
+        type: string
+      fieldFour:
+        type: string
+  EntityTest2:
+    type: object
+    properties:
+      fieldOne:
+        writeOnly: true
+        format: password
+        type: string
+      fieldTwo:
+        writeOnly: true
+        type: string
+      fieldThree:
+        type: string
