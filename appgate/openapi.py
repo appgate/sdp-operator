@@ -321,12 +321,11 @@ class Parser:
         read_only = attrib_props.get('readOnly', False)
         write_only = attrib_props.get('writeOnly', False)
         attribs: AttributesDict = {}
-        attribs: AttributesDict = {}
         attribs['metadata'] = {
             'name': attrib_name,
             'readOnly': read_only,
             'writeOnly': write_only,
-            'format': attrib_props.get('format', None),
+            'format': attrib_props.get('format'),
         }
         if 'description' in attrib_props:
             attribs['metadata']['description'] = attrib_props['description']
