@@ -5,6 +5,16 @@ from typedload import dataloader
 from typedload import datadumper
 
 
+__all__ = [
+    'K8S_DUMPER',
+    'APPGATE_DUMPER',
+    'K8S_LOADER',
+    'APPGATE_LOADER',
+    'get_loader',
+    'get_dumper',
+]
+
+
 class PlatformType(enum.Enum):
     K8S = 1
     APPGATE = 2
@@ -85,3 +95,9 @@ def get_loader(platform_type: PlatformType):
     loader = dataloader.Loader(**{})
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
     return loader
+
+
+K8S_LOADER = get_loader(PlatformType.K8S)
+K8S_DUMPER = get_dumper(PlatformType.K8S)
+APPGATE_LOADER = get_loader(PlatformType.APPGATE)
+APPGATE_DUMPER = get_dumper(PlatformType.APPGATE)

@@ -15,7 +15,7 @@ from kubernetes.config import load_kube_config, list_kube_config_contexts, load_
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
-from appgate.attrs import get_loader, PlatformType
+from appgate.attrs import K8S_LOADER
 from appgate.client import AppgateClient
 from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec, SPEC_DIR, Entity_T
 from appgate.state import AppgateState, create_appgate_plan, \
@@ -180,10 +180,9 @@ async def start_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T]
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
-        loader = get_loader(PlatformType.K8S)
         t = threading.Thread(target=run_event_loop,
                              args=(namespace, crd, loop, queue,
-                                   lambda d: loader.load(d, entity_type)),
+                                   lambda d: K8S_LOADER.load(d, entity_type)),
                              daemon=False)
         t.start()
 

@@ -1,10 +1,9 @@
 import uuid
 from typing import Dict, Any, Optional, List, Callable
 import aiohttp
-import typedload
 from aiohttp import InvalidURL
 
-from appgate.attrs import get_loader, PlatformType, get_dumper
+from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER
 from appgate.logger import log
 from appgate.openapi import Entity_T
 
@@ -150,8 +149,6 @@ class AppgateClient:
         return self._token is not None
 
     def entity_client(self, entity: type, api_path: str) -> EntityClient:
-        loader = get_loader(PlatformType.APPGATE)
-        dumper = get_dumper(PlatformType.APPGATE)
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
-                            load=lambda d: loader.load(d, entity),
-                            dump=lambda e: dumper.dump(e))
+                            load=lambda d: APPGATE_LOADER.load(d, entity),
+                            dump=lambda e: APPGATE_DUMPER.dump(e))
