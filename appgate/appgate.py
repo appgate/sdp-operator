@@ -40,6 +40,7 @@ TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
 HOST_ENV = 'APPGATE_OPERATOR_HOST'
 DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
 CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
+DUMP_SECRETS_ENV = 'APPGATE_OPERATOR_DUMP_SECRETS'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
@@ -67,6 +68,7 @@ class Context:
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode: bool = attrib()
+    dump_secrets: bool = attrib()
     api_spec: APISpec = attrib()
 
 
@@ -78,6 +80,7 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
+    dump_secrets = os.getenv(DUMP_SECRETS_ENV or '0')
     spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -92,6 +95,7 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
+                   dump_secrets=dump_secrets == '1',
                    api_spec=api_spec)
 
 
@@ -129,7 +133,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         raise Exception('Error authenticating')
 
     entity_clients = generate_api_spec_clients(api_spec=api_spec,
-                                               appgate_client=appgate_client)
+                                               appgate_client=appgate_client,
+                                               dump_secrets=ctx.dump_secrets)
     entities_set = {}
     for entity, client in entity_clients.items():
         entities = await client.get()
@@ -253,7 +258,8 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
                                                     entity_clients=generate_api_spec_clients(
                                                         api_spec=ctx.api_spec,
-                                                        appgate_client=appgate_client)
+                                                        appgate_client=appgate_client,
+                                                        dump_secrets=ctx.dump_secrets)
                                                     if appgate_client else {})
 
                 if appgate_client:

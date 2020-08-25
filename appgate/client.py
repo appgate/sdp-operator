@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 from aiohttp import InvalidURL
 
-from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER
+from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, APPGATE_DUMPER_WITH_SECRETS
 from appgate.logger import log
 from appgate.openapi import Entity_T
 
@@ -148,7 +148,8 @@ class AppgateClient:
     def authenticated(self) -> bool:
         return self._token is not None
 
-    def entity_client(self, entity: type, api_path: str) -> EntityClient:
+    def entity_client(self, entity: type, api_path: str, dump_secrets: bool) -> EntityClient:
+        dumper = APPGATE_DUMPER_WITH_SECRETS if dump_secrets else APPGATE_DUMPER
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
                             load=lambda d: APPGATE_LOADER.load(d, entity),
-                            dump=lambda e: APPGATE_DUMPER.dump(e))
+                            dump=lambda e: dumper.dump(e))
