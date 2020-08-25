@@ -12,12 +12,10 @@ IdentityProvider = entities['IdentityProvider'].cls
 
 
 def entitlement(name: str, id: str = None, site: str = 'site-example',
-                conditions: Optional[List[str]] = None,
-                display_name: Optional[str] = None) -> Entitlement:
+                conditions: Optional[List[str]] = None) -> Entitlement:
     return Entitlement(id=id,
                        name=name,
                        site=site,
-                       displayName=display_name or 'some-name',
                        conditions=frozenset(conditions) if conditions else frozenset())
 
 
