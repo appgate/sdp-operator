@@ -516,11 +516,12 @@ def normalize_attrib_name(name: str) -> str:
 
 
 def parse_files(spec_entities: Dict[str, str],
-                spec_directory: Optional[Path] = None) -> APISpec:
+                spec_directory: Optional[Path] = None,
+                spec_file: str = 'api_specs.yml') -> APISpec:
     parser_context = ParserContext(spec_entities=spec_entities,
                                    spec_api_path=spec_directory \
                                                  or Path(SPEC_DIR))
-    parser = Parser(parser_context, 'api_specs.yml')
+    parser = Parser(parser_context, spec_file)
     # First parse those paths we are interested in
     for path, v in parser.data['paths'].items():
         if not parser_context.get_entity_name(path):
