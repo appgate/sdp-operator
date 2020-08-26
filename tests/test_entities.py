@@ -105,7 +105,7 @@ def test_write_only_attribute_load():
     EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
     e_data = {
         'fieldOne': '1234567890',
-        'fieldTwo': 'this is writet only',
+        'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
     e = APPGATE_LOADER.load(e_data, EntityTest2)
