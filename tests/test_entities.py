@@ -293,25 +293,33 @@ def test_bytes_load():
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': SHA256_FILE,
     }
+    # writeOnly with format bytes is never read from APPGATE
+    # readOnly associated as checksum to writeOnly bytes is always read from APPGATE
     e = APPGATE_LOADER.load(e_data, EntityTest3)
     assert e.fieldOne is None
     assert e.fieldTwo == SHA256_FILE
     assert e == EntityTest3(fieldTwo=SHA256_FILE)
-    assert e != EntityTest3(fieldOne='11111',
+    # writeOnly bytes is never compared
+    assert e == EntityTest3(fieldOne='Some value',
+                            fieldTwo=SHA256_FILE)
+    # readOnly associated to writeOnly bytes is compared
+    assert e != EntityTest3(fieldOne='Some value',
                             fieldTwo='22222')
+
     e_data = {
         'fieldOne': BASE64_FILE_W0,
-        'fieldTwo': '12345',
+        'fieldTwo': None,
     }
     e = K8S_LOADER.load(e_data, EntityTest3)
-    assert e == EntityTest3(fieldOne=BASE64_FILE_W0,
+    # When reading from K8S the checksum field associated to bytes is computed
+    # by the operator
+    assert e.fieldOne == BASE64_FILE_W0
+    assert e.fieldTwo == SHA256_FILE
+    # We never compare the bytes field itself, only the associated checksum field
+    assert e == EntityTest3(fieldOne=None,
                             fieldTwo=SHA256_FILE)
-    e_data = {
-        'fieldOne': BASE64_FILE_W0,
-    }
-    e = K8S_LOADER.load(e_data, EntityTest3)
     assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
-                            fieldTwo=SHA256_FILE)
+                            fieldTwo='1111111')
 
 
 def test_bytes_dump():
@@ -321,11 +329,10 @@ def test_bytes_dump():
     e_data = {
         'fieldOne': BASE64_FILE_W0
     }
+    # We don't dump the checksum field associated to bytes to APPGATE
     assert APPGATE_DUMPER.dump(e) == e_data
-
     e = EntityTest3(fieldOne=BASE64_FILE_W0)
     assert APPGATE_DUMPER.dump(e) == e_data
-
     e = EntityTest3(fieldTwo=SHA256_FILE)
     assert APPGATE_DUMPER.dump(e) == {}
 
@@ -334,5 +341,5 @@ def test_bytes_dump():
     e_data = {
         'fieldOne': BASE64_FILE_W0,
     }
+    # We don't dump the checksum field associated to bytes to K8S
     assert K8S_DUMPER.dump(e) == e_data
-
