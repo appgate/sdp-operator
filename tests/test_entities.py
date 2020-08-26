@@ -24,6 +24,7 @@ def load_test_open_api_spec():
     spec = {
         '/entity-test1': 'EntityTest1',
         '/entity-test2': 'EntityTest2',
+        '/entity-test3': 'EntityTest3',
     }
     if not TestOpenAPI:
         open_api_spec = parse_files(spec_entities=spec,
@@ -192,10 +193,10 @@ def test_bytes_dump():
     assert APPGATE_DUMPER.dump(e) == e_data
 
     e = EntityTest3(fieldOne=BASE64_FILE_W0)
-    assert APPGATE_DUMPER(e) == e_data
+    assert APPGATE_DUMPER.dump(e) == e_data
 
-    e = EntityTest3(fielTwo=SHA256_FILE)
-    assert APPGATE_DUMPER(e) == {}
+    e = EntityTest3(fieldTwo=SHA256_FILE)
+    assert APPGATE_DUMPER.dump(e) == {}
 
     e = EntityTest3(fieldOne=BASE64_FILE_W0,
                     fieldTwo=SHA256_FILE)
