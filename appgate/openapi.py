@@ -272,7 +272,7 @@ class Parser:
         new_definition['description'] = '.'.join(descriptions)
         return new_definition
 
-    def make_type(self, entity_name: str, attrib_name: str,
+    def make_type(self, entity_name: str, attrib_name: str, compare_secrets: bool,
                   type_data: OpenApiDict) -> Tuple[Type,
                                                    Optional[AttribType],
                                                    Optional[Callable[[], Type]]]:
@@ -285,7 +285,7 @@ class Parser:
             return TYPES_MAP[tpe], DEFAULT_MAP.get(tpe), None
         elif is_array(type_data):
             # Recursion here, we parse the items as a type
-            array_tpe, _, _ = self.make_type(attrib_name, attrib_name, type_data['items'])
+            array_tpe, _, _ = self.make_type(attrib_name, attrib_name, compare_secrets, type_data['items'])
             log.debug('Creating new attribute %s.%s: FrozenSet[%s]', entity_name, attrib_name,
                       array_tpe)
             return FrozenSet[array_tpe], None, frozenset  # type: ignore
@@ -293,7 +293,8 @@ class Parser:
             # Indirect recursion here.
             # Those classes are never registered
             name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
-            attribs, _ = self.make_attribs(name, type_data, top_level_entry=False)
+            attribs, _ = self.make_attribs(name, type_data, top_level_entry=False,
+                                           compare_secrets=compare_secrets)
             generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -302,7 +303,8 @@ class Parser:
             name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
             definition = self.parse_all_of(type_data['allOf'])
             attribs, dependencies = self.make_attribs(entity_name, definition,
-                                                      top_level_entry=False)
+                                                      top_level_entry=False,
+                                                      compare_secrets=compare_secrets)
             generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -312,20 +314,21 @@ class Parser:
 
     def make_attrib(self, entity_name: str, attrib_name: str,
                     attrib_props: AttributesDict, required_fields: List[str],
-                    top_level_entity: bool = False) -> AttributesDict:
+                    top_level_entity: bool = False, compare_secrets: bool = False) -> AttributesDict:
         """
         Returns an attribs dictionary used later to call attrs.attrib
         """
         required = attrib_name in required_fields
-        tpe, default, factory = self.make_type(entity_name, attrib_name, attrib_props)
+        tpe, default, factory = self.make_type(entity_name, attrib_name, compare_secrets, attrib_props)
         read_only = attrib_props.get('readOnly', False)
         write_only = attrib_props.get('writeOnly', False)
+        format = attrib_props.get('format')
         attribs: AttributesDict = {}
         attribs['metadata'] = {
             'name': attrib_name,
             'readOnly': read_only,
             'writeOnly': write_only,
-            'format': attrib_props.get('format'),
+            'format': format,
         }
         if 'description' in attrib_props:
             attribs['metadata']['description'] = attrib_props['description']
@@ -336,8 +339,11 @@ class Parser:
                 attribs['metadata']['example'] = attrib_props['example']
         if 'x-appgate-entity' in attrib_props:
             attribs['metadata']['x-appgate-entity'] = attrib_props['x-appgate-entity']
+
         if attrib_name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
             attribs['eq'] = False
+            if format == 'password' and 'writeOnly':
+                attribs['eq'] = compare_secrets
 
         # Set type
         if not required or read_only or write_only:
@@ -362,8 +368,8 @@ class Parser:
         return attribs
 
     def make_attribs(self, entity_name: str, definition,
-                     top_level_entry: bool) -> Tuple[Dict[str, Any],
-                                                             Set[EntityDependency]]:
+                     top_level_entry: bool, compare_secrets: bool) -> Tuple[Dict[str, Any],
+                                                                            Set[EntityDependency]]:
         """
         Returns the attr.attrib data needed to use attr.make_class with the
         dependencies for this attribute.
@@ -383,7 +389,8 @@ class Parser:
                                                        attrib_name,
                                                        attrib_props,
                                                        required_fields,
-                                                       top_level_entry)
+                                                       top_level_entry,
+                                                       compare_secrets)
 
         # We need to create then in order. Those with default values at the end
         for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
@@ -414,7 +421,7 @@ class Parser:
         return generated_entity
 
     def parse_definition(self, keys: List[List[str]], entity_name: str,
-                         singleton: bool) -> Optional[GeneratedEntity]:
+                         singleton: bool, compare_secrets: bool) -> Optional[GeneratedEntity]:
         while True:
             errors: List[str] = []
             try:
@@ -437,7 +444,8 @@ class Parser:
             return None
 
         attribs, dependencies = self.make_attribs(entity_name, definition_to_use,
-                                                  top_level_entry=True)
+                                                  top_level_entry=True,
+                                                  compare_secrets=compare_secrets)
 
         attribs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**(create_default_attrib({
             'singleton': singleton
@@ -518,7 +526,8 @@ def normalize_attrib_name(name: str) -> str:
 
 def parse_files(spec_entities: Dict[str, str],
                 spec_directory: Optional[Path] = None,
-                spec_file: str = 'api_specs.yml') -> APISpec:
+                spec_file: str = 'api_specs.yml',
+                compare_secrets: bool = False) -> APISpec:
     parser_context = ParserContext(spec_entities=spec_entities,
                                    spec_api_path=spec_directory \
                                                  or Path(SPEC_DIR))
@@ -547,7 +556,8 @@ def parse_files(spec_entities: Dict[str, str],
                                     ['paths', path] + ['post'] + keys,
                                     ['paths', path] + ['put'] + keys
                                 ],
-                                singleton=singleton)
+                                singleton=singleton,
+                                compare_secrets=compare_secrets)
 
     # Now parse the API version
     api_version_str = parser.get_keys(['info', 'version'])

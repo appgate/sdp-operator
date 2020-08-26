@@ -14,24 +14,37 @@ api_spec = generate_api_spec()
 entities = api_spec.entities
 
 
-EntityTest1 = None
 TestOpenAPI = None
+TestOpenAPIWithSecrets = None
+TestSpec = {
+    '/entity-test1': 'EntityTest1',
+    '/entity-test2': 'EntityTest2',
+    '/entity-test3': 'EntityTest3',
+    '/entity-test4': 'EntityTest4',
+}
 
 
 def load_test_open_api_spec():
     global TestOpenAPI
     set_level(log_level='debug')
-    spec = {
-        '/entity-test1': 'EntityTest1',
-        '/entity-test2': 'EntityTest2',
-        '/entity-test3': 'EntityTest3',
-    }
     if not TestOpenAPI:
-        open_api_spec = parse_files(spec_entities=spec,
+        open_api_spec = parse_files(spec_entities=TestSpec,
                                     spec_directory=Path('tests/resources/'),
                                     spec_file='test_entity.yaml')
         TestOpenAPI = open_api_spec.entities
     return TestOpenAPI
+
+
+def load_test_open_api_compare_secrets_spec():
+    global TestOpenAPIWithSecrets
+    set_level(log_level='debug')
+    if not TestOpenAPIWithSecrets:
+        open_api_spec = parse_files(spec_entities=TestSpec,
+                                    spec_directory=Path('tests/resources/'),
+                                    spec_file='test_entity.yaml',
+                                    compare_secrets=True)
+        TestOpenAPIWithSecrets = open_api_spec.entities
+    return TestOpenAPIWithSecrets
 
 
 def test_load_entities_v12():
@@ -96,11 +109,22 @@ def test_write_only_attribute_load():
         'fieldThree': 'this is a field',
     }
     e = APPGATE_LOADER.load(e_data, EntityTest2)
-    assert e == EntityTest2(fieldOne=None,
+    # writeOnly fields are not loaded from Appgate
+    assert e.fieldOne is None
+    assert e.fieldTwo is None
+    assert e.fieldThree == 'this is a field'
+    # writeOnly fields are not compared by default
+    assert e == EntityTest2(fieldOne='1234567890',
                             fieldTwo='this is write only',
                             fieldThree='this is a field')
+
     e = K8S_LOADER.load(e_data, EntityTest2)
-    assert e == EntityTest2(fieldOne='1234567890',
+    # writeOnly fields are loaded from K8S
+    assert e.fieldOne == '1234567890'
+    assert e.fieldTwo == 'this is write only'
+    assert e.fieldThree == 'this is a field'
+    # writeOnly fields are not compared by default
+    assert e == EntityTest2(fieldOne=None,
                             fieldTwo=None,
                             fieldThree='this is a field')
 
@@ -127,6 +151,104 @@ def test_write_only_password_attribute_dump():
         'fieldThree': 'this is a field',
     }
     assert APPGATE_DUMPER_WITH_SECRETS.dump(e) == e_data
+
+
+def test_write_only_password_attribute_load():
+    e_data = {
+        'fieldOne': '1234567890',  # password
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    EntityTest2WithSecrets = load_test_open_api_compare_secrets_spec()['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
+
+    e = APPGATE_LOADER.load(e_data, EntityTest2)
+    # writeOnly passwords are not loaded from Appgate
+    assert e.fieldOne is None
+    assert e.fieldTwo is None
+    assert e.fieldThree == 'this is a field'
+    # writeOnly passwords are not compared by default
+    assert e == EntityTest2(fieldOne='1234567890',
+                            fieldTwo='some value',
+                            fieldThree='this is a field')
+    # normal fields are compared
+    assert e != EntityTest2(fieldOne=None,
+                            fieldTwo=None,
+                            fieldThree='this is a field with a different value')
+
+    e_with_secrets = APPGATE_LOADER.load(e_data, EntityTest2WithSecrets)
+    # writeOnly passwords are not loaded from Appgate even when compare_secrets is True
+    assert e_with_secrets.fieldOne is None
+    assert e_with_secrets.fieldTwo is None
+    assert e_with_secrets.fieldThree == 'this is a field'
+    assert e_with_secrets == EntityTest2WithSecrets(fieldOne=None,
+                                                    fieldTwo=None,
+                                                    fieldThree='this is a field')
+    # writeOnly password fields are compared when compare_secrets is Trye
+    assert e_with_secrets != EntityTest2WithSecrets(fieldOne='1234567890',
+                                                    fieldTwo=None,
+                                                    fieldThree='this is a field')
+    # normal writeOnly fields are not compared when compare_secrets is True
+    assert e_with_secrets == EntityTest2WithSecrets(fieldOne=None,
+                                                    fieldTwo='some value',
+                                                    fieldThree='this is a field')
+
+    e = K8S_LOADER.load(e_data, EntityTest2)
+    # writeOnly password fields are loaded from K8S
+    assert e.fieldOne == '1234567890'
+    assert e.fieldTwo == 'this is write only'
+    assert e.fieldThree == 'this is a field'
+    # writeOnly password fields are not compared by default
+    assert e == EntityTest2(fieldOne=None,
+                            fieldTwo=None,
+                            fieldThree='this is a field')
+    assert e != EntityTest2(fieldOne=None,
+                            fieldTwo=None,
+                            fieldThree='this is a field with a different value')
+
+    e_with_secrets = K8S_LOADER.load(e_data, EntityTest2WithSecrets)
+    # writeOnly password fields are loaded from K8S (with compare_secrets True)
+    assert e_with_secrets.fieldOne == '1234567890'
+    assert e_with_secrets.fieldTwo == 'this is write only'
+    assert e_with_secrets.fieldThree == 'this is a field'
+    # writeOnly password fields are compared when compare_secrets is True
+    assert e_with_secrets != EntityTest2WithSecrets(fieldOne=None,
+                                                    fieldTwo=None,
+                                                    fieldThree='this is a field')
+    # writeOnly normal fields are not compared when compare_secrets is True
+    assert e_with_secrets == EntityTest2WithSecrets(fieldOne='1234567890',
+                                                    fieldTwo=None,
+                                                    fieldThree='this is a field')
+
+
+def test_read_only_write_only_eq():
+    """
+    By default readOnly and writeOnly are never compared.
+    But we should load the correct data from each side (K8S or APPGATE)
+    """
+    EntityTest4 = load_test_open_api_spec()['EntityTest4'].cls
+    e_data = {
+        'fieldOne': 'writeOnly',
+        'fieldTwo': 'readOnly',
+    }
+    e = APPGATE_LOADER.load(e_data, EntityTest4)
+    assert e == EntityTest4(fieldOne=None,
+                            fieldTwo='readOnly')
+    e = APPGATE_LOADER.load(e_data, EntityTest4)
+    assert e == EntityTest4(fieldOne=None,
+                            fieldTwo='----')
+    assert e.fieldTwo == 'readOnly'
+    assert e.fieldOne is None
+
+    e = K8S_LOADER.load(e_data, EntityTest4)
+    assert e == EntityTest4(fieldOne='writeOnly',
+                            fieldTwo=None)
+
+    e = K8S_LOADER.load(e_data, EntityTest4)
+    assert e == EntityTest4(fieldOne='-----',
+                            fieldTwo=None)
+    assert e.fieldOne == 'writeOnly'
+    assert e.fieldTwo is None
 
 
 BASE64_FILE = '''
@@ -165,13 +287,22 @@ SHA256_FILE = '682755de6b77a24c0d37505027bde01d0358155535add3d3854c6bcf03d3a101'
 
 def test_bytes_load():
     EntityTest3 = load_test_open_api_spec()['EntityTest3'].cls
+    # fieldOne is writeOnly :: byte
+    # fieldTwo is readOnly :: checksum of fieldOne
     e_data = {
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': SHA256_FILE,
     }
     e = APPGATE_LOADER.load(e_data, EntityTest3)
+    assert e.fieldOne is None
+    assert e.fieldTwo == SHA256_FILE
     assert e == EntityTest3(fieldTwo=SHA256_FILE)
-
+    assert e != EntityTest3(fieldOne='11111',
+                            fieldTwo='22222')
+    e_data = {
+        'fieldOne': BASE64_FILE_W0,
+        'fieldTwo': '12345',
+    }
     e = K8S_LOADER.load(e_data, EntityTest3)
     assert e == EntityTest3(fieldOne=BASE64_FILE_W0,
                             fieldTwo=SHA256_FILE)
@@ -179,7 +310,7 @@ def test_bytes_load():
         'fieldOne': BASE64_FILE_W0,
     }
     e = K8S_LOADER.load(e_data, EntityTest3)
-    assert e == EntityTest3(fieldOne=BASE64_FILE_W0,
+    assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
                             fieldTwo=SHA256_FILE)
 
 

@@ -89,7 +89,8 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
                                            (HOST_ENV, controller)]
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
-    api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None)
+    api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
+                                 compare_secrets=dump_secrets == '1')
     return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
