@@ -254,9 +254,7 @@ class SimpleAttribMaker:
             attribs['type'] = self.tpe
             attribs['metadata']['type'] = str(self.tpe)
 
-        # set default value
-        top_level_entity = True  # TODO
-        if top_level_entity and self.name == 'id':
+        if instance_maker_config.level == 0 and self.name == 'id':
             attribs['factory'] = lambda: str(uuid.uuid4())
         elif self.factory and not (read_only or write_only):
             attribs['factory'] = self.factory
@@ -325,7 +323,6 @@ def normalize_attrib_name(name: str) -> str:
 class InstanceMakerConfig:
     name: str = attrib()
     definition: OpenApiDict = attrib()
-    top_level_entity: bool = attrib()
     level: int = attrib()
     compare_secrets: bool = attrib()
     singleton: bool = attrib()
@@ -352,7 +349,6 @@ class InstanceMakerConfig:
         return InstanceMakerConfig(
             name=name,
             definition=self.definition, # This should be definition['name'],
-            top_level_entity=False,
             compare_secrets=self.compare_secrets,
             singleton=self.singleton,
             api_path=self.api_path,
@@ -559,7 +555,6 @@ class Parser:
             instance_maker_config = InstanceMakerConfig(
                 name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
                 definition=definition,
-                top_level_entity=False,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=attrib_maker_config.instance_maker_config.api_path,
@@ -615,7 +610,6 @@ class Parser:
             instance_maker_config = InstanceMakerConfig(
                 name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
                 definition=definition,
-                top_level_entity=False,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=attrib_maker_config.instance_maker_config.api_path,
@@ -687,7 +681,6 @@ class Parser:
         api_path = self.parser_context.get_entity_path(entity_name)
         instance_maker_config = InstanceMakerConfig(name=entity_name,
                                                     definition=definition_to_use,
-                                                    top_level_entity=True,
                                                     compare_secrets=compare_secrets,
                                                     singleton=singleton,
                                                     api_path=api_path,
