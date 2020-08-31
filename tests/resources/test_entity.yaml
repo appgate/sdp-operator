@@ -14,6 +14,8 @@ paths:
     $ref: '#/entity-test2'
   /entity-test3:
     $ref: '#/entity-test3'
+  /entity-test4:
+    $ref: '#/entity-test4'
     
 entity-test1:
   get:
@@ -59,7 +61,20 @@ entity-test3:
         application/json:
           schema:
             $ref: '#/definitions/EntityTest3'
-
+entity-test4:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest4'
 definitions:
   EntityTestList:
     type: array
@@ -96,9 +111,19 @@ definitions:
     properties:
       fieldOne:
         writeOnly: true
+        format: bytes
+        type: string
+      fieldTwo:
+        readOnly: true
+        type: string
         format:
-          type: bytes
-          checksum: fieldTwo
+          type: checksum
+          source: fieldOne
+  EntityTest4:
+    type: object
+    properties:
+      fieldOne:
+        writeOnly: true
         type: string
       fieldTwo:
         readOnly: true
