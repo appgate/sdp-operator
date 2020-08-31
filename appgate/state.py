@@ -7,10 +7,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable
 
-import typedload
 import yaml
 from attr import attrib, attrs, evolve
 
+from appgate.attrs import K8S_DUMPER
 from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, \
     has_name, APISpec, BUILTIN_TAGS
 from appgate.client import EntityClient
@@ -123,7 +123,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
         'metadata': {
             'name': entity_name
         },
-        'spec': typedload.dump(entity)
+        'spec': K8S_DUMPER.dump(entity)
     }
 
 

@@ -43,17 +43,20 @@ SPEC_ENTITIES = {
 }
 
 
-def generate_api_spec(spec_directory: Optional[Path] = None) -> APISpec:
+def generate_api_spec(spec_directory: Optional[Path] = None,
+                      compare_secrets: bool = False) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
     TODO: Choose the directory so we can support different versions.
     """
-    return parse_files(SPEC_ENTITIES, spec_directory=spec_directory)
+    return parse_files(SPEC_ENTITIES, spec_directory=spec_directory,
+                       compare_secrets=compare_secrets)
 
 
-def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
+def generate_api_spec_clients(api_spec: APISpec, dump_secrets: bool,
+                              appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     return {
-        n: appgate_client.entity_client(e.cls, e.api_path)
+        n: appgate_client.entity_client(e.cls, e.api_path, dump_secrets)
         for n, e in api_spec.entities.items()
         if e.api_path
     }
