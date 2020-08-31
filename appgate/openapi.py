@@ -1,12 +1,13 @@
+import hashlib
 import itertools
 import re
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, Set, \
-    Union, Type, cast, Iterator
+    Union, Type, cast, Iterator, Iterable
 from graphlib import TopologicalSorter
 
-from attr import make_class, attrib, attrs
+from attr import make_class, attrib, attrs, evolve
 import yaml
 
 from appgate.logger import log
@@ -43,11 +44,13 @@ TYPES_MAP: Dict[str, Type] = {
     'integer': int,
     'number': int,
 }
-
-
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
-
-
+OpenApiDict = Dict[str, Any]
+AttributesDict = Dict[str, Any]
+BasicOpenApiType = Union[str, int, bool]
+AnyOpenApiType = Union[BasicOpenApiType, Dict[str, BasicOpenApiType], List[BasicOpenApiType]]
+# Dictionary with the top level entities, those that are "exported"
+EntitiesDict = Dict[str, 'GeneratedEntity']
 DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
@@ -74,18 +77,12 @@ class EntityDependency:
 
 @attrs()
 class GeneratedEntity:
+    """
+    Class to represent an already parsed entity
+    """
     cls: type = attrib()
     entity_dependencies: Set[EntityDependency] = attrib(factory=list)
     api_path: Optional[str] = attrib(default=None)
-
-
-OpenApiDict = Dict[str, Any]
-AttributesDict = Dict[str, Any]
-BasicOpenApiType = Union[str, int, bool]
-AnyOpenApiType = Union[BasicOpenApiType, Dict[str, BasicOpenApiType], List[BasicOpenApiType]]
-
-# Dictionary with the top level entities, those that are "exported"
-EntitiesDict = Dict[str, GeneratedEntity]
 
 
 class EntitiesContext:
@@ -194,6 +191,48 @@ def is_compound(entry: Any) -> bool:
            and any(filter(lambda c: c in entry, composite))
 
 
+def get_field(entity: Entity_T, field: str) -> Any:
+    try:
+        return getattr(entity, field)
+    except AttributeError:
+        raise Exception('Field %s not found in entity: %s', field,
+                        entity)
+
+
+class CustomLoader:
+    pass
+
+
+@attrs()
+class CustomAttribLoader(CustomLoader):
+    loader: Callable[[Any], Any] = attrib()
+    field: str = attrib()
+
+    def load(self, values: AttributesDict) -> AttributesDict:
+        v = values[self.field]
+        values[self.field] = self.loader(v)
+        return values
+
+
+@attrs()
+class CustomEntityLoader(CustomLoader):
+    loader: Callable[..., Any] = attrib()
+    field: str = attrib()
+    dependencies: List[str] = attrib(factory=list)
+
+    def load(self, entity: Any) -> Any:
+        deps = [get_field(entity, a.name) for a in entity.__attrs_attrs__
+                if a.name in self.dependencies]
+        if len(deps) != len(self.dependencies):
+            # TODO: Return the attributes missing
+            raise TypeError('Missing dependencies when loading entity')
+        field_value = get_field(entity, self.field)
+        new_value = self.loader(*([field_value] + deps))
+        return evolve(entity, **{
+            self.field: new_value
+        })
+
+
 class SimpleAttribMaker:
     def __init__(self, name: str, tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict) -> None:
@@ -240,8 +279,6 @@ class SimpleAttribMaker:
 
         if self.name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
             attribs['eq'] = False
-            if format == 'password' and 'writeOnly':
-                attribs['eq'] = False  # TODO
 
         # Set type
         if not required or read_only or write_only:
@@ -280,17 +317,54 @@ class DefaultAttribMaker(SimpleAttribMaker):
         }
 
 
+def decrypt_password():
+    key = 'not implemented'
+    def _decrypt_password(value: str):
+        return value
+
+    return _decrypt_password
+
+
+def checksum_bytes(value: Any, bytes: str) -> str:
+    return hashlib.sha256(bytes.encode()).hexdigest()
+
+
 class PasswordAttribMaker(SimpleAttribMaker):
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
                instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = instance_maker_config.compare_secrets
+        if 'metadata' not in values:
+            values['metadata'] = {}
+        values['metadata']['k8s_loader'] = CustomAttribLoader(
+            loader=decrypt_password(),
+            field=self.name,
+        )
         return values
 
 
-class BytesAttribMaker(SimpleAttribMaker):
-    pass
+class ChecksumAttribMaker(SimpleAttribMaker):
+    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+                 factory: Optional[type], definition: OpenApiDict,
+                 source_field: str) -> None:
+        super().__init__(name, tpe, default, factory, definition)
+        self.source_field = source_field
+
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig',
+               ) -> AttributesDict:
+        # Compare passwords if compare_secrets was enabled
+        values = super().values(attributes, required_fields, instance_maker_config)
+        values['eq'] = True
+        if 'metadata' not in values:
+            values['metadata'] = {}
+        values['metadata']['k8s_loader'] = CustomEntityLoader(
+            loader=checksum_bytes,
+            dependencies=[self.source_field],
+            field=self.name,
+        )
+        return values
 
 
 class ArrayAttribMaker(SimpleAttribMaker):
@@ -348,10 +422,10 @@ class InstanceMakerConfig:
     def with_name(self, name: str) -> 'InstanceMakerConfig':
         return InstanceMakerConfig(
             name=name,
-            definition=self.definition, # This should be definition['name'],
+            definition=self.definition,  # This should be definition['name'],
             compare_secrets=self.compare_secrets,
             singleton=self.singleton,
-            api_path=self.api_path,
+            api_path=None,
             level=self.level + 1)
 
 
@@ -382,11 +456,6 @@ class InstanceMaker:
 
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
         # Add attributes if needed after instance level
-        self.attributes[APPGATE_METADATA_ATTRIB_NAME] = create_default_attrib(
-            APPGATE_METADATA_ATTRIB_NAME,
-            {
-                'singleton': instance_maker_config.singleton
-            })
         if 'name' not in self.attributes and instance_maker_config.singleton:
             self.attributes['name'] = create_default_attrib(self.name, self.name)
         if 'id' not in self.attributes and instance_maker_config.singleton:
@@ -401,6 +470,25 @@ class InstanceMaker:
                                                 instance_maker_config)),
                 filter(lambda kv: not isinstance(kv[1], DeprecatedAttribMaker),
                        self.attributes.items())))
+        # Add custom entity loaders if needed
+        k8s_custom_entity_loaders = []
+        appgate_custom_entity_loaders = []
+        for n, v in values.items():
+            if 'metadata' not in v:
+                continue
+            k8s_loader = v['metadata'].get('k8s_loader')
+            appgate_loader = v['metadata'].get('appgate_loader')
+            if k8s_loader and isinstance(k8s_loader, CustomEntityLoader):
+                k8s_custom_entity_loaders.append(k8s_loader)
+            if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
+                appgate_custom_entity_loaders.append(k8s_loader)
+        metadata_default_attrib = create_default_attrib(
+            APPGATE_METADATA_ATTRIB_NAME,
+            {
+                'singleton': instance_maker_config.singleton,
+                'k8s_loader': k8s_custom_entity_loaders or None,
+                'appgate_loader': appgate_custom_entity_loaders or None,
+            })
         # Build the dictionary of attribs
         attrs = {}
         # First attributes with no default values
@@ -409,6 +497,10 @@ class InstanceMaker:
         # Now attributes with default values
         for k, v in filter(lambda p: has_default(p[1]), values.items()):
             attrs[k] = attrib(**v)
+        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**metadata_default_attrib.values(
+            self.attributes,
+            instance_maker_config.definition.get('required', {}),
+            instance_maker_config))
         cls = make_class(self.name, attrs, slots=True, frozen=True)
         return GeneratedEntity(cls=cls,
                                entity_dependencies=self.dependencies,
@@ -548,7 +640,6 @@ class Parser:
         definition = attrib_maker_config.definition
         entity_name = attrib_maker_config.instance_maker_config.name
         attrib_name = attrib_maker_config.name
-        compare_secrets = attrib_maker_config.instance_maker_config.compare_secrets
         tpe = definition.get('type')
         if is_compound(definition):
             definition = self.parse_all_of(definition['allOf'])
@@ -579,12 +670,13 @@ class Parser:
                                            default=DEFAULT_MAP.get(tpe),
                                            factory=None,
                                            definition=attrib_maker_config.definition)
-            elif format == 'bytes':
-                return BytesAttribMaker(name=attrib_name,
-                                        tpe=TYPES_MAP[tpe],
-                                        default=DEFAULT_MAP.get(tpe),
-                                        factory=None,
-                                        definition=attrib_maker_config.definition)
+            elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
+                return ChecksumAttribMaker(name=attrib_name,
+                                           tpe=TYPES_MAP[tpe],
+                                           default=DEFAULT_MAP.get(tpe),
+                                           factory=None,
+                                           definition=attrib_maker_config.definition,
+                                           source_field=format['source'])
             else:
                 return SimpleAttribMaker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],

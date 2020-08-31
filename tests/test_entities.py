@@ -70,9 +70,16 @@ def test_loader_1():
     e = APPGATE_LOADER.load(entity_1, EntityTest1)
     assert e == EntityTest1(fieldOne='this is read only', fieldTwo=None,
                             fieldFour='this is a field')
+    assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field that changed')
+    assert e.fieldOne == 'this is read only'
+    assert e.fieldTwo is None
+
     e = K8S_LOADER.load(entity_1, EntityTest1)
     assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
                             fieldFour='this is a field')
+    assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field that changed')
 
 
 def test_dumper_1():
@@ -184,7 +191,7 @@ def test_write_only_password_attribute_load():
     assert e_with_secrets == EntityTest2WithSecrets(fieldOne=None,
                                                     fieldTwo=None,
                                                     fieldThree='this is a field')
-    # writeOnly password fields are compared when compare_secrets is Trye
+    # writeOnly password fields are compared when compare_secrets is True
     assert e_with_secrets != EntityTest2WithSecrets(fieldOne='1234567890',
                                                     fieldTwo=None,
                                                     fieldThree='this is a field')
