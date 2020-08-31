@@ -4,7 +4,7 @@ import re
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, Set, \
-    Union, Type, cast, Iterator, Iterable
+    Union, Type, cast, Iterator
 from graphlib import TopologicalSorter
 
 from attr import make_class, attrib, attrs, evolve
@@ -19,6 +19,10 @@ __all__ = [
     'APISpec',
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
+    'APPGATE_METADATA_ATTRIB_NAME',
+    'CustomAttribLoader',
+    'CustomEntityLoader',
+    'CustomLoader',
     'BUILTIN_TAGS',
     'SPEC_DIR',
     'generate_crd',

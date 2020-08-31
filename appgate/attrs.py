@@ -15,7 +15,8 @@ __all__ = [
     'get_dumper',
 ]
 
-from appgate.openapi import APPGATE_METADATA_ATTRIB_NAME, CustomAttribLoader, CustomEntityLoader, CustomLoader
+from appgate.openapi import APPGATE_METADATA_ATTRIB_NAME, CustomAttribLoader, \
+    CustomEntityLoader, CustomLoader
 
 
 class PlatformType(enum.Enum):
