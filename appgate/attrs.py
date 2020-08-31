@@ -1,5 +1,5 @@
 import enum
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from typedload import dataloader
 from typedload import datadumper
@@ -14,6 +14,9 @@ __all__ = [
     'get_loader',
     'get_dumper',
 ]
+
+from appgate.openapi import APPGATE_METADATA_ATTRIB_NAME, CustomAttribLoader, \
+    CustomEntityLoader, CustomLoader
 
 
 class PlatformType(enum.Enum):
@@ -63,6 +66,22 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
 
 def get_loader(platform_type: PlatformType):
 
+    def _namedtupleload_wrapper(l, value, t):
+        entity = dataloader._namedtupleload(l, value, t)
+        if hasattr(entity, APPGATE_METADATA_ATTRIB_NAME):
+            appgate_metadata = getattr(entity, APPGATE_METADATA_ATTRIB_NAME)
+            if platform_type == PlatformType.K8S \
+                    and 'k8s_loader' in appgate_metadata:
+                els: List[CustomEntityLoader] = appgate_metadata['k8s_loader']
+                for el in (els or []):
+                    entity = el.load(entity)
+            elif platform_type == PlatformType.APPGATE \
+                    and 'appgate_loader' in appgate_metadata.get('metadata', {}):
+                els: List[CustomEntityLoader] = appgate_metadata['appgate_loader']
+                for el in (els or []):
+                    entity = el.load(entity)
+        return entity
+
     def _attrload(l, value, type_):
         if not isinstance(value, dict):
             raise dataloader.TypedloadTypeError('Expected dictionary, got %s' % type(value),
@@ -75,11 +94,12 @@ def get_loader(platform_type: PlatformType):
         for attribute in type_.__attrs_attrs__:
             read_only = attribute.metadata.get('readOnly', False)
             write_only = attribute.metadata.get('writeOnly', False)
+
             if read_only and platform_type == PlatformType.K8S:
                 # Don't load attribute from K8S in read only mode even if
                 # it's defined
                 continue
-            if write_only and platform_type == PlatformType.APPGATE:
+            elif write_only and platform_type == PlatformType.APPGATE:
                 # Don't load attribute from APPGATE in read only mode even if
                 # it's defined
                 continue
@@ -97,6 +117,18 @@ def get_loader(platform_type: PlatformType):
                     del value[dataname]
                     value[pyname] = tmp
 
+            # Custom loading values
+            if platform_type == PlatformType.K8S \
+                    and 'k8s_loader' in attribute.metadata:
+                cl: CustomLoader = attribute.metadata['k8s_loader']
+                if isinstance(cl, CustomAttribLoader):
+                    value = cl.load(value)
+            elif platform_type == PlatformType.APPGATE \
+                    and 'appgate_loader' in attribute.metadata:
+                cl: CustomLoader = attribute.metadata['appgate_loader']
+                if isinstance(cl, CustomAttribLoader):
+                    value = cl.load(value)
+
         t = dataloader._FakeNamedTuple((
             tuple(names),
             types,
@@ -104,7 +136,7 @@ def get_loader(platform_type: PlatformType):
             type_,
         ))
 
-        return dataloader._namedtupleload(l, value, t)
+        return _namedtupleload_wrapper(l, value, t)
 
     loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))

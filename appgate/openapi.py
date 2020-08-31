@@ -1,12 +1,13 @@
+import hashlib
 import itertools
 import re
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, Set, \
-    Union, Type, cast
+    Union, Type, cast, Iterator
 from graphlib import TopologicalSorter
 
-from attr import make_class, attrib, attrs
+from attr import make_class, attrib, attrs, evolve
 import yaml
 
 from appgate.logger import log
@@ -18,6 +19,10 @@ __all__ = [
     'APISpec',
     'K8S_APPGATE_DOMAIN',
     'K8S_APPGATE_VERSION',
+    'APPGATE_METADATA_ATTRIB_NAME',
+    'CustomAttribLoader',
+    'CustomEntityLoader',
+    'CustomLoader',
     'BUILTIN_TAGS',
     'SPEC_DIR',
     'generate_crd',
@@ -43,11 +48,13 @@ TYPES_MAP: Dict[str, Type] = {
     'integer': int,
     'number': int,
 }
-
-
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
-
-
+OpenApiDict = Dict[str, Any]
+AttributesDict = Dict[str, Any]
+BasicOpenApiType = Union[str, int, bool]
+AnyOpenApiType = Union[BasicOpenApiType, Dict[str, BasicOpenApiType], List[BasicOpenApiType]]
+# Dictionary with the top level entities, those that are "exported"
+EntitiesDict = Dict[str, 'GeneratedEntity']
 DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
@@ -74,18 +81,12 @@ class EntityDependency:
 
 @attrs()
 class GeneratedEntity:
+    """
+    Class to represent an already parsed entity
+    """
     cls: type = attrib()
     entity_dependencies: Set[EntityDependency] = attrib(factory=list)
     api_path: Optional[str] = attrib(default=None)
-
-
-OpenApiDict = Dict[str, Any]
-AttributesDict = Dict[str, Any]
-BasicOpenApiType = Union[str, int, bool]
-AnyOpenApiType = Union[BasicOpenApiType, Dict[str, BasicOpenApiType], List[BasicOpenApiType]]
-
-# Dictionary with the top level entities, those that are "exported"
-EntitiesDict = Dict[str, GeneratedEntity]
 
 
 class EntitiesContext:
@@ -143,6 +144,373 @@ class ParserContext:
         return self.data[path.name]
 
 
+def has_default(definition: AttributesDict) -> bool:
+    """
+    Checks if attrs as a default field value
+    """
+    return 'factory' in definition or 'default' in definition
+
+
+def has_name(e: Any) -> bool:
+    return hasattr(e, 'name')
+
+
+def has_id(e: Any) -> bool:
+    return hasattr(e, 'id')
+
+
+def is_entity_t(e: Any) -> bool:
+    return has_name(e) and has_id(e)
+
+
+def is_ref(entry: Any) -> bool:
+    """
+    Checks if entry is a reference
+    """
+    return isinstance(entry, dict) \
+           and '$ref' in entry
+
+
+def is_object(entry: Any) -> bool:
+    """
+    Checks if entry is an object
+    """
+    return isinstance(entry, dict) \
+           and 'type' in entry \
+           and entry['type'] == 'object'
+
+
+def is_array(entry: Any) -> bool:
+    """
+    Checks if entry is an array
+    """
+    return isinstance(entry, dict) \
+           and 'type' in entry \
+           and entry['type'] == 'array'
+
+
+def is_compound(entry: Any) -> bool:
+    composite = {'allOf'}
+    return isinstance(entry, dict) \
+           and any(filter(lambda c: c in entry, composite))
+
+
+def get_field(entity: Entity_T, field: str) -> Any:
+    try:
+        return getattr(entity, field)
+    except AttributeError:
+        raise Exception('Field %s not found in entity: %s', field,
+                        entity)
+
+
+class CustomLoader:
+    pass
+
+
+@attrs()
+class CustomAttribLoader(CustomLoader):
+    loader: Callable[[Any], Any] = attrib()
+    field: str = attrib()
+
+    def load(self, values: AttributesDict) -> AttributesDict:
+        v = values[self.field]
+        values[self.field] = self.loader(v)
+        return values
+
+
+@attrs()
+class CustomEntityLoader(CustomLoader):
+    loader: Callable[..., Any] = attrib()
+    field: str = attrib()
+    dependencies: List[str] = attrib(factory=list)
+
+    def load(self, entity: Any) -> Any:
+        deps = [get_field(entity, a.name) for a in entity.__attrs_attrs__
+                if a.name in self.dependencies]
+        if len(deps) != len(self.dependencies):
+            # TODO: Return the attributes missing
+            raise TypeError('Missing dependencies when loading entity')
+        field_value = get_field(entity, self.field)
+        new_value = self.loader(*([field_value] + deps))
+        return evolve(entity, **{
+            self.field: new_value
+        })
+
+
+class SimpleAttribMaker:
+    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+                 factory: Optional[type], definition: OpenApiDict) -> None:
+        self.name = name
+        self.tpe = tpe
+        self.default = default
+        self.factory = factory
+        self.definition = definition
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self.definition.get('metadata', {})
+
+    @property
+    def has_default(self) -> bool:
+        """
+        Checks if attrs as a default field value
+        """
+        return self.factory is not None or self.default is not None
+
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+        required = self.name in required_fields
+        definition = self.definition
+        read_only = definition.get('readOnly', False)
+        write_only = definition.get('writeOnly', False)
+        format = definition.get('format')
+        attribs: AttributesDict = {}
+        attribs['metadata'] = {
+            'name': self.name,
+            'readOnly': read_only,
+            'writeOnly': write_only,
+            'format': format,
+        }
+        if 'description' in definition:
+            attribs['metadata']['description'] = definition['description']
+        if 'example' in definition:
+            if isinstance(definition['example'], List):
+                attribs['metadata']['example'] = frozenset(definition['example'])
+            else:
+                attribs['metadata']['example'] = definition['example']
+        if 'x-appgate-entity' in definition:
+            attribs['metadata']['x-appgate-entity'] = definition['x-appgate-entity']
+
+        if self.name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
+            attribs['eq'] = False
+
+        # Set type
+        if not required or read_only or write_only:
+            attribs['type'] = Optional[self.tpe]
+            attribs['metadata']['type'] = str(Optional[self.tpe])
+        elif required and (read_only or write_only):
+            raise OpenApiParserException(f'readOnly/writeOnly attribute {self.name} '
+                                         'can not be required')
+        else:
+            attribs['type'] = self.tpe
+            attribs['metadata']['type'] = str(self.tpe)
+
+        if instance_maker_config.level == 0 and self.name == 'id':
+            attribs['factory'] = lambda: str(uuid.uuid4())
+        elif self.factory and not (read_only or write_only):
+            attribs['factory'] = self.factory
+        elif not required or read_only or write_only:
+            attribs['default'] = definition.get('default',
+                                                None if (read_only or write_only) else self.default)
+
+        return attribs
+
+
+class DeprecatedAttribMaker(SimpleAttribMaker):
+    pass
+
+
+class DefaultAttribMaker(SimpleAttribMaker):
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+        return {
+            'type': self.tpe,
+            'repr': False,
+            'eq': False,
+            'default': self.default
+        }
+
+
+def decrypt_password():
+    key = 'not implemented'
+    def _decrypt_password(value: str):
+        return value
+
+    return _decrypt_password
+
+
+def checksum_bytes(value: Any, bytes: str) -> str:
+    return hashlib.sha256(bytes.encode()).hexdigest()
+
+
+class PasswordAttribMaker(SimpleAttribMaker):
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+        # Compare passwords if compare_secrets was enabled
+        values = super().values(attributes, required_fields, instance_maker_config)
+        values['eq'] = instance_maker_config.compare_secrets
+        if 'metadata' not in values:
+            values['metadata'] = {}
+        values['metadata']['k8s_loader'] = CustomAttribLoader(
+            loader=decrypt_password(),
+            field=self.name,
+        )
+        return values
+
+
+class ChecksumAttribMaker(SimpleAttribMaker):
+    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+                 factory: Optional[type], definition: OpenApiDict,
+                 source_field: str) -> None:
+        super().__init__(name, tpe, default, factory, definition)
+        self.source_field = source_field
+
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig',
+               ) -> AttributesDict:
+        # Compare passwords if compare_secrets was enabled
+        values = super().values(attributes, required_fields, instance_maker_config)
+        values['eq'] = True
+        if 'metadata' not in values:
+            values['metadata'] = {}
+        values['metadata']['k8s_loader'] = CustomEntityLoader(
+            loader=checksum_bytes,
+            dependencies=[self.source_field],
+            field=self.name,
+        )
+        return values
+
+
+class ArrayAttribMaker(SimpleAttribMaker):
+    pass
+
+
+@attrs()
+class AttribMakerConfig:
+    instance_maker_config: 'InstanceMakerConfig' = attrib()
+    name: str = attrib()
+    definition: OpenApiDict = attrib()
+
+    def from_key(self, key: str) -> Optional['AttribMakerConfig']:
+        definition = self.definition.get(key)
+        if definition:
+            return AttribMakerConfig(
+                definition=definition,
+                instance_maker_config=self.instance_maker_config.with_name(self.name),
+                name=self.name)
+        return None
+
+
+def normalize_attrib_name(name: str) -> str:
+    if NAMES_REGEXP.match(name):
+        return re.sub(r'\.', '_', name)
+    return name
+
+
+@attrs()
+class InstanceMakerConfig:
+    name: str = attrib()
+    definition: OpenApiDict = attrib()
+    level: int = attrib()
+    compare_secrets: bool = attrib()
+    singleton: bool = attrib()
+    api_path: Optional[str] = attrib()
+
+    @property
+    def properties_names(self) -> Iterator[Tuple[str, str]]:
+        return map(lambda n: (n, normalize_attrib_name(n)),
+                   self.definition.get('properties', {}).keys())
+
+    def attrib_maker_config(self, attribute: str) -> 'AttribMakerConfig':
+        properties = self.definition.get('properties', {})
+        definition = properties.get(attribute)
+        if not definition:
+            log.error('Unable to find attribute %s in %s', attribute, ', '.join(properties.keys()))
+            raise OpenApiParserException(f'Unable to find attribute %s')
+        return AttribMakerConfig(
+            instance_maker_config=self,
+            name=normalize_attrib_name(attribute),
+            definition=definition
+        )
+
+    def with_name(self, name: str) -> 'InstanceMakerConfig':
+        return InstanceMakerConfig(
+            name=name,
+            definition=self.definition,  # This should be definition['name'],
+            compare_secrets=self.compare_secrets,
+            singleton=self.singleton,
+            api_path=None,
+            level=self.level + 1)
+
+
+class InstanceMaker:
+    def __init__(self, name: str, attributes: Dict[str, SimpleAttribMaker]) -> None:
+        self.name = name
+        self.attributes = attributes
+
+    @property
+    def attributes_with_default(self) -> Dict[str, SimpleAttribMaker]:
+        return {k: v for k, v in self.attributes.items() if v.has_default}
+
+    @property
+    def attributes_without_default(self) -> Dict[str, SimpleAttribMaker]:
+        return {k: v for k, v in self.attributes.items() if not v.has_default}
+
+    @property
+    def dependencies(self) -> Set[EntityDependency]:
+        dependencies: Set[EntityDependency] = set()
+        for attrib_name, attrib_attrs in self.attributes.items():
+            mt = attrib_attrs.metadata
+            if 'x-appgate-entity' in mt:
+                dependency = mt['x-appgate-entity']
+                dependencies.add(EntityDependency(field=attrib_name,
+                                                  dependencies=frozenset(dependency)))
+
+        return dependencies
+
+    def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
+        # Add attributes if needed after instance level
+        if 'name' not in self.attributes and instance_maker_config.singleton:
+            self.attributes['name'] = create_default_attrib(self.name, self.name)
+        if 'id' not in self.attributes and instance_maker_config.singleton:
+            self.attributes['id'] = create_default_attrib(self.name, self.name)
+        if 'tags' not in self.attributes and instance_maker_config.singleton:
+            self.attributes['tags'] = create_default_attrib('tags', BUILTIN_TAGS)
+
+        # Get values from attrib makers
+        values = dict(
+            map(lambda kv: (kv[0], kv[1].values(self.attributes,
+                                                instance_maker_config.definition.get('required', {}),
+                                                instance_maker_config)),
+                filter(lambda kv: not isinstance(kv[1], DeprecatedAttribMaker),
+                       self.attributes.items())))
+        # Add custom entity loaders if needed
+        k8s_custom_entity_loaders = []
+        appgate_custom_entity_loaders = []
+        for n, v in values.items():
+            if 'metadata' not in v:
+                continue
+            k8s_loader = v['metadata'].get('k8s_loader')
+            appgate_loader = v['metadata'].get('appgate_loader')
+            if k8s_loader and isinstance(k8s_loader, CustomEntityLoader):
+                k8s_custom_entity_loaders.append(k8s_loader)
+            if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
+                appgate_custom_entity_loaders.append(k8s_loader)
+        metadata_default_attrib = create_default_attrib(
+            APPGATE_METADATA_ATTRIB_NAME,
+            {
+                'singleton': instance_maker_config.singleton,
+                'k8s_loader': k8s_custom_entity_loaders or None,
+                'appgate_loader': appgate_custom_entity_loaders or None,
+            })
+        # Build the dictionary of attribs
+        attrs = {}
+        # First attributes with no default values
+        for k, v in filter(lambda p: not has_default(p[1]), values.items()):
+            attrs[k] = attrib(**v)
+        # Now attributes with default values
+        for k, v in filter(lambda p: has_default(p[1]), values.items()):
+            attrs[k] = attrib(**v)
+        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**metadata_default_attrib.values(
+            self.attributes,
+            instance_maker_config.definition.get('required', {}),
+            instance_maker_config))
+        cls = make_class(self.name, attrs, slots=True, frozen=True)
+        return GeneratedEntity(cls=cls,
+                               entity_dependencies=self.dependencies,
+                               api_path=instance_maker_config.api_path)
+
+
 def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict[str, Any]:
     if is_compound(definition):
         return {'allOf': [make_explicit_references(d, namespace) for d in definition['allOf']]}
@@ -172,13 +540,13 @@ def join(sep: str, xs: List[Any]) -> str:
     return sep.join(map(str, xs))
 
 
-def create_default_attrib(attrib_value: Any) -> AttributesDict:
-    return {
-        'type': type(attrib_value),
-        'repr': False,
-        'eq': False,
-        'default': attrib_value
-    }
+def create_default_attrib(name: str, attrib_value: Any) -> DefaultAttribMaker:
+    return DefaultAttribMaker(
+        tpe=type(attrib_value),
+        name=name,
+        default=attrib_value,
+        factory=None,
+        definition={})
 
 
 class Parser:
@@ -272,151 +640,115 @@ class Parser:
         new_definition['description'] = '.'.join(descriptions)
         return new_definition
 
-    def make_type(self, entity_name: str, attrib_name: str, compare_secrets: bool,
-                  type_data: OpenApiDict) -> Tuple[Type,
-                                                   Optional[AttribType],
-                                                   Optional[Callable[[], Type]]]:
-        tpe = type_data.get('type')
-        if not type:
-            raise Exception('type field not found in %s', type_data)
-        if tpe in TYPES_MAP:
+    def make_type(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
+        definition = attrib_maker_config.definition
+        entity_name = attrib_maker_config.instance_maker_config.name
+        attrib_name = attrib_maker_config.name
+        tpe = definition.get('type')
+        if is_compound(definition):
+            definition = self.parse_all_of(definition['allOf'])
+            instance_maker_config = InstanceMakerConfig(
+                name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                definition=definition,
+                compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
+                singleton=attrib_maker_config.instance_maker_config.singleton,
+                api_path=attrib_maker_config.instance_maker_config.api_path,
+                level=attrib_maker_config.instance_maker_config.level+1)
+            generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
+            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
+                      generated_entity.cls)
+            return SimpleAttribMaker(name=instance_maker_config.name,
+                                     tpe=generated_entity.cls,
+                                     default=None,
+                                     factory=None,
+                                     definition=attrib_maker_config.definition)
+        elif not tpe:
+            raise Exception('type field not found in %s', definition)
+        elif tpe in TYPES_MAP:
             log.debug('Creating new attribute %s.%s :: %s', entity_name, attrib_name,
                       TYPES_MAP[tpe])
-            return TYPES_MAP[tpe], DEFAULT_MAP.get(tpe), None
-        elif is_array(type_data):
+            format = definition.get('format', None)
+            if format == 'password':
+                return PasswordAttribMaker(name=attrib_name,
+                                           tpe=TYPES_MAP[tpe],
+                                           default=DEFAULT_MAP.get(tpe),
+                                           factory=None,
+                                           definition=attrib_maker_config.definition)
+            elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
+                return ChecksumAttribMaker(name=attrib_name,
+                                           tpe=TYPES_MAP[tpe],
+                                           default=DEFAULT_MAP.get(tpe),
+                                           factory=None,
+                                           definition=attrib_maker_config.definition,
+                                           source_field=format['source'])
+            else:
+                return SimpleAttribMaker(name=attrib_name,
+                                         tpe=TYPES_MAP[tpe],
+                                         default=DEFAULT_MAP.get(tpe),
+                                         factory=None,
+                                         definition=attrib_maker_config.definition)
+        elif is_array(definition):
             # Recursion here, we parse the items as a type
-            array_tpe, _, _ = self.make_type(attrib_name, attrib_name, compare_secrets, type_data['items'])
+            new_attrib_maker_config = attrib_maker_config.from_key('items')
+            if not new_attrib_maker_config:
+                raise OpenApiParserException('Unable to get items from array defintion.')
+            attr_maker = self.make_type(new_attrib_maker_config)
             log.debug('Creating new attribute %s.%s: FrozenSet[%s]', entity_name, attrib_name,
-                      array_tpe)
-            return FrozenSet[array_tpe], None, frozenset  # type: ignore
-        elif is_object(type_data):
+                      attr_maker.tpe)
+            return SimpleAttribMaker(name=attr_maker.name,
+                                     tpe=FrozenSet[attr_maker.tpe],  # type: ignore
+                                     default=None,
+                                     factory=frozenset,
+                                     definition=new_attrib_maker_config.definition)
+        elif is_object(definition):
             # Indirect recursion here.
             # Those classes are never registered
-            name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
-            attribs, _ = self.make_attribs(name, type_data, top_level_entry=False,
-                                           compare_secrets=compare_secrets)
-            generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
+            instance_maker_config = InstanceMakerConfig(
+                name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                definition=definition,
+                compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
+                singleton=attrib_maker_config.instance_maker_config.singleton,
+                api_path=attrib_maker_config.instance_maker_config.api_path,
+                level=attrib_maker_config.instance_maker_config.level + 1)
+            generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
-            return generated_entity.cls, None, None
-        elif is_compound(type_data):
-            name = f'{entity_name.capitalize()}_{attrib_name.capitalize()}'
-            definition = self.parse_all_of(type_data['allOf'])
-            attribs, dependencies = self.make_attribs(entity_name, definition,
-                                                      top_level_entry=False,
-                                                      compare_secrets=compare_secrets)
-            generated_entity = self.register_entity(name, attribs=attribs, dependencies=set())
-            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
-                      generated_entity.cls)
-            return generated_entity.cls, None, None
+            return SimpleAttribMaker(name=instance_maker_config.name,
+                                     tpe=generated_entity.cls,
+                                     default=None,
+                                     factory=None,
+                                     definition=instance_maker_config.definition)
         raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
-                        type_data)
+                        definition)
 
-    def make_attrib(self, entity_name: str, attrib_name: str,
-                    attrib_props: AttributesDict, required_fields: List[str],
-                    top_level_entity: bool = False, compare_secrets: bool = False) -> AttributesDict:
+    def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
         """
         Returns an attribs dictionary used later to call attrs.attrib
         """
-        required = attrib_name in required_fields
-        tpe, default, factory = self.make_type(entity_name, attrib_name, compare_secrets, attrib_props)
-        read_only = attrib_props.get('readOnly', False)
-        write_only = attrib_props.get('writeOnly', False)
-        format = attrib_props.get('format')
-        attribs: AttributesDict = {}
-        attribs['metadata'] = {
-            'name': attrib_name,
-            'readOnly': read_only,
-            'writeOnly': write_only,
-            'format': format,
-        }
-        if 'description' in attrib_props:
-            attribs['metadata']['description'] = attrib_props['description']
-        if 'example' in attrib_props:
-            if isinstance(attrib_props['example'], List):
-                attribs['metadata']['example'] = frozenset(attrib_props['example'])
-            else:
-                attribs['metadata']['example'] = attrib_props['example']
-        if 'x-appgate-entity' in attrib_props:
-            attribs['metadata']['x-appgate-entity'] = attrib_props['x-appgate-entity']
+        definition = attrib_maker_config.definition
+        deprecated = definition.get('deprecated', False)
+        attrib = self.make_type(attrib_maker_config)
+        if deprecated:
+            return DeprecatedAttribMaker(
+                name=attrib.name,
+                definition=attrib.definition,
+                default=attrib.default,
+                factory=attrib.factory,
+                tpe=attrib.tpe)
+        return attrib
 
-        if attrib_name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
-            attribs['eq'] = False
-            if format == 'password' and 'writeOnly':
-                attribs['eq'] = compare_secrets
+    def instance_maker(self, instance_maker_config: InstanceMakerConfig) -> InstanceMaker:
+        return InstanceMaker(
+            name=instance_maker_config.name,
+            attributes={
+                nn: self.attrib_maker(instance_maker_config.attrib_maker_config(n))
+                for n, nn in instance_maker_config.properties_names
+            })
 
-        # Set type
-        if not required or read_only or write_only:
-            attribs['type'] = Optional[tpe]
-            attribs['metadata']['type'] = str(Optional[tpe])
-        elif required and (read_only or write_only):
-            raise OpenApiParserException(f'readOnly/writeOnly attribute {attrib_name} '
-                                         'can not be required')
-        else:
-            attribs['type'] = tpe
-            attribs['metadata']['type'] = str(tpe)
-
-        # set default value
-        if top_level_entity and attrib_name == 'id':
-            attribs['factory'] = lambda: str(uuid.uuid4())
-        elif factory and not (read_only or write_only):
-            attribs['factory'] = factory
-        elif not required or read_only or write_only:
-            attribs['default'] = attrib_props.get('default',
-                                                  None if (read_only or write_only) else default)
-
-        return attribs
-
-    def make_attribs(self, entity_name: str, definition,
-                     top_level_entry: bool, compare_secrets: bool) -> Tuple[Dict[str, Any],
-                                                                            Set[EntityDependency]]:
-        """
-        Returns the attr.attrib data needed to use attr.make_class with the
-        dependencies for this attribute.
-        TODO: Return a list of EntityDependencies instead of a Dict
-        """
-        entity_attrs = {}
-        entity_attrs_attrib = {}
-        dependencies: Set[EntityDependency] = set()
-        required_fields = definition.get('required', [])
-        properties = definition['properties']
-        for attrib_name, attrib_props in properties.items():
-            norm_name = normalize_attrib_name(attrib_name)
-            if attrib_props.get('deprecated', False):
-                log.debug('Ignoring deprecated attribute: %s', attrib_name)
-                continue
-            entity_attrs[norm_name] = self.make_attrib(entity_name,
-                                                       attrib_name,
-                                                       attrib_props,
-                                                       required_fields,
-                                                       top_level_entry,
-                                                       compare_secrets)
-
-        # We need to create then in order. Those with default values at the end
-        for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
-                                          if not has_default(v)}.items():
-            entity_attrs_attrib[attrib_name] = attrib(**attrib_attrs)
-            if 'x-appgate-entity' in attrib_attrs['metadata']:
-                dependency = attrib_attrs['metadata']['x-appgate-entity']
-                dependencies.add(EntityDependency(field=attrib_name,
-                                                  dependencies=frozenset(dependency)))
-        for attrib_name, attrib_attrs in {k: v for k, v in entity_attrs.items()
-                                          if has_default(v)}.items():
-            entity_attrs_attrib[attrib_name] = attrib(**attrib_attrs)
-            if 'x-appgate-entity' in attrib_attrs['metadata']:
-                dependency = attrib_attrs['metadata']['x-appgate-entity']
-                dependencies.add(EntityDependency(field=attrib_name,
-                                                  dependencies=frozenset(dependency)))
-        return entity_attrs_attrib, dependencies
-
-    def register_entity(self, entity_name: str, attribs: Dict[str, Any],
-                        dependencies: Set[EntityDependency]) -> GeneratedEntity:
-        entity_path = self.parser_context.get_entity_path(entity_name)
-        cls = make_class(entity_name, attribs, slots=True, frozen=True)
-        generated_entity = GeneratedEntity(cls=cls,
-                                           entity_dependencies=dependencies,
-                                           api_path=entity_path)
-        self.parser_context.register_entity(entity_name=entity_name,
+    def register_entity(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
+        instance_maker = self.instance_maker(instance_maker_config)
+        generated_entity = instance_maker.make_instance(instance_maker_config)
+        self.parser_context.register_entity(entity_name=instance_maker.name,
                                             entity=generated_entity)
         return generated_entity
 
@@ -442,86 +774,15 @@ class Parser:
         if not definition_to_use:
             log.error('Definition %s yet not supported', definition)
             return None
-
-        attribs, dependencies = self.make_attribs(entity_name, definition_to_use,
-                                                  top_level_entry=True,
-                                                  compare_secrets=compare_secrets)
-
-        attribs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**(create_default_attrib({
-            'singleton': singleton
-        })))
-
-        if 'name' not in attribs and singleton:
-            attribs['name'] = attrib(**(create_default_attrib(entity_name)))
-
-        if 'id' not in attribs and singleton:
-            attribs['id'] = attrib(**(create_default_attrib(entity_name)))
-
-        if 'tags' not in attribs and singleton:
-            attribs['tags'] = attrib(**(create_default_attrib(BUILTIN_TAGS)))
-
-        generated_entity = self.register_entity(entity_name=entity_name,
-                                                attribs=attribs,
-                                                dependencies=dependencies)
+        api_path = self.parser_context.get_entity_path(entity_name)
+        instance_maker_config = InstanceMakerConfig(name=entity_name,
+                                                    definition=definition_to_use,
+                                                    compare_secrets=compare_secrets,
+                                                    singleton=singleton,
+                                                    api_path=api_path,
+                                                    level=0)
+        generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
         return generated_entity
-
-
-def has_name(e: Any) -> bool:
-    return hasattr(e, 'name')
-
-
-def has_id(e: Any) -> bool:
-    return hasattr(e, 'id')
-
-
-def is_entity_t(e: Any) -> bool:
-    return has_name(e) and has_id(e)
-
-
-def is_ref(entry: Any) -> bool:
-    """
-    Checks if entry is a reference
-    """
-    return isinstance(entry, dict) \
-           and '$ref' in entry
-
-
-def is_object(entry: Any) -> bool:
-    """
-    Checks if entry is an object
-    """
-    return isinstance(entry, dict) \
-           and 'type' in entry \
-           and entry['type'] == 'object'
-
-
-def is_array(entry: Any) -> bool:
-    """
-    Checks if entry is an array
-    """
-    return isinstance(entry, dict) \
-           and 'type' in entry \
-           and entry['type'] == 'array'
-
-
-def is_compound(entry: Any) -> bool:
-    composite = {'allOf'}
-    return isinstance(entry, dict) \
-           and any(filter(lambda c: c in entry, composite))
-
-
-def has_default(entry: Any) -> bool:
-    """
-    Checks if attrs as a default field value
-    """
-    return isinstance(entry, dict) \
-           and ('default' in entry or 'factory' in entry)
-
-
-def normalize_attrib_name(name: str) -> str:
-    if NAMES_REGEXP.match(name):
-        return re.sub(r'\.', '_', name)
-    return name
 
 
 def parse_files(spec_entities: Dict[str, str],
@@ -553,9 +814,9 @@ def parse_files(spec_entities: Dict[str, str],
                                 LIST_PROPERTIES))
         parser.parse_definition(entity_name=entity_name,
                                 keys=[
-                                    ['paths', path] + ['post'] + keys,
-                                    ['paths', path] + ['put'] + keys
-                                ],
+                                     ['paths', path] + ['post'] + keys,
+                                     ['paths', path] + ['put'] + keys
+                                 ],
                                 singleton=singleton,
                                 compare_secrets=compare_secrets)
 
