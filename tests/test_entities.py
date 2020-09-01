@@ -1,15 +1,11 @@
 import pytest
 
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
-from appgate.types import generate_api_spec
-from tests.utils import load_test_open_api_spec, KEY
-
-api_spec = generate_api_spec(secrets_key=KEY)
-entities = api_spec.entities
+from tests.utils import load_test_open_api_spec
 
 
 def test_loader_1():
-    EntityTest1 = load_test_open_api_spec()['EntityTest1'].cls
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
     entity_1 = {
         'fieldOne': 'this is read only',
         'fieldTwo': 'this is write only',
@@ -32,7 +28,7 @@ def test_loader_1():
 
 
 def test_dumper_1():
-    EntityTest1 = load_test_open_api_spec()['EntityTest1'].cls
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
     e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
                      fieldFour='this is a field')
     e1_data = {
@@ -50,7 +46,7 @@ def test_dumper_1():
 
 
 def test_deprecated_entity():
-    EntityTest1 = load_test_open_api_spec()['EntityTest1'].cls
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
     with pytest.raises(TypeError,
                        match=f".*unexpected keyword argument 'fieldThree'"):
         EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
@@ -58,7 +54,7 @@ def test_deprecated_entity():
 
 
 def test_write_only_attribute_load():
-    EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest2'].cls
     e_data = {
         'fieldOne': '1234567890',
         'fieldTwo': 'this is write only',
@@ -90,7 +86,7 @@ def test_read_only_write_only_eq():
     By default readOnly and writeOnly are never compared.
     But we should load the correct data from each side (K8S or APPGATE)
     """
-    EntityTest4 = load_test_open_api_spec()['EntityTest4'].cls
+    EntityTest4 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest4'].cls
     e_data = {
         'fieldOne': 'writeOnly',
         'fieldTwo': 'readOnly',
@@ -150,7 +146,7 @@ SHA256_FILE = '682755de6b77a24c0d37505027bde01d0358155535add3d3854c6bcf03d3a101'
 
 
 def test_bytes_load():
-    EntityTest3 = load_test_open_api_spec()['EntityTest3'].cls
+    EntityTest3 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest3'].cls
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     e_data = {
@@ -187,7 +183,7 @@ def test_bytes_load():
 
 
 def test_bytes_dump():
-    EntityTest3 = load_test_open_api_spec()['EntityTest3'].cls
+    EntityTest3 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest3'].cls
     e = EntityTest3(fieldOne=BASE64_FILE_W0,
                     fieldTwo=SHA256_FILE)
     e_data = {

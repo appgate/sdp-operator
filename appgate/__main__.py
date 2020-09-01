@@ -7,12 +7,12 @@ from typing import Optional, Dict
 import datetime
 import time
 
-from appgate.openapi import generate_crd, entity_names
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, start_event_loop, log
+from appgate.openapi.openapi import generate_api_spec, entity_names, generate_crd
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent, generate_api_spec
+from appgate.types import AppgateEvent
 
 
 async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:

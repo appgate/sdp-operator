@@ -11,10 +11,12 @@ import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.attrs import K8S_DUMPER
-from appgate.openapi import Entity_T, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, is_entity_t, \
-    has_name, APISpec, BUILTIN_TAGS
 from appgate.client import EntityClient
 from appgate.logger import log
+from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
+from appgate.openapi.parser import BUILTIN_TAGS
+from appgate.openapi.types import Entity_T, APISpec
+from appgate.openapi.utils import is_entity_t, has_name
 
 __all__ = [
     'AppgateState',

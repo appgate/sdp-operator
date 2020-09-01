@@ -2,14 +2,15 @@ from typing import Callable, Any, List
 
 from attr import attrs, attrib, evolve
 
-from appgate.openapi import AttributesDict, get_field
-
+from appgate.openapi.types import AttributesDict
 
 __all__ = [
     'CustomLoader',
     'CustomEntityLoader',
     'CustomAttribLoader',
 ]
+
+from appgate.openapi.utils import get_field
 
 
 class CustomLoader:

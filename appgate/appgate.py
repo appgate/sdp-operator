@@ -17,11 +17,13 @@ from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER
 from appgate.client import AppgateClient
-from appgate.openapi import K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, APISpec, SPEC_DIR, Entity_T
+from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, K8S_APPGATE_VERSION, \
+    K8S_APPGATE_DOMAIN, SPEC_DIR
+from appgate.openapi.types import APISpec, Entity_T
+
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, generate_api_spec_clients, \
-    generate_api_spec
+from appgate.types import K8SEvent, AppgateEvent
 
 __all__ = [
     'init_kubernetes',
@@ -44,6 +46,7 @@ DUMP_SECRETS_ENV = 'APPGATE_OPERATOR_DUMP_SECRETS'
 NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
+APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -82,6 +85,8 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
     dump_secrets = os.getenv(DUMP_SECRETS_ENV or '0')
     spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
+    secrets_key = os.getenv(APPGATE_SECRETS_KEY)
+
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
                                  for x in [(USER_ENV, user),
@@ -90,7 +95,8 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
-                                 compare_secrets=dump_secrets == '1')
+                                 compare_secrets=dump_secrets == '1',
+                                 secrets_key=secrets_key)
     return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',

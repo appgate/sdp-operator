@@ -15,8 +15,10 @@ __all__ = [
     'get_dumper',
 ]
 
-from appgate.openapi import APPGATE_METADATA_ATTRIB_NAME, CustomAttribLoader, \
-    CustomEntityLoader, CustomLoader
+from typedload.exceptions import TypedloadException
+
+from appgate.customloaders import CustomEntityLoader, CustomLoader, CustomAttribLoader
+from appgate.openapi.parser import APPGATE_METADATA_ATTRIB_NAME
 
 
 class PlatformType(enum.Enum):
@@ -68,18 +70,21 @@ def get_loader(platform_type: PlatformType):
 
     def _namedtupleload_wrapper(l, value, t):
         entity = dataloader._namedtupleload(l, value, t)
-        if hasattr(entity, APPGATE_METADATA_ATTRIB_NAME):
-            appgate_metadata = getattr(entity, APPGATE_METADATA_ATTRIB_NAME)
-            if platform_type == PlatformType.K8S \
-                    and 'k8s_loader' in appgate_metadata:
-                els: List[CustomEntityLoader] = appgate_metadata['k8s_loader']
-                for el in (els or []):
-                    entity = el.load(entity)
-            elif platform_type == PlatformType.APPGATE \
-                    and 'appgate_loader' in appgate_metadata.get('metadata', {}):
-                els: List[CustomEntityLoader] = appgate_metadata['appgate_loader']
-                for el in (els or []):
-                    entity = el.load(entity)
+        try:
+            if hasattr(entity, APPGATE_METADATA_ATTRIB_NAME):
+                appgate_metadata = getattr(entity, APPGATE_METADATA_ATTRIB_NAME)
+                if platform_type == PlatformType.K8S \
+                        and 'k8s_loader' in appgate_metadata:
+                    els: List[CustomEntityLoader] = appgate_metadata['k8s_loader']
+                    for el in (els or []):
+                        entity = el.load(entity)
+                elif platform_type == PlatformType.APPGATE \
+                        and 'appgate_loader' in appgate_metadata.get('metadata', {}):
+                    els: List[CustomEntityLoader] = appgate_metadata['appgate_loader']
+                    for el in (els or []):
+                        entity = el.load(entity)
+        except Exception as e:
+            raise TypedloadException(str(e))
         return entity
 
     def _attrload(l, value, type_):
@@ -118,16 +123,19 @@ def get_loader(platform_type: PlatformType):
                     value[pyname] = tmp
 
             # Custom loading values
-            if platform_type == PlatformType.K8S \
-                    and 'k8s_loader' in attribute.metadata:
-                cl: CustomLoader = attribute.metadata['k8s_loader']
-                if isinstance(cl, CustomAttribLoader):
-                    value = cl.load(value)
-            elif platform_type == PlatformType.APPGATE \
-                    and 'appgate_loader' in attribute.metadata:
-                cl: CustomLoader = attribute.metadata['appgate_loader']
-                if isinstance(cl, CustomAttribLoader):
-                    value = cl.load(value)
+            try:
+                if platform_type == PlatformType.K8S \
+                        and 'k8s_loader' in attribute.metadata:
+                    cl: CustomLoader = attribute.metadata['k8s_loader']
+                    if isinstance(cl, CustomAttribLoader):
+                        value = cl.load(value)
+                elif platform_type == PlatformType.APPGATE \
+                        and 'appgate_loader' in attribute.metadata:
+                    cl: CustomLoader = attribute.metadata['appgate_loader']
+                    if isinstance(cl, CustomAttribLoader):
+                        value = cl.load(value)
+            except Exception as e:
+                raise TypedloadException(str(e))
 
         t = dataloader._FakeNamedTuple((
             tuple(names),

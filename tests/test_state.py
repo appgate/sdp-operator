@@ -1,5 +1,5 @@
+from appgate.openapi.openapi import generate_api_spec
 from appgate.state import compare_entities, EntitiesSet, resolve_entities
-from appgate.types import generate_api_spec
 from tests.utils import entitlement, condition, policy, KEY
 
 api_spec = generate_api_spec(secrets_key=KEY)
