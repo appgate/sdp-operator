@@ -4,7 +4,8 @@ from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
     APPGATE_DUMPER_WITH_SECRETS
 from appgate.secrets import get_appgate_secret, AppgateSecretSimple, AppgateSecretK8SSimple, \
     AppgateSecretK8SKey, AppgateSecretException
-from tests.utils import load_test_open_api_spec, load_test_open_api_compare_secrets_spec
+from tests.utils import load_test_open_api_spec, load_test_open_api_compare_secrets_spec, ENCRYPTED_PASSWORD, \
+    FERNET_CIPHER
 
 
 def test_write_only_password_attribute_dump():
@@ -101,7 +102,7 @@ def test_write_only_password_attribute_load():
 
 def test_get_appgate_secret_simple():
     value = 'aaaaaa'
-    secret = get_appgate_secret(value)
+    secret = get_appgate_secret(value, FERNET_CIPHER)
     assert isinstance(secret, AppgateSecretSimple)
 
 
@@ -110,7 +111,7 @@ def test_get_appgate_secret_k8s_simple():
         'type': 'k8s/secret',
         'password': 'secret1'
     }
-    secret = get_appgate_secret(value)
+    secret = get_appgate_secret(value, FERNET_CIPHER)
     assert isinstance(secret, AppgateSecretK8SSimple)
 
 
@@ -119,7 +120,7 @@ def test_get_appgate_secret_k8s_key():
         'type': 'k8s/secret-key',
         'key': 'secret1'
     }
-    secet = get_appgate_secret(value)
+    secet = get_appgate_secret(value, FERNET_CIPHER)
     assert isinstance(secet, AppgateSecretK8SKey)
 
 
@@ -128,4 +129,14 @@ def test_get_appgate_secret_expception():
         'some': 'value'
     }
     with pytest.raises(AppgateSecretException):
-        get_appgate_secret(value)
+        get_appgate_secret(value, FERNET_CIPHER)
+
+
+def test_get_appgate_secret_simple_load():
+    EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
+    data = {
+        'fieldOne': ENCRYPTED_PASSWORD,
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    e = K8S_LOADER.load(data, EntityTest2)

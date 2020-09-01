@@ -2,9 +2,9 @@ import pytest
 
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
 from appgate.types import generate_api_spec
-from tests.utils import load_test_open_api_spec
+from tests.utils import load_test_open_api_spec, KEY
 
-api_spec = generate_api_spec()
+api_spec = generate_api_spec(secrets_key=KEY)
 entities = api_spec.entities
 
 

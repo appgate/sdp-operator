@@ -1,11 +1,18 @@
 from pathlib import Path
 from typing import List, Optional
 
+from cryptography.fernet import Fernet
+
 from appgate.logger import set_level
 from appgate.openapi import parse_files
 from appgate.types import generate_api_spec
 
-api_spec = generate_api_spec()
+
+KEY = '9K5-LO9yhyWNtHzjd__rYfPuJqrF58yApxtvHXGxefk='
+ENCRYPTED_PASSWORD = 'gAAAAABfTgED7qYN_pr9dJjwMPhM9j3kp69B8SNJwwL4Rj5DpWVR8u0KG5kAzgx2yU-rVPW0AiWHL3cgXlGwz1tpepafJdM-ZA=='
+FERNET_CIPHER = Fernet(KEY.encode())
+
+api_spec = generate_api_spec(secrets_key=KEY)
 entities = api_spec.entities
 
 Policy = entities['Policy'].cls
@@ -28,7 +35,8 @@ def load_test_open_api_spec():
     if not TestOpenAPI:
         open_api_spec = parse_files(spec_entities=TestSpec,
                                     spec_directory=Path('tests/resources/'),
-                                    spec_file='test_entity.yaml')
+                                    spec_file='test_entity.yaml',
+                                    secrets_key=KEY)
         TestOpenAPI = open_api_spec.entities
     return TestOpenAPI
 
@@ -40,7 +48,8 @@ def load_test_open_api_compare_secrets_spec():
         open_api_spec = parse_files(spec_entities=TestSpec,
                                     spec_directory=Path('tests/resources/'),
                                     spec_file='test_entity.yaml',
-                                    compare_secrets=True)
+                                    compare_secrets=True,
+                                    secrets_key=KEY)
         TestOpenAPIWithSecrets = open_api_spec.entities
     return TestOpenAPIWithSecrets
 

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, FrozenSet, Tuple, Callable, Set, \
     Union, Type, cast, Iterator
 from graphlib import TopologicalSorter
 
+from cryptography.fernet import Fernet
 from attr import make_class, attrib, attrs, evolve
 import yaml
 
@@ -35,6 +36,7 @@ __all__ = [
     'has_name'
 ]
 
+from appgate.secrets import PasswordAttribMaker
 
 SPEC_DIR = 'api_specs/v12'
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
@@ -63,6 +65,7 @@ DEFAULT_MAP: Dict[str, AttribType] = {
     'array': frozenset,
 }
 NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
+
 
 
 class OpenApiParserException(Exception):
@@ -101,6 +104,7 @@ class EntitiesContext:
 class APISpec:
     entities: EntitiesDict = attrib()
     api_version: int = attrib()
+    secrets_key: str = attrib()
 
     @property
     def entities_sorted(self) -> List[str]:
@@ -115,7 +119,9 @@ class APISpec:
 
 
 class ParserContext:
-    def __init__(self, spec_entities: Dict[str, str], spec_api_path: Path) -> None:
+    def __init__(self, spec_entities: Dict[str, str], spec_api_path: Path,
+                 secrets_key: str) -> None:
+        self.secrets_cipher = Fernet(secrets_key.encode())
         self.entities: Dict[str, GeneratedEntity] = {}
         self.data: OpenApiDict = {}
         self.spec_api_path: Path = spec_api_path
@@ -324,31 +330,8 @@ class DefaultAttribMaker(SimpleAttribMaker):
         }
 
 
-def decrypt_password():
-    key = 'not implemented'
-    def _decrypt_password(value: str):
-        return value
-
-    return _decrypt_password
-
-
 def checksum_bytes(value: Any, bytes: str) -> str:
     return hashlib.sha256(bytes.encode()).hexdigest()
-
-
-class PasswordAttribMaker(SimpleAttribMaker):
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
-        # Compare passwords if compare_secrets was enabled
-        values = super().values(attributes, required_fields, instance_maker_config)
-        values['eq'] = instance_maker_config.compare_secrets
-        if 'metadata' not in values:
-            values['metadata'] = {}
-        values['metadata']['k8s_loader'] = CustomAttribLoader(
-            loader=decrypt_password(),
-            field=self.name,
-        )
-        return values
 
 
 class ChecksumAttribMaker(SimpleAttribMaker):
@@ -789,12 +772,15 @@ class Parser:
 
 
 def parse_files(spec_entities: Dict[str, str],
+                secrets_key: str,
                 spec_directory: Optional[Path] = None,
                 spec_file: str = 'api_specs.yml',
                 compare_secrets: bool = False) -> APISpec:
+
     parser_context = ParserContext(spec_entities=spec_entities,
                                    spec_api_path=spec_directory \
-                                                 or Path(SPEC_DIR))
+                                                 or Path(SPEC_DIR),
+                                   secrets_key=secrets_key)
     parser = Parser(parser_context, spec_file)
     # First parse those paths we are interested in
     for path, v in parser.data['paths'].items():
@@ -832,7 +818,8 @@ def parse_files(spec_entities: Dict[str, str],
     except IndexError:
         raise OpenApiParserException('Unable to find Appgate API version')
     return APISpec(entities=parser_context.entities,
-                   api_version=api_version)
+                   api_version=api_version,
+                   secrets_key=secrets_key)
 
 
 def entity_names(entity: type, short_names: Dict[str, str]) -> Tuple[str, str, str, str]:
