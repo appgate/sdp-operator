@@ -7,6 +7,7 @@ from graphlib import TopologicalSorter
 
 from attr import attrib, attrs
 
+from appgate.logger import log
 
 SPEC_ENTITIES = {
     '/identity-providers': 'IdentityProvider',
@@ -125,7 +126,6 @@ class InstanceMakerConfig:
 class APISpec:
     entities: EntitiesDict = attrib()
     api_version: int = attrib()
-    secrets_key: str = attrib()
 
     @property
     def entities_sorted(self) -> List[str]:

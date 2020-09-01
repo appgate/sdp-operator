@@ -141,7 +141,8 @@ class InstanceMaker:
 
 class ParserContext:
     def __init__(self, spec_entities: Dict[str, str], spec_api_path: Path,
-                 secrets_key: Optional[str], k8s_get_secret: Callable[[str, str], str]) -> None:
+                 secrets_key: Optional[str],
+                 k8s_get_secret: Optional[Callable[[str, str], str]]) -> None:
         self.secrets_cipher = Fernet(secrets_key.encode()) if secrets_key else None
         self.entities: Dict[str, GeneratedEntity] = {}
         self.data: OpenApiDict = {}

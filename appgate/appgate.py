@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 import sys
@@ -12,7 +13,7 @@ from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
 from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
-from kubernetes.client import CustomObjectsApi
+from kubernetes.client import CustomObjectsApi, CoreV1Api
 from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER
@@ -75,7 +76,8 @@ class Context:
     api_spec: APISpec = attrib()
 
 
-def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
+def get_context(namespace: str, spec_directory: Optional[str],
+                k8s_get_secret: Optional[Callable[[str, str], str]]) -> Context:
     user = os.getenv(USER_ENV)
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
@@ -96,7 +98,8 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  compare_secrets=dump_secrets == '1',
-                                 secrets_key=secrets_key)
+                                 secrets_key=secrets_key,
+                                 k8s_get_secret=k8s_get_secret)
     return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout) if timeout else 30,
                    dry_run_mode=dry_run_mode == '1',
@@ -104,6 +107,13 @@ def get_context(namespace: str, spec_directory: Optional[str]) -> Context:
                    two_way_sync=two_way_sync == '1',
                    dump_secrets=dump_secrets == '1',
                    api_spec=api_spec)
+
+
+def get_secret(secret: str, key: str) -> str:
+    # TODO: Check what do we get
+    v1 = CoreV1Api()
+    sec = str(v1.read_namespaced_secret(secret, key).data)
+    return base64.b64decode(sec).decode()
 
 
 def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
@@ -118,7 +128,10 @@ def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[st
 
     if not namespace:
         raise Exception('Unable to discover namespace, please provide it.')
-    return get_context(namespace, spec_directory)
+    return get_context(
+        namespace,
+        spec_directory,
+        k8s_get_secret=get_secret)
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:

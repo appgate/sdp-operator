@@ -76,8 +76,7 @@ def parse_files(spec_entities: Dict[str, str],
     except IndexError:
         raise OpenApiParserException('Unable to find Appgate API version')
     return APISpec(entities=parser_context.entities,
-                   api_version=api_version,
-                   secrets_key=secrets_key)
+                   api_version=api_version)
 
 
 def entity_names(entity: type, short_names: Dict[str, str]) -> Tuple[str, str, str, str]:
@@ -142,13 +141,15 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
 
 def generate_api_spec(spec_directory: Optional[Path] = None,
                       compare_secrets: bool = False,
-                      secrets_key: Optional[str] = None) -> APISpec:
+                      secrets_key: Optional[str] = None,
+                      k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
     """
     return parse_files(SPEC_ENTITIES, spec_directory=spec_directory,
                        compare_secrets=compare_secrets,
-                       secrets_key=secrets_key)
+                       secrets_key=secrets_key,
+                       k8s_get_secret=k8s_get_secret)
 
 
 def generate_api_spec_clients(api_spec: APISpec, dump_secrets: bool,

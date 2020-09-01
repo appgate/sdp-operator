@@ -53,7 +53,7 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
 
 def main_dump_entities(stdout: bool, output_dir: Optional[str],
                        spec_directory: Optional[str] = None) -> None:
-    asyncio.run(dump_entities(ctx=get_context('cli', spec_directory),
+    asyncio.run(dump_entities(ctx=get_context('cli', spec_directory, None),
                               stdout=stdout,
                               output_dir=Path(output_dir) if output_dir else None))
 
