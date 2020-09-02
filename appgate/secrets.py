@@ -1,3 +1,4 @@
+import base64
 from typing import Dict, List, Union, Optional, Callable
 
 from appgate.customloaders import CustomAttribLoader
@@ -5,6 +6,7 @@ from appgate.openapi.attribmaker import SimpleAttribMaker
 from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig
 
 from cryptography.fernet import Fernet
+from kubernetes.client import CoreV1Api
 
 
 __all__ = [
@@ -135,3 +137,13 @@ class PasswordAttribMaker(SimpleAttribMaker):
             loader=lambda v: appgate_secret_load(v, self.secrets_cipher, self.k8s_get_client),
             field=self.name)
         return values
+
+
+def k8s_get_secret(secret: str, key: str) -> str:
+    """
+    Gets a secret from k8s"
+    """
+    # TODO: Check what do we get
+    v1 = CoreV1Api()
+    sec = str(v1.read_namespaced_secret(secret, key).data)
+    return base64.b64decode(sec).decode()

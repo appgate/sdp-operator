@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import logging
 import os
 import sys
@@ -13,7 +12,7 @@ from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
 from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
-from kubernetes.client import CustomObjectsApi, CoreV1Api
+from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER
@@ -21,6 +20,7 @@ from appgate.client import AppgateClient
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, K8S_APPGATE_VERSION, \
     K8S_APPGATE_DOMAIN, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T
+from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
@@ -109,13 +109,6 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    api_spec=api_spec)
 
 
-def get_secret(secret: str, key: str) -> str:
-    # TODO: Check what do we get
-    v1 = CoreV1Api()
-    sec = str(v1.read_namespaced_secret(secret, key).data)
-    return base64.b64decode(sec).decode()
-
-
 def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
@@ -131,7 +124,7 @@ def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[st
     return get_context(
         namespace,
         spec_directory,
-        k8s_get_secret=get_secret)
+        k8s_get_secret=k8s_get_secret)
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
