@@ -29,6 +29,7 @@ __all__ = [
     'resolve_entity',
     'resolve_entities',
     'resolve_appgate_state',
+    'compare_entities',
 ]
 
 

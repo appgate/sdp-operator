@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Type, Callable
 
@@ -17,6 +16,8 @@ __all__ = [
     'SPEC_DIR',
     'generate_crd',
     'entity_names',
+    'generate_api_spec',
+    'generate_api_spec_clients',
 ]
 
 

@@ -1,11 +1,10 @@
 import hashlib
 from pathlib import Path
-from typing import Optional, Iterator, Tuple, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
+from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
 import yaml
-from attr import attrib, attrs, make_class
+from attr import attrib, make_class
 from cryptography.fernet import Fernet
-from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log
