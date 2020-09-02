@@ -13,11 +13,10 @@ from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, AttribMakerConfig
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
-    is_object, is_ref, is_array
+    is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
 
 
-BUILTIN_TAGS = frozenset({'builtin'})
 APPGATE_METADATA_ATTRIB_NAME = '_appgate_metadata'
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
@@ -90,7 +89,7 @@ class InstanceMaker:
         if 'id' not in self.attributes and instance_maker_config.singleton:
             self.attributes['id'] = create_default_attrib(self.name, self.name)
         if 'tags' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['tags'] = create_default_attrib('tags', BUILTIN_TAGS)
+            self.attributes['tags'] = create_default_attrib('tags', builtin_tags())
 
         # Get values from attrib makers
         values = dict(

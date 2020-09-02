@@ -1,7 +1,28 @@
-from typing import Any, List, Dict
+import os
+from typing import Any, List, Dict, Iterable, FrozenSet
 
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AttributesDict
+
+
+__all__ = [
+    'builtin_tags',
+    'is_ref',
+    'is_array',
+    'is_object',
+    'is_entity_t',
+    'is_compound',
+    'has_id',
+    'has_default',
+    'has_name',
+    'get_field',
+    'join',
+    'make_explicit_references',
+]
+
+
+APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
+BUILTIN_TAGS = frozenset({'builtin'})
 
 
 def is_compound(entry: Any) -> bool:
@@ -90,3 +111,13 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
 
 def join(sep: str, xs: List[Any]) -> str:
     return sep.join(map(str, xs))
+
+
+def builtin_tags() -> FrozenSet[str]:
+    custom_tags = os.getenv(APPGATE_BUILTIN_TAGS_ENV, '')
+    custom_tags.split(',')
+    return BUILTIN_TAGS.union(frozenset(custom_tags.split(',')))
+
+
+def is_builtin(entity: Entity_T) -> bool:
+    return any(map(lambda t: t in (entity.tags or frozenset()), builtin_tags()))
