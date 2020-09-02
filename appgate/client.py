@@ -5,13 +5,14 @@ from aiohttp import InvalidURL
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, APPGATE_DUMPER_WITH_SECRETS
 from appgate.logger import log
-from appgate.openapi import Entity_T
 
 
 __all__ = [
     'AppgateClient',
     'EntityClient',
 ]
+
+from appgate.openapi.types import Entity_T
 
 
 class EntityClient:
