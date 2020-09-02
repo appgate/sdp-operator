@@ -35,13 +35,17 @@ class CustomEntityLoader(CustomLoader):
     dependencies: List[str] = attrib(factory=list)
 
     def load(self, entity: Any) -> Any:
-        deps = [get_field(entity, a.name) for a in entity.__attrs_attrs__
-                if a.name in self.dependencies]
-        if len(deps) != len(self.dependencies):
-            # TODO: Return the attributes missing
-            raise TypeError('Missing dependencies when loading entity')
+        deps_set = set(self.dependencies)
+        resolved_deps = {(a.name, get_field(entity, a.name))
+                         for a in entity.__attrs_attrs__
+                         if a.name in self.dependencies}
+        resolved_dep_names = {k[0] for k in resolved_deps}
+        if resolved_dep_names != set(self.dependencies):
+            missing_deps = deps_set.difference(resolved_dep_names)
+            raise TypeError(f'Missing dependencies when loading entity: %s',
+                            ', '.join(missing_deps))
         field_value = get_field(entity, self.field)
-        new_value = self.loader(*([field_value] + deps))
+        new_value = self.loader(*([field_value] + list(d[1] for d in resolved_deps)))
         return evolve(entity, **{
             self.field: new_value
         })
