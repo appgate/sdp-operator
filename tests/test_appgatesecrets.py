@@ -4,7 +4,7 @@ from typedload.exceptions import TypedloadException
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER,\
     APPGATE_DUMPER_WITH_SECRETS
 from appgate.secrets import get_appgate_secret, AppgateSecretSimple, AppgateSecretK8S, \
-    AppgateSecretException
+    AppgateSecretException, AppgateSecretPlainText
 from tests.utils import load_test_open_api_spec, load_test_open_api_compare_secrets_spec, ENCRYPTED_PASSWORD, \
     FERNET_CIPHER, KEY
 
@@ -99,6 +99,12 @@ def test_write_only_password_attribute_load():
     assert e_with_secrets == EntityTest2WithSecrets(fieldOne='1234567890',
                                                     fieldTwo=None,
                                                     fieldThree='this is a field')
+
+
+def test_get_appgate_secret_plain_text():
+    value = 'aaaaaa'
+    secret = get_appgate_secret(value, None, lambda x: ENCRYPTED_PASSWORD)
+    assert isinstance(secret, AppgateSecretPlainText)
 
 
 def test_get_appgate_secret_simple():

@@ -37,24 +37,39 @@ class AppgateSecret:
         raise NotImplementedError()
 
 
+class AppgateSecretPlainText(AppgateSecret):
+    """
+       AppgateSecretSimple:
+       Implements the most basic of the secrets.
+       Plain text passwords in the fields.
+       """
+
+    def decrypt(self) -> str:
+        if not isinstance(self.value, str):
+            raise AppgateSecretException('AppgateSecretPlainText must be a string')
+        return self.value
+
+    @staticmethod
+    def isinstance(value: PasswordField) -> bool:
+        return isinstance(value, str)
+
+
 class AppgateSecretSimple(AppgateSecret):
     """
     AppgateSecretSimple:
-    Implements the most basic of the secrets.
+    Implements a basic encrypted.
     The password field is encrypted using a PrivateKey that is stored
     in an environment variable.
     """
-    def __init__(self, value: PasswordField, secrets_cipher: Optional[Fernet]) -> None:
+    def __init__(self, value: PasswordField, secrets_cipher: Fernet) -> None:
         super().__init__(value)
         self.value = value
         self.secrets_cipher = secrets_cipher
 
     def decrypt(self) -> str:
-        if isinstance(self.value, str):
-            if self.secrets_cipher:
-                return self.secrets_cipher.decrypt(self.value.encode()).decode()
-            return self.value
-        raise AppgateSecretException('AppgateSecretSimple must be a string')
+        if not isinstance(self.value, str):
+            raise AppgateSecretException('AppgateSecretSimple must be a string')
+        return self.secrets_cipher.decrypt(self.value.encode()).decode()
 
     @staticmethod
     def isinstance(value: PasswordField) -> bool:
@@ -105,9 +120,10 @@ def get_appgate_secret(value: PasswordField, secrets_cipher: Optional[Fernet],
         if not k8s_get_client:
             raise AppgateSecretException('AppgateSecretK8S found but not k8s client found.')
         return AppgateSecretK8S(value, k8s_get_client=k8s_get_client)
-
-    elif AppgateSecretSimple.isinstance(value):
+    elif AppgateSecretSimple.isinstance(value) and secrets_cipher:
         return AppgateSecretSimple(value, secrets_cipher)
+    elif AppgateSecretSimple.isinstance(value):
+        return AppgateSecretPlainText(value)
     raise AppgateSecretException('Unable to create an AppgateSecret from %s.', value)
 
 
