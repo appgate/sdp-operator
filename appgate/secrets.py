@@ -155,11 +155,14 @@ class PasswordAttribMaker(SimpleAttribMaker):
         return values
 
 
-def k8s_get_secret(secret: str, key: str) -> str:
+def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
     """
-    Gets a secret from k8s"
+    Gets a secret from k8s
     """
-    # TODO: Check what do we get
     v1 = CoreV1Api()
-    sec = str(v1.read_namespaced_secret(secret, key).data)
-    return base64.b64decode(sec).decode()
+    data = v1.read_namespaced_secret(secret, namespace).data
+    k8s_secret = data.get(key)
+    if not k8s_secret:
+        raise AppgateSecretException(f'Unable to get secret {secret}.{key} '
+                                     f'from namespace {namespace}')
+    return base64.b64decode(k8s_secret).decode()

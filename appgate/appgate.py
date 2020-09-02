@@ -121,10 +121,15 @@ def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[st
 
     if not namespace:
         raise Exception('Unable to discover namespace, please provide it.')
+    ns: str = namespace  # lambda thinks it's an Optional
     return get_context(
         namespace,
         spec_directory,
-        k8s_get_secret=k8s_get_secret)
+        k8s_get_secret=lambda secret, key: k8s_get_secret(
+            namespace=ns,
+            key=key,
+            secret=secret
+        ))
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
