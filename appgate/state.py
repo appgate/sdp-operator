@@ -74,7 +74,8 @@ class EntitiesSet:
         self.entities_by_id[entity.id] = entity
 
     def delete(self, entity: Entity_T) -> None:
-        self.entities.remove(entity)
+        if entity in self.entities:
+            self.entities.remove(entity)
         if entity.name in self.entities_by_name:
             registered_id = self.entities_by_name[entity.name].id
             del self.entities_by_name[entity.name]
