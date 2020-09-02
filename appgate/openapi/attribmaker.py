@@ -32,6 +32,9 @@ class SimpleAttribMaker:
         read_only = definition.get('readOnly', False)
         write_only = definition.get('writeOnly', False)
         format = definition.get('format')
+        if instance_maker_config.level == 0 and self.name == 'id':
+            # We dont want to save id on k8s
+            read_only = True
         attribs: AttributesDict = {}
         attribs['metadata'] = {
             'name': self.name,
