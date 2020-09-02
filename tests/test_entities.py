@@ -1,7 +1,26 @@
+import os
+from pathlib import Path
+
 import pytest
+import yaml
 
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
+from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
 from tests.utils import load_test_open_api_spec
+
+
+def test_load_entities_v12():
+    """
+    Read all yaml files in v12 and try to load them according to the kind.
+    """
+    open_api = generate_api_spec(Path(SPEC_DIR).parent / 'v12')
+    entities = open_api.entities
+    for f in os.listdir('tests/resources/v12'):
+        with (Path('tests/resources/v12') / f).open('r') as f:
+            documents = list(yaml.safe_load_all(f))
+            for d in documents:
+                e = entities[d['kind']].cls
+                assert isinstance(APPGATE_LOADER.load(d['spec'], e), e)
 
 
 def test_loader_1():

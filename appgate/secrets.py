@@ -10,7 +10,13 @@ from kubernetes.client import CoreV1Api
 
 
 __all__ = [
-    'PasswordAttribMaker'
+    'PasswordAttribMaker',
+    'get_appgate_secret',
+    'AppgateSecretK8S',
+    'AppgateSecretException',
+    'AppgateSecretPlainText',
+    'AppgateSecretSimple',
+    'k8s_get_secret',
 ]
 
 

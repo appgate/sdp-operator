@@ -1,11 +1,10 @@
 import hashlib
 from pathlib import Path
-from typing import Optional, Iterator, Tuple, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
+from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
 import yaml
-from attr import attrib, attrs, make_class
+from attr import attrib, make_class
 from cryptography.fernet import Fernet
-from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log
@@ -14,11 +13,10 @@ from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, AttribMakerConfig
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
-    is_object, is_ref, is_array
+    is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
 
 
-BUILTIN_TAGS = frozenset({'builtin'})
 APPGATE_METADATA_ATTRIB_NAME = '_appgate_metadata'
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
@@ -59,8 +57,6 @@ class ChecksumAttribMaker(SimpleAttribMaker):
         return values
 
 
-
-
 class InstanceMaker:
     def __init__(self, name: str, attributes: Dict[str, SimpleAttribMaker]) -> None:
         self.name = name
@@ -93,7 +89,7 @@ class InstanceMaker:
         if 'id' not in self.attributes and instance_maker_config.singleton:
             self.attributes['id'] = create_default_attrib(self.name, self.name)
         if 'tags' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['tags'] = create_default_attrib('tags', BUILTIN_TAGS)
+            self.attributes['tags'] = create_default_attrib('tags', builtin_tags())
 
         # Get values from attrib makers
         values = dict(
@@ -272,15 +268,17 @@ class Parser:
         entity_name = attrib_maker_config.instance_maker_config.name
         attrib_name = attrib_maker_config.name
         tpe = definition.get('type')
+        current_level = attrib_maker_config.instance_maker_config.level
         if is_compound(definition):
             definition = self.parse_all_of(definition['allOf'])
             instance_maker_config = InstanceMakerConfig(
-                name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                name=attrib_name,
+                entity_name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
                 definition=definition,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
-                api_path=attrib_maker_config.instance_maker_config.api_path,
-                level=attrib_maker_config.instance_maker_config.level+1)
+                api_path=None,
+                level=current_level + 1)
             generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -332,13 +330,15 @@ class Parser:
         elif is_object(definition):
             # Indirect recursion here.
             # Those classes are never registered
+            current_level = attrib_maker_config.instance_maker_config.level
             instance_maker_config = InstanceMakerConfig(
-                name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                name=attrib_name,
+                entity_name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
                 definition=definition,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
-                api_path=attrib_maker_config.instance_maker_config.api_path,
-                level=attrib_maker_config.instance_maker_config.level + 1)
+                api_path=None,
+                level=current_level + 1)
             generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
@@ -368,7 +368,7 @@ class Parser:
 
     def instance_maker(self, instance_maker_config: InstanceMakerConfig) -> InstanceMaker:
         return InstanceMaker(
-            name=instance_maker_config.name,
+            name=instance_maker_config.entity_name,
             attributes={
                 nn: self.attrib_maker(instance_maker_config.attrib_maker_config(n))
                 for n, nn in instance_maker_config.properties_names
@@ -405,6 +405,7 @@ class Parser:
             return None
         api_path = self.parser_context.get_entity_path(entity_name)
         instance_maker_config = InstanceMakerConfig(name=entity_name,
+                                                    entity_name=entity_name,
                                                     definition=definition_to_use,
                                                     compare_secrets=compare_secrets,
                                                     singleton=singleton,

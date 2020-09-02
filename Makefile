@@ -1,6 +1,6 @@
 .PHONY: lint all
 
-all: lint
+all: lint test
 
 virtualenv:
 	python3 -m venv virtualenv

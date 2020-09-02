@@ -23,6 +23,7 @@ SPEC_ENTITIES = {
     '/entitlements': 'Entitlement',
 }
 
+
 NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
@@ -89,6 +90,7 @@ class AttribMakerConfig:
 @attrs()
 class InstanceMakerConfig:
     name: str = attrib()
+    entity_name: str = attrib()
     definition: OpenApiDict = attrib()
     level: int = attrib()
     compare_secrets: bool = attrib()
@@ -115,6 +117,7 @@ class InstanceMakerConfig:
     def with_name(self, name: str) -> 'InstanceMakerConfig':
         return InstanceMakerConfig(
             name=name,
+            entity_name=self.entity_name,
             definition=self.definition,  # This should be definition['name'],
             compare_secrets=self.compare_secrets,
             singleton=self.singleton,
@@ -137,3 +140,7 @@ class APISpec:
         }
         ts = TopologicalSorter(entities_to_sort)
         return list(ts.static_order())
+
+    @property
+    def api_entities(self) -> EntitiesDict:
+        return {k: v for k, v in self.entities.items() if v.api_path is not None}

@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from copy import deepcopy
@@ -14,9 +15,8 @@ from appgate.attrs import K8S_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
-from appgate.openapi.parser import BUILTIN_TAGS
 from appgate.openapi.types import Entity_T, APISpec
-from appgate.openapi.utils import is_entity_t, has_name
+from appgate.openapi.utils import is_entity_t, has_name, is_builtin
 
 __all__ = [
     'AppgateState',
@@ -29,11 +29,8 @@ __all__ = [
     'resolve_entity',
     'resolve_entities',
     'resolve_appgate_state',
+    'compare_entities',
 ]
-
-
-def is_builtin(entity: Entity_T) -> bool:
-    return any(map(lambda t: t in (entity.tags or frozenset()), BUILTIN_TAGS))
 
 
 class EntitiesSet:
@@ -77,7 +74,8 @@ class EntitiesSet:
         self.entities_by_id[entity.id] = entity
 
     def delete(self, entity: Entity_T) -> None:
-        self.entities.remove(entity)
+        if entity in self.entities:
+            self.entities.remove(entity)
         if entity.name in self.entities_by_name:
             registered_id = self.entities_by_name[entity.name].id
             del self.entities_by_name[entity.name]

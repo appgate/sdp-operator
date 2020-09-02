@@ -85,7 +85,7 @@ def get_context(namespace: str, spec_directory: Optional[str],
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
-    dump_secrets = os.getenv(DUMP_SECRETS_ENV or '0')
+    dump_secrets = os.getenv(DUMP_SECRETS_ENV) or '0'
     spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
 
