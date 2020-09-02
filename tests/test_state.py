@@ -1,4 +1,3 @@
-from appgate.openapi.openapi import generate_api_spec
 from appgate.state import compare_entities, EntitiesSet, resolve_entities
 from tests.utils import entitlement, condition, policy, Policy
 
