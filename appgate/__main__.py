@@ -58,6 +58,15 @@ def main_dump_entities(stdout: bool, output_dir: Optional[str],
                               output_dir=Path(output_dir) if output_dir else None))
 
 
+def main_api_info(spec_directory: Optional[str] = None) -> None:
+    api_spec = generate_api_spec(
+        spec_directory=Path(spec_directory) if spec_directory else None)
+    print(f'API Version: {api_spec.api_version}')
+    print('Entities supported:')
+    for name, entity  in api_spec.api_entities.items():
+        print(f'   - {entity.api_path} :: {name}')
+
+
 def main_dump_crd(stdout: bool, output_file: Optional[str],
                   spec_directory: Optional[str] = None) -> None:
     # We need the context here or just parse it
@@ -104,6 +113,10 @@ def main() -> None:
     dump_crd.add_argument('--file', help='File where to dump CRD definitions. '
                                          'Default value: "YYYY-MM-DD_HH-MM-crd.yaml"',
                           default=None)
+    # api info
+    api_info = subparsers.add_parser('api-info')
+    api_info.set_defaults(cmd='api-info')
+
     args = parser.parse_args()
     set_level(log_level=args.log_level.lower())
 
@@ -115,6 +128,8 @@ def main() -> None:
     elif args.cmd == 'dump-crd':
         main_dump_crd(stdout=args.stdout, output_file=args.file,
                       spec_directory=args.spec_directory)
+    elif args.cmd == 'api-info':
+        main_api_info(spec_directory=args.spec_directory)
     else:
         parser.print_help()
 
