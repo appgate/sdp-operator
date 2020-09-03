@@ -15,7 +15,13 @@ lint:
 test:
 	./virtualenv/bin/python -m pytest tests
 
-docker-images: lint test $(SPEC_VERSIONS)
+docker-all:
+	docker run --rm -it -v ${PWD}:/root python:rc-slim /root/scripts/docker-build.sh
+
+docker-shell:
+	docker run --rm -it -v ${PWD}:/root python:rc-slim /root/scripts/docker-build.sh shell
+
+docker-images: docker-all $(SPEC_VERSIONS)
 
 $(SPEC_VERSIONS):
 	$(eval SPEC_VERSION := $(subst api_specs/,,$@))
