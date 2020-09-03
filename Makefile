@@ -1,4 +1,7 @@
 .PHONY: lint all
+SPEC_VERSIONS := $(wildcard api_specs/*)
+
+.PHONY: $(SPEC_VERSIONS)
 
 all: lint test
 
@@ -12,5 +15,9 @@ lint:
 test:
 	./virtualenv/bin/python -m pytest tests
 
-docker-image: lint test
-	docker build -f docker/Dockerfile . -t appgate-operator
+docker-images: lint test $(SPEC_VERSIONS)
+
+$(SPEC_VERSIONS):
+	$(eval SPEC_VERSION := $(subst api_specs/,,$@))
+	@echo "Building image for API version $(SPEC_VERSION)"
+	docker build --build-arg SPEC_VERSION=$(SPEC_VERSION) -f docker/Dockerfile . -t appgate-operator:$(SPEC_VERSION) 
