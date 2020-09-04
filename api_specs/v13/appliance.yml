@@ -808,6 +808,7 @@ definitions:
           ntpServers:
             type: array
             writeOnly: true
+            deprecated: true
             description: "Deprecated as of 4.3.0, use 'ntp' field instead. NTP servers to synchronize time."
             items:
               type: string
@@ -841,6 +842,7 @@ definitions:
                         - SHA512
                         - RMD160
                     key:
+                      format: password
                       type: string
                       description: Key to use for secure NTP communication.
           sshServer:
@@ -1148,6 +1150,7 @@ definitions:
         type: string
         description: AWS ID to login. Only required if AWS Access Keys are being used to authenticate.
       awsSecret:
+        format: password
         type: string
         description: AWS secret to login. Only required if AWS Access Keys are being used to authenticate.
         writeOnly: true
