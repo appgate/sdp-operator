@@ -9,7 +9,7 @@ from cryptography.fernet import Fernet
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
-    DeprecatedAttribMaker
+    DeprecatedAttribMaker, UUID_REFERENCE_FIELD
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, AttribMakerConfig
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
@@ -74,11 +74,10 @@ class InstanceMaker:
     def dependencies(self) -> Set[EntityDependency]:
         dependencies: Set[EntityDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
-            mt = attrib_attrs.metadata
-            if 'x-appgate-entity' in mt:
-                dependency = mt['x-appgate-entity']
+            dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
+            if dependency:
                 dependencies.add(EntityDependency(field=attrib_name,
-                                                  dependencies=frozenset(dependency)))
+                                                  dependencies=frozenset({dependency})))
 
         return dependencies
 

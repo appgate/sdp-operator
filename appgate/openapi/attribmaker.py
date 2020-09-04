@@ -5,6 +5,9 @@ from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
     IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig
 
 
+UUID_REFERENCE_FIELD = 'x-uuid-ref'
+
+
 class SimpleAttribMaker:
     def __init__(self, name: str, tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict) -> None:
@@ -49,8 +52,8 @@ class SimpleAttribMaker:
                 attribs['metadata']['example'] = frozenset(definition['example'])
             else:
                 attribs['metadata']['example'] = definition['example']
-        if 'x-appgate-entity' in definition:
-            attribs['metadata']['x-appgate-entity'] = definition['x-appgate-entity']
+        if UUID_REFERENCE_FIELD in definition:
+            attribs['metadata'][UUID_REFERENCE_FIELD] = definition[UUID_REFERENCE_FIELD]
 
         if self.name in IGNORED_EQ_ATTRIBUTES or write_only or read_only:
             attribs['eq'] = False
