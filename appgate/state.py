@@ -180,6 +180,11 @@ class AppgateState:
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
             dump_entities(self.entities_set[k].entities, p, k)
 
+        for k, v in self.entities_set.items():
+            for e in v.entities:
+                for f in e._appgate_metadata.get('passwords', []):
+                    print(f'["{e.name}"] {e.id}.{f} is a password')
+
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
                    errors: Optional[Set[str]] = None) -> EntitiesSet:

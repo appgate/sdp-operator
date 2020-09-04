@@ -160,6 +160,10 @@ class PasswordAttribMaker(SimpleAttribMaker):
             field=self.name)
         return values
 
+    @property
+    def is_password(self) -> bool:
+        return True
+
 
 def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
     """

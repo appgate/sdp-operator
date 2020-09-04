@@ -71,6 +71,10 @@ class InstanceMaker:
         return {k: v for k, v in self.attributes.items() if not v.has_default}
 
     @property
+    def password_attributes(self) -> Dict[str, SimpleAttribMaker]:
+        return {k: v for k, v in self.attributes.items() if v.is_password}
+
+    @property
     def dependencies(self) -> Set[EntityDependency]:
         dependencies: Set[EntityDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
@@ -115,6 +119,7 @@ class InstanceMaker:
                 'singleton': instance_maker_config.singleton,
                 'k8s_loader': k8s_custom_entity_loaders or None,
                 'appgate_loader': appgate_custom_entity_loaders or None,
+                'passwords': self.password_attributes,
             })
         # Build the dictionary of attribs
         attrs = {}

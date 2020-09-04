@@ -22,6 +22,10 @@ class SimpleAttribMaker:
         return self.definition.get('metadata', {})
 
     @property
+    def is_password(self) -> bool:
+        return False
+
+    @property
     def has_default(self) -> bool:
         """
         Checks if attrs as a default field value
