@@ -140,11 +140,11 @@ def appgate_secret_load(value: OpenApiDict, secrets_cipher: Optional[Fernet],
 
 
 class PasswordAttribMaker(SimpleAttribMaker):
-    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
                  secrets_cipher: Optional[Fernet],
                  k8s_get_client: Optional[Callable[[str, str], str]]) -> None:
-        super().__init__(name, tpe, default, factory, definition)
+        super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.secrets_cipher = secrets_cipher
         self.k8s_get_client = k8s_get_client
 

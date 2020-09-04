@@ -9,8 +9,9 @@ UUID_REFERENCE_FIELD = 'x-uuid-ref'
 
 
 class SimpleAttribMaker:
-    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict) -> None:
+        self.base_tpe = base_tpe
         self.name = name
         self.tpe = tpe
         self.default = default
@@ -48,6 +49,7 @@ class SimpleAttribMaker:
             'readOnly': read_only,
             'writeOnly': write_only,
             'format': format,
+            'base_type': self.base_tpe,
         }
         if 'description' in definition:
             attribs['metadata']['description'] = definition['description']
@@ -95,13 +97,17 @@ class DefaultAttribMaker(SimpleAttribMaker):
             'type': self.tpe,
             'repr': False,
             'eq': False,
-            'default': self.default
+            'default': self.default,
+            'metadata': {
+                'base_type': self.tpe
+            }
         }
 
 
 def create_default_attrib(name: str, attrib_value: Any) -> DefaultAttribMaker:
     return DefaultAttribMaker(
         tpe=type(attrib_value),
+        base_tpe=type(attrib_value),
         name=name,
         default=attrib_value,
         factory=None,

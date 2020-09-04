@@ -11,7 +11,8 @@ from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
-    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, AttribMakerConfig
+    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
+    AttribMakerConfig, Entity_T
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
@@ -24,6 +25,7 @@ TYPES_MAP: Dict[str, Type] = {
     'integer': int,
     'number': int,
 }
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
 DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
@@ -35,10 +37,10 @@ def checksum_bytes(value: Any, bytes: str) -> str:
 
 
 class ChecksumAttribMaker(SimpleAttribMaker):
-    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
                  source_field: str) -> None:
-        super().__init__(name, tpe, default, factory, definition)
+        super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.source_field = source_field
 
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
@@ -55,6 +57,26 @@ class ChecksumAttribMaker(SimpleAttribMaker):
             field=self.name,
         )
         return values
+
+
+def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
+    fields = []
+    prefix = '.'.join(names)
+    for a in entity.__attrs_attrs__:
+        mt = getattr(a, 'metadata')
+        if mt and mt.get('format') == 'password':
+            if prefix:
+                fields.append(f'{prefix}.{a.name}')
+            else:
+                fields.append(a.name)
+        base_type = mt['base_type']
+        if base_type not in PYTHON_TYPES:
+            fields.extend(_get_passwords(base_type, names + [a.name]))
+    return fields
+
+
+def get_passwords(entity: Entity_T) -> List[str]:
+    return _get_passwords(entity, [])
 
 
 class InstanceMaker:
@@ -288,6 +310,7 @@ class Parser:
                       generated_entity.cls)
             return SimpleAttribMaker(name=instance_maker_config.name,
                                      tpe=generated_entity.cls,
+                                     base_tpe=generated_entity.cls,
                                      default=None,
                                      factory=None,
                                      definition=attrib_maker_config.definition)
@@ -300,6 +323,7 @@ class Parser:
             if format == 'password':
                 return PasswordAttribMaker(name=attrib_name,
                                            tpe=TYPES_MAP[tpe],
+                                           base_tpe=TYPES_MAP[tpe],
                                            default=DEFAULT_MAP.get(tpe),
                                            factory=None,
                                            definition=attrib_maker_config.definition,
@@ -308,6 +332,7 @@ class Parser:
             elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
                 return ChecksumAttribMaker(name=attrib_name,
                                            tpe=TYPES_MAP[tpe],
+                                           base_tpe=TYPES_MAP[tpe],
                                            default=DEFAULT_MAP.get(tpe),
                                            factory=None,
                                            definition=attrib_maker_config.definition,
@@ -315,6 +340,7 @@ class Parser:
             else:
                 return SimpleAttribMaker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],
+                                         base_tpe=TYPES_MAP[tpe],
                                          default=DEFAULT_MAP.get(tpe),
                                          factory=None,
                                          definition=attrib_maker_config.definition)
@@ -328,6 +354,7 @@ class Parser:
                       attr_maker.tpe)
             return SimpleAttribMaker(name=attr_maker.name,
                                      tpe=FrozenSet[attr_maker.tpe],  # type: ignore
+                                     base_tpe=attr_maker.base_tpe,
                                      default=None,
                                      factory=frozenset,
                                      definition=new_attrib_maker_config.definition)
@@ -348,6 +375,7 @@ class Parser:
                       generated_entity.cls)
             return SimpleAttribMaker(name=instance_maker_config.name,
                                      tpe=generated_entity.cls,
+                                     base_tpe=generated_entity.cls,
                                      default=None,
                                      factory=None,
                                      definition=instance_maker_config.definition)
@@ -367,7 +395,8 @@ class Parser:
                 definition=attrib.definition,
                 default=attrib.default,
                 factory=attrib.factory,
-                tpe=attrib.tpe)
+                tpe=attrib.tpe,
+                base_tpe=attrib.base_tpe)
         return attrib
 
     def instance_maker(self, instance_maker_config: InstanceMakerConfig) -> InstanceMaker:
