@@ -129,6 +129,8 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
 
 def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
                   entity_type: str) -> None:
+    if not entities:
+        return None
     f = dump_file.open('w') if dump_file else sys.stdout
     for i, e in enumerate(entities):
         if i > 0:
