@@ -43,7 +43,7 @@ class OpenApiParserException(Exception):
     pass
 
 
-@attrs()
+@attrs(frozen=True, slots=True)
 class AppgateMetadata:
     uuid: Optional[str] = attrib(default=None)
 
