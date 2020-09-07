@@ -53,13 +53,18 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
             read_only = attr.metadata.get('readOnly', False)
             write_only = attr.metadata.get('writeOnly', False)
             format = attr.metadata.get('format')
+            name = attr.metadata.get('name', attr.name)
+
             if not attr.repr:
+                continue
+            if name == APPGATE_METADATA_ATTRIB_NAME:
                 continue
             if read_only:
                 continue
             if write_only and format == 'password':
                 if not dump_secrets and platform_type == PlatformType.APPGATE:
                     continue
+
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
                 r[name] = d.dump(attrval)

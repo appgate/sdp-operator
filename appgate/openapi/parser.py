@@ -168,7 +168,7 @@ class InstanceMaker:
             default=None,
             factory=AppgateMetadata,
             definition={},
-            repr=False)
+            repr=True)
         attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**appgate_metadata_attrib.values(
             self.attributes,
             instance_maker_config.definition.get('required', {}),

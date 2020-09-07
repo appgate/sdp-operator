@@ -6,6 +6,7 @@ import yaml
 
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
+from appgate.openapi.types import AppgateMetadata
 from tests.utils import load_test_open_api_spec
 
 
@@ -32,7 +33,6 @@ def test_loader_1():
         'fieldFour': 'this is a field',
     }
     e = APPGATE_LOADER.load(entity_1, None, EntityTest1)
-    print(e)
     assert e == EntityTest1(fieldOne='this is read only', fieldTwo=None,
                             fieldFour='this is a field')
     assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
@@ -47,10 +47,58 @@ def test_loader_1():
                             fieldFour='this is a field that changed')
 
 
+def test_loader_2():
+    """
+    Test load metadata
+    """
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
+    entity_1 = {
+        'fieldOne': 'this is read only',
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is deprecated',
+        'fieldFour': 'this is a field',
+    }
+    metadata = {
+        'uuid': '666-666-666-666-666-666'
+    }
+    e = K8S_LOADER.load(entity_1, metadata, EntityTest1)
+    # We load instance metadata
+    assert e.appgate_metadata == AppgateMetadata(uuid='666-666-666-666-666-666')
+    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field',
+                            appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666-666'))
+    # isntance metadata is not compared
+    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field',
+                            appgate_metadata=AppgateMetadata(uuid='333-333-333-333-333'))
+
+
 def test_dumper_1():
     EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
     e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
                      fieldFour='this is a field')
+    e1_data = {
+        'fieldTwo': 'this is write only',
+        'fieldFour': 'this is a field',
+    }
+    e = APPGATE_DUMPER.dump(e1)
+    assert e == e1_data
+    e1_data = {
+        'fieldTwo': 'this is write only',
+        'fieldFour': 'this is a field',
+    }
+    e = K8S_DUMPER.dump(e1)
+    assert e == e1_data
+
+
+def test_dumper_2():
+    """
+    Test dumper with metadata
+    """
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
+    e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
+                     fieldFour='this is a field',
+                     appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666'))
     e1_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
