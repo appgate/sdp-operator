@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 from typing import Optional, Dict, Any, List
 
 from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
@@ -77,7 +77,7 @@ class SimpleAttribMaker:
             attribs['metadata']['type'] = str(self.tpe)
 
         if instance_maker_config.level == 0 and self.name == 'id':
-            attribs['factory'] = lambda: str(uuid.uuid4())
+            attribs['factory'] = lambda: str(uuid4())
         elif self.factory and not (read_only or write_only):
             attribs['factory'] = self.factory
         elif not required or read_only or write_only:
