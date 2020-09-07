@@ -14,6 +14,7 @@ __all__ = [
     'is_compound',
     'has_id',
     'has_default',
+    'is_builtin',
     'has_name',
     'get_field',
     'join',
