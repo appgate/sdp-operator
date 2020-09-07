@@ -64,8 +64,7 @@ class ChecksumAttribMaker(SimpleAttribMaker):
         self.source_field = source_field
 
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig',
-               ) -> AttributesDict:
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = True
@@ -423,8 +422,7 @@ class Parser:
                                      default=None,
                                      factory=None,
                                      definition=instance_maker_config.definition)
-        raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
-                        definition)
+        raise Exception(f'Unknown type for attribute {entity_name}.{attrib_name}: {definition}')
 
     def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
         """
