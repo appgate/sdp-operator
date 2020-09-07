@@ -171,7 +171,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
 
 def run_event_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
                    queue: Queue[AppgateEvent],
-                   load: Callable[[Dict[str, Any]], Entity_T]):
+                   load: Callable[[Dict[str, Any], Optional[Dict[str, Any]]], Entity_T]):
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
                              K8S_APPGATE_VERSION, namespace, crd)
@@ -181,7 +181,7 @@ def run_event_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
             if event:
                 ev = K8SEvent(event)
                 try:
-                    entity = load(ev.object.spec)
+                    entity = load(ev.object.spec, ev.object.metadata)
                 except TypedloadTypeError:
                     log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)
                     continue
@@ -204,8 +204,7 @@ async def start_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T]
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_event_loop,
-                             args=(namespace, crd, loop, queue,
-                                   lambda d: K8S_LOADER.load(d, entity_type)),
+                             args=(namespace, crd, loop, queue, K8S_LOADER.load),
                              daemon=False)
         t.start()
 

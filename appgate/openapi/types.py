@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, FrozenSet, Callable, Set, \
 
 from graphlib import TopologicalSorter
 
-from attr import attrib, attrs
+from attr import attrib, attrs, Attribute
 
 from appgate.logger import log
 
@@ -44,10 +44,16 @@ class OpenApiParserException(Exception):
 
 
 @attrs()
+class AppgateMetadata:
+    uuid: Optional[str] = attrib(default=None)
+
+
+@attrs()
 class Entity_T:
     name: str = attrib()
     id: str = attrib()
     tags: FrozenSet[str] = attrib()
+    __attrs_attrs__: List[Attribute] = attrib()
 
 
 @attrs(frozen=True, slots=True)

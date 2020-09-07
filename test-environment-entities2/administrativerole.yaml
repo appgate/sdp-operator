@@ -1,0 +1,151 @@
+apiVersion: beta.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  name: api-access
+spec:
+  name: Api Access
+  notes: Built-in Administrative Role for API usage..
+  privileges:
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+      ids: []
+      tags: []
+    target: CriteriaScript
+    type: Create
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: CriteriaScript
+    type: Delete
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+      ids: []
+      tags: []
+    target: Policy
+    type: Create
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+      ids: []
+      tags: []
+    target: Entitlement
+    type: Create
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: CriteriaScript
+    type: Edit
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Site
+    type: View
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: CriteriaScript
+    type: View
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Policy
+    type: Delete
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Policy
+    type: View
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Condition
+    type: View
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Entitlement
+    type: View
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Condition
+    type: Edit
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+      ids: []
+      tags: []
+    target: Condition
+    type: Create
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Policy
+    type: Edit
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Condition
+    type: Delete
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Entitlement
+    type: Edit
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: Entitlement
+    type: Delete
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  name: system-administration
+spec:
+  name: System Administration
+  notes: Built-in Administrative Role that has access to all.
+  privileges:
+  - defaultTags: []
+    scope:
+      all: true
+      ids: []
+      tags: []
+    target: All
+    type: All
+  tags:
+  - builtin

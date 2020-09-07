@@ -9,16 +9,17 @@ from cryptography.fernet import Fernet
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
-    DeprecatedAttribMaker, UUID_REFERENCE_FIELD
+    DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
-    AttribMakerConfig, Entity_T
+    AttribMakerConfig, Entity_T, AppgateMetadata
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
 
 
-APPGATE_METADATA_ATTRIB_NAME = '_appgate_metadata'
+ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
+APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
     'boolean': bool,
@@ -135,14 +136,7 @@ class InstanceMaker:
                 k8s_custom_entity_loaders.append(k8s_loader)
             if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
                 appgate_custom_entity_loaders.append(k8s_loader)
-        metadata_default_attrib = create_default_attrib(
-            APPGATE_METADATA_ATTRIB_NAME,
-            {
-                'singleton': instance_maker_config.singleton,
-                'k8s_loader': k8s_custom_entity_loaders or None,
-                'appgate_loader': appgate_custom_entity_loaders or None,
-                'passwords': self.password_attributes,
-            })
+
         # Build the dictionary of attribs
         attrs = {}
         # First attributes with no default values
@@ -151,7 +145,31 @@ class InstanceMaker:
         # Now attributes with default values
         for k, v in filter(lambda p: has_default(p[1]), values.items()):
             attrs[k] = attrib(**v)
-        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**metadata_default_attrib.values(
+
+        # Create attribute to store entity metadata
+        entity_metadata_attrib = create_default_attrib(
+            ENTITY_METADATA_ATTRIB_NAME,
+            {
+                'singleton': instance_maker_config.singleton,
+                'k8s_loader': k8s_custom_entity_loaders or None,
+                'appgate_loader': appgate_custom_entity_loaders or None,
+                'passwords': self.password_attributes,
+            })
+        attrs[ENTITY_METADATA_ATTRIB_NAME] = attrib(**entity_metadata_attrib.values(
+            self.attributes,
+            instance_maker_config.definition.get('required', {}),
+            instance_maker_config))
+
+        # Create attribute to store instance metadata
+        appgate_metadata_attrib = DefaultAttribMaker(
+            tpe=AppgateMetadata,
+            base_tpe=AppgateMetadata,
+            name=APPGATE_METADATA_ATTRIB_NAME,
+            default=None,
+            factory=AppgateMetadata,
+            definition={},
+            repr=False)
+        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**appgate_metadata_attrib.values(
             self.attributes,
             instance_maker_config.definition.get('required', {}),
             instance_maker_config))

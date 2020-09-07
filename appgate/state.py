@@ -15,7 +15,7 @@ from appgate.attrs import K8S_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
-from appgate.openapi.parser import get_passwords
+from appgate.openapi.parser import get_passwords, ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec
 from appgate.openapi.utils import is_entity_t, has_name, is_builtin
 
@@ -118,7 +118,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
     entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
-    entity_mt = entity._appgate_metadata
+    entity_mt = getattr(entity, ENTITY_METADATA_ATTRIB_NAME, {})
     singleton = entity_mt.get('singleton', False)
     get_passwords(entity)
     metadata = {
@@ -195,10 +195,10 @@ class AppgateState:
             if entity_password_fields:
                password_fields[k] = entity_password_fields
         print('Passwords found in entities:')
-        for e, ps in password_fields.items():
-            print(f'+ Entity: {e}')
-            for p in ps:
-                print(f'  - {p}')
+        for entity_name, pwd_fields in password_fields.items():
+            print(f'+ Entity: {entity_name}')
+            for password_field in pwd_fields:
+                print(f'  - {password_field}')
 
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
