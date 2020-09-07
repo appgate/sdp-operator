@@ -9,21 +9,24 @@ from cryptography.fernet import Fernet
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
-    DeprecatedAttribMaker
+    DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
-    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, AttribMakerConfig
+    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
+    AttribMakerConfig, Entity_T, AppgateMetadata
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
 
 
-APPGATE_METADATA_ATTRIB_NAME = '_appgate_metadata'
+ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
+APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
     'boolean': bool,
     'integer': int,
     'number': int,
 }
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
 DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
@@ -35,10 +38,10 @@ def checksum_bytes(value: Any, bytes: str) -> str:
 
 
 class ChecksumAttribMaker(SimpleAttribMaker):
-    def __init__(self, name: str, tpe: type, default: Optional[AttribType],
+    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
                  source_field: str) -> None:
-        super().__init__(name, tpe, default, factory, definition)
+        super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.source_field = source_field
 
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
@@ -57,6 +60,26 @@ class ChecksumAttribMaker(SimpleAttribMaker):
         return values
 
 
+def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
+    fields = []
+    prefix = '.'.join(names)
+    for a in entity.__attrs_attrs__:
+        mt = getattr(a, 'metadata')
+        if mt and mt.get('format') == 'password':
+            if prefix:
+                fields.append(f'{prefix}.{a.name}')
+            else:
+                fields.append(a.name)
+        base_type = mt['base_type']
+        if base_type not in PYTHON_TYPES:
+            fields.extend(_get_passwords(base_type, names + [a.name]))
+    return fields
+
+
+def get_passwords(entity: Entity_T) -> List[str]:
+    return _get_passwords(entity, [])
+
+
 class InstanceMaker:
     def __init__(self, name: str, attributes: Dict[str, SimpleAttribMaker]) -> None:
         self.name = name
@@ -71,14 +94,17 @@ class InstanceMaker:
         return {k: v for k, v in self.attributes.items() if not v.has_default}
 
     @property
+    def password_attributes(self) -> Dict[str, SimpleAttribMaker]:
+        return {k: v for k, v in self.attributes.items() if v.is_password}
+
+    @property
     def dependencies(self) -> Set[EntityDependency]:
         dependencies: Set[EntityDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
-            mt = attrib_attrs.metadata
-            if 'x-appgate-entity' in mt:
-                dependency = mt['x-appgate-entity']
+            dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
+            if dependency:
                 dependencies.add(EntityDependency(field=attrib_name,
-                                                  dependencies=frozenset(dependency)))
+                                                  dependencies=frozenset({dependency})))
 
         return dependencies
 
@@ -110,13 +136,7 @@ class InstanceMaker:
                 k8s_custom_entity_loaders.append(k8s_loader)
             if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
                 appgate_custom_entity_loaders.append(k8s_loader)
-        metadata_default_attrib = create_default_attrib(
-            APPGATE_METADATA_ATTRIB_NAME,
-            {
-                'singleton': instance_maker_config.singleton,
-                'k8s_loader': k8s_custom_entity_loaders or None,
-                'appgate_loader': appgate_custom_entity_loaders or None,
-            })
+
         # Build the dictionary of attribs
         attrs = {}
         # First attributes with no default values
@@ -125,7 +145,31 @@ class InstanceMaker:
         # Now attributes with default values
         for k, v in filter(lambda p: has_default(p[1]), values.items()):
             attrs[k] = attrib(**v)
-        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**metadata_default_attrib.values(
+
+        # Create attribute to store entity metadata
+        entity_metadata_attrib = create_default_attrib(
+            ENTITY_METADATA_ATTRIB_NAME,
+            {
+                'singleton': instance_maker_config.singleton,
+                'k8s_loader': k8s_custom_entity_loaders or None,
+                'appgate_loader': appgate_custom_entity_loaders or None,
+                'passwords': self.password_attributes,
+            })
+        attrs[ENTITY_METADATA_ATTRIB_NAME] = attrib(**entity_metadata_attrib.values(
+            self.attributes,
+            instance_maker_config.definition.get('required', {}),
+            instance_maker_config))
+
+        # Create attribute to store instance metadata
+        appgate_metadata_attrib = DefaultAttribMaker(
+            tpe=AppgateMetadata,
+            base_tpe=AppgateMetadata,
+            name=APPGATE_METADATA_ATTRIB_NAME,
+            default=None,
+            factory=AppgateMetadata,
+            definition={},
+            repr=True)
+        attrs[APPGATE_METADATA_ATTRIB_NAME] = attrib(**appgate_metadata_attrib.values(
             self.attributes,
             instance_maker_config.definition.get('required', {}),
             instance_maker_config))
@@ -284,6 +328,7 @@ class Parser:
                       generated_entity.cls)
             return SimpleAttribMaker(name=instance_maker_config.name,
                                      tpe=generated_entity.cls,
+                                     base_tpe=generated_entity.cls,
                                      default=None,
                                      factory=None,
                                      definition=attrib_maker_config.definition)
@@ -296,6 +341,7 @@ class Parser:
             if format == 'password':
                 return PasswordAttribMaker(name=attrib_name,
                                            tpe=TYPES_MAP[tpe],
+                                           base_tpe=TYPES_MAP[tpe],
                                            default=DEFAULT_MAP.get(tpe),
                                            factory=None,
                                            definition=attrib_maker_config.definition,
@@ -304,6 +350,7 @@ class Parser:
             elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
                 return ChecksumAttribMaker(name=attrib_name,
                                            tpe=TYPES_MAP[tpe],
+                                           base_tpe=TYPES_MAP[tpe],
                                            default=DEFAULT_MAP.get(tpe),
                                            factory=None,
                                            definition=attrib_maker_config.definition,
@@ -311,6 +358,7 @@ class Parser:
             else:
                 return SimpleAttribMaker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],
+                                         base_tpe=TYPES_MAP[tpe],
                                          default=DEFAULT_MAP.get(tpe),
                                          factory=None,
                                          definition=attrib_maker_config.definition)
@@ -324,6 +372,7 @@ class Parser:
                       attr_maker.tpe)
             return SimpleAttribMaker(name=attr_maker.name,
                                      tpe=FrozenSet[attr_maker.tpe],  # type: ignore
+                                     base_tpe=attr_maker.base_tpe,
                                      default=None,
                                      factory=frozenset,
                                      definition=new_attrib_maker_config.definition)
@@ -344,6 +393,7 @@ class Parser:
                       generated_entity.cls)
             return SimpleAttribMaker(name=instance_maker_config.name,
                                      tpe=generated_entity.cls,
+                                     base_tpe=generated_entity.cls,
                                      default=None,
                                      factory=None,
                                      definition=instance_maker_config.definition)
@@ -363,7 +413,8 @@ class Parser:
                 definition=attrib.definition,
                 default=attrib.default,
                 factory=attrib.factory,
-                tpe=attrib.tpe)
+                tpe=attrib.tpe,
+                base_tpe=attrib.base_tpe)
         return attrib
 
     def instance_maker(self, instance_maker_config: InstanceMakerConfig) -> InstanceMaker:

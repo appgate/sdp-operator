@@ -1,0 +1,14 @@
+apiVersion: beta.appgate.com/v1
+kind: GlobalSettings
+metadata:
+  name: globalsettings
+spec:
+  administrationTokenExpiration: 1440
+  appDiscoveryDomains: []
+  auditLogPersistenceMode: Default
+  backupApiEnabled: false
+  claimsTokenExpiration: 1440
+  entitlementTokenExpiration: 1440
+  fips: false
+  geoIpUpdates: false
+  vpnCertificateExpiration: 525600

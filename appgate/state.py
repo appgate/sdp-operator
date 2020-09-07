@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 from copy import deepcopy
@@ -6,7 +5,7 @@ import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List
 
 import yaml
 from attr import attrib, attrs, evolve
@@ -15,6 +14,7 @@ from appgate.attrs import K8S_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
+from appgate.openapi.parser import get_passwords, ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec
 from appgate.openapi.utils import is_entity_t, has_name, is_builtin
 
@@ -117,26 +117,40 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
     entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
+    entity_mt = getattr(entity, ENTITY_METADATA_ATTRIB_NAME, {})
+    singleton = entity_mt.get('singleton', False)
+    get_passwords(entity)
+    metadata = {
+        'name': entity_name,
+        'passwords': get_passwords(entity),
+        'singleton': singleton
+    }
+    if not singleton:
+        metadata['uuid'] = entity.id
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
-        'metadata': {
-            'name': entity_name
-        },
+        'metadata': metadata,
         'spec': K8S_DUMPER.dump(entity)
     }
 
 
 def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
-                  entity_type: str) -> None:
+                  entity_type: str) -> Optional[List[str]]:
+    entity_passwords = None
+    if not entities:
+        return None
     f = dump_file.open('w') if dump_file else sys.stdout
     for i, e in enumerate(entities):
         if i > 0:
             f.write('---\n')
-        yaml_dump = yaml.dump(dump_entity(e, entity_type), default_flow_style=False)
+        dumped_entity = dump_entity(e, entity_type)
+        entity_passwords = dumped_entity['metadata'].get('passwords')
+        yaml_dump = yaml.dump(dumped_entity, default_flow_style=False)
         f.write(yaml_dump)
     if dump_file:
         f.close()
+    return entity_passwords
 
 
 @attrs()
@@ -171,12 +185,19 @@ class AppgateState:
             output_dir_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-entities'
             dump_dir = output_dir or Path(output_dir_format)
             dump_dir.mkdir(exist_ok=True)
-
+        password_fields = {}
         for (i, (k, v)) in enumerate(self.entities_set.items()):
             if stdout and i > 0:
                 print('---\n')
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
-            dump_entities(self.entities_set[k].entities, p, k)
+            entity_password_fields = dump_entities(self.entities_set[k].entities, p, k)
+            if entity_password_fields:
+               password_fields[k] = entity_password_fields
+        print('Passwords found in entities:')
+        for entity_name, pwd_fields in password_fields.items():
+            print(f'+ Entity: {entity_name}')
+            for password_field in pwd_fields:
+                print(f'  - {password_field}')
 
 
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,

@@ -1,0 +1,189 @@
+apiVersion: beta.appgate.com/v1
+kind: Appliance
+metadata:
+  name: controller-2d5e6262-4ab5-446e-9707-756a55fbe362-site1
+spec:
+  clientInterface:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+    hostname: envy-172-17-140-1.devops
+  connector:
+    advancedClients: []
+    expressClients: []
+  controller:
+    enabled: true
+  gateway:
+    vpn:
+      allowDestinations: []
+  healthcheckServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+  hostname: envy-172-17-140-1.devops
+  hostnameAliases:
+  - 172.17.140.1
+  logForwarder:
+    awsKineses: []
+    sites: []
+    tcpClients: []
+  logServer:
+    enabled: true
+  name: controller-2d5e6262-4ab5-446e-9707-756a55fbe362-site1
+  networking:
+    dnsDomains: []
+    dnsServers:
+    - 172.17.93.10
+    hosts: []
+    nics:
+    - enabled: true
+      ipv4:
+        dhcp:
+          dns: false
+          enabled: false
+          mtu: false
+          ntp: false
+          routers: false
+        static:
+        - address: 172.17.140.1
+          netmask: 24
+          snat: false
+      ipv6:
+        dhcp:
+          dns: false
+          enabled: false
+          mtu: false
+          ntp: false
+        static: []
+      name: eth0
+    routes:
+    - address: 0.0.0.0
+      gateway: 172.17.140.254
+      netmask: 0
+  ntp:
+    servers:
+    - hostname: 172.17.40.65
+  ntpServers: []
+  peerInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: envy-172-17-140-1.devops
+  ping:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  prometheusExporter:
+    allowSources: []
+  rsyslogDestinations: []
+  snmpServer:
+    allowSources: []
+  sshServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+    enabled: true
+  tags:
+    - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: Appliance
+metadata:
+  name: appliance-template-site-n
+spec:
+  clientInterface:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+    hostname: template.example.com
+  connector:
+    advancedClients: []
+    expressClients: []
+  controller:
+    enabled: true
+  gateway:
+    vpn:
+      allowDestinations: []
+  healthcheckServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+  hostname: template.example.com
+  hostnameAliases:
+  - 172.17.140.1
+  logForwarder:
+    awsKineses: []
+    sites: []
+    tcpClients: []
+  logServer:
+    enabled: false
+  name: appliance-template-site-n
+  networking:
+    dnsDomains: []
+    dnsServers:
+    - 172.17.93.10
+    hosts: []
+    nics:
+    - enabled: true
+      ipv4:
+        dhcp:
+          dns: true
+          enabled: true
+          mtu: false
+          ntp: false
+          routers: true
+        static: []
+      ipv6:
+        dhcp:
+          dns: false
+          enabled: false
+          mtu: false
+          ntp: false
+        static: []
+      name: eth0
+    routes: []
+  ntp:
+    servers: []
+  ntpServers: []
+  peerInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: template.example.com
+  ping:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  prometheusExporter:
+    allowSources: []
+  rsyslogDestinations: []
+  snmpServer:
+    allowSources: []
+  sshServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+    enabled: true
+  tags:
+    - template
+    - k8s

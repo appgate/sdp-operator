@@ -6,6 +6,7 @@ import yaml
 
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
+from appgate.openapi.types import AppgateMetadata
 from tests.utils import load_test_open_api_spec
 
 
@@ -20,7 +21,7 @@ def test_load_entities_v12():
             documents = list(yaml.safe_load_all(f))
             for d in documents:
                 e = entities[d['kind']].cls
-                assert isinstance(APPGATE_LOADER.load(d['spec'], e), e)
+                assert isinstance(APPGATE_LOADER.load(d['spec'], None, e), e)
 
 
 def test_loader_1():
@@ -31,7 +32,7 @@ def test_loader_1():
         'fieldThree': 'this is deprecated',
         'fieldFour': 'this is a field',
     }
-    e = APPGATE_LOADER.load(entity_1, EntityTest1)
+    e = APPGATE_LOADER.load(entity_1, None, EntityTest1)
     assert e == EntityTest1(fieldOne='this is read only', fieldTwo=None,
                             fieldFour='this is a field')
     assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
@@ -39,17 +40,65 @@ def test_loader_1():
     assert e.fieldOne == 'this is read only'
     assert e.fieldTwo is None
 
-    e = K8S_LOADER.load(entity_1, EntityTest1)
+    e = K8S_LOADER.load(entity_1, None, EntityTest1)
     assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
                             fieldFour='this is a field')
     assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
                             fieldFour='this is a field that changed')
 
 
+def test_loader_2():
+    """
+    Test load metadata
+    """
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
+    entity_1 = {
+        'fieldOne': 'this is read only',
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is deprecated',
+        'fieldFour': 'this is a field',
+    }
+    metadata = {
+        'uuid': '666-666-666-666-666-666'
+    }
+    e = K8S_LOADER.load(entity_1, metadata, EntityTest1)
+    # We load instance metadata
+    assert e.appgate_metadata == AppgateMetadata(uuid='666-666-666-666-666-666')
+    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field',
+                            appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666-666'))
+    # isntance metadata is not compared
+    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
+                            fieldFour='this is a field',
+                            appgate_metadata=AppgateMetadata(uuid='333-333-333-333-333'))
+
+
 def test_dumper_1():
     EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
     e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
                      fieldFour='this is a field')
+    e1_data = {
+        'fieldTwo': 'this is write only',
+        'fieldFour': 'this is a field',
+    }
+    e = APPGATE_DUMPER.dump(e1)
+    assert e == e1_data
+    e1_data = {
+        'fieldTwo': 'this is write only',
+        'fieldFour': 'this is a field',
+    }
+    e = K8S_DUMPER.dump(e1)
+    assert e == e1_data
+
+
+def test_dumper_2():
+    """
+    Test dumper with metadata
+    """
+    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest1'].cls
+    e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
+                     fieldFour='this is a field',
+                     appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666'))
     e1_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
@@ -79,7 +128,7 @@ def test_write_only_attribute_load():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    e = APPGATE_LOADER.load(e_data, EntityTest2)
+    e = APPGATE_LOADER.load(e_data, None, EntityTest2)
     # writeOnly fields are not loaded from Appgate
     assert e.fieldOne is None
     assert e.fieldTwo is None
@@ -89,7 +138,7 @@ def test_write_only_attribute_load():
                             fieldTwo='this is write only',
                             fieldThree='this is a field')
 
-    e = K8S_LOADER.load(e_data, EntityTest2)
+    e = K8S_LOADER.load(e_data, None, EntityTest2)
     # writeOnly fields are loaded from K8S
     assert e.fieldOne == '1234567890'
     assert e.fieldTwo == 'this is write only'
@@ -110,20 +159,20 @@ def test_read_only_write_only_eq():
         'fieldOne': 'writeOnly',
         'fieldTwo': 'readOnly',
     }
-    e = APPGATE_LOADER.load(e_data, EntityTest4)
+    e = APPGATE_LOADER.load(e_data, None, EntityTest4)
     assert e == EntityTest4(fieldOne=None,
                             fieldTwo='readOnly')
-    e = APPGATE_LOADER.load(e_data, EntityTest4)
+    e = APPGATE_LOADER.load(e_data, None, EntityTest4)
     assert e == EntityTest4(fieldOne=None,
                             fieldTwo='----')
     assert e.fieldTwo == 'readOnly'
     assert e.fieldOne is None
 
-    e = K8S_LOADER.load(e_data, EntityTest4)
+    e = K8S_LOADER.load(e_data, None, EntityTest4)
     assert e == EntityTest4(fieldOne='writeOnly',
                             fieldTwo=None)
 
-    e = K8S_LOADER.load(e_data, EntityTest4)
+    e = K8S_LOADER.load(e_data, None, EntityTest4)
     assert e == EntityTest4(fieldOne='-----',
                             fieldTwo=None)
     assert e.fieldOne == 'writeOnly'
@@ -174,7 +223,7 @@ def test_bytes_load():
     }
     # writeOnly with format bytes is never read from APPGATE
     # readOnly associated as checksum to writeOnly bytes is always read from APPGATE
-    e = APPGATE_LOADER.load(e_data, EntityTest3)
+    e = APPGATE_LOADER.load(e_data, None, EntityTest3)
     assert e.fieldOne is None
     assert e.fieldTwo == SHA256_FILE
     assert e == EntityTest3(fieldTwo=SHA256_FILE)
@@ -189,7 +238,7 @@ def test_bytes_load():
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': None,
     }
-    e = K8S_LOADER.load(e_data, EntityTest3)
+    e = K8S_LOADER.load(e_data, None, EntityTest3)
     # When reading from K8S the checksum field associated to bytes is computed
     # by the operator
     assert e.fieldOne == BASE64_FILE_W0

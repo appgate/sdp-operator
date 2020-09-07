@@ -178,11 +178,10 @@ definitions:
               - or
             default: and
           conditions:
-            x-appgate-entity:
-              - Condition
             type: array
             description: List of Condition IDs applies to this Entitleent.
             items:
+              x-uuid-ref: Condition
               type: string
               format: uuid
               example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
@@ -276,6 +275,7 @@ definitions:
             type: array
             description: List of Entitlement Script IDs used for creating App Shortcuts dynamically.
             items:
+              x-uuid-ref: EntitlementScript
               type: string
               format: uuid
               example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc

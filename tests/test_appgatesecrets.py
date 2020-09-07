@@ -42,7 +42,7 @@ def test_write_only_password_attribute_load():
     EntityTest2WithSecrets = load_test_open_api_compare_secrets_spec()['EntityTest2'].cls
     EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
 
-    e = APPGATE_LOADER.load(e_data, EntityTest2)
+    e = APPGATE_LOADER.load(e_data, None, EntityTest2)
     # writeOnly passwords are not loaded from Appgate
     assert e.fieldOne is None
     assert e.fieldTwo is None
@@ -56,7 +56,7 @@ def test_write_only_password_attribute_load():
                             fieldTwo=None,
                             fieldThree='this is a field with a different value')
 
-    e_with_secrets = APPGATE_LOADER.load(e_data, EntityTest2WithSecrets)
+    e_with_secrets = APPGATE_LOADER.load(e_data, None, EntityTest2WithSecrets)
     # writeOnly passwords are not loaded from Appgate even when compare_secrets is True
     assert e_with_secrets.fieldOne is None
     assert e_with_secrets.fieldTwo is None
@@ -73,7 +73,7 @@ def test_write_only_password_attribute_load():
                                                     fieldTwo='some value',
                                                     fieldThree='this is a field')
 
-    e = K8S_LOADER.load(e_data, EntityTest2)
+    e = K8S_LOADER.load(e_data, None, EntityTest2)
     # writeOnly password fields are loaded from K8S
     assert e.fieldOne == '1234567890'  # decrypted password
     assert e.fieldTwo == 'this is write only'
@@ -86,7 +86,7 @@ def test_write_only_password_attribute_load():
                             fieldTwo=None,
                             fieldThree='this is a field with a different value')
 
-    e_with_secrets = K8S_LOADER.load(e_data, EntityTest2WithSecrets)
+    e_with_secrets = K8S_LOADER.load(e_data, None, EntityTest2WithSecrets)
     # writeOnly password fields are loaded from K8S (with compare_secrets True)
     assert e_with_secrets.fieldOne == '1234567890'  # decrypted password
     assert e_with_secrets.fieldTwo == 'this is write only'
@@ -137,7 +137,7 @@ def test_get_appgate_secret_simple_load():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    e = K8S_LOADER.load(data, EntityTest2)
+    e = K8S_LOADER.load(data, None, EntityTest2)
     # Password is decrypted
     assert e.fieldOne == '1234567890'
 
@@ -149,7 +149,7 @@ def test_get_appgate_secret_simple_load_no_cipher():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    e = K8S_LOADER.load(data, EntityTest2)
+    e = K8S_LOADER.load(data, None, EntityTest2)
     # We don't try to decrypt the password, use it as we get it
     assert e.fieldOne == ENCRYPTED_PASSWORD
 
@@ -178,7 +178,7 @@ def test_get_appgate_secret_k8s_simple_load():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    e = K8S_LOADER.load(data, EntityTest2)
+    e = K8S_LOADER.load(data, None, EntityTest2)
     # Password is coming from k8s secrets
     assert e.fieldOne == '1234567890-from-k8s'
 
@@ -197,4 +197,4 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
         'fieldThree': 'this is a field',
     }
     with pytest.raises(TypedloadException, match='Unable to get secret: secret-storage.field-one'):
-        K8S_LOADER.load(data, EntityTest2)
+        K8S_LOADER.load(data, None, EntityTest2)

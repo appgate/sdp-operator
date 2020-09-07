@@ -1,6 +1,7 @@
 import enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable, Optional
 
+from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
 
@@ -15,10 +16,13 @@ __all__ = [
     'get_dumper',
 ]
 
+from typedload.dataloader import Loader
+
 from typedload.exceptions import TypedloadException
 
 from appgate.customloaders import CustomEntityLoader, CustomLoader, CustomAttribLoader
-from appgate.openapi.parser import APPGATE_METADATA_ATTRIB_NAME
+from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
+from appgate.openapi.types import Entity_T, AppgateMetadata
 
 
 class PlatformType(enum.Enum):
@@ -49,13 +53,18 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
             read_only = attr.metadata.get('readOnly', False)
             write_only = attr.metadata.get('writeOnly', False)
             format = attr.metadata.get('format')
+            name = attr.metadata.get('name', attr.name)
+
             if not attr.repr:
+                continue
+            if name == APPGATE_METADATA_ATTRIB_NAME:
                 continue
             if read_only:
                 continue
             if write_only and format == 'password':
                 if not dump_secrets and platform_type == PlatformType.APPGATE:
                     continue
+
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
                 r[name] = d.dump(attrval)
@@ -66,13 +75,14 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
     return dumper
 
 
-def get_loader(platform_type: PlatformType):
+def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type],
+                                                        Entity_T]:
 
     def _namedtupleload_wrapper(l, value, t):
         entity = dataloader._namedtupleload(l, value, t)
         try:
-            if hasattr(entity, APPGATE_METADATA_ATTRIB_NAME):
-                appgate_metadata = getattr(entity, APPGATE_METADATA_ATTRIB_NAME)
+            if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
+                appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
                 if platform_type == PlatformType.K8S \
                         and 'k8s_loader' in appgate_metadata:
                     els: List[CustomEntityLoader] = appgate_metadata['k8s_loader']
@@ -99,7 +109,6 @@ def get_loader(platform_type: PlatformType):
         for attribute in type_.__attrs_attrs__:
             read_only = attribute.metadata.get('readOnly', False)
             write_only = attribute.metadata.get('writeOnly', False)
-
             if read_only and platform_type == PlatformType.K8S:
                 # Don't load attribute from K8S in read only mode even if
                 # it's defined
@@ -148,11 +157,28 @@ def get_loader(platform_type: PlatformType):
 
     loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
-    return loader
+    def load(data: Dict[str, Any], metadata: Optional[Dict[str, Any]],
+             entity: type) -> Entity_T:
+        data[APPGATE_METADATA_ATTRIB_NAME] = metadata or {}
+        return loader.load(data, entity)
+
+    if platform_type == PlatformType.K8S:
+        return load  # type: ignore
+    return lambda data, _, entity: load(data, None, entity)  # type: ignore
 
 
-K8S_LOADER = get_loader(PlatformType.K8S)
-K8S_DUMPER = get_dumper(PlatformType.K8S)
-APPGATE_LOADER = get_loader(PlatformType.APPGATE)
-APPGATE_DUMPER = get_dumper(PlatformType.APPGATE)
-APPGATE_DUMPER_WITH_SECRETS = get_dumper(PlatformType.APPGATE, dump_secrets=True)
+@attrs()
+class EntityLoader:
+    load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T] = attrib()
+
+
+@attrs()
+class EntityDumper:
+    dump: Callable[[Entity_T], Dict[str, Any]] = attrib()
+
+
+K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))
+K8S_DUMPER = EntityDumper(dump=get_dumper(PlatformType.K8S).dump)
+APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
+APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE).dump)
+APPGATE_DUMPER_WITH_SECRETS = EntityDumper(dump=get_dumper(PlatformType.APPGATE, dump_secrets=True).dump)

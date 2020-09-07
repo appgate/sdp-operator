@@ -124,6 +124,7 @@ definitions:
         description: Whether there is a backup passphrase set or not. Deprecated as of 5.0. Use backupApiEnabled instead.
         deprecated: true
       backupPassphrase:
+        format: password
         type: string
         writeOnly: true
         description: The passphrase to encrypt Appliance Backups when backup API is used.
