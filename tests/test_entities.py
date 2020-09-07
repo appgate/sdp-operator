@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -48,6 +49,30 @@ def test_loader_1():
 
 
 def test_loader_2():
+    """
+    Test that id fields are created if missing
+    """
+    EntityTestWithId = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTestWithId'].cls
+    entity_1 = {
+        'fieldOne': 'this is read only',
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is deprecated',
+        'fieldFour': 'this is a field',
+    }
+    metadata = {
+        'uuid': '666-666-666-666-666-777'
+    }
+    with patch('appgate.openapi.attribmaker.uuid4') as uuid4:
+        uuid4.return_value = '111-111-111-111-111'
+        e = K8S_LOADER.load(entity_1, None, EntityTestWithId)
+        # Normally we create a new uuid value for id if it's not present
+        assert e.id == '111-111-111-111-111'
+        # If we have in metadata we use it
+        e = K8S_LOADER.load(entity_1, metadata, EntityTestWithId)
+        assert e.id == '666-666-666-666-666-777'
+
+
+def test_loader_3():
     """
     Test load metadata
     """
