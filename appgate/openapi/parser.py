@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -37,6 +38,24 @@ def checksum_bytes(value: Any, bytes: str) -> str:
     return hashlib.sha256(bytes.encode()).hexdigest()
 
 
+def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
+    return appgate_metadata.uuid or current_id
+
+
+class IdAttribMaker(SimpleAttribMaker):
+    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+        values = super().values(attributes, required_fields, instance_maker_config)
+        if 'metadata' not in values:
+            values['metadata'] = {}
+        values['metadata']['k8s_loader'] = CustomEntityLoader(
+            loader=set_id_from_metadata,
+            dependencies=['appgate_metadata'],
+            field=self.name,
+        )
+        return values
+
+
 class ChecksumAttribMaker(SimpleAttribMaker):
     def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
@@ -45,8 +64,7 @@ class ChecksumAttribMaker(SimpleAttribMaker):
         self.source_field = source_field
 
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig',
-               ) -> AttributesDict:
+               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = True
@@ -355,6 +373,13 @@ class Parser:
                                            factory=None,
                                            definition=attrib_maker_config.definition,
                                            source_field=format['source'])
+            elif attrib_name == 'id':
+                return IdAttribMaker(name=attrib_name,
+                                     tpe=TYPES_MAP[tpe],
+                                     base_tpe=TYPES_MAP[tpe],
+                                     default=DEFAULT_MAP.get(tpe),
+                                     factory=None,
+                                     definition=attrib_maker_config.definition)
             else:
                 return SimpleAttribMaker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],
@@ -397,8 +422,7 @@ class Parser:
                                      default=None,
                                      factory=None,
                                      definition=instance_maker_config.definition)
-        raise Exception(f'Unknown type for attribute %s.%s: %s', entity_name, attrib_name,
-                        definition)
+        raise Exception(f'Unknown type for attribute {entity_name}.{attrib_name}: {definition}')
 
     def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
         """

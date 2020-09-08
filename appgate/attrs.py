@@ -4,6 +4,11 @@ from typing import Dict, Any, List, Callable, Optional
 from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
+from typedload.exceptions import TypedloadException
+
+from appgate.customloaders import CustomEntityLoader, CustomLoader, CustomAttribLoader
+from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
+from appgate.openapi.types import Entity_T
 
 
 __all__ = [
@@ -15,14 +20,6 @@ __all__ = [
     'get_loader',
     'get_dumper',
 ]
-
-from typedload.dataloader import Loader
-
-from typedload.exceptions import TypedloadException
-
-from appgate.customloaders import CustomEntityLoader, CustomLoader, CustomAttribLoader
-from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
-from appgate.openapi.types import Entity_T, AppgateMetadata
 
 
 class PlatformType(enum.Enum):

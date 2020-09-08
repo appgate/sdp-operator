@@ -25,6 +25,7 @@ TestSpec = {
     '/entity-test2': 'EntityTest2',
     '/entity-test3': 'EntityTest3',
     '/entity-test4': 'EntityTest4',
+    '/entity-test-with-id': 'EntityTestWithId',
 }
 
 
