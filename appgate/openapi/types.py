@@ -31,6 +31,9 @@ OpenApiDict = Dict[str, Any]
 AttributesDict = Dict[str, Any]
 # Dictionary with the top level entities, those that are "exported"
 EntitiesDict = Dict[str, 'GeneratedEntity']
+APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
+K8S_LOADERS_FIELD_NAME = 'k8s_loader'
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
 
 
 def normalize_attrib_name(name: str) -> str:
@@ -46,6 +49,7 @@ class OpenApiParserException(Exception):
 @attrs(frozen=True, slots=True)
 class AppgateMetadata:
     uuid: Optional[str] = attrib(default=None)
+    passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
 
 
 @attrs()
@@ -54,6 +58,7 @@ class Entity_T:
     id: str = attrib()
     tags: FrozenSet[str] = attrib()
     __attrs_attrs__: List[Attribute] = attrib()
+    appgate_metadata: AppgateMetadata = attrib()
 
 
 @attrs(frozen=True, slots=True)

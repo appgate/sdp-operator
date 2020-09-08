@@ -1,9 +1,8 @@
 import os
-from typing import Any, List, Dict, Iterable, FrozenSet
+from typing import Any, List, Dict, FrozenSet
 
 from appgate.logger import log
-from appgate.openapi.types import Entity_T, AttributesDict
-
+from appgate.openapi.types import Entity_T, AttributesDict, PYTHON_TYPES
 
 __all__ = [
     'builtin_tags',
@@ -17,6 +16,7 @@ __all__ = [
     'is_builtin',
     'has_name',
     'get_field',
+    'get_passwords',
     'join',
     'make_explicit_references',
 ]
@@ -122,3 +122,23 @@ def builtin_tags() -> FrozenSet[str]:
 
 def is_builtin(entity: Entity_T) -> bool:
     return any(map(lambda t: t in (entity.tags or frozenset()), builtin_tags()))
+
+
+def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
+    fields = []
+    prefix = '.'.join(names)
+    for a in entity.__attrs_attrs__:
+        mt = getattr(a, 'metadata')
+        if mt and mt.get('format') == 'password':
+            if prefix:
+                fields.append(f'{prefix}.{a.name}')
+            else:
+                fields.append(a.name)
+        base_type = mt.get('base_type', None)
+        if base_type and base_type not in PYTHON_TYPES:
+            fields.extend(_get_passwords(base_type, names + [a.name]))
+    return fields
+
+
+def get_passwords(entity: Entity_T) -> List[str]:
+    return _get_passwords(entity, [])

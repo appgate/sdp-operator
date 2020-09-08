@@ -7,13 +7,13 @@ import yaml
 from attr import attrib, make_class
 from cryptography.fernet import Fernet
 
-from appgate.customloaders import CustomEntityLoader
+from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
-    AttribMakerConfig, Entity_T, AppgateMetadata
+    AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
@@ -27,7 +27,6 @@ TYPES_MAP: Dict[str, Type] = {
     'integer': int,
     'number': int,
 }
-PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
 DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
@@ -48,11 +47,11 @@ class IdAttribMaker(SimpleAttribMaker):
         values = super().values(attributes, required_fields, instance_maker_config)
         if 'metadata' not in values:
             values['metadata'] = {}
-        values['metadata']['k8s_loader'] = CustomEntityLoader(
+        values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomFieldsEntityLoader(
             loader=set_id_from_metadata,
             dependencies=['appgate_metadata'],
             field=self.name,
-        )
+        )]
         return values
 
 
@@ -70,32 +69,12 @@ class ChecksumAttribMaker(SimpleAttribMaker):
         values['eq'] = True
         if 'metadata' not in values:
             values['metadata'] = {}
-        values['metadata']['k8s_loader'] = CustomEntityLoader(
+        values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomFieldsEntityLoader(
             loader=checksum_bytes,
             dependencies=[self.source_field],
             field=self.name,
-        )
+        )]
         return values
-
-
-def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
-    fields = []
-    prefix = '.'.join(names)
-    for a in entity.__attrs_attrs__:
-        mt = getattr(a, 'metadata')
-        if mt and mt.get('format') == 'password':
-            if prefix:
-                fields.append(f'{prefix}.{a.name}')
-            else:
-                fields.append(a.name)
-        base_type = mt['base_type']
-        if base_type not in PYTHON_TYPES:
-            fields.extend(_get_passwords(base_type, names + [a.name]))
-    return fields
-
-
-def get_passwords(entity: Entity_T) -> List[str]:
-    return _get_passwords(entity, [])
 
 
 class InstanceMaker:
@@ -148,12 +127,24 @@ class InstanceMaker:
         for n, v in values.items():
             if 'metadata' not in v:
                 continue
-            k8s_loader = v['metadata'].get('k8s_loader')
-            appgate_loader = v['metadata'].get('appgate_loader')
-            if k8s_loader and isinstance(k8s_loader, CustomEntityLoader):
-                k8s_custom_entity_loaders.append(k8s_loader)
-            if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
-                appgate_custom_entity_loaders.append(k8s_loader)
+            k8s_loaders = v['metadata'].get(K8S_LOADERS_FIELD_NAME, [])
+            custom_k8s_attrib_loaders = []
+            for k8s_loader in k8s_loaders:
+                if any(map(lambda el: isinstance(k8s_loader, el),
+                           {CustomFieldsEntityLoader, CustomEntityLoader})):
+                    k8s_custom_entity_loaders.append(k8s_loader)
+                else:
+                    custom_k8s_attrib_loaders.append(k8s_loader)
+            v['metadata'][K8S_LOADERS_FIELD_NAME] = custom_k8s_attrib_loaders
+            appgate_loaders = v['metadata'].get(APPGATE_LOADERS_FIELD_NAME, [])
+            custom_appgate_attrib_loaders = []
+            for appgate_loader in appgate_loaders:
+                if any(map(lambda el: isinstance(k8s_loader, el),
+                           {CustomFieldsEntityLoader, CustomEntityLoader})):
+                    appgate_custom_entity_loaders.append(appgate_loader)
+                else:
+                    custom_appgate_attrib_loaders.append(appgate_loaders)
+            v['metadata'][APPGATE_LOADERS_FIELD_NAME] = custom_appgate_attrib_loaders
 
         # Build the dictionary of attribs
         attrs = {}
@@ -169,8 +160,8 @@ class InstanceMaker:
             ENTITY_METADATA_ATTRIB_NAME,
             {
                 'singleton': instance_maker_config.singleton,
-                'k8s_loader': k8s_custom_entity_loaders or None,
-                'appgate_loader': appgate_custom_entity_loaders or None,
+                K8S_LOADERS_FIELD_NAME: k8s_custom_entity_loaders or None,
+                APPGATE_LOADERS_FIELD_NAME: appgate_custom_entity_loaders or None,
                 'passwords': self.password_attributes,
             })
         attrs[ENTITY_METADATA_ATTRIB_NAME] = attrib(**entity_metadata_attrib.values(
