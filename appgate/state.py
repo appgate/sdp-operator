@@ -14,9 +14,9 @@ from appgate.attrs import K8S_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
-from appgate.openapi.parser import get_passwords, ENTITY_METADATA_ATTRIB_NAME
+from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec
-from appgate.openapi.utils import is_entity_t, has_name, is_builtin
+from appgate.openapi.utils import is_entity_t, has_name, is_builtin, get_passwords
 
 __all__ = [
     'AppgateState',
@@ -119,7 +119,6 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
     entity_mt = getattr(entity, ENTITY_METADATA_ATTRIB_NAME, {})
     singleton = entity_mt.get('singleton', False)
-    get_passwords(entity)
     metadata = {
         'name': entity_name,
         'passwords': get_passwords(entity),

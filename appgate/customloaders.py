@@ -1,13 +1,14 @@
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Dict
 
 from attr import attrs, attrib, evolve
 
-from appgate.openapi.types import AttributesDict
+from appgate.openapi.types import AttributesDict, Entity_T
 
 __all__ = [
     'CustomLoader',
-    'CustomEntityLoader',
+    'CustomFieldsEntityLoader',
     'CustomAttribLoader',
+    'CustomEntityLoader',
 ]
 
 from appgate.openapi.utils import get_field
@@ -29,12 +30,12 @@ class CustomAttribLoader(CustomLoader):
 
 
 @attrs()
-class CustomEntityLoader(CustomLoader):
+class CustomFieldsEntityLoader(CustomLoader):
     loader: Callable[..., Any] = attrib()
     field: str = attrib()
     dependencies: List[str] = attrib(factory=list)
 
-    def load(self, entity: Any) -> Any:
+    def load(self, orig_values: Dict[str, Any], entity: Any) -> Any:
         deps_set = set(self.dependencies)
         resolved_deps = {(a.name, get_field(entity, a.name))
                          for a in entity.__attrs_attrs__
@@ -49,3 +50,16 @@ class CustomEntityLoader(CustomLoader):
         return evolve(entity, **{
             self.field: new_value
         })
+
+
+@attrs()
+class CustomEntityLoader(CustomLoader):
+    """
+    The most generic CustomLoader
+    It gets the entity and then it returns a new entity
+    TODO: Check order of executions
+    """
+    loader: Callable[[Dict[str, Any], Entity_T], Entity_T] = attrib()
+
+    def load(self, orig_values: Dict[str, Any], entity: Any) -> Any:
+        return self.loader(orig_values, entity)

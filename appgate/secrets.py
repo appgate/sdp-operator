@@ -1,9 +1,12 @@
 import base64
 from typing import Dict, List, Union, Optional, Callable
 
-from appgate.customloaders import CustomAttribLoader
+from attr import evolve
+
+from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME
+from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME, \
+    Entity_T
 
 from cryptography.fernet import Fernet
 from kubernetes.client import CoreV1Api
@@ -19,6 +22,7 @@ __all__ = [
     'k8s_get_secret',
 ]
 
+from appgate.openapi.utils import get_passwords
 
 PasswordField = Union[str, OpenApiDict]
 
@@ -153,11 +157,28 @@ class PasswordAttribMaker(SimpleAttribMaker):
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = instance_maker_config.compare_secrets
+
+        # TODO: Recursive fields
+        def set_appgate_password_metadata(orig_values, entity: Entity_T) -> Entity_T:
+            password_fields = get_passwords(entity)
+            orig_passwords = {}
+            for field in password_fields:
+                if field in orig_values:
+                    orig_passwords[field] = orig_values[field]
+            return evolve(entity,
+                          appgate_metadata=evolve(entity.appgate_metadata,
+                                                  passwords=orig_passwords))
+
         if 'metadata' not in values:
             values['metadata'] = {}
-        values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomAttribLoader(
-            loader=lambda v: appgate_secret_load(v, self.secrets_cipher, self.k8s_get_client),
-            field=self.name)]
+        values['metadata'][K8S_LOADERS_FIELD_NAME] = [
+            CustomAttribLoader(
+                loader=lambda v: appgate_secret_load(v, self.secrets_cipher, self.k8s_get_client),
+                field=self.name),
+            CustomEntityLoader(
+                loader=set_appgate_password_metadata
+            )
+        ]
         return values
 
     @property

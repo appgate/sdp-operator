@@ -1,12 +1,12 @@
 import enum
-from typing import Dict, Any, List, Callable, Optional, Iterable
+from typing import Dict, Any, List, Callable, Optional, Iterable, Union
 
 from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
 from typedload.exceptions import TypedloadException
 
-from appgate.customloaders import CustomEntityLoader, CustomLoader, CustomAttribLoader
+from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T
 
@@ -75,21 +75,21 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
 def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type],
                                                         Entity_T]:
 
-    def _namedtupleload_wrapper(l, value, t):
+    def _namedtupleload_wrapper(orig_values, l, value, t):
         entity = dataloader._namedtupleload(l, value, t)
         try:
             if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
                 appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
                 if platform_type == PlatformType.K8S \
                         and 'k8s_loader' in appgate_metadata:
-                    els: List[CustomEntityLoader] = appgate_metadata['k8s_loader']
+                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = appgate_metadata['k8s_loader']
                     for el in (els or []):
-                        entity = el.load(entity)
+                        entity = el.load(orig_values, entity)
                 elif platform_type == PlatformType.APPGATE \
                         and 'appgate_loader' in appgate_metadata.get('metadata', {}):
-                    els: List[CustomEntityLoader] = appgate_metadata['appgate_loader']
+                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = appgate_metadata['appgate_loader']
                     for el in (els or []):
-                        entity = el.load(entity)
+                        entity = el.load(orig_values, entity)
         except Exception as e:
             raise TypedloadException(str(e))
         return entity
@@ -99,10 +99,10 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
             raise dataloader.TypedloadTypeError('Expected dictionary, got %s' % type(value),
                                                 type_=type_, value=value)
         value = value.copy()
+        orig_values = value.copy()
         names = []
         defaults = {}
         types = {}
-
         for attribute in type_.__attrs_attrs__:
             read_only = attribute.metadata.get('readOnly', False)
             write_only = attribute.metadata.get('writeOnly', False)
@@ -151,8 +151,7 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
             defaults,
             type_,
         ))
-
-        return _namedtupleload_wrapper(l, value, t)
+        return _namedtupleload_wrapper(orig_values, l, value, t)
 
     loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
