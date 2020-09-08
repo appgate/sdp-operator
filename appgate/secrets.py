@@ -3,7 +3,7 @@ from typing import Dict, List, Union, Optional, Callable
 
 from appgate.customloaders import CustomAttribLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig
+from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME
 
 from cryptography.fernet import Fernet
 from kubernetes.client import CoreV1Api
@@ -155,9 +155,9 @@ class PasswordAttribMaker(SimpleAttribMaker):
         values['eq'] = instance_maker_config.compare_secrets
         if 'metadata' not in values:
             values['metadata'] = {}
-        values['metadata']['k8s_loader'] = CustomAttribLoader(
+        values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomAttribLoader(
             loader=lambda v: appgate_secret_load(v, self.secrets_cipher, self.k8s_get_client),
-            field=self.name)
+            field=self.name)]
         return values
 
     @property

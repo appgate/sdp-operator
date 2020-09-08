@@ -31,6 +31,8 @@ OpenApiDict = Dict[str, Any]
 AttributesDict = Dict[str, Any]
 # Dictionary with the top level entities, those that are "exported"
 EntitiesDict = Dict[str, 'GeneratedEntity']
+APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
+K8S_LOADERS_FIELD_NAME = 'k8s_loader'
 
 
 def normalize_attrib_name(name: str) -> str:

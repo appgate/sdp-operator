@@ -1,5 +1,5 @@
 import enum
-from typing import Dict, Any, List, Callable, Optional
+from typing import Dict, Any, List, Callable, Optional, Iterable
 
 from attr import attrib, attrs
 from typedload import dataloader
@@ -132,14 +132,16 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
             try:
                 if platform_type == PlatformType.K8S \
                         and 'k8s_loader' in attribute.metadata:
-                    cl: CustomLoader = attribute.metadata['k8s_loader']
-                    if isinstance(cl, CustomAttribLoader):
-                        value = cl.load(value)
+                    cls: Iterable[CustomLoader] = attribute.metadata['k8s_loader']
+                    for cl in cls:
+                        if isinstance(cl, CustomAttribLoader):
+                            value = cl.load(value)
                 elif platform_type == PlatformType.APPGATE \
                         and 'appgate_loader' in attribute.metadata:
-                    cl: CustomLoader = attribute.metadata['appgate_loader']
-                    if isinstance(cl, CustomAttribLoader):
-                        value = cl.load(value)
+                    cls: Iterable[CustomLoader] = attribute.metadata['appgate_loader']
+                    for cl in cls:
+                        if isinstance(cl, CustomAttribLoader):
+                            value = cl.load(value)
             except Exception as e:
                 raise TypedloadException(str(e))
 
