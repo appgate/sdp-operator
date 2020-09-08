@@ -38,7 +38,7 @@ def checksum_bytes(value: Any, bytes: str) -> str:
     return hashlib.sha256(bytes.encode()).hexdigest()
 
 
-def set_id_from_metadata(current_id: Any, appgate_metadata: AppgateMetadata) -> str:
+def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
     return appgate_metadata.uuid or current_id
 
 
