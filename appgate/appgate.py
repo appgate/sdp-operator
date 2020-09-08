@@ -5,7 +5,7 @@ import sys
 from asyncio import Queue
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Type, Dict, Callable, Any
+from typing import Optional, Type, Dict, Callable, Any, List, FrozenSet
 import threading
 
 from attr import attrib, attrs
@@ -20,6 +20,7 @@ from appgate.client import AppgateClient
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, K8S_APPGATE_VERSION, \
     K8S_APPGATE_DOMAIN, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T
+from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
 from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
@@ -74,10 +75,12 @@ class Context:
     cleanup_mode: bool = attrib()
     dump_secrets: bool = attrib()
     api_spec: APISpec = attrib()
+    target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
 
 def get_context(namespace: str, spec_directory: Optional[str],
-                k8s_get_secret: Optional[Callable[[str, str], str]]) -> Context:
+                k8s_get_secret: Optional[Callable[[str, str], str]],
+                target_tags: Optional[List[str]] = None) -> Context:
     user = os.getenv(USER_ENV)
     password = os.getenv(PASSWORD_ENV)
     controller = os.getenv(HOST_ENV)
@@ -88,6 +91,9 @@ def get_context(namespace: str, spec_directory: Optional[str],
     dump_secrets = os.getenv(DUMP_SECRETS_ENV) or '0'
     spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
+    target_tags_arg = frozenset(target_tags) if target_tags else frozenset()
+    target_tags_env = target_tags_arg.union(
+        frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -106,7 +112,8 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
                    dump_secrets=dump_secrets == '1',
-                   api_spec=api_spec)
+                   api_spec=api_spec,
+                   target_tags=target_tags_env if target_tags_env else None)
 
 
 def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
@@ -157,7 +164,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     for entity, client in entity_clients.items():
         entities = await client.get()
         if entities is not None:
-            entities_set[entity] = EntitiesSet(set(entities))
+            entities_set[entity] = EntitiesSet(set(filter(lambda e: is_target(e, ctx.target_tags),
+                                                          entities)))
     if len(entities_set) < len(entity_clients):
         log.error('[appgate-operator/%s] Unable to get entities from controller',
                   ctx.namespace)

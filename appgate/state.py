@@ -138,6 +138,7 @@ def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
                   entity_type: str) -> Optional[List[str]]:
     entity_passwords = None
     if not entities:
+        log.warning(f'No entities of type: {entity_type} found')
         return None
     f = dump_file.open('w') if dump_file else sys.stdout
     for i, e in enumerate(entities):
