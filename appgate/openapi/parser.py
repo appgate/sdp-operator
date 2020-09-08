@@ -152,8 +152,10 @@ class InstanceMaker:
             appgate_loader = v['metadata'].get('appgate_loader')
             if k8s_loader and isinstance(k8s_loader, CustomEntityLoader):
                 k8s_custom_entity_loaders.append(k8s_loader)
+                v['metadata']['k8s_loader'] = None
             if appgate_loader and isinstance(appgate_loader, CustomEntityLoader):
                 appgate_custom_entity_loaders.append(k8s_loader)
+                v['metadata']['appgate_loader'] = None
 
         # Build the dictionary of attribs
         attrs = {}
