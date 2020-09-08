@@ -3,13 +3,14 @@ from typing import Dict, List, Union, Optional, Callable
 
 from attr import evolve
 
+from cryptography.fernet import Fernet
+from kubernetes.client import CoreV1Api
+
 from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
 from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME, \
     Entity_T
-
-from cryptography.fernet import Fernet
-from kubernetes.client import CoreV1Api
+from appgate.openapi.utils import get_passwords
 
 
 __all__ = [
@@ -22,7 +23,6 @@ __all__ = [
     'k8s_get_secret',
 ]
 
-from appgate.openapi.utils import get_passwords
 
 PasswordField = Union[str, OpenApiDict]
 
