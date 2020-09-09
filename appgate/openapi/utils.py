@@ -20,6 +20,8 @@ __all__ = [
     'get_passwords',
     'join',
     'make_explicit_references',
+    'APPGATE_TARGET_TAGS_ENV',
+    'APPGATE_BUILTIN_TAGS_ENV',
 ]
 
 
