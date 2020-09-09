@@ -1,5 +1,4 @@
 import hashlib
-import uuid
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -108,9 +107,9 @@ class InstanceMaker:
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
         # Add attributes if needed after instance level
         if 'name' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['name'] = create_default_attrib(self.name, self.name)
+            self.attributes['name'] = create_default_attrib('name', self.name)
         if 'id' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['id'] = create_default_attrib(self.name, self.name)
+            self.attributes['id'] = create_default_attrib('id', self.name)
         if 'tags' not in self.attributes and instance_maker_config.singleton:
             self.attributes['tags'] = create_default_attrib('tags', builtin_tags())
 

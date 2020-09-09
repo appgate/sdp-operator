@@ -95,7 +95,8 @@ class DefaultAttribMaker(SimpleAttribMaker):
             'type': Optional[self.tpe],
             'eq': False,
             'metadata': {
-                'base_type': self.tpe
+                'base_type': self.tpe,
+                'name': self.name,
             },
             'repr': self.repr,
         }
