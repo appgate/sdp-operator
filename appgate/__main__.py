@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import datetime
 import time
 
@@ -52,8 +52,9 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
 
 
 def main_dump_entities(stdout: bool, output_dir: Optional[str],
-                       spec_directory: Optional[str] = None) -> None:
-    asyncio.run(dump_entities(ctx=get_context('cli', spec_directory, None),
+                       spec_directory: Optional[str] = None,
+                       target_tags: Optional[List[str]] = None) -> None:
+    asyncio.run(dump_entities(ctx=get_context('cli', spec_directory, None, target_tags=target_tags),
                               stdout=stdout,
                               output_dir=Path(output_dir) if output_dir else None))
 
@@ -105,6 +106,9 @@ def main() -> None:
     dump_entities.add_argument('--directory', help='Directory where to dump entities. '
                                'Default value: "YYYY-MM-DD_HH-MM-entities"',
                                default=None)
+    dump_entities.add_argument('-t', '--tags', action='append',
+                               help='Tags to filter entities. Only entities with any of those tags will be dumped',
+                               default=[])
     # dump crd
     dump_crd = subparsers.add_parser('dump-crd')
     dump_crd.set_defaults(cmd='dump-crd')
@@ -124,7 +128,7 @@ def main() -> None:
         main_run(args.namespace, args.spec_directory)
     elif args.cmd == 'dump-entities':
         main_dump_entities(stdout=args.stdout, output_dir=args.directory,
-                           spec_directory=args.spec_directory)
+                           spec_directory=args.spec_directory, target_tags=args.tags)
     elif args.cmd == 'dump-crd':
         main_dump_crd(stdout=args.stdout, output_file=args.file,
                       spec_directory=args.spec_directory)

@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Dict, FrozenSet
+from typing import Any, List, Dict, FrozenSet, Optional
 
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AttributesDict, PYTHON_TYPES
@@ -14,6 +14,7 @@ __all__ = [
     'has_id',
     'has_default',
     'is_builtin',
+    'is_target',
     'has_name',
     'get_field',
     'get_passwords',
@@ -23,6 +24,7 @@ __all__ = [
 
 
 APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
+APPGATE_TARGET_TAGS_ENV = 'APPGATE_OPERATOR_TARGET_TAGS'
 BUILTIN_TAGS = frozenset({'builtin'})
 
 
@@ -116,12 +118,17 @@ def join(sep: str, xs: List[Any]) -> str:
 
 def builtin_tags() -> FrozenSet[str]:
     custom_tags = os.getenv(APPGATE_BUILTIN_TAGS_ENV, '')
-    custom_tags.split(',')
     return BUILTIN_TAGS.union(frozenset(custom_tags.split(',')))
 
 
 def is_builtin(entity: Entity_T) -> bool:
     return any(map(lambda t: t in (entity.tags or frozenset()), builtin_tags()))
+
+
+def is_target(entity: Entity_T, tags: Optional[FrozenSet[str]] = None) -> bool:
+    if not tags:
+        return True
+    return any(map(lambda t: t in (entity.tags or frozenset()), tags))
 
 
 def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
