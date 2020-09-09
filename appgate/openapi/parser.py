@@ -163,6 +163,7 @@ class InstanceMaker:
                 K8S_LOADERS_FIELD_NAME: k8s_custom_entity_loaders or None,
                 APPGATE_LOADERS_FIELD_NAME: appgate_custom_entity_loaders or None,
                 'passwords': self.password_attributes,
+                'dependencies': self.dependencies
             })
         attrs[ENTITY_METADATA_ATTRIB_NAME] = attrib(**entity_metadata_attrib.values(
             self.attributes,
@@ -184,7 +185,6 @@ class InstanceMaker:
             instance_maker_config))
         cls = make_class(self.name, attrs, slots=True, frozen=True)
         return GeneratedEntity(cls=cls,
-                               entity_dependencies=self.dependencies,
                                api_path=instance_maker_config.api_path)
 
 

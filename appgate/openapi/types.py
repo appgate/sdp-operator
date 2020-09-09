@@ -1,5 +1,6 @@
 import itertools
 import re
+from functools import cached_property
 from typing import Any, Dict, List, Optional, FrozenSet, Callable, Set, \
     Union, Iterator, Tuple
 
@@ -10,6 +11,8 @@ from attr import attrib, attrs, Attribute
 from appgate.logger import log
 
 SPEC_ENTITIES = {
+    '/sites': 'Site',
+    '/ip-pools': 'IpPool',
     '/identity-providers': 'IdentityProvider',
     '/administrative-roles': 'AdministrativeRole',
     '/device-scripts': 'DeviceScript',
@@ -34,6 +37,7 @@ EntitiesDict = Dict[str, 'GeneratedEntity']
 APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
 K8S_LOADERS_FIELD_NAME = 'k8s_loader'
 PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
+UUID_REFERENCE_FIELD = 'x-uuid-ref'
 
 
 def normalize_attrib_name(name: str) -> str:
@@ -67,14 +71,35 @@ class EntityDependency:
     dependencies: FrozenSet[str] = attrib()
 
 
+def get_dependencies(cls: type) -> Set[str]:
+    deps = set()
+    attributes = getattr(cls, '__attrs_attrs__', None)
+    if not attributes:
+        return set()
+    for attribute in attributes:
+        mt = getattr(attribute, 'metadata', None)
+        name = (mt or {}).get('name')
+        if not mt or not name:
+            continue
+        base_type = mt['base_type']
+        if base_type not in PYTHON_TYPES:
+            deps.update(get_dependencies(base_type))
+        elif UUID_REFERENCE_FIELD in mt:
+            deps.add(mt.get(UUID_REFERENCE_FIELD))
+    return deps
+
+
 @attrs()
 class GeneratedEntity:
     """
     Class to represent an already parsed entity
     """
     cls: type = attrib()
-    entity_dependencies: Set[EntityDependency] = attrib(factory=list)
     api_path: Optional[str] = attrib(default=None)
+
+    @cached_property
+    def entity_dependencies(self):
+        return get_dependencies(self.cls)
 
 
 class EntitiesContext:

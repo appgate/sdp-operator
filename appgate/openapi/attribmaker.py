@@ -2,10 +2,7 @@ from uuid import uuid4
 from typing import Optional, Dict, Any, List
 
 from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
-    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig
-
-
-UUID_REFERENCE_FIELD = 'x-uuid-ref'
+    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig, UUID_REFERENCE_FIELD
 
 
 class SimpleAttribMaker:
