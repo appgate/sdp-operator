@@ -169,9 +169,8 @@ definitions:
           entitlements:
             type: array
             description: List of Entitlement IDs in this Policy.
-            x-appgate-entity:
-              - Entitlement
             items:
+              x-uuid-ref: Entitlement
               type: string
               format: uuid
               example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
@@ -201,6 +200,7 @@ definitions:
               configurations are not changed.
             default: true
           overrideSite:
+            x-uuid-ref: Site
             type: string
             format: uuid
             description: >-
@@ -212,6 +212,7 @@ definitions:
             type: array
             description: List of Administrative Role IDs in this Policy.
             items:
+              x-uuid-ref: AdministrativeRole
               type: string
               format: uuid
               example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc

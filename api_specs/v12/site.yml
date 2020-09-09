@@ -177,6 +177,7 @@ definitions:
                 from:
                   type: string
                   format: uuid
+                  x-uuid-ref: IpPool
                   description: >-
                     IP Pool ID to map from.
                     If a user is authorizing with this IP Pool via Identity Provider assignment and has access to this
@@ -185,6 +186,7 @@ definitions:
                 to:
                   type: string
                   format: uuid
+                  x-uuid-ref: IpPool
                   description: IP Pool ID to map to.
                   example: 8c07bc67-5711-42dd-b702-c2d6c45419f8
           defaultGateway:
