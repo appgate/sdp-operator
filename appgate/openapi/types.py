@@ -141,12 +141,13 @@ class InstanceMakerConfig:
     def attrib_maker_config(self, attribute: str) -> 'AttribMakerConfig':
         properties = self.definition.get('properties', {})
         definition = properties.get(attribute)
+        x_name = definition.get('x-name')
         if not definition:
             log.error('Unable to find attribute %s in %s', attribute, ', '.join(properties.keys()))
             raise OpenApiParserException(f'Unable to find attribute %s')
         return AttribMakerConfig(
             instance_maker_config=self,
-            name=normalize_attrib_name(attribute),
+            name=normalize_attrib_name(x_name or attribute),
             definition=definition
         )
 
