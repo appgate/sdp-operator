@@ -163,6 +163,7 @@ definitions:
           site:
             type: string
             format: uuid
+            x-uuid-ref: Site
             description: ID of the Site for this Entitlement.
             example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
           siteName:
