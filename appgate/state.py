@@ -419,7 +419,7 @@ def resolve_entity(entity: Entity_T,
     if not is_iterable:
         dependencies = frozenset({dependencies})
     for dependency in dependencies:
-        if type(dependency) not in PYTHON_TYPES:
+        if type(dependency) not in PYTHON_TYPES and rest_fields:
             log.debug('dependency %s and rest_fields %s', dependency, rest_fields)
             resolve_entity(dependency, rest_fields, names, ids, missing_dependencies, reverse)
         elif dependency in ids:
