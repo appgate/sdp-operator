@@ -464,8 +464,8 @@ def test_dependencies_3():
     api = load_test_open_api_spec()
     EntityDep1 = api.entities['EntityDep1'].cls
     EntityDep5 = api.entities['EntityDep5'].cls
-    Entitydep5_Obj1 = api.entities['Entitydep5_Obj1'].cls
-    Obj1_Obj2 = api.entities['Obj1_Obj2'].cls
+    EntityDep5_Obj1 = api.entities['EntityDep5_Obj1'].cls
+    EntityDep5_Obj1_Obj2 = api.entities['EntityDep5_Obj1_Obj2'].cls
     deps1 = EntitiesSet({
         EntityDep1(id='d11', name='dep11'),
         EntityDep1(id='d12', name='dep12'),
@@ -486,7 +486,8 @@ def test_dependencies_3():
     deps5_resolved, conflicts = resolve_entities(deps5, [(deps1, 'obj1.obj2.dep1')])
     assert conflicts is None
     assert deps5_resolved.entities == {
-        EntityDep5(id='d51', name='dep51', obj1=Entitydep5_Obj1(obj2=Obj1_Obj2(dep1='d11')))
+        EntityDep5(id='d51', name='dep51',
+                   obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1='d11')))
     }
 
 
@@ -501,8 +502,8 @@ def test_dependencies_4():
     EntityDep3 = test_api_spec.entities['EntityDep3'].cls
     EntityDep4 = test_api_spec.entities['EntityDep4'].cls
     EntityDep6 = test_api_spec.entities['EntityDep6'].cls
-    Entitydep6_Obj1 = test_api_spec.entities['Entitydep6_Obj1'].cls
-    Obj1_Obj2 = test_api_spec.entities['Obj1_Obj2'].cls
+    EntityDep6_Obj1 = test_api_spec.entities['EntityDep6_Obj1'].cls
+    EntityDep6_Obj1_Obj2 = test_api_spec.entities['EntityDep6_Obj1_Obj2'].cls
     deps1 = EntitiesSet({
         EntityDep1(id='d11', name='dep11'),
         EntityDep1(id='d12', name='dep12'),
@@ -579,7 +580,7 @@ def test_dependencies_4():
     assert appgate_state.entities_set['EntityDep6'].entities == {
         EntityDep6(name='dep61',
                    deps4=frozenset({'d42', 'd41'}),
-                   obj1=Entitydep6_Obj1(dep3='d31',
-                                        obj2=Obj1_Obj2(dep1='d11',
-                                                       deps2=frozenset({'d21', 'd22'}))))
+                   obj1=EntityDep6_Obj1(dep3='d31',
+                                        obj2=EntityDep6_Obj1_Obj2(dep1='d11',
+                                                                  deps2=frozenset({'d21', 'd22'}))))
     }

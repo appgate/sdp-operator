@@ -317,7 +317,7 @@ class Parser:
 
     def make_type(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
         definition = attrib_maker_config.definition
-        entity_name = attrib_maker_config.instance_maker_config.name
+        entity_name = attrib_maker_config.instance_maker_config.entity_name
         attrib_name = attrib_maker_config.name
         tpe = definition.get('type')
         current_level = attrib_maker_config.instance_maker_config.level
@@ -325,7 +325,7 @@ class Parser:
             definition = self.parse_all_of(definition['allOf'])
             instance_maker_config = InstanceMakerConfig(
                 name=attrib_name,
-                entity_name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
@@ -379,6 +379,7 @@ class Parser:
                                          definition=attrib_maker_config.definition)
         elif is_array(definition):
             # Recursion here, we parse the items as a type
+            log.debug('Creating array type for entity %s and attribute %s', entity_name, attrib_name)
             new_attrib_maker_config = attrib_maker_config.from_key('items')
             if not new_attrib_maker_config:
                 raise OpenApiParserException('Unable to get items from array defintion.')
@@ -394,10 +395,11 @@ class Parser:
         elif is_object(definition):
             # Indirect recursion here.
             # Those classes are never registered
+            log.debug('Creating object type for entity %s and attribute %s', entity_name, attrib_name)
             current_level = attrib_maker_config.instance_maker_config.level
             instance_maker_config = InstanceMakerConfig(
                 name=attrib_name,
-                entity_name=f'{entity_name.capitalize()}_{attrib_name.capitalize()}',
+                entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
                 compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,

@@ -133,7 +133,7 @@ class AttribMakerConfig:
         if definition:
             return AttribMakerConfig(
                 definition=definition,
-                instance_maker_config=self.instance_maker_config.with_name(self.name),
+                instance_maker_config=self.instance_maker_config,
                 name=self.name)
         return None
 
@@ -165,16 +165,6 @@ class InstanceMakerConfig:
             name=normalize_attrib_name(x_name or attribute),
             definition=definition
         )
-
-    def with_name(self, name: str) -> 'InstanceMakerConfig':
-        return InstanceMakerConfig(
-            name=name,
-            entity_name=self.entity_name,
-            definition=self.definition,  # This should be definition['name'],
-            compare_secrets=self.compare_secrets,
-            singleton=self.singleton,
-            api_path=None,
-            level=self.level + 1)
 
 
 @attrs()
