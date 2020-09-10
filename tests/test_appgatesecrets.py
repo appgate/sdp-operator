@@ -10,7 +10,7 @@ from tests.utils import load_test_open_api_spec, load_test_open_api_compare_secr
 
 
 def test_write_only_password_attribute_dump():
-    EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec().entities['EntityTest2'].cls
     e = EntityTest2(fieldOne='1234567890',
                     fieldTwo='this is write only',
                     fieldThree='this is a field')
@@ -39,8 +39,8 @@ def test_write_only_password_attribute_load():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    EntityTest2WithSecrets = load_test_open_api_compare_secrets_spec()['EntityTest2'].cls
-    EntityTest2 = load_test_open_api_spec()['EntityTest2'].cls
+    EntityTest2WithSecrets = load_test_open_api_compare_secrets_spec().entities['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec().entities['EntityTest2'].cls
 
     e = APPGATE_LOADER.load(e_data, None, EntityTest2)
     # writeOnly passwords are not loaded from Appgate
@@ -131,7 +131,8 @@ def exception():
 
 
 def test_get_appgate_secret_simple_load():
-    EntityTest2 = load_test_open_api_spec(secrets_key=KEY, reload=True)['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec(secrets_key=KEY,
+                                          reload=True).entities['EntityTest2'].cls
     data = {
         'fieldOne': ENCRYPTED_PASSWORD,
         'fieldTwo': 'this is write only',
@@ -146,7 +147,8 @@ def test_get_appgate_secret_simple_load():
 
 
 def test_get_appgate_secret_simple_load_no_cipher():
-    EntityTest2 = load_test_open_api_spec(secrets_key=None, reload=True)['EntityTest2'].cls
+    EntityTest2 = load_test_open_api_spec(secrets_key=None,
+                                          reload=True).entities['EntityTest2'].cls
     data = {
         'fieldOne': ENCRYPTED_PASSWORD,
         'fieldTwo': 'this is write only',
@@ -173,7 +175,7 @@ def _k8s_get_secret(name: str, key: str) -> str:
 
 def test_get_appgate_secret_k8s_simple_load():
     EntityTest2 = load_test_open_api_spec(reload=True,
-                                          k8s_get_secret=_k8s_get_secret)['EntityTest2'].cls
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data = {
         'fieldOne': {
             'type': 'k8s/secret',
@@ -193,7 +195,7 @@ def test_get_appgate_secret_k8s_simple_load():
 
 def test_get_appgate_secret_k8s_simple_load_missing_key():
     EntityTest2 = load_test_open_api_spec(reload=True,
-                                          k8s_get_secret=_k8s_get_secret)['EntityTest2'].cls
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data = {
         'fieldOne': {
             'type': 'k8s/secret',

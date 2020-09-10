@@ -18,7 +18,18 @@ paths:
     $ref: '#/entity-test4'
   /entity-test-with-id:
     $ref: '#/entity-test-with-id'
-
+  /entity-dep-1:
+    $ref: '#/entity-dep-1'
+  /entity-dep-2:
+    $ref: '#/entity-dep-2'
+  /entity-dep-3:
+    $ref: '#/entity-dep-3'
+  /entity-dep-4:
+    $ref: '#/entity-dep-4'
+  /entity-dep-5:
+    $ref: '#/entity-dep-5'
+  /entity-dep-6:
+    $ref: '#/entity-dep-6'
     
 entity-test1:
   get:
@@ -95,6 +106,97 @@ entity-test-with-id:
           schema:
             $ref: '#/definitions/EntityTestWithId'
 
+entity-dep-1:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep1'
+
+entity-dep-2:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep2'
+            
+entity-dep-3:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep3'
+
+entity-dep-4:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep4'
+
+entity-dep-5:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep5'
+
+entity-dep-6:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDep6'
+
+
 definitions:
   EntityTestList:
     type: object
@@ -166,12 +268,109 @@ definitions:
     properties:
       id:
         type: string
-        uuid: format
+        format: uuid
       fieldOne:
         writeOnly: true
         type: string
       fieldTwo:
         readOnly: true
         type: string
-
-
+  EntityDep1:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+  EntityDep2:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+  EntityDep3:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      deps1:
+        type: array
+        items:
+          type: string
+          format: uuid
+          x-uuid-ref: EntityDep1
+  EntityDep4:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      deps1:
+        type: array
+        items:
+          type: string
+          format: uuid
+          x-uuid-ref: EntityDep1
+      dep2:
+        type: string
+        x-uuid-ref: EntityDep2
+  EntityDep5:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      obj1:
+        type: object
+        properties:
+          obj2:
+            type: object
+            properties:
+              dep1:
+                type: string
+                format: uuid
+                x-uuid-ref: EntityDep1
+  EntityDep6:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      deps4:
+        type: array
+        items:
+          type: string
+          format: uuid
+          x-uuid-ref: EntityDep4
+      obj1:
+        type: object
+        properties:
+          dep3:
+            type: string
+            format: uuid
+            x-uuid-ref: EntityDep3
+          obj2:
+            type: object
+            properties:
+              dep1:
+                type: string
+                format: uuid
+                x-uuid-ref: EntityDep1
+              deps2:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  x-uuid-ref: EntityDep2
