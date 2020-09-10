@@ -80,7 +80,7 @@ class AppgateClient:
             return f'Bearer {self._token}'
         return None
 
-    async def request(self, verb: str, path:str,
+    async def request(self, verb: str, path: str,
                       data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         verbs = {
             'POST': self._session.post,

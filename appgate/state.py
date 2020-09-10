@@ -1,16 +1,19 @@
+import difflib
+import json
 import re
 import sys
 from copy import deepcopy
 import datetime
 import time
 from functools import cached_property
+from logging import DEBUG
 from pathlib import Path
 from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet
 
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER
+from appgate.attrs import K8S_DUMPER, APPGATE_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
@@ -216,6 +219,7 @@ class Plan:
     delete: EntitiesSet = attrib(factory=EntitiesSet)
     create: EntitiesSet = attrib(factory=EntitiesSet)
     modify: EntitiesSet = attrib(factory=EntitiesSet)
+    modifications_diff: Dict[str, List[str]] = attrib(factory=dict)
     errors: Optional[Set[str]] = attrib(default=None)
 
     @cached_property
@@ -269,6 +273,11 @@ async def plan_apply(plan: Plan, namespace: str,
                       namespace, e)
             continue
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
+        diff = plan.modifications_diff.get(e.name)
+        if diff:
+            log.debug('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
+            for d in diff:
+                log.debug('%s', d)
         if entity_client:
             if not await entity_client.put(e):
                 errors.add(e.id)
@@ -294,6 +303,7 @@ async def plan_apply(plan: Plan, namespace: str,
                 share=plan.share,
                 delete=plan.delete,
                 modify=plan.modify,
+                modifications_diff=plan.modifications_diff,
                 errors=errors if has_errors else None)
 
 
@@ -343,11 +353,23 @@ def compare_entities(current: EntitiesSet,
         expected_entities)))
     to_modify = EntitiesSet(set(filter(
         lambda e: e.name in shared_names and e not in current_entities, expected_entities)))
+    modifications_diff = {}
+    if log.level == DEBUG:
+        for e in to_modify.entities:
+            e_dump = json.dumps(APPGATE_DUMPER.dump(e), indent=4)
+            current_e_dump = json.dumps(APPGATE_DUMPER.dump(current.entities_by_id[e.id]), indent=4)
+            diff = list(
+                difflib.unified_diff(e_dump.splitlines(keepends=True),
+                                     current_e_dump.splitlines(keepends=True), n=1))
+            if diff:
+                modifications_diff[e.name] = diff
     to_share = EntitiesSet(set(filter(
         lambda e: e.name in shared_names and e in current_entities, expected_entities)))
+
     return Plan(delete=to_delete,
                 create=to_create,
                 modify=to_modify,
+                modifications_diff=modifications_diff,
                 share=to_share)
 
 
@@ -397,7 +419,7 @@ def resolve_entity(entity: Entity_T,
     if not is_iterable:
         dependencies = frozenset({dependencies})
     for dependency in dependencies:
-        if type(dependency) not in PYTHON_TYPES:
+        if type(dependency) not in PYTHON_TYPES and rest_fields:
             log.debug('dependency %s and rest_fields %s', dependency, rest_fields)
             resolve_entity(dependency, rest_fields, names, ids, missing_dependencies, reverse)
         elif dependency in ids:
