@@ -231,7 +231,6 @@ def test_normalize_entitlements_2():
         condition(id='c5', name='condition5'),
     })
     entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
-    print(entitlements_set)
     assert entitlements_set.entities == {
         entitlement(name='entitlement-1', conditions=[
             'c1',
@@ -504,6 +503,8 @@ def test_dependencies_4():
     EntityDep6 = test_api_spec.entities['EntityDep6'].cls
     EntityDep6_Obj1 = test_api_spec.entities['EntityDep6_Obj1'].cls
     EntityDep6_Obj1_Obj2 = test_api_spec.entities['EntityDep6_Obj1_Obj2'].cls
+    EntityDep6_Obj1_Obj2_Deps1 = test_api_spec.entities['EntityDep6_Obj1_Obj2_Deps1'].cls
+
     deps1 = EntitiesSet({
         EntityDep1(id='d11', name='dep11'),
         EntityDep1(id='d12', name='dep12'),
@@ -536,7 +537,11 @@ def test_dependencies_4():
         'obj1': {
             'dep3': 'dep31',
             'obj2': {
-                'dep1': 'dep11',
+                'deps1': [
+                    {'dep1': 'dep11'},
+                    {'dep1': 'dep12'},
+                    {'dep1': 'dep13'},
+                ],
                 'deps2': ['dep21', 'dep22']
             }
         }
@@ -581,6 +586,45 @@ def test_dependencies_4():
         EntityDep6(name='dep61',
                    deps4=frozenset({'d42', 'd41'}),
                    obj1=EntityDep6_Obj1(dep3='d31',
-                                        obj2=EntityDep6_Obj1_Obj2(dep1='d11',
-                                                                  deps2=frozenset({'d21', 'd22'}))))
+                                        obj2=EntityDep6_Obj1_Obj2(
+                                            deps1=frozenset({
+                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep11'),
+                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep12'),
+                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep13'),
+                                            }),
+                                            deps2=frozenset({'d21', 'd22'}))))
+    }
+
+    # Test empty list in dependencies
+    data = {
+        'id': 'd61',
+        'name': 'dep61',
+        'obj1': {
+            'dep3': 'dep31',
+            'obj2': {
+                'deps1': [],
+                'deps2': ['dep21', 'dep22']
+            }
+        }
+    }
+    deps6 = EntitiesSet({
+        K8S_LOADER.load(data, None, EntityDep6)
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDep1': deps1,
+        'EntityDep2': deps2,
+        'EntityDep3': deps3,
+        'EntityDep4': deps4,
+        'EntityDep5': EntitiesSet(),
+        'EntityDep6': deps6,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+    assert appgate_state.entities_set['EntityDep6'].entities == {
+        EntityDep6(name='dep61',
+                   deps4=frozenset(),
+                   obj1=EntityDep6_Obj1(dep3='d31',
+                                        obj2=EntityDep6_Obj1_Obj2(
+                                            deps1=frozenset(),
+                                            deps2=frozenset({'d21', 'd22'}))))
     }
