@@ -321,10 +321,11 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
 
 def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
                               namespace: str) -> None:
-    for k, (field, values) in conflicts.items():
-        p1 = "they are" if len(values) > 1 else "it is"
-        log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
-                  'in the system.', namespace, k, ', '.join(values), field, p1)
+    for k, field_values in conflicts.items():
+        for field, errors in field_values.items():
+            p1 = "they are" if len(errors) > 1 else "it is"
+            log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
+                     'in the system.', namespace, k, ', '.join(errors), field, p1)
 
 
 def compare_entities(current: EntitiesSet,
