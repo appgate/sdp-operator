@@ -26,6 +26,12 @@ TestSpec = {
     '/entity-test3': 'EntityTest3',
     '/entity-test4': 'EntityTest4',
     '/entity-test-with-id': 'EntityTestWithId',
+    '/entity-dep-1': 'EntityDep1',
+    '/entity-dep-2': 'EntityDep2',
+    '/entity-dep-3': 'EntityDep3',
+    '/entity-dep-4': 'EntityDep4',
+    '/entity-dep-5': 'EntityDep5',
+    '/entity-dep-6': 'EntityDep6',
 }
 
 
@@ -35,12 +41,11 @@ def load_test_open_api_spec(secrets_key: Optional[str] = KEY,
     global TestOpenAPI
     set_level(log_level='debug')
     if not TestOpenAPI or reload:
-        open_api_spec = parse_files(spec_entities=TestSpec,
-                                    spec_directory=Path('tests/resources/'),
-                                    spec_file='test_entity.yaml',
-                                    secrets_key=secrets_key,
-                                    k8s_get_secret=k8s_get_secret)
-        TestOpenAPI = open_api_spec.entities
+        TestOpenAPI = parse_files(spec_entities=TestSpec,
+                                  spec_directory=Path('tests/resources/'),
+                                  spec_file='test_entity.yaml',
+                                  secrets_key=secrets_key,
+                                  k8s_get_secret=k8s_get_secret)
     return TestOpenAPI
 
 
@@ -50,13 +55,12 @@ def load_test_open_api_compare_secrets_spec(secrets_key: str = KEY,
     global TestOpenAPIWithSecrets
     set_level(log_level='debug')
     if not TestOpenAPIWithSecrets or reload:
-        open_api_spec = parse_files(spec_entities=TestSpec,
-                                    spec_directory=Path('tests/resources/'),
-                                    spec_file='test_entity.yaml',
-                                    compare_secrets=True,
-                                    secrets_key=secrets_key,
-                                    k8s_get_secret=k8s_get_secret)
-        TestOpenAPIWithSecrets = open_api_spec.entities
+        TestOpenAPIWithSecrets = parse_files(spec_entities=TestSpec,
+                                             spec_directory=Path('tests/resources/'),
+                                             spec_file='test_entity.yaml',
+                                             compare_secrets=True,
+                                             secrets_key=secrets_key,
+                                             k8s_get_secret=k8s_get_secret)
     return TestOpenAPIWithSecrets
 
 

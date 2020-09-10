@@ -11,6 +11,7 @@ from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, start_event_loop, log
 from appgate.openapi.openapi import generate_api_spec, entity_names, generate_crd
+from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
 from appgate.types import AppgateEvent
 
@@ -65,8 +66,10 @@ def main_api_info(spec_directory: Optional[str] = None) -> None:
     print(f'API Version: {api_spec.api_version}')
     print('Entities supported:')
     for name, entity in api_spec.api_entities.items():
-        deps = entity.entity_dependencies
-        print(f'   - {entity.api_path} :: {name} :: {{{", ".join(deps)}}}')
+        deps = entity.dependencies
+        print(f'   - {entity.api_path} :: {name} :: {{{join(" | ", deps)}}}')
+    print('Entities topological sort:')
+    print(f'    - {", ".join(api_spec.entities_sorted)}')
 
 
 def main_dump_crd(stdout: bool, output_file: Optional[str],
