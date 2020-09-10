@@ -374,7 +374,7 @@ class Parser:
                 return SimpleAttribMaker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],
                                          base_tpe=TYPES_MAP[tpe],
-                                         default=DEFAULT_MAP.get(tpe),
+                                         default=DEFAULT_MAP.get(tpe) if format != 'uuid' else None,
                                          factory=None,
                                          definition=attrib_maker_config.definition)
         elif is_array(definition):

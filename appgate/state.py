@@ -321,10 +321,11 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
 
 def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
                               namespace: str) -> None:
-    for k, (field, values) in conflicts.items():
-        p1 = "they are" if len(values) > 1 else "it is"
-        log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
-                  'in the system.', namespace, k, ', '.join(values), field, p1)
+    for k, field_values in conflicts.items():
+        for field, errors in field_values.items():
+            p1 = "they are" if len(errors) > 1 else "it is"
+            log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
+                     'in the system.', namespace, k, ', '.join(errors), field, p1)
 
 
 def compare_entities(current: EntitiesSet,
@@ -350,13 +351,24 @@ def compare_entities(current: EntitiesSet,
                 share=to_share)
 
 
-def get_field(entity: Entity_T, paths: List[str]) -> Optional[Any]:
+def entity_t_attribute_names(entity: Entity_T) -> Iterable[str]:
+    return map(lambda a: a.name, getattr(entity, '__attrs_attrs__', []))
+
+
+def get_field(entity: Entity_T, paths: List[str]) -> Tuple[Optional[Any], Optional[str]]:
     f: Any = entity
-    for p in paths:
+    for i, p in enumerate(paths):
+        log.debug('Getting field %s in %s', p, list(entity_t_attribute_names(f)))
+        if isinstance(f, frozenset):
+            return f, '.'.join(paths[i:])
         f = getattr(f, p, None)
-        if not f:
-            return None
-    return f
+        if f is None:
+            if len(paths[i:]):
+                # Last field is None, it could an optional field (should be checked here)
+                return frozenset(), p
+            else:
+                return None, '.'.join(paths[i:])
+    return f, None
 
 
 def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
@@ -377,14 +389,18 @@ def resolve_entity(entity: Entity_T,
                    reverse: bool = False) -> Optional[Entity_T]:
     new_dependencies = set()
     missing_dependencies_set = set()
-    dependencies = get_field(entity, field.split('.'))
-    if not dependencies:
+    log.debug(f'Getting field %s in entity %s', field, entity.__class__.__name__)
+    dependencies, rest_fields = get_field(entity, field.split('.'))
+    if dependencies is None:
         raise Exception(f'Object {entity} has not field {field}.')
     is_iterable = isinstance(dependencies, frozenset)
     if not is_iterable:
         dependencies = frozenset({dependencies})
     for dependency in dependencies:
-        if dependency in ids:
+        if type(dependency) not in PYTHON_TYPES:
+            log.debug('dependency %s and rest_fields %s', dependency, rest_fields)
+            resolve_entity(dependency, rest_fields, names, ids, missing_dependencies, reverse)
+        elif dependency in ids:
             # dependency is an id
             if reverse:
                 new_dependencies.add(ids[dependency].name)

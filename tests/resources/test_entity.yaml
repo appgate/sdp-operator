@@ -364,10 +364,15 @@ definitions:
           obj2:
             type: object
             properties:
-              dep1:
-                type: string
-                format: uuid
-                x-uuid-ref: EntityDep1
+              deps1:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    dep1:
+                      type: string
+                      format: uuid
+                      x-uuid-ref: EntityDep1
               deps2:
                 type: array
                 items:
