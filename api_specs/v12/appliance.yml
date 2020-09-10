@@ -403,6 +403,7 @@ definitions:
           site:
             type: string
             format: uuid
+            x-uuid-ref: Site
             description: >-
               Site served by the Appliance.
               Entitlements on this Site will be included in the Entitlement Token for this Appliance.
@@ -859,6 +860,7 @@ definitions:
                 items:
                   type: string
                   format: uuid
+                  x-uuid-ref: Site
                   description: >
                     UUID of a site.
                     Use '6f6fa9d9-17b2-4157-9f68-e97662acccdf' to collect logs from all the appliances.

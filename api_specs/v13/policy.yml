@@ -201,6 +201,7 @@ definitions:
               configurations are not changed.
             default: true
           overrideSite:
+            x-uuid-ref: Site
             type: string
             format: uuid
             description: >-

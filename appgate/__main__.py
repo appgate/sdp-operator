@@ -64,8 +64,9 @@ def main_api_info(spec_directory: Optional[str] = None) -> None:
         spec_directory=Path(spec_directory) if spec_directory else None)
     print(f'API Version: {api_spec.api_version}')
     print('Entities supported:')
-    for name, entity  in api_spec.api_entities.items():
-        print(f'   - {entity.api_path} :: {name}')
+    for name, entity in api_spec.api_entities.items():
+        deps = entity.entity_dependencies
+        print(f'   - {entity.api_path} :: {name} :: {{{", ".join(deps)}}}')
 
 
 def main_dump_crd(stdout: bool, output_file: Optional[str],

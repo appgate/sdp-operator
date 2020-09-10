@@ -1,5 +1,4 @@
 import hashlib
-import uuid
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -108,9 +107,9 @@ class InstanceMaker:
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
         # Add attributes if needed after instance level
         if 'name' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['name'] = create_default_attrib(self.name, self.name)
+            self.attributes['name'] = create_default_attrib('name', self.name)
         if 'id' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['id'] = create_default_attrib(self.name, self.name)
+            self.attributes['id'] = create_default_attrib('id', self.name)
         if 'tags' not in self.attributes and instance_maker_config.singleton:
             self.attributes['tags'] = create_default_attrib('tags', builtin_tags())
 
@@ -163,6 +162,7 @@ class InstanceMaker:
                 K8S_LOADERS_FIELD_NAME: k8s_custom_entity_loaders or None,
                 APPGATE_LOADERS_FIELD_NAME: appgate_custom_entity_loaders or None,
                 'passwords': self.password_attributes,
+                'dependencies': self.dependencies
             })
         attrs[ENTITY_METADATA_ATTRIB_NAME] = attrib(**entity_metadata_attrib.values(
             self.attributes,
@@ -184,7 +184,6 @@ class InstanceMaker:
             instance_maker_config))
         cls = make_class(self.name, attrs, slots=True, frozen=True)
         return GeneratedEntity(cls=cls,
-                               entity_dependencies=self.dependencies,
                                api_path=instance_maker_config.api_path)
 
 

@@ -255,6 +255,7 @@ definitions:
       poolId:
         type: string
         format: uuid
+        x-uuid-ref: IpPool
         description: ID of the IP Pool that has allocated this address.
         example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
       distinguishedName:

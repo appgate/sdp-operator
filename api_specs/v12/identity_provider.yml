@@ -334,12 +334,14 @@ definitions:
           ipPoolV4:
             type: string
             format: uuid
+            x-uuid-ref: IpPool
             description: >-
               The IPv4 Pool ID the users in this Identity Provider are going to use to allocate IP addresses for
               the tunnels.
           ipPoolV6:
             type: string
             format: uuid
+            x-uuid-ref: IpPool
             description: >-
               The IPv6 Pool ID the users in this Identity Provider are going to use to allocate IP addresses for
               the tunnels.
