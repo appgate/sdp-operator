@@ -99,7 +99,7 @@ class InstanceMaker:
         for attrib_name, attrib_attrs in self.attributes.items():
             dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
             if dependency:
-                dependencies.add(EntityDependency(field=attrib_name,
+                dependencies.add(EntityDependency(field_path=attrib_name,
                                                   dependencies=frozenset({dependency})))
 
         return dependencies

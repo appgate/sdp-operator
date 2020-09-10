@@ -5,7 +5,7 @@ import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet
 
 import yaml
 from attr import attrib, attrs, evolve
@@ -15,7 +15,7 @@ from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
-from appgate.openapi.types import Entity_T, APISpec
+from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES
 from appgate.openapi.utils import is_entity_t, has_name, is_builtin, get_passwords
 
 __all__ = [
@@ -350,17 +350,39 @@ def compare_entities(current: EntitiesSet,
                 share=to_share)
 
 
+def get_field(entity: Entity_T, paths: List[str]) -> Optional[Any]:
+    f: Any = entity
+    for p in paths:
+        f = getattr(f, p, None)
+        if not f:
+            return None
+    return f
+
+
+def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
+    if len(path) == 1:
+        return evolve(entity, **{path[0]: value})
+    field = getattr(entity, path[0], None)
+    if field and type(field) not in PYTHON_TYPES:
+        return evolve(entity,
+                      **{path[0]: evolve_rec(field, path[1:], value)})
+    raise Exception(f'Field {path[0]} not found in {entity}')
+
+
 def resolve_entity(entity: Entity_T,
                    field: str,
                    names: Dict[str, Entity_T],
                    ids: Dict[str, Entity_T],
-                   missing_dependencies: Dict[str, Tuple[str, Set[str]]],
+                   missing_dependencies: Dict[str, Dict[str, FrozenSet[str]]],
                    reverse: bool = False) -> Optional[Entity_T]:
     new_dependencies = set()
     missing_dependencies_set = set()
-    if not hasattr(entity, field):
+    dependencies = get_field(entity, field.split('.'))
+    if not dependencies:
         raise Exception(f'Object {entity} has not field {field}.')
-    dependencies = getattr(entity, field)
+    is_iterable = isinstance(dependencies, frozenset)
+    if not is_iterable:
+        dependencies = frozenset({dependencies})
     for dependency in dependencies:
         if dependency in ids:
             # dependency is an id
@@ -375,29 +397,33 @@ def resolve_entity(entity: Entity_T,
             else:
                 new_dependencies.add(names[dependency].id)
         else:
-            if entity.name not in missing_dependencies:
-                missing_dependencies_set.add(dependency)
-
+            missing_dependencies_set.add(dependency)
     if missing_dependencies_set:
         if entity.name not in missing_dependencies:
-            missing_dependencies[entity.name] = (field, missing_dependencies_set)
+            missing_dependencies[entity.name] = {}
+        missing_dependencies[entity.name][field] = frozenset(missing_dependencies_set)
     if new_dependencies:
-        return evolve(entity, **{field: frozenset(new_dependencies)})
+        if is_iterable:
+            return evolve_rec(entity, field.split('.'), frozenset(new_dependencies))
+        else:
+            return evolve_rec(entity, field.split('.'), list(new_dependencies)[0])
     return None
 
 
-def resolve_entities(e1: EntitiesSet, e2: EntitiesSet, field: str,
+def resolve_entities(e1: EntitiesSet, dependencies: List[Tuple[EntitiesSet, str]],
                      reverse: bool = False) -> Tuple[EntitiesSet,
                                                      Optional[Dict[str,
-                                                                   Tuple[str, Set[str]]]]]:
+                                                                   Dict[str, FrozenSet[str]]]]]:
     to_remove = set()
     to_add = set()
-    missing_entities: Dict[str, Tuple[str, Set[str]]] = {}
+    missing_entities: Dict[str, Dict[str, FrozenSet[str]]] = {}
     e1_set = e1.entities.copy()
-    names = e2.entities_by_name
-    ids = e2.entities_by_id
     for e in e1_set:
-        new_e = resolve_entity(e, field, names, ids, missing_entities, reverse)
+        new_e = None
+        for dependency_entities, field in dependencies:
+            names = dependency_entities.entities_by_name
+            ids = dependency_entities.entities_by_id
+            new_e = resolve_entity(new_e or e, field, names, ids, missing_entities, reverse)
         if new_e:
             to_remove.add(e)
             to_add.add(new_e)
@@ -417,18 +443,19 @@ def resolve_appgate_state(appgate_state: AppgateState,
     log.info('[appgate-state] Validating expected state entities')
     log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
     for entity_name in entities_sorted:
-        for entity_dependency in entities[entity_name].entity_dependencies:
+        for entity_dependency in entities[entity_name].dependencies:
             log.debug('[appgate-state] Checking dependencies %s for of type %s.%s',
                       entity_dependency.dependencies, entity_name,
-                      entity_dependency.field)
+                      entity_dependency.field_path)
+            deps_tuple = []
+            e1 = appgate_state.entities_set[entity_name]
             for d in entity_dependency.dependencies:
-                e1 = appgate_state.entities_set[entity_name]
-                e2 = appgate_state.entities_set[d]
-                new_e1, conflicts = resolve_entities(e1, e2, entity_dependency.field,
-                                                     reverse)
-                if conflicts:
-                    total_conflicts.update(conflicts)
-                appgate_state.entities_set[entity_name] = new_e1
+                deps_tuple.append((appgate_state.entities_set[d],
+                                   entity_dependency.field_path,))
+            new_e1, conflicts = resolve_entities(e1, deps_tuple, reverse)
+            if conflicts:
+                total_conflicts.update(conflicts)
+            appgate_state.entities_set[entity_name] = new_e1
     return total_conflicts
 
 

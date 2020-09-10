@@ -67,25 +67,35 @@ class Entity_T:
 
 @attrs(frozen=True, slots=True)
 class EntityDependency:
-    field: str = attrib()
+    field_path: str = attrib()
     dependencies: FrozenSet[str] = attrib()
 
+    def __str__(self) -> str:
+        return f'{{{self.field_path} :: {",".join(self.dependencies)}}}'
 
-def get_dependencies(cls: type) -> Set[str]:
+    @property
+    def field(self) -> str:
+        return self.field_path.split('.')[0]
+
+
+def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[EntityDependency]:
     deps = set()
-    attributes = getattr(cls, '__attrs_attrs__', None)
-    if not attributes:
-        return set()
+    attributes = getattr(cls, '__attrs_attrs__', [])
     for attribute in attributes:
         mt = getattr(attribute, 'metadata', None)
-        name = (mt or {}).get('name')
-        if not mt or not name:
+        attribute_name = (mt or {}).get('name')
+        if not mt or not attribute_name:
             continue
+        updated_field_path: str = attribute_name
+        if field_path:
+            updated_field_path = f'{field_path}.{attribute_name}'
         base_type = mt['base_type']
         if base_type not in PYTHON_TYPES:
-            deps.update(get_dependencies(base_type))
+            _d = get_dependencies(base_type, updated_field_path)
+            deps.update(_d)
         elif UUID_REFERENCE_FIELD in mt:
-            deps.add(mt.get(UUID_REFERENCE_FIELD))
+            deps.add(EntityDependency(field_path=updated_field_path,
+                                      dependencies=frozenset([mt.get(UUID_REFERENCE_FIELD)])))
     return deps
 
 
@@ -98,8 +108,13 @@ class GeneratedEntity:
     api_path: Optional[str] = attrib(default=None)
 
     @cached_property
-    def entity_dependencies(self):
+    def dependencies(self) -> Set[EntityDependency]:
         return get_dependencies(self.cls)
+
+    @cached_property
+    def entity_dependencies(self) -> Set[str]:
+        return set(itertools.chain.from_iterable(map(lambda d: d.dependencies,
+                                                 get_dependencies(self.cls))))
 
 
 class EntitiesContext:
@@ -170,8 +185,7 @@ class APISpec:
     @property
     def entities_sorted(self) -> List[str]:
         entities_to_sort: Dict[str, Set[str]] = {
-            entity_name: set(itertools.chain.from_iterable(map(lambda d: d.dependencies,
-                                                               entity.entity_dependencies)))
+            entity_name: entity.entity_dependencies
             for entity_name, entity in self.entities.items()
             if entity.api_path is not None
         }
