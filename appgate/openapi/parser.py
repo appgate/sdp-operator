@@ -184,7 +184,8 @@ class InstanceMaker:
             instance_maker_config))
         cls = make_class(self.name, attrs, slots=True, frozen=True)
         return GeneratedEntity(cls=cls,
-                               api_path=instance_maker_config.api_path)
+                               api_path=instance_maker_config.api_path,
+                               singleton=instance_maker_config.singleton)
 
 
 class ParserContext:
