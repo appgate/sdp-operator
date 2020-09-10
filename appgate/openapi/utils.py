@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Dict, FrozenSet, Optional
+from typing import Any, List, Dict, FrozenSet, Optional, Iterable
 
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AttributesDict, PYTHON_TYPES
@@ -114,7 +114,7 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
     return definition
 
 
-def join(sep: str, xs: List[Any]) -> str:
+def join(sep: str, xs: Iterable[Any]) -> str:
     return sep.join(map(str, xs))
 
 
