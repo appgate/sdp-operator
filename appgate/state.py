@@ -319,7 +319,7 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
     return AppgatePlan(entities_plan=entities_plan)
 
 
-def entities_conflict_summary(conflicts: Dict[str, Tuple[str, Set[str]]],
+def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
                               namespace: str) -> None:
     for k, (field, values) in conflicts.items():
         p1 = "they are" if len(values) > 1 else "it is"
@@ -436,7 +436,8 @@ def resolve_entities(e1: EntitiesSet, dependencies: List[Tuple[EntitiesSet, str]
 
 def resolve_appgate_state(appgate_state: AppgateState,
                           api_spec: APISpec,
-                          reverse: bool = False) -> Dict[str, Tuple[str, Set[str]]]:
+                          reverse: bool = False) -> Dict[str,
+                                                         Dict[str, FrozenSet[str]]]:
     entities = api_spec.entities
     entities_sorted = api_spec.entities_sorted
     total_conflicts = {}
