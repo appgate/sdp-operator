@@ -156,7 +156,7 @@ def generate_api_spec(spec_directory: Optional[Path] = None,
 def generate_api_spec_clients(api_spec: APISpec, dump_secrets: bool,
                               appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     return {
-        n: appgate_client.entity_client(e.cls, e.api_path, dump_secrets)
+        n: appgate_client.entity_client(e.cls, e.api_path, dump_secrets, singleton=e.singleton)
         for n, e in api_spec.entities.items()
         if e.api_path
     }

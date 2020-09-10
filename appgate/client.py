@@ -17,12 +17,14 @@ from appgate.openapi.types import Entity_T
 
 class EntityClient:
     def __init__(self, path: str, appgate_client: 'AppgateClient',
+                 singleton: bool,
                  load: Callable[[Dict[str, Any]], Entity_T],
                  dump: Callable[[Entity_T], Dict[str, Any]]) -> None:
         self._client = appgate_client
         self.path = path
         self.load = load
         self.dump = dump
+        self.singleton = singleton
 
     async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
@@ -48,8 +50,10 @@ class EntityClient:
         return self.load(data)  # type: ignore
 
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
-        data = await self._client.put(f'{self.path}/{entity.id}',
-                                      body=self.dump(entity))
+        path = f'{self.path}/{entity.id}'
+        if self.singleton:
+            path = self.path
+        data = await self._client.put(path, body=self.dump(entity))
         if not data:
             log.error('[aggpate-client] PUT %s :: Expecting a response but we got empty data',
                       self.path)
@@ -151,8 +155,9 @@ class AppgateClient:
     def authenticated(self) -> bool:
         return self._token is not None
 
-    def entity_client(self, entity: type, api_path: str, dump_secrets: bool) -> EntityClient:
+    def entity_client(self, entity: type, api_path: str, dump_secrets: bool, singleton: bool) -> EntityClient:
         dumper = APPGATE_DUMPER_WITH_SECRETS if dump_secrets else APPGATE_DUMPER
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
+                            singleton=singleton,
                             load=lambda d: APPGATE_LOADER.load(d, None, entity),
                             dump=lambda e: dumper.dump(e))

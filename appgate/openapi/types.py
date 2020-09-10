@@ -105,6 +105,7 @@ class GeneratedEntity:
     Class to represent an already parsed entity
     """
     cls: type = attrib()
+    singleton: bool = attrib()
     api_path: Optional[str] = attrib(default=None)
 
     @cached_property
