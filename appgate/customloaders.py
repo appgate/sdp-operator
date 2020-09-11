@@ -24,7 +24,9 @@ class CustomAttribLoader(CustomLoader):
     field: str = attrib()
 
     def load(self, values: AttributesDict) -> AttributesDict:
-        v = values[self.field]
+        v = values.get(self.field)
+        if not v:
+            return values
         values[self.field] = self.loader(v)
         return values
 
