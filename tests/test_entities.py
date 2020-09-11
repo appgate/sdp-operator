@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
+from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
 from appgate.openapi.types import AppgateMetadata
 from tests.utils import load_test_open_api_spec
@@ -307,3 +307,22 @@ def test_bytes_dump():
     }
     # We don't dump the checksum field associated to bytes to K8S
     assert K8S_DUMPER.dump(e) == e_data
+
+
+def test_bytes_diff_dump():
+    # DIFF mode we should dump just the fields used for equality
+    EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
+                                                 reload=True).entities['EntityTest3Appgate'].cls
+    e_data = {
+        'name': 'entity1',
+        'fieldOne': BASE64_FILE_W0,
+        'fieldTwo': None,
+    }
+    e_metadata = {
+        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
+    }
+    e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
+    assert DIFF_DUMPER.dump(e) == {
+        'name': 'entity1',
+        'fieldTwo': SHA256_FILE
+    }

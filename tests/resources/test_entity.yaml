@@ -271,7 +271,7 @@ definitions:
         format:
           type: checksum
           source: fieldOne
-  EntityTest3:
+  EntityTest3Appgate:
     type: object
     properties:
       name:
@@ -289,7 +289,6 @@ definitions:
         format:
           type: checksum
           source: fieldOne
-
   EntityTest4:
     type: object
     properties:
