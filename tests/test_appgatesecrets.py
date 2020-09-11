@@ -209,10 +209,9 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
         K8S_LOADER.load(data, None, EntityTest2)
 
 
-"""
 def test_get_secret_read_entity_without_password():
     EntityTest2 = load_test_open_api_spec(reload=True,
-                                          k8s_get_secret=_k8s_get_secret)['EntityTest2'].cls
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data = {
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
@@ -220,4 +219,3 @@ def test_get_secret_read_entity_without_password():
     e = K8S_LOADER.load(data, None, EntityTest2)
     # Password is coming from k8s secrets
     assert e.fieldOne is None
-"""
