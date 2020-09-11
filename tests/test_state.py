@@ -1,5 +1,6 @@
-from appgate.attrs import K8S_LOADER
+from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state
+from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, TestOpenAPI
 
 
@@ -628,3 +629,50 @@ def test_dependencies_4():
                                             deps1=frozenset(),
                                             deps2=frozenset({'d21', 'd22'}))))
     }
+
+
+def test_compare_plan_entity_bytes():
+    EntityTest3 = load_test_open_api_spec(secrets_key=None,
+                                          reload=True).entities['EntityTest3'].cls
+    # fieldOne is writeOnly :: byte
+    # fieldTwo is readOnly :: checksum of fieldOne
+    e_data = {
+        'id': '6a01c585-c192-475b-b86f-0e632ada6769',  # Current data always has ids
+        'name': 'entity1',
+        'fieldOne': None,
+        'fieldTwo': SHA256_FILE,
+    }
+    entities_current = EntitiesSet({
+        APPGATE_LOADER.load(e_data, None, EntityTest3)
+    })
+    e_data = {
+        'name': 'entity1',
+        'fieldOne': BASE64_FILE_W0,
+        'fieldTwo': None,
+    }
+    e_metadata = {
+        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
+    }
+    entities_expected = EntitiesSet({
+        K8S_LOADER.load(e_data, e_metadata, EntityTest3)
+    })
+    plan = compare_entities(entities_current, entities_expected)
+    assert plan.modify.entities == frozenset()
+    assert plan.modifications_diff == {}
+
+    # Let's change the bytes
+    e_data = {
+        'name': 'entity1',
+        'fieldOne': 'Some other content',
+        'fieldTwo': None,
+    }
+    new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3)
+
+    entities_expected = EntitiesSet({new_e})
+    plan = compare_entities(entities_current, entities_expected)
+    assert plan.modify.entities == frozenset({new_e})
+    assert plan.modifications_diff == {
+    'entity1': ['--- \n', '+++ \n', '@@ -1,4 +1,3 @@\n', ' {\n', '-    "name": "entity1",\n',
+                 '-    "fieldOne": "Some other content"\n', '+    "name": "entity1"\n', ' }']
+    }
+

@@ -14,6 +14,8 @@ paths:
     $ref: '#/entity-test2'
   /entity-test3:
     $ref: '#/entity-test3'
+  /entity-test3-appgate:
+    $ref: '#/entity-test3-appgate'
   /entity-test4:
     $ref: '#/entity-test4'
   /entity-test-with-id:
@@ -76,6 +78,21 @@ entity-test3:
           schema:
             $ref: '#/definitions/EntityTest3'
 
+entity-test3-appgate:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest3Appgate'
+            
 entity-test4:
   get:
     responses:
@@ -254,6 +271,25 @@ definitions:
         format:
           type: checksum
           source: fieldOne
+  EntityTest3:
+    type: object
+    properties:
+      name:
+        type: string
+      id:
+        type: string
+        format: uuid
+      fieldOne:
+        writeOnly: true
+        format: bytes
+        type: string
+      fieldTwo:
+        readOnly: true
+        type: string
+        format:
+          type: checksum
+          source: fieldOne
+
   EntityTest4:
     type: object
     properties:
