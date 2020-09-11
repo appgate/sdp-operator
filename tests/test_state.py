@@ -675,4 +675,3 @@ def test_compare_plan_entity_bytes():
     'entity1': ['--- \n', '+++ \n', '@@ -1,4 +1,3 @@\n', ' {\n', '-    "name": "entity1",\n',
                  '-    "fieldOne": "Some other content"\n', '+    "name": "entity1"\n', ' }']
     }
-
