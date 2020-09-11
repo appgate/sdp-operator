@@ -357,7 +357,12 @@ def compare_entities(current: EntitiesSet,
     if log.level == DEBUG:
         for e in to_modify.entities:
             e_dump = json.dumps(APPGATE_DUMPER.dump(e), indent=4)
-            current_e_dump = json.dumps(APPGATE_DUMPER.dump(current.entities_by_id[e.id]), indent=4)
+            current_entity = current.entities_by_id.get(e.id)
+            if not current_entity:
+                log.warning(f'Trying to compute diff for entity %s [%s] but not registered',
+                            e.name, e.id)
+                continue
+            current_e_dump = json.dumps(APPGATE_DUMPER.dump(current_entity), indent=4)
             diff = list(
                 difflib.unified_diff(e_dump.splitlines(keepends=True),
                                      current_e_dump.splitlines(keepends=True), n=1))
