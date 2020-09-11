@@ -208,6 +208,9 @@ definitions:
               Deprecated as of 5.0. Use checksumSha256 field.
             example: 9a913c1e1eccf35e6e78542b2152f7a7
           checksumSha256:
+            format:
+              type: checksum
+              source: file
             type: string
             readOnly: true
             description: >-
