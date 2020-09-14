@@ -271,6 +271,12 @@ definitions:
         format:
           type: checksum
           source: fieldOne
+      fieldThree:
+        readOnly: true
+        type: number
+        format:
+          type: size
+          source: fieldOne
   EntityTest3Appgate:
     type: object
     properties:
@@ -288,6 +294,12 @@ definitions:
         type: string
         format:
           type: checksum
+          source: fieldOne
+      fieldThree:
+        readOnly: true
+        type: number
+        format:
+          type: size
           source: fieldOne
   EntityTest4:
     type: object

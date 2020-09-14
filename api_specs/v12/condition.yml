@@ -288,5 +288,6 @@ definitions:
                 providerId:
                   type: string
                   format: uuid
+                  x-uuid-ref: MfaProvider
                   description: MFA Provider Id. Required for OtpAuthentication remedy method.
                   example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc

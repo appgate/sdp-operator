@@ -637,11 +637,13 @@ def test_compare_plan_entity_bytes():
                                                 reload=True).entities['EntityTest3Appgate'].cls
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
+    # fieldThree is readOnly :: size of fieldOne
     e_data = {
         'id': '6a01c585-c192-475b-b86f-0e632ada6769',  # Current data always has ids
         'name': 'entity1',
         'fieldOne': None,
         'fieldTwo': SHA256_FILE,
+        'fieldThree': 1563,
     }
     entities_current = EntitiesSet({
         APPGATE_LOADER.load(e_data, None, EntityTest3Appgate)
@@ -650,6 +652,7 @@ def test_compare_plan_entity_bytes():
         'name': 'entity1',
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': None,
+        'fieldThree': None,
     }
     e_metadata = {
         'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
@@ -668,6 +671,7 @@ def test_compare_plan_entity_bytes():
         'name': 'entity1',
         'fieldOne': 'Some other content',
         'fieldTwo': None,
+        'fieldThree': None,
     }
     new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
 
@@ -675,10 +679,11 @@ def test_compare_plan_entity_bytes():
     plan = compare_entities(entities_current, entities_expected)
     assert plan.modify.entities == frozenset({new_e})
     assert plan.modifications_diff == {
-        'entity1': ['--- \n', '+++ \n', '@@ -2,3 +2,3 @@\n',
+        'entity1': ['--- \n', '+++ \n', '@@ -2,4 +2,4 @@\n',
                     '     "name": "entity1",\n',
-                    '-    "fieldTwo": "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"\n',
-                     '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34"\n',
-                    ' }']
+                    '-    "fieldTwo": "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e",\n',
+                    '-    "fieldThree": 1563\n',
+                    '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34",\n',
+                    '+    "fieldThree": 12\n', ' }']
     }
 

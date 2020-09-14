@@ -182,8 +182,6 @@ definitions:
         description: Represents a MFA Provider.
         required:
           - type
-          - hostnames
-          - port
         properties:
           type:
             type: string
@@ -204,6 +202,7 @@ definitions:
           sharedSecret:
             type: string
             writeOnly: true
+            format: password
             description: Radius shared secret to authenticate to the server.
           authenticationProtocol:
             type: string
@@ -240,6 +239,7 @@ definitions:
           challengeSharedSecret:
             type: string
             writeOnly: true
+            format: password
             description: ->
               Password sent to RADIUS to initiate multi-factor authentication. Required if "useUserPassword" is not
               enabled.
