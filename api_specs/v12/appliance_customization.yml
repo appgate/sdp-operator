@@ -159,6 +159,9 @@ definitions:
           checksum:
             type: string
             readOnly: true
+            format:
+              type: checksum
+              source: file
             description: SHA256 checksum of the file.
             example: a0041669f6f7031d32bc27305955327abe54aeb03670c4ae1b2a48e5d29e8e33
           size:

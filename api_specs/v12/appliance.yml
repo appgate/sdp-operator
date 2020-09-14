@@ -412,6 +412,7 @@ definitions:
           customization:
             type: string
             format: uuid
+            x-uuid-ref: ApplianceCustomization
             description: Customization assigned to this Appliance.
             example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
           clientInterface:

@@ -545,6 +545,7 @@ definitions:
             example: Default Site
           customization:
             type: string
+            x-uuid-ref: ApplianceCustomization
             format: uuid
             description: Customization assigned to this Appliance.
             example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
