@@ -84,18 +84,14 @@ def entity_names(entity: type, short_names: Dict[str, str]) -> Tuple[str, str, s
     name = entity.__name__
     short_name = name[0:3].lower()
     if short_name in short_names:
-        a = name
-        b = short_names[short_name]
-        rest = []
-        for i in range(2):
-            # Another CRD has the same short name
-            rest = a.split(b)
-            if len(rest) == 1:
-                a = short_names[short_name]
-                b = name
-        if len(rest) < 1:
+        conflicting_name_prefix = short_names[short_name][0:2]
+        # Another CRD has the same short name, iterate letters until one is free
+        for i in range(len(name) - 3):
+            short_name = f'{conflicting_name_prefix}{name[i]}'.lower()
+            if short_name not in short_names:
+                continue
+        if short_name in short_names:
             raise OpenApiParserException('Unable to generate short name for entity %s', name)
-        short_name = rest[1].lower()[0:3]
     short_names[short_name] = name
     singular_name = name.lower()
     if singular_name.endswith('y'):
