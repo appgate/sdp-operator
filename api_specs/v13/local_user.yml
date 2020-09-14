@@ -166,6 +166,7 @@ definitions:
             example: Tables
           password:
             type: string
+            format: password
             writeOnly: true
             description: Password for the user. Omit the field to keep the old password when updating a user.
             example: 'tSW3!QBv(rj{UuLY'
