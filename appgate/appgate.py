@@ -275,11 +275,10 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
                     if not ctx.dry_run_mode:
-                        appgate_client = AppgateClient(controller=ctx.controller,
-                                                       user=ctx.user, password=ctx.password,
-                                                       version=ctx.api_spec.api_version)
-                        exit_stack.enter_async_context(appgate_client)
-                        await appgate_client.login()
+                        appgate_client = exit_stack.enter_async_context(AppgateClient(
+                            controller=ctx.controller,
+                            user=ctx.user, password=ctx.password,
+                            version=ctx.api_spec.api_version))
                     else:
                         log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
                                     namespace)
