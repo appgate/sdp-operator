@@ -17,6 +17,7 @@ __all__ = [
     'K8S_LOADER',
     'APPGATE_LOADER',
     'APPGATE_DUMPER_WITH_SECRETS',
+    'DIFF_DUMPER',
     'get_loader',
     'get_dumper',
 ]
@@ -25,6 +26,7 @@ __all__ = [
 class PlatformType(enum.Enum):
     K8S = 1
     APPGATE = 2
+    DIFF = 3
 
 
 def _attrdump(d, value) -> Dict[str, Any]:
@@ -52,15 +54,19 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
             format = attr.metadata.get('format')
             name = attr.metadata.get('name', attr.name)
 
-            if not attr.repr:
+            if platform_type == PlatformType.DIFF and not attr.eq:
+                # DIFF mode we only dump eq fields
                 continue
-            if name == APPGATE_METADATA_ATTRIB_NAME:
-                continue
-            if read_only:
-                continue
-            if write_only and format == 'password':
-                if not dump_secrets and platform_type == PlatformType.APPGATE:
+            elif not platform_type == PlatformType.DIFF:
+                if not attr.repr:
                     continue
+                if name == APPGATE_METADATA_ATTRIB_NAME:
+                    continue
+                if read_only:
+                    continue
+                if write_only and format == 'password':
+                    if not dump_secrets and platform_type == PlatformType.APPGATE:
+                        continue
 
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
@@ -180,3 +186,4 @@ K8S_DUMPER = EntityDumper(dump=get_dumper(PlatformType.K8S).dump)
 APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
 APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE).dump)
 APPGATE_DUMPER_WITH_SECRETS = EntityDumper(dump=get_dumper(PlatformType.APPGATE, dump_secrets=True).dump)
+DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF).dump)

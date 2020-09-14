@@ -1,5 +1,7 @@
-from appgate.attrs import K8S_LOADER
-from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state
+from appgate.attrs import K8S_LOADER, APPGATE_LOADER
+from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
+    compute_diff
+from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, TestOpenAPI
 
 
@@ -628,3 +630,55 @@ def test_dependencies_4():
                                             deps1=frozenset(),
                                             deps2=frozenset({'d21', 'd22'}))))
     }
+
+
+def test_compare_plan_entity_bytes():
+    EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
+                                                reload=True).entities['EntityTest3Appgate'].cls
+    # fieldOne is writeOnly :: byte
+    # fieldTwo is readOnly :: checksum of fieldOne
+    e_data = {
+        'id': '6a01c585-c192-475b-b86f-0e632ada6769',  # Current data always has ids
+        'name': 'entity1',
+        'fieldOne': None,
+        'fieldTwo': SHA256_FILE,
+    }
+    entities_current = EntitiesSet({
+        APPGATE_LOADER.load(e_data, None, EntityTest3Appgate)
+    })
+    e_data = {
+        'name': 'entity1',
+        'fieldOne': BASE64_FILE_W0,
+        'fieldTwo': None,
+    }
+    e_metadata = {
+        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
+    }
+    entities_expected = EntitiesSet({
+        K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
+    })
+    plan = compare_entities(entities_current, entities_expected)
+    assert plan.modify.entities == frozenset()
+    assert plan.modifications_diff == {}
+
+    assert compute_diff(list(entities_current.entities)[0], list(entities_expected.entities)[0]) == []
+
+    # Let's change the bytes
+    e_data = {
+        'name': 'entity1',
+        'fieldOne': 'Some other content',
+        'fieldTwo': None,
+    }
+    new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
+
+    entities_expected = EntitiesSet({new_e})
+    plan = compare_entities(entities_current, entities_expected)
+    assert plan.modify.entities == frozenset({new_e})
+    assert plan.modifications_diff == {
+        'entity1': ['--- \n', '+++ \n', '@@ -2,3 +2,3 @@\n',
+                    '     "name": "entity1",\n',
+                    '-    "fieldTwo": "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"\n',
+                     '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34"\n',
+                    ' }']
+    }
+

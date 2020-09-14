@@ -1,3 +1,4 @@
+import base64
 import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
@@ -32,8 +33,9 @@ DEFAULT_MAP: Dict[str, AttribType] = {
 }
 
 
-def checksum_bytes(value: Any, bytes: str) -> str:
-    return hashlib.sha256(bytes.encode()).hexdigest()
+def checksum_bytes(value: Any, data: str) -> str:
+    bytes_decoded: bytes = base64.b64decode(data)
+    return hashlib.sha256(bytes_decoded).hexdigest()
 
 
 def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:

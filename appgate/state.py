@@ -13,7 +13,7 @@ from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, Fro
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER, APPGATE_DUMPER
+from appgate.attrs import K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
@@ -33,6 +33,7 @@ __all__ = [
     'resolve_entities',
     'resolve_appgate_state',
     'compare_entities',
+    'compute_diff',
 ]
 
 
@@ -338,6 +339,15 @@ def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
                      'in the system.', namespace, k, ', '.join(errors), field, p1)
 
 
+def compute_diff(e1: Entity_T, e2: Entity_T) -> List[str]:
+    e1_dump = json.dumps(DIFF_DUMPER.dump(e1), indent=4)
+    e2_dump = json.dumps(DIFF_DUMPER.dump(e2), indent=4)
+    diff = list(
+        difflib.unified_diff(e1_dump.splitlines(keepends=True),
+                             e2_dump.splitlines(keepends=True), n=1))
+    return diff
+
+
 def compare_entities(current: EntitiesSet,
                      expected: EntitiesSet) -> Plan:
     current_entities = current.entities
@@ -356,11 +366,12 @@ def compare_entities(current: EntitiesSet,
     modifications_diff = {}
     if log.level == DEBUG:
         for e in to_modify.entities:
-            e_dump = json.dumps(APPGATE_DUMPER.dump(e), indent=4)
-            current_e_dump = json.dumps(APPGATE_DUMPER.dump(current.entities_by_id[e.id]), indent=4)
-            diff = list(
-                difflib.unified_diff(e_dump.splitlines(keepends=True),
-                                     current_e_dump.splitlines(keepends=True), n=1))
+            current_entity = current.entities_by_name.get(e.name)
+            if not current_entity:
+                log.warning(f'Trying to compute diff for entity %s [%s] but not registered',
+                            e.name, e.id)
+                continue
+            diff = compute_diff(current_entity, e)
             if diff:
                 modifications_diff[e.name] = diff
     to_share = EntitiesSet(set(filter(
