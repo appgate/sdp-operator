@@ -245,6 +245,7 @@ CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
 '''
 BASE64_FILE_W0 = ''.join(BASE64_FILE.split('\n'))
 SHA256_FILE = '0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e'
+SIZE_FILE = 1563
 
 
 def test_bytes_load():
@@ -280,9 +281,14 @@ def test_bytes_load():
     assert e.fieldTwo == SHA256_FILE
     # We never compare the bytes field itself, only the associated checksum field
     assert e == EntityTest3(fieldOne=None,
-                            fieldTwo=SHA256_FILE)
+                            fieldTwo=SHA256_FILE,
+                            fieldThree=SIZE_FILE)
     assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
-                            fieldTwo='1111111')
+                            fieldTwo='1111111',
+                            fieldThree=SIZE_FILE)
+    assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
+                            fieldTwo=SHA256_FILE,
+                            fieldThree=666)
 
 
 def test_bytes_dump():
@@ -317,6 +323,7 @@ def test_bytes_diff_dump():
         'name': 'entity1',
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': None,
+        'fieldThree': None,
     }
     e_metadata = {
         'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
@@ -324,5 +331,6 @@ def test_bytes_diff_dump():
     e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
     assert DIFF_DUMPER.dump(e) == {
         'name': 'entity1',
-        'fieldTwo': SHA256_FILE
+        'fieldTwo': SHA256_FILE,
+        'fieldThree': SIZE_FILE,
     }
