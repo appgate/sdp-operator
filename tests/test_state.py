@@ -678,7 +678,7 @@ def test_compare_plan_entity_bytes():
         'entity1': ['--- \n', '+++ \n', '@@ -2,3 +2,3 @@\n',
                     '     "name": "entity1",\n',
                     '-    "fieldTwo": "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"\n',
-                     '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34"\n',
+                    '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34"\n',
                     ' }']
     }
 
