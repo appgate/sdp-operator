@@ -7,6 +7,7 @@ import yaml
 from attr import attrib, make_class
 from cryptography.fernet import Fernet
 
+from appgate.bytes import size_attrib_maker, checksum_attrib_maker
 from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
@@ -32,12 +33,6 @@ DEFAULT_MAP: Dict[str, AttribType] = {
     'array': frozenset,
 }
 
-
-def checksum_bytes(value: Any, data: str) -> str:
-    bytes_decoded: bytes = base64.b64decode(data)
-    return hashlib.sha256(bytes_decoded).hexdigest()
-
-
 def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
     return appgate_metadata.uuid or current_id
 
@@ -51,28 +46,6 @@ class IdAttribMaker(SimpleAttribMaker):
         values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomFieldsEntityLoader(
             loader=set_id_from_metadata,
             dependencies=['appgate_metadata'],
-            field=self.name,
-        )]
-        return values
-
-
-class ChecksumAttribMaker(SimpleAttribMaker):
-    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
-                 factory: Optional[type], definition: OpenApiDict,
-                 source_field: str) -> None:
-        super().__init__(name, tpe, base_tpe, default, factory, definition)
-        self.source_field = source_field
-
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
-        # Compare passwords if compare_secrets was enabled
-        values = super().values(attributes, required_fields, instance_maker_config)
-        values['eq'] = True
-        if 'metadata' not in values:
-            values['metadata'] = {}
-        values['metadata'][K8S_LOADERS_FIELD_NAME] = [CustomFieldsEntityLoader(
-            loader=checksum_bytes,
-            dependencies=[self.source_field],
             field=self.name,
         )]
         return values
@@ -359,13 +332,21 @@ class Parser:
                                            secrets_cipher=self.parser_context.secrets_cipher,
                                            k8s_get_client=self.parser_context.k8s_get_secret)
             elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
-                return ChecksumAttribMaker(name=attrib_name,
-                                           tpe=TYPES_MAP[tpe],
-                                           base_tpe=TYPES_MAP[tpe],
-                                           default=DEFAULT_MAP.get(tpe),
-                                           factory=None,
-                                           definition=attrib_maker_config.definition,
-                                           source_field=format['source'])
+                return checksum_attrib_maker(name=attrib_name,
+                                             tpe=TYPES_MAP[tpe],
+                                             base_tpe=TYPES_MAP[tpe],
+                                             default=DEFAULT_MAP.get(tpe),
+                                             factory=None,
+                                             definition=attrib_maker_config.definition,
+                                             source_field=format['source'])
+            elif isinstance(format, dict) and 'type' in format and format['type'] == 'size':
+                return size_attrib_maker(name=attrib_name,
+                                         tpe=TYPES_MAP[tpe],
+                                         base_tpe=TYPES_MAP[tpe],
+                                         default=DEFAULT_MAP.get(tpe),
+                                         factory=None,
+                                         definition=attrib_maker_config.definition,
+                                         source_field=format['source'])
             elif attrib_name == 'id':
                 return IdAttribMaker(name=attrib_name,
                                      tpe=TYPES_MAP[tpe],

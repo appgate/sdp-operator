@@ -167,6 +167,9 @@ definitions:
             example: a0041669f6f7031d32bc27305955327abe54aeb03670c4ae1b2a48e5d29e8e33
           size:
             type: number
+            format:
+              type: size
+              source: file
             readOnly: true
             description: Binary file's size in bytes.
             example: 854325
