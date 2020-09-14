@@ -214,7 +214,7 @@ async def start_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T]
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_event_loop,
                              args=(namespace, crd, loop, queue, K8S_LOADER.load, entity_type),
-                             daemon=False)
+                             daemon=True)
         t.start()
 
     await asyncio.to_thread(run, asyncio.get_event_loop())  # type: ignore
