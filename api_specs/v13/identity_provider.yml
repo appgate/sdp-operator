@@ -299,6 +299,7 @@ definitions:
               mfaProviderId:
                 type: string
                 format: uuid
+                x-uuid-ref: MfaProvider
                 description: MFA provider ID to use for the authentication.
               message:
                 type: string
@@ -320,6 +321,7 @@ definitions:
           onBoardingOtpProvider:
             type: string
             format: uuid
+            x-uuid-ref: MfaProvider
             description: On-boarding MFA Provider ID if "onBoardingType" is Require2FA.  Deprecated as of 5.0. Use onBoarding2FA object instead.
             deprecated: true
             writeOnly: true

@@ -14,6 +14,7 @@ SPEC_ENTITIES = {
     '/sites': 'Site',
     '/ip-pools': 'IpPool',
     '/ringfence-rules': ' RingfenceRule',
+    '/mfa-providers': 'MfaProvider',
     '/identity-providers': 'IdentityProvider',
     '/administrative-roles': 'AdministrativeRole',
     '/device-scripts': 'DeviceScript',
