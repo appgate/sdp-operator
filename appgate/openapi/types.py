@@ -29,6 +29,7 @@ SPEC_ENTITIES = {
     '/policies': 'Policy',
     '/conditions': 'Condition',
     '/entitlements': 'Entitlement',
+    '/trusted-certificates': 'TrustedCertificate',
 }
 
 
