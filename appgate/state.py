@@ -277,7 +277,7 @@ async def plan_apply(plan: Plan, namespace: str,
         if diff:
             log.debug('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
             for d in diff:
-                log.debug('%s', d)
+                log.debug('%s', d.rstrip())
         if entity_client:
             if not await entity_client.put(e):
                 errors.add(e.id)
