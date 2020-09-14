@@ -275,7 +275,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
                     if not ctx.dry_run_mode:
-                        appgate_client = exit_stack.enter_async_context(AppgateClient(
+                        appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
                             user=ctx.user, password=ctx.password,
                             version=ctx.api_spec.api_version))
