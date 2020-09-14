@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from asyncio import Queue
+from contextlib import AsyncExitStack
 from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Type, Dict, Callable, Any, List, FrozenSet
@@ -32,7 +33,7 @@ __all__ = [
     'main_loop',
     'get_context',
     'get_current_appgate_state',
-    'start_event_loop',
+    'start_entity_loop',
     'Context',
     'log',
 ]
@@ -144,43 +145,42 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     Gets the current AppgateState for controller
     """
     api_spec = ctx.api_spec
-    appgate_client = AppgateClient(controller=ctx.controller, user=ctx.user,
-                                   password=ctx.password,
-                                   version=api_spec.api_version)
-    log.info('[appgate-operator/%s] Updating current state from controller',
-             ctx.namespace)
+    async with AppgateClient(controller=ctx.controller, user=ctx.user,
+                             password=ctx.password,
+                             version=api_spec.api_version) as appgate_client:
+        log.info('[appgate-operator/%s] Updating current state from controller',
+                 ctx.namespace)
 
-    await appgate_client.login()
-    if not appgate_client.authenticated:
-        log.error('[appgate-operator/%s] Unable to authenticate with controller',
-                  ctx.namespace)
-        await appgate_client.close()
-        raise Exception('Error authenticating')
+        if not appgate_client.authenticated:
+            log.error('[appgate-operator/%s] Unable to authenticate with controller',
+                      ctx.namespace)
+            await appgate_client.close()
+            raise Exception('Error authenticating')
 
-    entity_clients = generate_api_spec_clients(api_spec=api_spec,
-                                               appgate_client=appgate_client,
-                                               dump_secrets=ctx.dump_secrets)
-    entities_set = {}
-    for entity, client in entity_clients.items():
-        entities = await client.get()
-        if entities is not None:
-            entities_set[entity] = EntitiesSet(set(filter(lambda e: is_target(e, ctx.target_tags),
-                                                          entities)))
-    if len(entities_set) < len(entity_clients):
-        log.error('[appgate-operator/%s] Unable to get entities from controller',
-                  ctx.namespace)
-        await appgate_client.close()
-        raise Exception('Error reading current state')
+        entity_clients = generate_api_spec_clients(api_spec=api_spec,
+                                                   appgate_client=appgate_client,
+                                                   dump_secrets=ctx.dump_secrets)
+        entities_set = {}
+        for entity, client in entity_clients.items():
+            entities = await client.get()
+            if entities is not None:
+                entities_set[entity] = EntitiesSet(set(filter(lambda e: is_target(e, ctx.target_tags),
+                                                              entities)))
+        if len(entities_set) < len(entity_clients):
+            log.error('[appgate-operator/%s] Unable to get entities from controller',
+                      ctx.namespace)
+            await appgate_client.close()
+            raise Exception('Error reading current state')
 
-    appgate_state = AppgateState(entities_set=entities_set)
-    await appgate_client.close()
+        appgate_state = AppgateState(entities_set=entities_set)
+
     return appgate_state
 
 
-def run_event_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
-                   queue: Queue[AppgateEvent],
-                   load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-                   entity_type: type):
+def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
+                    queue: Queue[AppgateEvent],
+                    load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
+                    entity_type: type):
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
                              K8S_APPGATE_VERSION, namespace, crd)
@@ -206,13 +206,13 @@ def run_event_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
             sys.exit(1)
 
 
-async def start_event_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
-                           queue: Queue[AppgateEvent]) -> None:
+async def start_entity_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
+                            queue: Queue[AppgateEvent]) -> None:
     log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, namespace,
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
-        t = threading.Thread(target=run_event_loop,
+        t = threading.Thread(target=run_entity_loop,
                              args=(namespace, crd, loop, queue, K8S_LOADER.load, entity_type),
                              daemon=True)
         t.start()
@@ -272,24 +272,25 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
-                appgate_client = None
-                if not ctx.dry_run_mode:
-                    appgate_client = AppgateClient(controller=ctx.controller,
-                                                   user=ctx.user, password=ctx.password,
-                                                   version=ctx.api_spec.api_version)
-                    await appgate_client.login()
-                else:
-                    log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
-                                namespace)
-                new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
-                                                    entity_clients=generate_api_spec_clients(
-                                                        api_spec=ctx.api_spec,
-                                                        appgate_client=appgate_client,
-                                                        dump_secrets=ctx.dump_secrets)
-                                                    if appgate_client else {})
+                async with AsyncExitStack() as exit_stack:
+                    appgate_client = None
+                    if not ctx.dry_run_mode:
+                        appgate_client = AppgateClient(controller=ctx.controller,
+                                                       user=ctx.user, password=ctx.password,
+                                                       version=ctx.api_spec.api_version)
+                        exit_stack.enter_async_context(appgate_client)
+                        await appgate_client.login()
+                    else:
+                        log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
+                                    namespace)
+                    new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
+                                                        entity_clients=generate_api_spec_clients(
+                                                            api_spec=ctx.api_spec,
+                                                            appgate_client=appgate_client,
+                                                            dump_secrets=ctx.dump_secrets)
+                                                        if appgate_client else {})
 
-                if appgate_client:
-                    current_appgate_state = new_plan.appgate_state
-                    await appgate_client.close()
+                    if appgate_client:
+                        current_appgate_state = new_plan.appgate_state
             else:
                 log.info('[appgate-operator/%s] Nothing changed! Keeping watching!', namespace)

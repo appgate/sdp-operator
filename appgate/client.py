@@ -79,6 +79,13 @@ class AppgateClient:
     async def close(self) -> None:
         await self._session.close()
 
+    async def __aenter__(self) -> 'AppgateClient':
+        await self.login()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.close()
+
     def auth_header(self) -> Optional[str]:
         if self._token:
             return f'Bearer {self._token}'

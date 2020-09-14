@@ -9,7 +9,7 @@ import time
 
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
-    Context, start_event_loop, log
+    Context, start_entity_loop, log
 from appgate.openapi.openapi import generate_api_spec, entity_names, generate_crd
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
@@ -20,7 +20,7 @@ async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None
     ctx = init_kubernetes(namespace, spec_directory=spec_directory)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     tasks = [
-                start_event_loop(
+                start_entity_loop(
                     namespace=ctx.namespace,
                     queue=events_queue,
                     crd=entity_names(e.cls, {})[2],
@@ -143,4 +143,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        log.info('Interrupted by user.')
+        sys.exit(1)
