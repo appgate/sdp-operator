@@ -13,6 +13,7 @@ from appgate.logger import log
 SPEC_ENTITIES = {
     '/sites': 'Site',
     '/ip-pools': 'IpPool',
+    '/ringfence-rules': ' RingfenceRule',
     '/identity-providers': 'IdentityProvider',
     '/administrative-roles': 'AdministrativeRole',
     '/device-scripts': 'DeviceScript',
