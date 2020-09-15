@@ -408,8 +408,10 @@ def test_ceritificate_pem_load():
                                subjectPublicKey=join_string(PUBKEY_FIELD))
 
     e1 = K8S_LOADER.load(e_data, None, EntityCert)
-    assert e1.fieldOne == PEM_TEST
+    assert e1.fieldOne == None
     assert e1.fieldTwo == cert
+    assert e1 == EntityCert(fieldOne='Crap data that is ignored',
+                            fieldTwo=cert)
 
     cert2 = EntityCert_Fieldtwo(version=0,
                                 serial='3578',

@@ -448,6 +448,7 @@ definitions:
     properties:
       fieldOne:
         type: string
+        format: PEM
       fieldTwo:
         type: object
         format:
