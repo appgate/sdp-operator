@@ -117,7 +117,7 @@ class InstanceMaker:
                            {CustomFieldsEntityLoader, CustomEntityLoader})):
                     appgate_custom_entity_loaders.append(appgate_loader)
                 else:
-                    custom_appgate_attrib_loaders.append(appgate_loaders)
+                    custom_appgate_attrib_loaders.append(appgate_loader)
             v['metadata'][APPGATE_LOADERS_FIELD_NAME] = custom_appgate_attrib_loaders
 
         # Build the dictionary of attribs
