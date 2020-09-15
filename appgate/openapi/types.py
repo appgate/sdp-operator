@@ -32,7 +32,8 @@ SPEC_ENTITIES = {
     '/trusted-certificates': 'TrustedCertificate',
 }
 
-
+ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
+APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
@@ -69,6 +70,10 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
     __attrs_attrs__: List[Attribute] = attrib()
     appgate_metadata: AppgateMetadata = attrib()
+
+
+LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
+DumperFunc = Callable[[Entity_T], Dict[str, Any]]
 
 
 @attrs(frozen=True, slots=True)

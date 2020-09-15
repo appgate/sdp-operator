@@ -2,15 +2,41 @@ import base64
 import hashlib
 from typing import Optional, Any, Dict, List, Callable
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.x509 import load_pem_x509_certificate
+from typedload.dataloader import Loader
+
 from appgate.customloaders import CustomFieldsEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, K8S_LOADERS_FIELD_NAME, InstanceMakerConfig
-
+from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
+    K8S_LOADERS_FIELD_NAME, InstanceMakerConfig, Entity_T, LoaderFunc
 
 __all__ = [
     'checksum_attrib_maker',
     'size_attrib_maker'
 ]
+
+
+def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable[..., Any]:
+
+    def certificate_bytes(value: Any, data: str) -> Entity_T:
+        cert = load_pem_x509_certificate(data.encode())  # type: ignore
+        cert_data = {
+            'version': cert.version.value,
+            'serial': str(cert.serial_number),
+            'issuer': cert.issuer.rfc4514_string(),
+            'subject': cert.subject.rfc4514_string(),
+            'validFrom': str(cert.not_valid_before),
+            'validTo': str(cert.not_valid_after),
+            'fingerprint': base64.b64encode(cert.fingerprint(hashes.SHA256())).decode(),
+            'certificate': base64.b64encode(cert.public_bytes(Encoding.PEM)).decode(),
+            'subjectPublicKey': base64.b64encode(cert.public_key()
+                                                 .public_bytes(Encoding.PEM,
+                                                               PublicFormat.SubjectPublicKeyInfo)).decode(),
+        }
+        return loader(cert_data, None, entity_type)
+    return certificate_bytes
 
 
 def checksum_bytes(value: Any, data: str) -> str:
@@ -58,3 +84,11 @@ def size_attrib_maker(name: str, tpe: type, base_tpe: type, default: Optional[At
                       source_field: str) -> BytesFieldAttribMaker:
     return BytesFieldAttribMaker(name, tpe, base_tpe, default, factory, definition, source_field,
                                  size_bytes)
+
+
+def certificate_attrib_maker(name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
+                             factory: Optional[type], definition: OpenApiDict,
+                             source_field: str,
+                             loader: LoaderFunc) -> BytesFieldAttribMaker:
+    return BytesFieldAttribMaker(name, tpe, base_tpe, default, factory, definition, source_field,
+                                 create_certificate_loader(loader, base_tpe))

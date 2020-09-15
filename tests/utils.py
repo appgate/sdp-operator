@@ -33,6 +33,7 @@ TestSpec = {
     '/entity-dep-4': 'EntityDep4',
     '/entity-dep-5': 'EntityDep5',
     '/entity-dep-6': 'EntityDep6',
+    '/entity-cert': 'EntityCert',
 }
 
 

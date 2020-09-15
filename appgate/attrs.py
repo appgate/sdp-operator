@@ -6,10 +6,10 @@ from typedload import dataloader
 from typedload import datadumper
 from typedload.exceptions import TypedloadException
 
-from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, CustomEntityLoader
-from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
-from appgate.openapi.types import Entity_T
-
+from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
+    CustomEntityLoader
+from appgate.openapi.types import Entity_T, ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME, \
+    LoaderFunc, DumperFunc
 
 __all__ = [
     'K8S_DUMPER',
@@ -173,12 +173,12 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
 
 @attrs()
 class EntityLoader:
-    load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T] = attrib()
+    load: LoaderFunc = attrib()
 
 
 @attrs()
 class EntityDumper:
-    dump: Callable[[Entity_T], Dict[str, Any]] = attrib()
+    dump: DumperFunc = attrib()
 
 
 K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))
