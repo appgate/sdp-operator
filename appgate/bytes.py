@@ -1,11 +1,11 @@
 import base64
+import datetime
 import hashlib
 from typing import Optional, Any, Dict, List, Callable
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.x509 import load_pem_x509_certificate
-from typedload.dataloader import Loader
 
 from appgate.customloaders import CustomFieldsEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
@@ -14,8 +14,15 @@ from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
 
 __all__ = [
     'checksum_attrib_maker',
-    'size_attrib_maker'
+    'size_attrib_maker',
+    'certificate_attrib_maker',
 ]
+
+
+def datetime_utc(d: datetime.datetime) -> datetime.datetime:
+    if not d.utcoffset():
+        return d.astimezone()
+    return d
 
 
 def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable[..., Any]:
@@ -27,13 +34,13 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
             'serial': str(cert.serial_number),
             'issuer': cert.issuer.rfc4514_string(),
             'subject': cert.subject.rfc4514_string(),
-            'validFrom': str(cert.not_valid_before),
-            'validTo': str(cert.not_valid_after),
+            'validFrom': datetime_utc(cert.not_valid_before).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+            'validTo': datetime_utc(cert.not_valid_after).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
             'fingerprint': base64.b64encode(cert.fingerprint(hashes.SHA256())).decode(),
             'certificate': base64.b64encode(cert.public_bytes(Encoding.PEM)).decode(),
-            'subjectPublicKey': base64.b64encode(cert.public_key()
-                                                 .public_bytes(Encoding.PEM,
-                                                               PublicFormat.SubjectPublicKeyInfo)).decode(),
+            'subjectPublicKey': base64.b64encode(cert.public_key().public_bytes(
+                Encoding.PEM,
+                PublicFormat.SubjectPublicKeyInfo)).decode(),
         }
         return loader(cert_data, None, entity_type)
     return certificate_bytes

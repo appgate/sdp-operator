@@ -1,5 +1,4 @@
-import base64
-import hashlib
+import datetime
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -15,12 +14,11 @@ from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
-    AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, ENTITY_METADATA_ATTRIB_NAME, \
-    APPGATE_METADATA_ATTRIB_NAME
+    AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
+    ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
-
 
 
 TYPES_MAP: Dict[str, Type] = {
@@ -33,6 +31,7 @@ DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
 }
+
 
 def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
     return appgate_metadata.uuid or current_id
@@ -332,6 +331,13 @@ class Parser:
                                            definition=attrib_maker_config.definition,
                                            secrets_cipher=self.parser_context.secrets_cipher,
                                            k8s_get_client=self.parser_context.k8s_get_secret)
+            elif format == 'date-time':
+                return SimpleAttribMaker(name=attrib_name,
+                                         tpe=datetime.datetime,
+                                         base_tpe=datetime.datetime,
+                                         default=None,
+                                         factory=None,
+                                         definition=attrib_maker_config.definition)
             elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
                 return checksum_attrib_maker(name=attrib_name,
                                              tpe=TYPES_MAP[tpe],
