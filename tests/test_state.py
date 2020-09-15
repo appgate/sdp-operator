@@ -2,7 +2,7 @@ from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
     compute_diff
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
-from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, TestOpenAPI, PEM_TEST, \
+from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
     join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD
 
 
@@ -718,8 +718,8 @@ def test_compare_plan_entity_pem():
             'serial': '3578',
             'issuer': join_string(ISSUER),
             'subject': join_string(SUBJECT),
-            'validFrom': '2012-08-22 05:26:54',
-            'validTo': '2017-08-21 05:26:54',
+            'validFrom': '2012-08-22T05:26:54.000Z',
+            'validTo': '2017-08-21T05:26:54.000Z',
             'fingerprint': 'Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
             'certificate': join_string(CERTIFICATE_FIELD),
             'subjectPublicKey': join_string(PUBKEY_FIELD),
@@ -746,8 +746,8 @@ def test_compare_plan_entity_pem():
             '+        "serial": "0",\n',
             '         "issuer": "1.2.840.113549.1.9.1=support@frank4dd.com,CN=Frank4DD Web CA,OU=WebCert Support,O=Frank4DD,L=Chuo-ku,ST=Tokyo,C=JP",\n',
             '         "subject": "CN=www.example.com,O=Frank4DD,ST=Tokyo,C=JP",\n',
-            '-        "validFrom": "2012-08-22 05:26:54",\n',
-            '-        "validTo": "2017-08-21 05:26:54",\n',
+            '-        "validFrom": "2012-08-22T05:26:54.000Z",\n',
+            '-        "validTo": "2017-08-21T05:26:54.000Z",\n',
             '-        "fingerprint": "Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=",\n',
             '-        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFakNDQVhzQ0FnMzZNQTBHQ1NxR1NJYjNEUUVCQlFVQU1JR2JNUXN3Q1FZRFZRUUdF'
             'd0pLVURFT01Bd0cKQTFVRUNCTUZWRzlyZVc4eEVEQU9CZ05WQkFjVEIwTm9kVzh0YTNVeEVUQVBCZ05WQkFvVENFWnlZVzVyTkVSRQpNUmd3RmdZRFZRUUxFdzlYWldKRFpYS'
@@ -757,8 +757,8 @@ def test_compare_plan_entity_pem():
             'TGwKOFpQakJvcDd1TEhobmlhN2xRRy81ekR0WklVQzNSVnBxRFN3QnV3L05Ud2VHeXVQK284QUc5OEh4cXhUQndJRApBUUFCTUEwR0NTcUdTSWIzRFFFQkJRVUFBNEdCQUJTM'
             'lRMdUJlVFBtY2FUYVVXL0xDQjJOWU95OEdNZHpSMW14CjhpQkl1Mkg2L0UydGlZM1JJZXZWMk9XNjFxWTIvWFJRZzdZUHh4M2ZmZVV1Z1g5RjRKL2lQbm51MXpBeHh5QnkKMl'
             'ZndUt2NFNXalJGb1JrSWZJbEhYMHFWdmlNaFNsTnkyaW9GTHk3SmNQWmIrdjNmdERHeXdVcWNCaVZEb2VhMApIbitHbXhaQQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",\n',
-            '+        "validFrom": "1901-12-13 20:45:52",\n',
-            '+        "validTo": "2038-01-19 03:14:07",\n',
+            '+        "validFrom": "1901-12-13T20:45:52.000Z",\n',
+            '+        "validTo": "2038-01-19T03:14:07.000Z",\n',
             '+        "fingerprint": "a3+1G1asrwqPm5o/jKZzfLl4Id24MBBsn8mhS4v9+jY=",\n',
             '+        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNHakNDQVlPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRVUZBRENCbXpFTE1Ba0dB'
             'MVVFQmhNQ1NsQXgKRGpBTUJnTlZCQWdUQlZSdmEzbHZNUkF3RGdZRFZRUUhFd2REYUhWdkxXdDFNUkV3RHdZRFZRUUtFd2hHY21GdQphelJFUkRFWU1CWUdBMVVFQ3hNUFYyV'
