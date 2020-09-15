@@ -2,7 +2,8 @@ from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
     compute_diff
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
-from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, TestOpenAPI
+from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, TestOpenAPI, PEM_TEST, \
+    join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD
 
 
 def test_compare_policies_0():
@@ -687,3 +688,89 @@ def test_compare_plan_entity_bytes():
                     '+    "fieldThree": 12\n', ' }']
     }
 
+
+PEM2 = '''
+-----BEGIN CERTIFICATE-----
+MIICGjCCAYOgAwIBAgIBADANBgkqhkiG9w0BAQUFADCBmzELMAkGA1UEBhMCSlAx
+DjAMBgNVBAgTBVRva3lvMRAwDgYDVQQHEwdDaHVvLWt1MREwDwYDVQQKEwhGcmFu
+azRERDEYMBYGA1UECxMPV2ViQ2VydCBTdXBwb3J0MRgwFgYDVQQDEw9GcmFuazRE
+RCBXZWIgQ0ExIzAhBgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJhbms0ZGQuY29tMCIY
+DzE5MDExMjEzMjA0NTUyWhgPMjAzODAxMTkwMzE0MDdaMEoxCzAJBgNVBAYTAkpQ
+MQ4wDAYDVQQIDAVUb2t5bzERMA8GA1UECgwIRnJhbms0REQxGDAWBgNVBAMMD3d3
+dy5leGFtcGxlLmNvbTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQCb/GaQeYRCu6sT
+/St7+N4VEuXxk+MGinu4seGeJruVAb/nMO1khQLdFWmoNLAG7D81PB4bK4/6jwAb
+3wfGrFMHAgMBAAEwDQYJKoZIhvcNAQEFBQADgYEAnzdeQBG2crXnvZyHgCL9dSnm
+lnaXJITO//+G59uCvDKbnX+BKvXXxXQIa7GmtzYuw3LC/jJJL307r/CECZr6vV9I
+KHn27+yOtrPDOwTDtXyaYOaf8V6fkSVN3iLx7tbEP6R0uEKxaVaqMZ71ed3SO1OL
+wq0j8GkKY/K/zl2Nwzc=
+-----END CERTIFICATE-----
+'''
+
+
+def test_compare_plan_entity_pem():
+    EntityCert = load_test_open_api_spec(secrets_key=None,
+                                         reload=True).entities['EntityCert'].cls
+    appgate_data = {
+        'name': 'c1',
+        'fieldOne': PEM_TEST,
+        'fieldTwo': {
+            'version': 0,
+            'serial': '3578',
+            'issuer': join_string(ISSUER),
+            'subject': join_string(SUBJECT),
+            'validFrom': '2012-08-22 05:26:54',
+            'validTo': '2017-08-21 05:26:54',
+            'fingerprint': 'Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+            'certificate': join_string(CERTIFICATE_FIELD),
+            'subjectPublicKey': join_string(PUBKEY_FIELD),
+        }
+    }
+    k8s_data = {
+        'name': 'c1',
+        'fieldOne': PEM2
+    }
+    current_entities = EntitiesSet({
+        APPGATE_LOADER.load(appgate_data, None, EntityCert)
+    })
+    new_e = K8S_LOADER.load(k8s_data, None, EntityCert)
+    expected_entities = EntitiesSet({
+        new_e
+    })
+    plan = compare_entities(current_entities, expected_entities)
+    assert plan.modify.entities == frozenset({new_e})
+    assert plan.modifications_diff == {
+        'c1': [
+            '--- \n', '+++ \n', '@@ -3,10 +3,10 @@\n',
+            '     "fieldTwo": {\n', '-        "version": 0,\n',
+            '-        "serial": "3578",\n', '+        "version": 2,\n',
+            '+        "serial": "0",\n',
+            '         "issuer": "1.2.840.113549.1.9.1=support@frank4dd.com,CN=Frank4DD Web CA,OU=WebCert Support,O=Frank4DD,L=Chuo-ku,ST=Tokyo,C=JP",\n',
+            '         "subject": "CN=www.example.com,O=Frank4DD,ST=Tokyo,C=JP",\n',
+            '-        "validFrom": "2012-08-22 05:26:54",\n',
+            '-        "validTo": "2017-08-21 05:26:54",\n',
+            '-        "fingerprint": "Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=",\n',
+            '-        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFakNDQVhzQ0FnMzZNQTBHQ1NxR1NJYjNEUUVCQlFVQU1JR2JNUXN3Q1FZRFZRUUdF'
+            'd0pLVURFT01Bd0cKQTFVRUNCTUZWRzlyZVc4eEVEQU9CZ05WQkFjVEIwTm9kVzh0YTNVeEVUQVBCZ05WQkFvVENFWnlZVzVyTkVSRQpNUmd3RmdZRFZRUUxFdzlYWldKRFpYS'
+            'jBJRk4xY0hCdmNuUXhHREFXQmdOVkJBTVREMFp5WVc1ck5FUkVJRmRsCllpQkRRVEVqTUNFR0NTcUdTSWIzRFFFSkFSWVVjM1Z3Y0c5eWRFQm1jbUZ1YXpSa1pDNWpiMjB3SG'
+            'hjTk1USXcKT0RJeU1EVXlOalUwV2hjTk1UY3dPREl4TURVeU5qVTBXakJLTVFzd0NRWURWUVFHRXdKS1VERU9NQXdHQTFVRQpDQXdGVkc5cmVXOHhFVEFQQmdOVkJBb01DRVp'
+            '5WVc1ck5FUkVNUmd3RmdZRFZRUUREQTkzZDNjdVpYaGhiWEJzClpTNWpiMjB3WERBTkJna3Foa2lHOXcwQkFRRUZBQU5MQURCSUFrRUFtL3hta0htRVFydXJFLzByZS9qZUZS'
+            'TGwKOFpQakJvcDd1TEhobmlhN2xRRy81ekR0WklVQzNSVnBxRFN3QnV3L05Ud2VHeXVQK284QUc5OEh4cXhUQndJRApBUUFCTUEwR0NTcUdTSWIzRFFFQkJRVUFBNEdCQUJTM'
+            'lRMdUJlVFBtY2FUYVVXL0xDQjJOWU95OEdNZHpSMW14CjhpQkl1Mkg2L0UydGlZM1JJZXZWMk9XNjFxWTIvWFJRZzdZUHh4M2ZmZVV1Z1g5RjRKL2lQbm51MXpBeHh5QnkKMl'
+            'ZndUt2NFNXalJGb1JrSWZJbEhYMHFWdmlNaFNsTnkyaW9GTHk3SmNQWmIrdjNmdERHeXdVcWNCaVZEb2VhMApIbitHbXhaQQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",\n',
+            '+        "validFrom": "1901-12-13 20:45:52",\n',
+            '+        "validTo": "2038-01-19 03:14:07",\n',
+            '+        "fingerprint": "a3+1G1asrwqPm5o/jKZzfLl4Id24MBBsn8mhS4v9+jY=",\n',
+            '+        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNHakNDQVlPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRVUZBRENCbXpFTE1Ba0dB'
+            'MVVFQmhNQ1NsQXgKRGpBTUJnTlZCQWdUQlZSdmEzbHZNUkF3RGdZRFZRUUhFd2REYUhWdkxXdDFNUkV3RHdZRFZRUUtFd2hHY21GdQphelJFUkRFWU1CWUdBMVVFQ3hNUFYyV'
+            'mlRMlZ5ZENCVGRYQndiM0owTVJnd0ZnWURWUVFERXc5R2NtRnVhelJFClJDQlhaV0lnUTBFeEl6QWhCZ2txaGtpRzl3MEJDUUVXRkhOMWNIQnZjblJBWm5KaGJtczBaR1F1WT'
+            'I5dE1DSVkKRHpFNU1ERXhNakV6TWpBME5UVXlXaGdQTWpBek9EQXhNVGt3TXpFME1EZGFNRW94Q3pBSkJnTlZCQVlUQWtwUQpNUTR3REFZRFZRUUlEQVZVYjJ0NWJ6RVJNQTh'
+            'HQTFVRUNnd0lSbkpoYm1zMFJFUXhHREFXQmdOVkJBTU1EM2QzCmR5NWxlR0Z0Y0d4bExtTnZiVEJjTUEwR0NTcUdTSWIzRFFFQkFRVUFBMHNBTUVnQ1FRQ2IvR2FRZVlSQ3U2'
+            'c1QKL1N0NytONFZFdVh4aytNR2ludTRzZUdlSnJ1VkFiL25NTzFraFFMZEZXbW9OTEFHN0Q4MVBCNGJLNC82andBYgozd2ZHckZNSEFnTUJBQUV3RFFZSktvWklodmNOQVFFR'
+            'kJRQURnWUVBbnpkZVFCRzJjclhudlp5SGdDTDlkU25tCmxuYVhKSVRPLy8rRzU5dUN2REtiblgrQkt2WFh4WFFJYTdHbXR6WXV3M0xDL2pKSkwzMDdyL0NFQ1pyNnZWOUkKS0'
+            'huMjcreU90clBET3dURHRYeWFZT2FmOFY2ZmtTVk4zaUx4N3RiRVA2UjB1RUt4YVZhcU1aNzFlZDNTTzFPTAp3cTBqOEdrS1kvSy96bDJOd3pjPQotLS0tLUVORCBDRVJUSUZ'
+            'JQ0FURS0tLS0tCg==",\n',
+            '         "subjectPublicKey": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZ3d0RRWUpLb1pJaHZjTkFRRUJCUUFEU3dBd1NBSkJBSnY4WnBCNWhFSzdxeFA5SzN2'
+            'NDNoVVM1ZkdUNHdhSwplN2l4NFo0bXU1VUJ2K2N3N1dTRkF0MFZhYWcwc0Fic1B6VThIaHNyai9xUEFCdmZCOGFzVXdjQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS'
+            '0tLQo="\n'
+        ]
+    }

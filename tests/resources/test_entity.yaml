@@ -446,6 +446,11 @@ definitions:
   EntityCert:
     type: object
     properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
       fieldOne:
         type: string
         format: PEM
