@@ -5,6 +5,9 @@ from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
     IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig, UUID_REFERENCE_FIELD
 
 
+write_only_formats = {'PEM', 'password'}
+
+
 class SimpleAttribMaker:
     def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict, repr: bool = True) -> None:
@@ -36,11 +39,15 @@ class SimpleAttribMaker:
         required = self.name in required_fields
         definition = self.definition
         read_only = definition.get('readOnly', False)
-        write_only = definition.get('writeOnly', False)
         format = definition.get('format')
+        if type(format) is not dict and format in write_only_formats:
+            write_only = True
+        else:
+            write_only = definition.get('writeOnly', False)
         if instance_maker_config.level == 0 and self.name == 'id':
             # We dont want to save id on k8s
             read_only = True
+
         attribs: AttributesDict = {}
         attribs['metadata'] = {
             'name': self.name,

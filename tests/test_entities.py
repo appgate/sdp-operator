@@ -393,10 +393,6 @@ def test_ceritificate_pem_load():
     EntityCert = load_test_open_api_spec(secrets_key=None,
                                          reload=True).entities['EntityCert'].cls
     EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls
-    e_data = {
-        'fieldOne': PEM_TEST,
-    }
-
     cert = EntityCert_Fieldtwo(version=0,
                                serial='3578',
                                issuer=join_string(ISSUER),
@@ -406,12 +402,34 @@ def test_ceritificate_pem_load():
                                fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
                                certificate=join_string(CERTIFICATE_FIELD),
                                subjectPublicKey=join_string(PUBKEY_FIELD))
+    e0_data = {
+        'fieldOne': PEM_TEST,
+        'fieldTwo': {
+            'version': 0,
+            'serial': '3578',
+            'issuer': join_string(ISSUER),
+            'subject': join_string(SUBJECT),
+            'validFrom': '2012-08-22 05:26:54',
+            'validTo': '2017-08-21 05:26:54',
+            'fingerprint': 'Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+            'certificate': join_string(CERTIFICATE_FIELD),
+            'subjectPublicKey': join_string(PUBKEY_FIELD),
+        }
+    }
+    e0 = APPGATE_LOADER.load(e0_data, None, EntityCert)
+    assert e0.fieldOne == None
+    assert e0.fieldTwo == cert
 
-    e1 = K8S_LOADER.load(e_data, None, EntityCert)
-    assert e1.fieldOne == None
+    e1_data = {
+        'fieldOne': PEM_TEST,
+    }
+
+    e1 = K8S_LOADER.load(e1_data, None, EntityCert)
+    assert e1.fieldOne == PEM_TEST
     assert e1.fieldTwo == cert
     assert e1 == EntityCert(fieldOne='Crap data that is ignored',
                             fieldTwo=cert)
+    assert e1 == e0
 
     cert2 = EntityCert_Fieldtwo(version=0,
                                 serial='3578',
