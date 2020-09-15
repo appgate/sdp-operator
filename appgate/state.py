@@ -13,7 +13,7 @@ from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, Fro
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
+from appgate.attrs import K8S_DUMPER, DIFF_DUMPER
 from appgate.client import EntityClient
 from appgate.logger import log
 from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
