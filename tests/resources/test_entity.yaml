@@ -32,6 +32,8 @@ paths:
     $ref: '#/entity-dep-5'
   /entity-dep-6:
     $ref: '#/entity-dep-6'
+  /entity-cert:
+    $ref: '#/entity-cert'
     
 entity-test1:
   get:
@@ -213,6 +215,20 @@ entity-dep-6:
           schema:
             $ref: '#/definitions/EntityDep6'
 
+entity-cert:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityCert'
 
 definitions:
   EntityTestList:
@@ -426,3 +442,40 @@ definitions:
                   type: string
                   format: uuid
                   x-uuid-ref: EntityDep2
+
+  EntityCert:
+    type: object
+    properties:
+      fieldOne:
+        type: string
+      fieldTwo:
+        type: object
+        format:
+          type: certificate
+          source: fieldOne
+        readOnly: true
+        properties:
+          version:
+            type: number
+          serial:
+            type: string
+          issuer:
+            type: string
+            description: The issuer name of the certificate.
+          subject:
+            type: string
+            description: The subject name of the certificate.
+          validFrom:
+            type: string
+            format: 'date-time'
+          validTo:
+            type: string
+            format: 'date-time'
+          fingerprint:
+            type: string
+          certificate:
+            type: string
+            format: byte
+          subjectPublicKey:
+            type: string
+            format: byte

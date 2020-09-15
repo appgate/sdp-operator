@@ -246,6 +246,55 @@ CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
 BASE64_FILE_W0 = ''.join(BASE64_FILE.split('\n'))
 SHA256_FILE = '0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e'
 SIZE_FILE = 1563
+PEM_TEST = '''-----BEGIN CERTIFICATE-----
+MIICEjCCAXsCAg36MA0GCSqGSIb3DQEBBQUAMIGbMQswCQYDVQQGEwJKUDEOMAwG
+A1UECBMFVG9reW8xEDAOBgNVBAcTB0NodW8ta3UxETAPBgNVBAoTCEZyYW5rNERE
+MRgwFgYDVQQLEw9XZWJDZXJ0IFN1cHBvcnQxGDAWBgNVBAMTD0ZyYW5rNEREIFdl
+YiBDQTEjMCEGCSqGSIb3DQEJARYUc3VwcG9ydEBmcmFuazRkZC5jb20wHhcNMTIw
+ODIyMDUyNjU0WhcNMTcwODIxMDUyNjU0WjBKMQswCQYDVQQGEwJKUDEOMAwGA1UE
+CAwFVG9reW8xETAPBgNVBAoMCEZyYW5rNEREMRgwFgYDVQQDDA93d3cuZXhhbXBs
+ZS5jb20wXDANBgkqhkiG9w0BAQEFAANLADBIAkEAm/xmkHmEQrurE/0re/jeFRLl
+8ZPjBop7uLHhnia7lQG/5zDtZIUC3RVpqDSwBuw/NTweGyuP+o8AG98HxqxTBwID
+AQABMA0GCSqGSIb3DQEBBQUAA4GBABS2TLuBeTPmcaTaUW/LCB2NYOy8GMdzR1mx
+8iBIu2H6/E2tiY3RIevV2OW61qY2/XRQg7YPxx3ffeUugX9F4J/iPnnu1zAxxyBy
+2VguKv4SWjRFoRkIfIlHX0qVviMhSlNy2ioFLy7JcPZb+v3ftDGywUqcBiVDoea0
+Hn+GmxZA
+-----END CERTIFICATE-----'''
+
+CERTIFICATE_FIELD = '''
+LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFakNDQVhz
+Q0FnMzZNQTBHQ1NxR1NJYjNEUUVCQlFVQU1JR2JNUXN3Q1FZRFZR
+UUdFd0pLVURFT01Bd0cKQTFVRUNCTUZWRzlyZVc4eEVEQU9CZ05W
+QkFjVEIwTm9kVzh0YTNVeEVUQVBCZ05WQkFvVENFWnlZVzVyTkVS
+RQpNUmd3RmdZRFZRUUxFdzlYWldKRFpYSjBJRk4xY0hCdmNuUXhH
+REFXQmdOVkJBTVREMFp5WVc1ck5FUkVJRmRsCllpQkRRVEVqTUNF
+R0NTcUdTSWIzRFFFSkFSWVVjM1Z3Y0c5eWRFQm1jbUZ1YXpSa1pD
+NWpiMjB3SGhjTk1USXcKT0RJeU1EVXlOalUwV2hjTk1UY3dPREl4
+TURVeU5qVTBXakJLTVFzd0NRWURWUVFHRXdKS1VERU9NQXdHQTFV
+RQpDQXdGVkc5cmVXOHhFVEFQQmdOVkJBb01DRVp5WVc1ck5FUkVN
+Umd3RmdZRFZRUUREQTkzZDNjdVpYaGhiWEJzClpTNWpiMjB3WERB
+TkJna3Foa2lHOXcwQkFRRUZBQU5MQURCSUFrRUFtL3hta0htRVFy
+dXJFLzByZS9qZUZSTGwKOFpQakJvcDd1TEhobmlhN2xRRy81ekR0
+WklVQzNSVnBxRFN3QnV3L05Ud2VHeXVQK284QUc5OEh4cXhUQndJ
+RApBUUFCTUEwR0NTcUdTSWIzRFFFQkJRVUFBNEdCQUJTMlRMdUJl
+VFBtY2FUYVVXL0xDQjJOWU95OEdNZHpSMW14CjhpQkl1Mkg2L0Uy
+dGlZM1JJZXZWMk9XNjFxWTIvWFJRZzdZUHh4M2ZmZVV1Z1g5RjRK
+L2lQbm51MXpBeHh5QnkKMlZndUt2NFNXalJGb1JrSWZJbEhYMHFW
+dmlNaFNsTnkyaW9GTHk3SmNQWmIrdjNmdERHeXdVcWNCaVZEb2Vh
+MApIbitHbXhaQQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+'''
+
+PUBKEY_FIELD = '''
+LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZ3d0RRWUpLb1pJa
+HZjTkFRRUJCUUFEU3dBd1NBSkJBSnY4WnBCNWhFSzdxeFA5SzN2ND
+NoVVM1ZkdUNHdhSwplN2l4NFo0bXU1VUJ2K2N3N1dTRkF0MFZhYWc
+wc0Fic1B6VThIaHNyai9xUEFCdmZCOGFzVXdjQ0F3RUFBUT09Ci0t
+LS0tRU5EIFBVQkxJQyBLRVktLS0tLQo='''
+
+ISSUER = '''1.2.840.113549.1.9.1=support@frank4dd.com,CN=Frank4DD Web CA,
+OU=WebCert Support,O=Frank4DD,L=Chuo-ku,ST=Tokyo,C=JP'''
+
+SUBJECT = 'CN=www.example.com,O=Frank4DD,ST=Tokyo,C=JP'
 
 
 def test_bytes_load():
@@ -334,3 +383,44 @@ def test_bytes_diff_dump():
         'fieldTwo': SHA256_FILE,
         'fieldThree': SIZE_FILE,
     }
+
+
+def join_string(s):
+    return ''.join(s.splitlines())
+
+
+def test_ceritificate_pem_load():
+    EntityCert = load_test_open_api_spec(secrets_key=None,
+                                         reload=True).entities['EntityCert'].cls
+    EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls
+    e_data = {
+        'fieldOne': PEM_TEST,
+    }
+
+    cert = EntityCert_Fieldtwo(version=0,
+                               serial='3578',
+                               issuer=join_string(ISSUER),
+                               subject=join_string(SUBJECT),
+                               validFrom='2012-08-22 05:26:54',
+                               validTo='2017-08-21 05:26:54',
+                               fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+                               certificate=join_string(CERTIFICATE_FIELD),
+                               subjectPublicKey=join_string(PUBKEY_FIELD))
+
+    e1 = K8S_LOADER.load(e_data, None, EntityCert)
+    assert e1.fieldOne == PEM_TEST
+    assert e1.fieldTwo == cert
+
+    cert2 = EntityCert_Fieldtwo(version=0,
+                                serial='3578',
+                                issuer=join_string(ISSUER),
+                                subject=join_string(SUBJECT),
+                                validFrom='2017-08-22 05:26:54',
+                                validTo='2027-08-21 05:26:54',
+                                fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ed=',
+                                certificate=join_string(CERTIFICATE_FIELD),
+                                subjectPublicKey=join_string(PUBKEY_FIELD))
+    e2 = EntityCert(fieldOne=None,
+                    fieldTwo=cert2)
+    assert e1 != e2
+
