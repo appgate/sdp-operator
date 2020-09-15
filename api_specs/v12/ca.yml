@@ -145,6 +145,9 @@ definitions:
     type: object
     description: X509 certificate details.
     readOnly: true
+    format:
+      type: certificate
+      source: pem
     properties:
       version:
         type: number
