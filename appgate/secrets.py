@@ -10,6 +10,7 @@ from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
 from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME, \
     Entity_T
+from appgate.types import EntityVersion
 from appgate.openapi.utils import get_passwords
 
 
@@ -197,3 +198,10 @@ def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
         raise AppgateSecretException(f'Unable to get secret {secret}.{key} '
                                      f'from namespace {namespace}')
     return base64.b64decode(k8s_secret).decode()
+
+
+def k8s_get_entity_version(namespace: str, config_map: str) -> Optional[EntityVersion]:
+    """
+    Gets an entity version from namespace and configmap
+    """
+    return None

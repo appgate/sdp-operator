@@ -26,7 +26,7 @@ from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper
 
 __all__ = [
     'init_kubernetes',
@@ -164,8 +164,9 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         for entity, client in entity_clients.items():
             entities = await client.get()
             if entities is not None:
-                entities_set[entity] = EntitiesSet(set(filter(lambda e: is_target(e, ctx.target_tags),
-                                                              entities)))
+                entities_set[entity] = EntitiesSet(set(map(EntityWrapper,
+                                                           filter(lambda e: is_target(e, ctx.target_tags),
+                                                                  entities))))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
@@ -246,7 +247,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
-            expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
+            expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
             # Resolve entities now, in order
             # this will be the Topological sort

@@ -24,6 +24,7 @@ __all__ = [
     'APPGATE_BUILTIN_TAGS_ENV',
 ]
 
+from appgate.types import EntityWrapper
 
 APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
 APPGATE_TARGET_TAGS_ENV = 'APPGATE_OPERATOR_TARGET_TAGS'
@@ -123,7 +124,7 @@ def builtin_tags() -> FrozenSet[str]:
     return BUILTIN_TAGS.union(frozenset(custom_tags.split(',')))
 
 
-def is_builtin(entity: Entity_T) -> bool:
+def is_builtin(entity: EntityWrapper) -> bool:
     return any(map(lambda t: t in (entity.tags or frozenset()), builtin_tags()))
 
 
