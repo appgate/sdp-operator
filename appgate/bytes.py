@@ -1,6 +1,7 @@
 import base64
 import datetime
 import hashlib
+import re
 from typing import Optional, Any, Dict, List, Callable
 
 from cryptography.hazmat.primitives import hashes
@@ -29,13 +30,17 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
 
     def certificate_bytes(value: Any, data: str) -> Entity_T:
         cert = load_pem_x509_certificate(data.encode())  # type: ignore
+        valid_from = re.sub(r'\+\d\d:\d\d', 'Z',
+                            datetime_utc(cert.not_valid_before).isoformat(timespec='milliseconds'))
+        valid_to = re.sub(r'\+\d\d:\d\d', 'Z',
+                           datetime_utc(cert.not_valid_after).isoformat(timespec='milliseconds'))
         cert_data = {
             'version': cert.version.value,
             'serial': str(cert.serial_number),
             'issuer': cert.issuer.rfc4514_string(),
             'subject': cert.subject.rfc4514_string(),
-            'validFrom': datetime_utc(cert.not_valid_before).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
-            'validTo': datetime_utc(cert.not_valid_after).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+            'validFrom': valid_from,
+            'validTo': valid_to,
             'fingerprint': base64.b64encode(cert.fingerprint(hashes.SHA256())).decode(),
             'certificate': base64.b64encode(cert.public_bytes(Encoding.PEM)).decode(),
             'subjectPublicKey': base64.b64encode(cert.public_key().public_bytes(
