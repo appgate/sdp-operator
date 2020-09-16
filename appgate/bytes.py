@@ -35,7 +35,7 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
         valid_to = re.sub(r'\+\d\d:\d\d', 'Z',
                            datetime_utc(cert.not_valid_after).isoformat(timespec='milliseconds'))
         cert_data = {
-            'version': cert.version.value,
+            'version': cert.version.value + 1,
             'serial': str(cert.serial_number),
             'issuer': cert.issuer.rfc4514_string(),
             'subject': cert.subject.rfc4514_string(),
