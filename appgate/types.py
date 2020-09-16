@@ -1,5 +1,6 @@
-from typing import Dict, Any
-from attr import attrib, attrs
+import datetime
+from typing import Dict, Any, FrozenSet
+from attr import attrib, attrs, evolve
 
 from appgate.openapi.types import Entity_T
 
@@ -29,3 +30,42 @@ class K8SEvent:
 class AppgateEvent:
     op: str = attrib()
     entity: Entity_T = attrib()
+
+
+class EntityWrapper:
+    def __init__(self, entity: Entity_T) -> None:
+        self.value = entity
+
+    @property
+    def name(self) -> str:
+        return self.value.name
+
+    @property
+    def id(self) -> str:
+        return self.value.id
+
+    @property
+    def tags(self) -> FrozenSet[str]:
+        return self.value.tags
+
+    def with_id(self, id: str) -> 'EntityWrapper':
+        return EntityWrapper(evolve(self.value, id=id))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            raise Exception(f'Wrong other argument {other}')
+        return self.value == other.value
+
+    def __hash__(self) -> int:
+        return self.value.__hash__()
+
+    def __repr__(self):
+        return self.value.__repr__()
+
+
+@attrs(slots=True, frozen=True)
+class EntityVersion:
+    type: str = attrib()
+    name: str = attrib()
+    version: str = attrib()
+    timestamp: datetime.datetime = attrib()
