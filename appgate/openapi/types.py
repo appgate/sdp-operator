@@ -1,3 +1,4 @@
+import datetime
 import itertools
 import re
 from functools import cached_property
@@ -43,7 +44,8 @@ AttributesDict = Dict[str, Any]
 EntitiesDict = Dict[str, 'GeneratedEntity']
 APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
 K8S_LOADERS_FIELD_NAME = 'k8s_loader'
-PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list,
+                datetime.datetime)
 UUID_REFERENCE_FIELD = 'x-uuid-ref'
 
 
