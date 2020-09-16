@@ -1,5 +1,4 @@
-import difflib
-import json
+import datetime
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -10,7 +9,7 @@ import yaml
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
 from appgate.openapi.types import AppgateMetadata
-from tests.utils import load_test_open_api_spec
+from tests.utils import load_test_open_api_spec, CERTIFICATE_FIELD, PUBKEY_FIELD, SUBJECT, ISSUER, PEM_TEST, join_string
 
 
 def test_load_entities_v12():
@@ -334,3 +333,65 @@ def test_bytes_diff_dump():
         'fieldTwo': SHA256_FILE,
         'fieldThree': SIZE_FILE,
     }
+
+
+def test_ceritificate_pem_load():
+    EntityCert = load_test_open_api_spec(secrets_key=None,
+                                         reload=True).entities['EntityCert'].cls
+    EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls
+    cert = EntityCert_Fieldtwo(version=1,
+                               serial='3578',
+                               issuer=join_string(ISSUER),
+                               subject=join_string(SUBJECT),
+                               validFrom=datetime.datetime(2012, 8, 22, 5, 26, 54, tzinfo=datetime.timezone.utc),
+                               validTo=datetime.datetime(2017, 8, 21, 5, 26, 54, tzinfo=datetime.timezone.utc),
+                               fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+                               certificate=join_string(CERTIFICATE_FIELD),
+                               subjectPublicKey=join_string(PUBKEY_FIELD))
+
+    e0_data = {
+        'fieldOne': PEM_TEST,
+        'fieldTwo': {
+            'version': 1,
+            'serial': '3578',
+            'issuer': join_string(ISSUER),
+            'subject': join_string(SUBJECT),
+            'validFrom': '2012-08-22T05:26:54.000Z',
+            'validTo': '2017-08-21T05:26:54.000Z',
+            'fingerprint': 'Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+            'certificate': join_string(CERTIFICATE_FIELD),
+            'subjectPublicKey': join_string(PUBKEY_FIELD),
+        }
+    }
+    e0 = APPGATE_LOADER.load(e0_data, None, EntityCert)
+    assert e0.fieldOne is None
+    assert e0.fieldTwo == cert
+
+    e1_data = {
+        'fieldOne': PEM_TEST,
+    }
+
+    e1 = K8S_LOADER.load(e1_data, None, EntityCert)
+    assert e1.fieldOne == PEM_TEST
+    assert e1.fieldTwo == cert
+    assert e1 == EntityCert(fieldOne='Crap data that is ignored',
+                            fieldTwo=cert)
+    assert e1 == e0
+
+    cert2 = EntityCert_Fieldtwo(version=1,
+                                serial='3578',
+                                issuer=join_string(ISSUER),
+                                subject=join_string(SUBJECT),
+                                validFrom=datetime.datetime(2017, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
+                                validTo=datetime.datetime(2025, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
+                                fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ed=',
+                                certificate=join_string(CERTIFICATE_FIELD),
+                                subjectPublicKey=join_string(PUBKEY_FIELD))
+    e2 = EntityCert(fieldOne=None,
+                    fieldTwo=cert2)
+    assert e1 != e2
+
+    e2_dumped = DIFF_DUMPER.dump(e2)
+    # Just check that it's dumped properly
+    assert e2_dumped['fieldTwo']['validFrom'] == '2017-03-06T16:50:58.516Z'
+

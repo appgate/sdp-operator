@@ -1,3 +1,4 @@
+import datetime
 import itertools
 import re
 from functools import cached_property
@@ -32,7 +33,8 @@ SPEC_ENTITIES = {
     '/trusted-certificates': 'TrustedCertificate',
 }
 
-
+ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
+APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
 IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
@@ -42,7 +44,8 @@ AttributesDict = Dict[str, Any]
 EntitiesDict = Dict[str, 'GeneratedEntity']
 APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
 K8S_LOADERS_FIELD_NAME = 'k8s_loader'
-PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list)
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list,
+                datetime.datetime)
 UUID_REFERENCE_FIELD = 'x-uuid-ref'
 
 
@@ -69,6 +72,10 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
     __attrs_attrs__: List[Attribute] = attrib()
     appgate_metadata: AppgateMetadata = attrib()
+
+
+LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
+DumperFunc = Callable[[Entity_T], Dict[str, Any]]
 
 
 @attrs(frozen=True, slots=True)

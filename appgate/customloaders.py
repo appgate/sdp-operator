@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Callable, Any, List, Dict
 
 from attr import attrs, attrib, evolve
 
 from appgate.openapi.types import AttributesDict, Entity_T
+
 
 __all__ = [
     'CustomLoader',
@@ -65,3 +67,4 @@ class CustomEntityLoader(CustomLoader):
 
     def load(self, orig_values: Dict[str, Any], entity: Any) -> Any:
         return self.loader(orig_values, entity)
+

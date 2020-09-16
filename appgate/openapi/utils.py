@@ -137,7 +137,7 @@ def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
     fields = []
     prefix = '.'.join(names)
     for a in entity.__attrs_attrs__:
-        mt = getattr(a, 'metadata')
+        mt = getattr(a, 'metadata', None)
         if mt and mt.get('format') == 'password':
             if prefix:
                 fields.append(f'{prefix}.{a.name}')

@@ -157,6 +157,7 @@ definitions:
           pem:
             type: string
             description: A certificate in PEM format.
+            format: PEM
             example: |-
               -----BEGIN CERTIFICATE-----
               ....

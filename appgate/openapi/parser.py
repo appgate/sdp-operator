@@ -1,5 +1,4 @@
-import base64
-import hashlib
+import datetime
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -7,21 +6,21 @@ import yaml
 from attr import attrib, make_class
 from cryptography.fernet import Fernet
 
-from appgate.bytes import size_attrib_maker, checksum_attrib_maker
+from appgate.attrs import K8S_LOADER
+from appgate.bytes import size_attrib_maker, checksum_attrib_maker, certificate_attrib_maker
 from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
 from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
-    AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME
+    AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
+    ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
     is_object, is_ref, is_array, builtin_tags
 from appgate.secrets import PasswordAttribMaker
 
 
-ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
-APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
     'boolean': bool,
@@ -32,6 +31,7 @@ DEFAULT_MAP: Dict[str, AttribType] = {
     'string': '',
     'array': frozenset,
 }
+
 
 def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
     return appgate_metadata.uuid or current_id
@@ -117,7 +117,7 @@ class InstanceMaker:
                            {CustomFieldsEntityLoader, CustomEntityLoader})):
                     appgate_custom_entity_loaders.append(appgate_loader)
                 else:
-                    custom_appgate_attrib_loaders.append(appgate_loaders)
+                    custom_appgate_attrib_loaders.append(appgate_loader)
             v['metadata'][APPGATE_LOADERS_FIELD_NAME] = custom_appgate_attrib_loaders
 
         # Build the dictionary of attribs
@@ -331,6 +331,13 @@ class Parser:
                                            definition=attrib_maker_config.definition,
                                            secrets_cipher=self.parser_context.secrets_cipher,
                                            k8s_get_client=self.parser_context.k8s_get_secret)
+            elif format == 'date-time':
+                return SimpleAttribMaker(name=attrib_name,
+                                         tpe=datetime.datetime,
+                                         base_tpe=datetime.datetime,
+                                         default=None,
+                                         factory=None,
+                                         definition=attrib_maker_config.definition)
             elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
                 return checksum_attrib_maker(name=attrib_name,
                                              tpe=TYPES_MAP[tpe],
@@ -392,12 +399,23 @@ class Parser:
             generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
-            return SimpleAttribMaker(name=instance_maker_config.name,
-                                     tpe=generated_entity.cls,
-                                     base_tpe=generated_entity.cls,
-                                     default=None,
-                                     factory=None,
-                                     definition=instance_maker_config.definition)
+            format = definition.get('format', None)
+            if isinstance(format, dict) and 'type' in format and format['type'] == 'certificate':
+                return certificate_attrib_maker(name=instance_maker_config.name,
+                                                tpe=generated_entity.cls,
+                                                base_tpe=generated_entity.cls,
+                                                default=None,
+                                                factory=None,
+                                                definition=attrib_maker_config.definition,
+                                                source_field=format['source'],
+                                                loader=K8S_LOADER.load)
+            else:
+                return SimpleAttribMaker(name=instance_maker_config.name,
+                                         tpe=generated_entity.cls,
+                                         base_tpe=generated_entity.cls,
+                                         default=None,
+                                         factory=None,
+                                         definition=instance_maker_config.definition)
         raise Exception(f'Unknown type for attribute {entity_name}.{attrib_name}: {definition}')
 
     def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:

@@ -155,6 +155,7 @@ definitions:
         properties:
           pem:
             type: string
+            format: PEM
             description: A certificate in PEM format.
             example: |-
               -----BEGIN CERTIFICATE-----
