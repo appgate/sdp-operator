@@ -276,9 +276,9 @@ async def plan_apply(plan: Plan, namespace: str,
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
         diff = plan.modifications_diff.get(e.name)
         if diff:
-            log.debug('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
+            log.info('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
             for d in diff:
-                log.debug('%s', d.rstrip())
+                log.info('%s', d.rstrip())
         if entity_client:
             if not await entity_client.put(e):
                 errors.add(e.id)
@@ -364,16 +364,15 @@ def compare_entities(current: EntitiesSet,
     to_modify = EntitiesSet(set(filter(
         lambda e: e.name in shared_names and e not in current_entities, expected_entities)))
     modifications_diff = {}
-    if log.level == DEBUG:
-        for e in to_modify.entities:
-            current_entity = current.entities_by_name.get(e.name)
-            if not current_entity:
-                log.warning(f'Trying to compute diff for entity %s [%s] but not registered',
-                            e.name, e.id)
-                continue
-            diff = compute_diff(current_entity, e)
-            if diff:
-                modifications_diff[e.name] = diff
+    for e in to_modify.entities:
+        current_entity = current.entities_by_name.get(e.name)
+        if not current_entity:
+            log.warning(f'Trying to compute diff for entity %s [%s] but not registered',
+                        e.name, e.id)
+            continue
+        diff = compute_diff(current_entity, e)
+        if diff:
+            modifications_diff[e.name] = diff
     to_share = EntitiesSet(set(filter(
         lambda e: e.name in shared_names and e in current_entities, expected_entities)))
 
