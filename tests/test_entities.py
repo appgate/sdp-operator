@@ -339,7 +339,7 @@ def test_ceritificate_pem_load():
     EntityCert = load_test_open_api_spec(secrets_key=None,
                                          reload=True).entities['EntityCert'].cls
     EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls
-    cert = EntityCert_Fieldtwo(version=0,
+    cert = EntityCert_Fieldtwo(version=1,
                                serial='3578',
                                issuer=join_string(ISSUER),
                                subject=join_string(SUBJECT),
@@ -352,7 +352,7 @@ def test_ceritificate_pem_load():
     e0_data = {
         'fieldOne': PEM_TEST,
         'fieldTwo': {
-            'version': 0,
+            'version': 1,
             'serial': '3578',
             'issuer': join_string(ISSUER),
             'subject': join_string(SUBJECT),
@@ -378,7 +378,7 @@ def test_ceritificate_pem_load():
                             fieldTwo=cert)
     assert e1 == e0
 
-    cert2 = EntityCert_Fieldtwo(version=0,
+    cert2 = EntityCert_Fieldtwo(version=1,
                                 serial='3578',
                                 issuer=join_string(ISSUER),
                                 subject=join_string(SUBJECT),

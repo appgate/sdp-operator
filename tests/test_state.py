@@ -714,7 +714,7 @@ def test_compare_plan_entity_pem():
         'name': 'c1',
         'fieldOne': PEM_TEST,
         'fieldTwo': {
-            'version': 0,
+            'version': 1,
             'serial': '3578',
             'issuer': join_string(ISSUER),
             'subject': join_string(SUBJECT),
@@ -741,8 +741,8 @@ def test_compare_plan_entity_pem():
     assert plan.modifications_diff == {
         'c1': [
             '--- \n', '+++ \n', '@@ -3,10 +3,10 @@\n',
-            '     "fieldTwo": {\n', '-        "version": 0,\n',
-            '-        "serial": "3578",\n', '+        "version": 2,\n',
+            '     "fieldTwo": {\n', '-        "version": 1,\n',
+            '-        "serial": "3578",\n', '+        "version": 3,\n',
             '+        "serial": "0",\n',
             '         "issuer": "1.2.840.113549.1.9.1=support@frank4dd.com,CN=Frank4DD Web CA,OU=WebCert Support,O=Frank4DD,L=Chuo-ku,ST=Tokyo,C=JP",\n',
             '         "subject": "CN=www.example.com,O=Frank4DD,ST=Tokyo,C=JP",\n',

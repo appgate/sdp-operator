@@ -29,6 +29,12 @@ def datetime_utc(d: datetime.datetime) -> datetime.datetime:
 def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable[..., Any]:
 
     def certificate_bytes(value: Any, data: str) -> Entity_T:
+        """
+        Creates an Entity_T with the details of a PEM certificate.
+        NOTE: Entity_T must be compatible with the fields in the dict returned here
+        NOTE: We need to increase version one since:
+           Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
+        """
         cert = load_pem_x509_certificate(data.encode())  # type: ignore
         valid_from = re.sub(r'\+\d\d:\d\d', 'Z',
                             datetime_utc(cert.not_valid_before).isoformat(timespec='milliseconds'))
