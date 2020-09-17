@@ -54,7 +54,7 @@ def is_datetime_dumper(value: Any) -> bool:
     return isinstance(value, datetime.datetime)
 
 
-def parse_datetime(l: Loader, value, type_) -> datetime.datetime:
+def parse_datetime(value) -> datetime.datetime:
     try:
         return datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
     except Exception as e:
@@ -181,7 +181,7 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
 
     loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
-    loader.handlers.insert(0, (is_datetime_loader, parse_datetime))
+    loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
     def load(data: Dict[str, Any], metadata: Optional[Dict[str, Any]],
              entity: type) -> Entity_T:
         data[APPGATE_METADATA_ATTRIB_NAME] = metadata or {}
