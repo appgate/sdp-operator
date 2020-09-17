@@ -51,8 +51,8 @@ def test_write_only_password_attribute_load():
 
     # normal writeOnly fields are not compared when compare_secrets is True
     assert e == EntityTest2(fieldOne=None,
-                                                    fieldTwo='some value',
-                                                    fieldThree='this is a field')
+                            fieldTwo='some value',
+                            fieldThree='this is a field')
 
     e = K8S_LOADER.load(e_data, None, EntityTest2)
     # writeOnly password fields are loaded from K8S
