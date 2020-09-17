@@ -274,6 +274,12 @@ definitions:
         type: string
       fieldThree:
         type: string
+      updated:
+        type: string
+        format: 'date-time'
+      created:
+        type: string
+        format: 'date-time'
   EntityTest3:
     type: object
     properties:
