@@ -18,9 +18,8 @@ from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER
 from appgate.client import AppgateClient
-from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, K8S_APPGATE_VERSION, \
-    K8S_APPGATE_DOMAIN, SPEC_DIR
-from appgate.openapi.types import APISpec, Entity_T
+from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
+from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
 from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
 from appgate.secrets import k8s_get_secret
 
