@@ -56,8 +56,6 @@ class EntityWrapper:
         mt = self.value.appgate_metadata
         if mt.current_generation > mt.latest_generation:
             return True
-        if mt.current_resource_version > mt.latest_resource_version:
-            return True
         if mt.modified > self.value.updated:
             return True
         return False
@@ -66,10 +64,10 @@ class EntityWrapper:
         if not isinstance(other, self.__class__):
             raise Exception(f'Wrong other argument {other}')
         # We have passwords use modified/created
-        mt = self.value.appgate_metadata
-        if len(mt.passwords or {}) == 0:
+        entity_mt = self.value._entity_metadata
+        if len(entity_mt.get('passwords', {})) == 0:
             return self.value == other.value
-        return self._needs_update()
+        return not self._needs_update()
 
     def __hash__(self) -> int:
         return self.value.__hash__()

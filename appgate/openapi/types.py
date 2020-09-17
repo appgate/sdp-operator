@@ -75,12 +75,6 @@ class AppgateMetadata:
     latest_generation: int = attrib(default=0, metadata={
         'name': 'latestGeneration'
     })
-    current_resource_version: str = attrib(metadata={
-        'name': 'resourceVersion'
-    }, default='0')
-    latest_resource_version: str = attrib(metadata={
-        'name': 'latestResourceVersion'
-    }, default='0')
     api_version: str = attrib(metadata={
         'name': 'apiVersion'
     }, default=f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}')
