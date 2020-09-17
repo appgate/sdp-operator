@@ -7,6 +7,8 @@ from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
+from appgate.openapi.types import Entity_T
+from appgate.types import LatestEntityGeneration
 
 
 __all__ = [
@@ -16,8 +18,6 @@ __all__ = [
     'entity_unique_id'
 ]
 
-from appgate.openapi.types import Entity_T
-from appgate.types import LatestEntityGeneration
 
 
 class EntityClient:

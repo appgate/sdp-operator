@@ -246,13 +246,13 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
+    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
             {k: v.builtin_entities() for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
-
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
              namespace)
     while True:
@@ -300,7 +300,8 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                                                         entity_clients=generate_api_spec_clients(
                                                             api_spec=ctx.api_spec,
                                                             appgate_client=appgate_client)
-                                                        if appgate_client else {})
+                                                        if appgate_client else {},
+                                                        k8s_configmap_client=k8s_configmap_client)
 
                     if appgate_client:
                         current_appgate_state = new_plan.appgate_state

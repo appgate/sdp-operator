@@ -259,9 +259,8 @@ class Plan:
 
 
 # TODO: Save the kind info the wrapper
-async def plan_apply(plan: Plan, namespace: str,
-                     entity_client: Optional[EntityClient] = None,
-                     k8s_configmap_client: Optional[K8SConfigMapClient] = None) -> Plan:
+async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfigMapClient,
+                     entity_client: Optional[EntityClient] = None) -> Plan:
     errors = set()
     for e in plan.create.entities:
         if not e.id:
@@ -271,7 +270,7 @@ async def plan_apply(plan: Plan, namespace: str,
         if entity_client:
             if not await entity_client.post(e.value):
                 errors.add(e.id)
-            elif k8s_configmap_client:
+            else:
                 k8s_configmap_client.update(entity_unique_id(e.value.__class__.__name__, e.name))
 
     for e in plan.modify.entities:
@@ -288,7 +287,7 @@ async def plan_apply(plan: Plan, namespace: str,
         if entity_client:
             if not await entity_client.put(e.value):
                 errors.add(e.id)
-            elif k8s_configmap_client:
+            else:
                 k8s_configmap_client.update(entity_unique_id(e.value.__class__.__name__, e.name))
 
     for e in plan.delete.entities:
@@ -300,7 +299,7 @@ async def plan_apply(plan: Plan, namespace: str,
         if entity_client:
             if not await entity_client.delete(e.id):
                 errors.add(e.id)
-            elif k8s_configmap_client:
+            else:
                 k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, e.name))
 
     for e in plan.share.entities:
@@ -334,9 +333,11 @@ class AppgatePlan:
 
 
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
-                             entity_clients: Dict[str, EntityClient]) -> AppgatePlan:
+                             entity_clients: Dict[str, EntityClient],
+                             k8s_configmap_client: K8SConfigMapClient) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
+    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k),
+                                         k8s_configmap_client=k8s_configmap_client)
                      for k, v in appgate_plan.entities_plan.items()}
     return AppgatePlan(entities_plan=entities_plan)
 
