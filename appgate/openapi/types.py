@@ -95,6 +95,7 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
     __attrs_attrs__: List[Attribute] = attrib()
     appgate_metadata: AppgateMetadata = attrib()
+    _entity_metadata: Dict[str, Any] = attrib()
     updated: datetime.datetime = attrib()
 
 
