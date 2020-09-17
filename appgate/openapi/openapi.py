@@ -6,13 +6,11 @@ import yaml
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
-from appgate.openapi.types import APISpec, OpenApiParserException, SPEC_ENTITIES
-
+from appgate.openapi.types import APISpec, OpenApiParserException, SPEC_ENTITIES, K8S_APPGATE_DOMAIN, \
+    K8S_APPGATE_VERSION
 
 __all__ = [
     'parse_files',
-    'K8S_APPGATE_DOMAIN',
-    'K8S_APPGATE_VERSION',
     'SPEC_DIR',
     'generate_crd',
     'entity_names',
@@ -24,8 +22,6 @@ __all__ = [
 SPEC_DIR = 'api_specs/v12'
 K8S_API_VERSION = 'apiextensions.k8s.io/v1beta1'
 K8S_CRD_KIND = 'CustomResourceDefinition'
-K8S_APPGATE_DOMAIN = 'beta.appgate.com'
-K8S_APPGATE_VERSION = 'v1'
 LIST_PROPERTIES = {'range', 'data', 'query', 'orderBy', 'descending', 'filterBy'}
 
 

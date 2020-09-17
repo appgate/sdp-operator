@@ -33,6 +33,8 @@ SPEC_ENTITIES = {
     '/trusted-certificates': 'TrustedCertificate',
 }
 
+K8S_APPGATE_DOMAIN = 'beta.appgate.com'
+K8S_APPGATE_VERSION = 'v1'
 ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
 APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
 NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
@@ -61,6 +63,27 @@ class OpenApiParserException(Exception):
 
 @attrs(frozen=True, slots=True)
 class AppgateMetadata:
+    created: datetime.datetime = attrib(metadata={
+        'name': 'creationTimestamp'
+    }, default=datetime.datetime.now())
+    modified: datetime.datetime = attrib(metadata={
+        'name': 'modificationTimestamp'
+    }, default=datetime.datetime.now())
+    current_generation: int = attrib(default=0, metadata={
+        'name': 'generation'
+    })
+    latest_generation: int = attrib(default=0, metadata={
+        'name': 'latestGeneration'
+    })
+    current_resource_version: str = attrib(metadata={
+        'name': 'resourceVersion'
+    }, default='0')
+    latest_resource_version: str = attrib(metadata={
+        'name': 'latestResourceVersion'
+    }, default='0')
+    api_version: str = attrib(metadata={
+        'name': 'apiVersion'
+    }, default=f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}')
     uuid: Optional[str] = attrib(default=None)
     passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
 
@@ -72,6 +95,7 @@ class Entity_T:
     tags: FrozenSet[str] = attrib()
     __attrs_attrs__: List[Attribute] = attrib()
     appgate_metadata: AppgateMetadata = attrib()
+    updated: datetime.datetime = attrib()
 
 
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
@@ -97,6 +121,8 @@ def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[EntityD
     for attribute in attributes:
         mt = getattr(attribute, 'metadata', None)
         attribute_name = (mt or {}).get('name')
+        if attribute_name in {APPGATE_METADATA_ATTRIB_NAME, ENTITY_METADATA_ATTRIB_NAME}:
+            continue
         if not mt or not attribute_name:
             continue
         updated_field_path: str = attribute_name

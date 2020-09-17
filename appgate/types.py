@@ -10,31 +10,15 @@ __all__ = [
     'EventObject',
     'AppgateEvent',
     'EntityWrapper',
-    'EventObjectMetadata',
 ]
-
-
-@attrs(slots=True, frozen=True)
-class EventObjectMetadata:
-    created: datetime.datetime = attrib(metadata={
-        'name': 'creationTimestamp'
-    })
-    name: str = attrib()
-    namespace: str = attrib()
-    generation: int = attrib()
-    resource_version: str = attrib(metadata={
-        'name': 'resourceVersion'
-    })
 
 
 @attrs(slots=True, frozen=True)
 class EventObject:
     spec: Dict[str, Any] = attrib()
-    metadata: EventObjectMetadata = attrib()
+    metadata: Dict[str, Any] = attrib()
     kind: str = attrib()
-    api_version: str = attrib(metadata={
-        'name': 'apiVersion'
-    })
+
 
 @attrs(slots=True, frozen=True)
 class K8SEvent:
@@ -67,10 +51,24 @@ class EntityWrapper:
     def with_id(self, id: str) -> 'EntityWrapper':
         return EntityWrapper(evolve(self.value, id=id))
 
+    def _needs_update(self) -> bool:
+        mt = self.value.appgate_metadata
+        if mt.current_generation > mt.latest_generation:
+            return True
+        if mt.current_resource_version > mt.latest_resource_version:
+            return True
+        if mt.modified > self.value.updated:
+            return True
+        return False
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             raise Exception(f'Wrong other argument {other}')
-        return self.value == other.value
+        # We have passwords use modified/created
+        mt = self.value.appgate_metadata
+        if len(mt.passwords or {}) == 0:
+            return self.value == other.value
+        return self._needs_update()
 
     def __hash__(self) -> int:
         return self.value.__hash__()

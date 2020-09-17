@@ -26,7 +26,7 @@ from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObjectMetadata, EventObject
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
 
 __all__ = [
     'init_kubernetes',
@@ -191,19 +191,13 @@ def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
             data_obj = data['object']
             data_mt = data_obj['metadata']
             event = EventObject(
-                metadata=EventObjectMetadata(
-                    created=data_mt['creationTimestamp'],
-                    name=data_mt['name'],
-                    generation=data_mt['generation'],
-                    resource_version=data_mt['resourceVersion'],
-                    namespace=data_mt['namespace']),
+                metadata=data_mt,
                 spec=data_obj['spec'],
-                kind=data_obj['kind'],
-                api_version=data_obj['apiVersion'])
+                kind=data_obj['kind'])
             if event:
                 ev = K8SEvent(data['type'], event)
                 try:
-                    entity = load(ev.object.spec, ev.object.spec, entity_type)
+                    entity = load(ev.object.spec, ev.object.metadata, entity_type)
                 except TypedloadTypeError:
                     log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)
                     continue
