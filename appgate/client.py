@@ -1,18 +1,23 @@
+import datetime
 import uuid
 from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 from aiohttp import InvalidURL
+from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
 
-from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER
+from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
 
 
 __all__ = [
     'AppgateClient',
     'EntityClient',
+    'K8SConfigMapClient',
+    'entity_unique_id'
 ]
 
 from appgate.openapi.types import Entity_T
+from appgate.types import LatestEntityGeneration
 
 
 class EntityClient:
@@ -64,6 +69,78 @@ class EntityClient:
         if not await self._client.delete(f'{self.path}/{id}'):
             return False
         return True
+
+
+def load_latest_entity_generation(key: str, v: Any) -> LatestEntityGeneration:
+    if isinstance(v, str):
+        try:
+            generation, modified = v.split(',', maxsplit=2)
+            return LatestEntityGeneration(generation=int(generation),
+                                          modified=parse_datetime(modified))
+        except Exception:
+            log.error('Error getting entry from configmap entry %s, defaulting to generation 0',
+                      key)
+            return LatestEntityGeneration()
+    else:
+        return LatestEntityGeneration()
+
+
+def dump_latest_entity_generation(entry: LatestEntityGeneration) -> str:
+    return f'{entry.generation},{dump_datetime(entry.modified)}'
+
+
+def entity_unique_id(entity_type: str, name: str) -> str:
+    return f'{entity_type}-{name}'
+
+
+class K8SConfigMapClient:
+    def __init__(self, namespace: str, name: str) -> None:
+        self._v1 = CoreV1Api()
+        self._configmap_mt: Optional[V1ObjectMeta] = None
+        self._entries: Dict[str, LatestEntityGeneration] = {}
+        self.namespace = namespace
+        self.name = name
+
+    def init(self) -> None:
+        configmap = self._v1.read_namespaced_config_map(name=self.name, namespace=self.namespace)
+        self._configmap_mt = configmap.metadata
+        self._entries = {
+            k: load_latest_entity_generation(k, v) for k, v in configmap.data.items()
+        }
+
+    def read(self, key: str) -> Optional[LatestEntityGeneration]:
+        if not self._configmap_mt:
+            self.init()
+        return self._entries.get(key)
+
+    def update(self, key: str) -> Optional[LatestEntityGeneration]:
+        if not self._configmap_mt:
+            self.init()
+        prev_entry = self._entries.get(key) or LatestEntityGeneration()
+        self._entries[key] = LatestEntityGeneration(
+            generation=prev_entry.generation + 1,
+            modified=datetime.datetime.now())
+        body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
+            key: dump_latest_entity_generation(self._entries[key])
+        }, metadata=self._configmap_mt)
+        new_configmap = self._v1.patch_namespaced_config_map(name=self.name, namespace=self.namespace,
+                                                             body=body)
+        self._configmap_mt = new_configmap.metadata
+        return self._entries[key]
+
+    def delete(self, key: str) -> Optional[LatestEntityGeneration]:
+        if not self._configmap_mt:
+            self.init()
+        if key not in self._entries:
+            return None
+        entry = self._entries[key]
+        del self._entries[key]
+        body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
+            key: None
+        }, metadata=self._configmap_mt)
+        self._v1.patch_namespaced_config_map(name=self.name, namespace=self.namespace,
+                                             body=body)
+        return entry
 
 
 class AppgateClient:

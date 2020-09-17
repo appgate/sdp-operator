@@ -10,7 +10,6 @@ from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
 from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, \
     K8S_LOADERS_FIELD_NAME, Entity_T
-from appgate.types import EntityVersion
 from appgate.openapi.utils import get_passwords
 
 

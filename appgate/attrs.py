@@ -5,8 +5,6 @@ from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
-from typedload.datadumper import Dumper
-from typedload.dataloader import Loader
 from typedload.exceptions import TypedloadException
 
 from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
@@ -22,6 +20,8 @@ __all__ = [
     'DIFF_DUMPER',
     'get_loader',
     'get_dumper',
+    'dump_datetime',
+    'parse_datetime',
 ]
 
 
@@ -61,7 +61,7 @@ def parse_datetime(value) -> datetime.datetime:
         raise TypedloadException(f'Unable to parse {value} as a datetime: {e}')
 
 
-def dump_datetime(d: Dumper, v: datetime.datetime) -> str:
+def dump_datetime(v: datetime.datetime) -> str:
     return v.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
@@ -94,7 +94,7 @@ def get_dumper(platform_type: PlatformType):
 
     dumper = datadumper.Dumper(**{})  # type: ignore
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
-    dumper.handlers.insert(0, (is_datetime_dumper, dump_datetime))
+    dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
     return dumper
 
 

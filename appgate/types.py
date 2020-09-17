@@ -10,7 +10,7 @@ __all__ = [
     'EventObject',
     'AppgateEvent',
     'EntityWrapper',
-    'EntityVersion',
+    'LatestEntityGeneration',
 ]
 
 
@@ -77,8 +77,6 @@ class EntityWrapper:
 
 
 @attrs(slots=True, frozen=True)
-class EntityVersion:
-    type: str = attrib()
-    name: str = attrib()
-    version: str = attrib()
-    timestamp: datetime.datetime = attrib()
+class LatestEntityGeneration:
+    generation: int = attrib(default=0)
+    modified: datetime.datetime = attrib(default=datetime.datetime.now())

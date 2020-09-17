@@ -16,8 +16,8 @@ from kubernetes.config import load_kube_config, list_kube_config_contexts, load_
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
-from appgate.attrs import K8S_LOADER
-from appgate.client import AppgateClient
+from appgate.attrs import K8S_LOADER, dump_datetime
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
 from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
@@ -25,7 +25,7 @@ from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, EntityVersion
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, LatestEntityGeneration
 
 __all__ = [
     'init_kubernetes',
@@ -49,6 +49,7 @@ NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
+APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -74,6 +75,7 @@ class Context:
     dry_run_mode: bool = attrib()
     cleanup_mode: bool = attrib()
     api_spec: APISpec = attrib()
+    metadata_configmap: str = attrib()
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
 
@@ -92,6 +94,7 @@ def get_context(namespace: str, spec_directory: Optional[str],
     target_tags_arg = frozenset(target_tags) if target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
         frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
+    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or f'{namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -109,7 +112,8 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
-                   target_tags=target_tags_env if target_tags_env else None)
+                   target_tags=target_tags_env if target_tags_env else None,
+                   metadata_configmap=metadata_configmap)
 
 
 def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
@@ -172,17 +176,11 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     return appgate_state
 
 
-def k8s_get_entity_version(namespace: str, config_map: str, name: str) -> Optional[EntityVersion]:
-    """
-    Gets an entity version from namespace and configmap
-    """
-    return None
-
-
 def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     queue: Queue[AppgateEvent],
                     load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-                    entity_type: type):
+                    entity_type: type,
+                    k8s_configmap_client: K8SConfigMapClient):
     namespace = ctx.namespace
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
@@ -192,13 +190,21 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
             data = next(watcher)
             data_obj = data['object']
             data_mt = data_obj['metadata']
-            event = EventObject(
-                metadata=data_mt,
-                spec=data_obj['spec'],
-                kind=data_obj['kind'])
+            kind = data_obj['kind']
+            spec = data_obj['spec']
+            event = EventObject(metadata=data_mt, spec=spec, kind=kind)
+            name = event.spec['name']
             if event:
                 ev = K8SEvent(data['type'], event)
                 try:
+                    # names are not unique between entities so we need to come up with a unique name
+                    # now
+                    unique_entity_name = f'{event.kind}-{name}'
+                    mt = ev.object.metadata
+                    latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
+                    if latest_entity_generation:
+                        mt['latestGeneration'] = latest_entity_generation.generation
+                        mt['modified'] = dump_datetime(latest_entity_generation.modified)
                     entity = load(ev.object.spec, ev.object.metadata, entity_type)
                 except TypedloadTypeError:
                     log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)
