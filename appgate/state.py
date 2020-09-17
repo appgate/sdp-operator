@@ -169,12 +169,14 @@ class AppgateState:
         Get the entity with op and register in the current state
         These entities are coming from k8s so they don't have any id
         """
-        entitites = lambda state: state.entities_set.get(type(entity).__name__)
-        if not entitites:
+        entities_fn = lambda state: state.entities_set.get(type(entity.value).__name__)
+        entities = entities_fn(self)
+        current_entities = entities_fn(current_appgate_state)
+        if not entities or not current_entities:
             log.error('[appgate-operator] Unknown entity type: %s', type(entity))
             return
         # TODO: Fix linter here!
-        entities_op(entitites(self), entity, op, entitites(current_appgate_state))  # type: ignore
+        entities_op(entities, entity, op, current_entities)  # type: ignore
 
     def copy(self, entities_set: Dict[str, EntitiesSet]) -> 'AppgateState':
         new_entities_set = {}
