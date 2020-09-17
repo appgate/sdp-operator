@@ -242,7 +242,6 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
     log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
-
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
