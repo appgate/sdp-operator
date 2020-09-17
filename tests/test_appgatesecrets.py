@@ -333,3 +333,35 @@ def test_compare_entity_with_secrets_with_metadata_4():
     e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2))
     e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2))
     assert e1 == e2
+
+
+def test_compare_entity_without_secrets_and_metadata():
+    """
+    Same data
+    modified <= updated
+    current_generation > latest_generation
+    Same entities entities since we dont have passwords
+    """
+    EntityTest2WihoutPassword = load_test_open_api_spec(
+        reload=True,
+        k8s_get_secret=_k8s_get_secret).entities['EntityTest2WihoutPassword'].cls
+    data = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    appgate_metadata = {
+        'generation': 2,
+        'latestGeneration': 1,
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-10T12:20:14Z',
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2WihoutPassword))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2WihoutPassword))
+    assert e1 == e2
