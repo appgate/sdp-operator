@@ -25,7 +25,7 @@ from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, EntityVersion
 
 __all__ = [
     'init_kubernetes',
@@ -172,10 +172,18 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     return appgate_state
 
 
-def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
+def k8s_get_entity_version(namespace: str, config_map: str, name: str) -> Optional[EntityVersion]:
+    """
+    Gets an entity version from namespace and configmap
+    """
+    return None
+
+
+def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     queue: Queue[AppgateEvent],
                     load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
                     entity_type: type):
+    namespace = ctx.namespace
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
                              K8S_APPGATE_VERSION, namespace, crd)
@@ -207,14 +215,14 @@ def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
             sys.exit(1)
 
 
-async def start_entity_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
+async def start_entity_loop(ctx: Context, crd: str, entity_type: Type[Entity_T],
                             queue: Queue[AppgateEvent]) -> None:
-    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, namespace,
+    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, ctx.namespace,
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_entity_loop,
-                             args=(namespace, crd, loop, queue, K8S_LOADER.load, entity_type),
+                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type),
                              daemon=True)
         t.start()
 

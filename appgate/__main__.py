@@ -21,7 +21,7 @@ async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     tasks = [
                 start_entity_loop(
-                    namespace=ctx.namespace,
+                    ctx=ctx,
                     queue=events_queue,
                     crd=entity_names(e.cls, {})[2],
                     entity_type=e.cls)

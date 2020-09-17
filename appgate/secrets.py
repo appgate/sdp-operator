@@ -198,10 +198,3 @@ def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
         raise AppgateSecretException(f'Unable to get secret {secret}.{key} '
                                      f'from namespace {namespace}')
     return base64.b64decode(k8s_secret).decode()
-
-
-def k8s_get_entity_version(namespace: str, config_map: str) -> Optional[EntityVersion]:
-    """
-    Gets an entity version from namespace and configmap
-    """
-    return None
