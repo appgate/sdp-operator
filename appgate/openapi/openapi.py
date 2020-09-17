@@ -28,7 +28,6 @@ LIST_PROPERTIES = {'range', 'data', 'query', 'orderBy', 'descending', 'filterBy'
 def parse_files(spec_entities: Dict[str, str],
                 spec_directory: Optional[Path] = None,
                 spec_file: str = 'api_specs.yml',
-                compare_secrets: bool = False,
                 k8s_get_secret: Optional[Callable[[str, str], str]] = None,
                 secrets_key: Optional[str] = None) -> APISpec:
     parser_context = ParserContext(spec_entities=spec_entities,
@@ -61,8 +60,7 @@ def parse_files(spec_entities: Dict[str, str],
                                      ['paths', path] + ['post'] + keys,
                                      ['paths', path] + ['put'] + keys
                                  ],
-                                singleton=singleton,
-                                compare_secrets=compare_secrets)
+                                singleton=singleton)
 
     # Now parse the API version
     api_version_str = parser.get_keys(['info', 'version'])
@@ -133,22 +131,19 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
 
 
 def generate_api_spec(spec_directory: Optional[Path] = None,
-                      compare_secrets: bool = False,
                       secrets_key: Optional[str] = None,
                       k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
     """
     return parse_files(SPEC_ENTITIES, spec_directory=spec_directory,
-                       compare_secrets=compare_secrets,
                        secrets_key=secrets_key,
                        k8s_get_secret=k8s_get_secret)
 
 
-def generate_api_spec_clients(api_spec: APISpec, dump_secrets: bool,
-                              appgate_client: AppgateClient) -> Dict[str, EntityClient]:
+def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     return {
-        n: appgate_client.entity_client(e.cls, e.api_path, dump_secrets, singleton=e.singleton)
+        n: appgate_client.entity_client(e.cls, e.api_path, singleton=e.singleton)
         for n, e in api_spec.entities.items()
         if e.api_path
     }

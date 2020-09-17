@@ -1,11 +1,10 @@
 import pytest
 from typedload.exceptions import TypedloadException
 
-from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER,\
-    APPGATE_DUMPER_WITH_SECRETS
+from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER
 from appgate.secrets import get_appgate_secret, AppgateSecretSimple, AppgateSecretK8S, \
     AppgateSecretException, AppgateSecretPlainText
-from tests.utils import load_test_open_api_spec, load_test_open_api_compare_secrets_spec, ENCRYPTED_PASSWORD, \
+from tests.utils import load_test_open_api_spec, ENCRYPTED_PASSWORD, \
     FERNET_CIPHER, KEY
 
 
@@ -14,11 +13,6 @@ def test_write_only_password_attribute_dump():
     e = EntityTest2(fieldOne='1234567890',
                     fieldTwo='this is write only',
                     fieldThree='this is a field')
-    e_data = {
-        'fieldTwo': 'this is write only',
-        'fieldThree': 'this is a field',
-    }
-    assert APPGATE_DUMPER.dump(e) == e_data
     e_data = {
         'fieldOne': '1234567890',
         'fieldTwo': 'this is write only',
@@ -30,7 +24,7 @@ def test_write_only_password_attribute_dump():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    assert APPGATE_DUMPER_WITH_SECRETS.dump(e) == e_data
+    assert APPGATE_DUMPER.dump(e) == e_data
 
 
 def test_write_only_password_attribute_load():
@@ -39,7 +33,6 @@ def test_write_only_password_attribute_load():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
     }
-    EntityTest2WithSecrets = load_test_open_api_compare_secrets_spec().entities['EntityTest2'].cls
     EntityTest2 = load_test_open_api_spec().entities['EntityTest2'].cls
 
     e = APPGATE_LOADER.load(e_data, None, EntityTest2)
@@ -47,7 +40,7 @@ def test_write_only_password_attribute_load():
     assert e.fieldOne is None
     assert e.fieldTwo is None
     assert e.fieldThree == 'this is a field'
-    # writeOnly passwords are not compared by default
+    # writeOnly passwords are not compared
     assert e == EntityTest2(fieldOne='wrong-password',
                             fieldTwo='some value',
                             fieldThree='this is a field')
@@ -56,20 +49,8 @@ def test_write_only_password_attribute_load():
                             fieldTwo=None,
                             fieldThree='this is a field with a different value')
 
-    e_with_secrets = APPGATE_LOADER.load(e_data, None, EntityTest2WithSecrets)
-    # writeOnly passwords are not loaded from Appgate even when compare_secrets is True
-    assert e_with_secrets.fieldOne is None
-    assert e_with_secrets.fieldTwo is None
-    assert e_with_secrets.fieldThree == 'this is a field'
-    assert e_with_secrets == EntityTest2WithSecrets(fieldOne=None,
-                                                    fieldTwo=None,
-                                                    fieldThree='this is a field')
-    # writeOnly password fields are compared when compare_secrets is True
-    assert e_with_secrets != EntityTest2WithSecrets(fieldOne='1234567890',
-                                                    fieldTwo=None,
-                                                    fieldThree='this is a field')
     # normal writeOnly fields are not compared when compare_secrets is True
-    assert e_with_secrets == EntityTest2WithSecrets(fieldOne=None,
+    assert e == EntityTest2(fieldOne=None,
                                                     fieldTwo='some value',
                                                     fieldThree='this is a field')
 
@@ -85,20 +66,6 @@ def test_write_only_password_attribute_load():
     assert e != EntityTest2(fieldOne=None,
                             fieldTwo=None,
                             fieldThree='this is a field with a different value')
-
-    e_with_secrets = K8S_LOADER.load(e_data, None, EntityTest2WithSecrets)
-    # writeOnly password fields are loaded from K8S (with compare_secrets True)
-    assert e_with_secrets.fieldOne == '1234567890'  # decrypted password
-    assert e_with_secrets.fieldTwo == 'this is write only'
-    assert e_with_secrets.fieldThree == 'this is a field'
-    # writeOnly password fields are compared when compare_secrets is True
-    assert e_with_secrets != EntityTest2WithSecrets(fieldOne=None,
-                                                    fieldTwo=None,
-                                                    fieldThree='this is a field')
-    # writeOnly normal fields are not compared when compare_secrets is True
-    assert e_with_secrets == EntityTest2WithSecrets(fieldOne='1234567890',
-                                                    fieldTwo=None,
-                                                    fieldThree='this is a field')
 
 
 def test_get_appgate_secret_plain_text():

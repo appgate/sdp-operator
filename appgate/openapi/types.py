@@ -184,7 +184,6 @@ class InstanceMakerConfig:
     entity_name: str = attrib()
     definition: OpenApiDict = attrib()
     level: int = attrib()
-    compare_secrets: bool = attrib()
     singleton: bool = attrib()
     api_path: Optional[str] = attrib()
 

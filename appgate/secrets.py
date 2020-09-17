@@ -8,8 +8,8 @@ from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME, \
-    Entity_T
+from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, \
+    K8S_LOADERS_FIELD_NAME, Entity_T
 from appgate.types import EntityVersion
 from appgate.openapi.utils import get_passwords
 
@@ -157,7 +157,7 @@ class PasswordAttribMaker(SimpleAttribMaker):
                instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
-        values['eq'] = instance_maker_config.compare_secrets
+        values['eq'] = False
 
         # TODO: Recursive fields
         def set_appgate_password_metadata(orig_values, entity: Entity_T) -> Entity_T:

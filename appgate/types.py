@@ -10,6 +10,7 @@ __all__ = [
     'EventObject',
     'AppgateEvent',
     'EntityWrapper',
+    'EntityVersion',
 ]
 
 

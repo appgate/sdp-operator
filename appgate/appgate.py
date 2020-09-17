@@ -74,7 +74,6 @@ class Context:
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode: bool = attrib()
-    dump_secrets: bool = attrib()
     api_spec: APISpec = attrib()
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
@@ -104,7 +103,6 @@ def get_context(namespace: str, spec_directory: Optional[str],
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
-                                 compare_secrets=dump_secrets == '1',
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
     return Context(namespace=namespace, user=user, password=password,
@@ -112,7 +110,6 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
-                   dump_secrets=dump_secrets == '1',
                    api_spec=api_spec,
                    target_tags=target_tags_env if target_tags_env else None)
 
@@ -158,8 +155,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             raise Exception('Error authenticating')
 
         entity_clients = generate_api_spec_clients(api_spec=api_spec,
-                                                   appgate_client=appgate_client,
-                                                   dump_secrets=ctx.dump_secrets)
+                                                   appgate_client=appgate_client)
         entities_set = {}
         for entity, client in entity_clients.items():
             entities = await client.get()
@@ -291,8 +287,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                     new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
                                                         entity_clients=generate_api_spec_clients(
                                                             api_spec=ctx.api_spec,
-                                                            appgate_client=appgate_client,
-                                                            dump_secrets=ctx.dump_secrets)
+                                                            appgate_client=appgate_client)
                                                         if appgate_client else {})
 
                     if appgate_client:
