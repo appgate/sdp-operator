@@ -271,7 +271,8 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             if not await entity_client.post(e.value):
                 errors.add(e.id)
             else:
-                k8s_configmap_client.update(entity_unique_id(e.value.__class__.__name__, e.name))
+                k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, e.name),
+                                            generation=e.value.appgate_metadata.current_generation)
 
     for e in plan.modify.entities:
         if not e.id:
@@ -288,7 +289,8 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             if not await entity_client.put(e.value):
                 errors.add(e.id)
             else:
-                k8s_configmap_client.update(entity_unique_id(e.value.__class__.__name__, e.name))
+                k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, e.name),
+                                            generation=e.value.appgate_metadata.current_generation + 1)
 
     for e in plan.delete.entities:
         if not e.id:

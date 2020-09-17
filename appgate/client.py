@@ -113,7 +113,7 @@ class K8SConfigMapClient:
             self.init()
         return self._entries.get(key)
 
-    def update(self, key: str) -> Optional[LatestEntityGeneration]:
+    def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             self.init()
         prev_entry = self._entries.get(key) or LatestEntityGeneration()

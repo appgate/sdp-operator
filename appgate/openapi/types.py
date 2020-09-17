@@ -69,10 +69,10 @@ class AppgateMetadata:
     modified: datetime.datetime = attrib(metadata={
         'name': 'modificationTimestamp'
     }, default=datetime.datetime.now())
-    current_generation: int = attrib(default=0, metadata={
+    current_generation: int = attrib(default=1, metadata={
         'name': 'generation'
     })
-    latest_generation: int = attrib(default=0, metadata={
+    latest_generation: int = attrib(default=1, metadata={
         'name': 'latestGeneration'
     })
     api_version: str = attrib(metadata={
