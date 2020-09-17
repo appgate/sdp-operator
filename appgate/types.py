@@ -9,21 +9,37 @@ __all__ = [
     'K8SEvent',
     'EventObject',
     'AppgateEvent',
+    'EntityWrapper',
+    'EventObjectMetadata',
 ]
 
 
+@attrs(slots=True, frozen=True)
+class EventObjectMetadata:
+    created: datetime.datetime = attrib(metadata={
+        'name': 'creationTimestamp'
+    })
+    name: str = attrib()
+    namespace: str = attrib()
+    generation: int = attrib()
+    resource_version: str = attrib(metadata={
+        'name': 'resourceVersion'
+    })
+
+
+@attrs(slots=True, frozen=True)
 class EventObject:
-    def __init__(self, data: Dict[str, Any]) -> None:
-        self.kind = data['kind']
-        self.api_version = data['apiVersion']
-        self.metadata = data['metadata']
-        self.spec = data['spec']
+    spec: Dict[str, Any] = attrib()
+    metadata: EventObjectMetadata = attrib()
+    kind: str = attrib()
+    api_version: str = attrib(metadata={
+        'name': 'apiVersion'
+    })
 
-
+@attrs(slots=True, frozen=True)
 class K8SEvent:
-    def __init__(self, data: Dict[str, Any]) -> None:
-        self.type = data['type']
-        self.object = EventObject(data['object'])
+    type: str = attrib()
+    object: EventObject = attrib()
 
 
 @attrs(slots=True, frozen=True)
