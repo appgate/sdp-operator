@@ -263,23 +263,17 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                      entity_client: Optional[EntityClient] = None) -> Plan:
     errors = set()
     for e in plan.create.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to create instance %s without id',
-                      namespace, e.value)
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
             if not await entity_client.post(e.value):
                 errors.add(e.id)
             else:
-                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, e.name),
+                name = e.name if e.value._entity_metadata.get('singleton', False) else 'singleton'
+                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
 
     for e in plan.modify.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to modify instance %s without id',
-                      namespace, e.value)
-            continue
-        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e.value), e.name, e.id)
         diff = plan.modifications_diff.get(e.name)
         if diff:
             log.info('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
@@ -289,27 +283,21 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             if not await entity_client.put(e.value):
                 errors.add(e.id)
             else:
-                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, e.name),
+                name = e.name if e.value._entity_metadata.get('singleton', False) else 'singleton'
+                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
 
     for e in plan.delete.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
-                      namespace, e.value)
-            continue
         log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
             if not await entity_client.delete(e.id):
                 errors.add(e.id)
             else:
-                await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, e.name))
+                name = e.name if e.value._entity_metadata.get('singleton', False) else 'singleton'
+                await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, name))
 
     for e in plan.share.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
-                      namespace, e.value)
-            continue
-        log.info('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
 
     has_errors = len(errors) > 0
     return Plan(create=plan.create,

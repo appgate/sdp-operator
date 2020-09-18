@@ -27,6 +27,7 @@ async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None
                     ctx=ctx,
                     queue=events_queue,
                     crd=entity_names(e.cls, {})[2],
+                    singleton=e.singleton,
                     entity_type=e.cls,
                     k8s_configmap_client=k8s_configmap_client)
                 for e in ctx.api_spec.entities.values()

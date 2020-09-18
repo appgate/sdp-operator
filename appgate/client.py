@@ -91,6 +91,7 @@ def dump_latest_entity_generation(entry: LatestEntityGeneration) -> str:
 
 
 def entity_unique_id(entity_type: str, name: str) -> str:
+    name = name.replace(' ','').lower()
     return f'{entity_type}-{name}'
 
 

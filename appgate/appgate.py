@@ -179,8 +179,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
 def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     queue: Queue[AppgateEvent],
                     load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-                    entity_type: type,
-                    k8s_configmap_client: K8SConfigMapClient):
+                    entity_type: type, singleton: bool, k8s_configmap_client: K8SConfigMapClient):
     namespace = ctx.namespace
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
@@ -193,13 +192,15 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
             kind = data_obj['kind']
             spec = data_obj['spec']
             event = EventObject(metadata=data_mt, spec=spec, kind=kind)
-            name = event.spec['name']
+            if singleton:
+                name = 'singleton'
+            else:
+                name = event.spec['name']
             if event:
                 ev = K8SEvent(data['type'], event)
                 try:
                     # names are not unique between entities so we need to come up with a unique name
                     # now
-                    unique_entity_name = f'{event.kind}-{name}'
                     mt = ev.object.metadata
                     latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
                     if latest_entity_generation:
@@ -222,13 +223,15 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
 
 
 async def start_entity_loop(ctx: Context, crd: str, entity_type: Type[Entity_T],
-                            queue: Queue[AppgateEvent], k8s_configmap_client: K8SConfigMapClient) -> None:
+                            singleton: bool, queue: Queue[AppgateEvent],
+                            k8s_configmap_client: K8SConfigMapClient) -> None:
     log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, ctx.namespace,
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_entity_loop,
-                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type, k8s_configmap_client),
+                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type, singleton,
+                                   k8s_configmap_client),
                              daemon=True)
         t.start()
 
