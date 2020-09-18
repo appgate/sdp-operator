@@ -67,7 +67,9 @@ class EntityWrapper:
         entity_mt = self.value._entity_metadata
         if len(entity_mt.get('passwords', {})) == 0:
             return self.value == other.value
-        return not self._needs_update() or self.value == other.value
+        if self._needs_update():
+            return False
+        return self.value == other.value
 
     def __hash__(self) -> int:
         return self.value.__hash__()
