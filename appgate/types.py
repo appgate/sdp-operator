@@ -52,24 +52,37 @@ class EntityWrapper:
     def with_id(self, id: str) -> 'EntityWrapper':
         return EntityWrapper(evolve(self.value, id=id))
 
-    def _needs_update(self) -> bool:
+    def changed_generation(self) -> bool:
         mt = self.value.appgate_metadata
         if mt.current_generation > mt.latest_generation:
             return True
-        if getattr(self.value, 'updated', None) is None:
+        return False
+
+    def updated(self, other: object) -> bool:
+        assert isinstance(other, self.__class__)
+        mt = self.value.appgate_metadata
+        if getattr(other.value, 'updated', None) is not None:
+            return mt.modified > other.value.updated
+        return False
+
+    def needs_update(self, other: object) -> bool:
+        if self.changed_generation():
             return True
-        if mt.modified > self.value.updated:
+        if self.updated(other):
             return True
         return False
+
+    def has_secrets(self) -> bool:
+        # We have passwords use modified/created
+        entity_mt = self.value._entity_metadata
+        return len(entity_mt.get('passwords', {})) > 0
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             raise Exception(f'Wrong other argument {other}')
-        # We have passwords use modified/created
-        entity_mt = self.value._entity_metadata
-        if len(entity_mt.get('passwords', {})) == 0:
+        if not self.has_secrets():
             return self.value == other.value
-        if self._needs_update():
+        if self.needs_update(other):
             return False
         return self.value == other.value
 

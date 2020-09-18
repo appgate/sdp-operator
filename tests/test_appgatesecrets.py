@@ -195,7 +195,7 @@ def test_compare_entity_with_secrets():
     """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
-    data = {
+    data_1 = {
         'fieldOne': {
             'type': 'k8s/secret',
             'name': 'secret-storage-1',
@@ -203,11 +203,20 @@ def test_compare_entity_with_secrets():
         },
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
-        'created': '2020-09-10T12:20:14',
-        'updated': '2020-09-10T12:20:14'
     }
-    e1 = EntityWrapper(K8S_LOADER.load(data, None, EntityTest2))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2))
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, None, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
     assert e1 != e2
 
 
@@ -228,19 +237,30 @@ def test_compare_entity_with_secrets_with_metadata_1():
         },
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
-        'created': '2020-09-10T12:20:14',
-        'updated': '2020-09-10T12:20:14'
     }
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+
     appgate_metadata = {
         'generation': 1,
         'latestGeneration': 1,
-        'creationTimestamp': '2020-09-10T10:20:14',
-        'modificationTimestamp': '2020-09-10T12:20:14',
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-09T12:20:14Z',
     }
     e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data_1, None, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
 
     assert e1 == e2
+
     data_2 = {
         'fieldOne': {
             'type': 'k8s/secret',
@@ -249,8 +269,8 @@ def test_compare_entity_with_secrets_with_metadata_1():
         },
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field different',
-        'created': '2020-09-10T12:20:14',
-        'updated': '2020-09-10T12:20:14'
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-08T12:20:14Z'
     }
     e3 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
     assert e1 != e3
@@ -265,7 +285,16 @@ def test_compare_entity_with_secrets_with_metadata_2():
     """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
-    data = {
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
         'fieldOne': {
             'type': 'k8s/secret',
             'name': 'secret-storage-1',
@@ -282,8 +311,8 @@ def test_compare_entity_with_secrets_with_metadata_2():
         'creationTimestamp': '2020-09-10T10:20:14Z',
         'modificationTimestamp': '2020-09-16T12:20:14Z',
     }
-    e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2))
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
     assert e1 != e2
 
 
@@ -296,7 +325,16 @@ def test_compare_entity_with_secrets_with_metadata_3():
     """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
-    data = {
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
         'fieldOne': {
             'type': 'k8s/secret',
             'name': 'secret-storage-1',
@@ -313,8 +351,8 @@ def test_compare_entity_with_secrets_with_metadata_3():
         'creationTimestamp': '2020-09-10T10:20:14Z',
         'modificationTimestamp': '2020-09-10T12:20:14Z',
     }
-    e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2))
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
     assert e1 != e2
 
 
@@ -327,7 +365,16 @@ def test_compare_entity_with_secrets_with_metadata_4():
     """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
-    data = {
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
         'fieldOne': {
             'type': 'k8s/secret',
             'name': 'secret-storage-1',
@@ -344,8 +391,8 @@ def test_compare_entity_with_secrets_with_metadata_4():
         'creationTimestamp': '2020-09-10T10:20:14Z',
         'modificationTimestamp': '2020-09-20T12:19:14Z',
     }
-    e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2))
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
     assert e1 == e2
 
 
@@ -359,7 +406,18 @@ def test_compare_entity_without_secrets_and_metadata():
     EntityTest2WihoutPassword = load_test_open_api_spec(
         reload=True,
         k8s_get_secret=_k8s_get_secret).entities['EntityTest2WihoutPassword'].cls
-    data = {
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    data_2 = {
         'fieldOne': {
             'type': 'k8s/secret',
             'name': 'secret-storage-1',
@@ -376,6 +434,6 @@ def test_compare_entity_without_secrets_and_metadata():
         'creationTimestamp': '2020-09-10T10:20:14Z',
         'modificationTimestamp': '2020-09-10T12:20:14Z',
     }
-    e1 = EntityWrapper(K8S_LOADER.load(data, appgate_metadata, EntityTest2WihoutPassword))
-    e2 = EntityWrapper(APPGATE_LOADER.load(data, None, EntityTest2WihoutPassword))
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2WihoutPassword))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2WihoutPassword))
     assert e1 == e2
