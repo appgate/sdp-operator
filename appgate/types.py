@@ -56,6 +56,8 @@ class EntityWrapper:
         mt = self.value.appgate_metadata
         if mt.current_generation > mt.latest_generation:
             return True
+        if getattr(self.value, 'updated', None) is None:
+            return True
         if mt.modified > self.value.updated:
             return True
         return False
@@ -81,4 +83,4 @@ class EntityWrapper:
 @attrs(slots=True, frozen=True)
 class LatestEntityGeneration:
     generation: int = attrib(default=0)
-    modified: datetime.datetime = attrib(default=datetime.datetime.now())
+    modified: datetime.datetime = attrib(default=datetime.datetime.now().astimezone())

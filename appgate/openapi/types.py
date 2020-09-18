@@ -65,10 +65,10 @@ class OpenApiParserException(Exception):
 class AppgateMetadata:
     created: datetime.datetime = attrib(metadata={
         'name': 'creationTimestamp'
-    }, default=datetime.datetime.now())
+    }, default=datetime.datetime.now().astimezone())
     modified: datetime.datetime = attrib(metadata={
         'name': 'modificationTimestamp'
-    }, default=datetime.datetime.now())
+    }, default=datetime.datetime.now().astimezone())
     current_generation: int = attrib(default=1, metadata={
         'name': 'generation'
     })
