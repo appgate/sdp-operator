@@ -4,7 +4,7 @@ from appgate.state import compare_entities, EntitiesSet, resolve_entities, Appga
 from appgate.types import EntityWrapper
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
-    join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD
+    join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD, _k8s_get_secret
 
 
 def test_compare_policies_0():
@@ -21,6 +21,7 @@ def test_compare_policies_0():
     })
     expected_policies = EntitiesSet(set())
     plan = compare_entities(current_policies, expected_policies)
+
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1',
                              name='policy1',
@@ -674,8 +675,8 @@ def test_compare_plan_entity_bytes():
     assert plan.modify.entities == frozenset()
     assert plan.modifications_diff == {}
 
-    assert compute_diff(list(entities_current.entities)[0].value,
-                        list(entities_expected.entities)[0].value) == []
+    assert compute_diff(list(entities_current.entities)[0],
+                        list(entities_expected.entities)[0]) == []
 
     # Let's change the bytes
     e_data = {
@@ -784,3 +785,90 @@ def test_compare_plan_entity_pem():
             '0tLQo="\n'
         ]
     }
+
+
+def test_compare_entities_generation_changed():
+    EntityTest2 = load_test_open_api_spec(reload=True,
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    appgate_metadata = {
+        'generation': 2,
+        'latestGeneration': 1,
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-10T12:20:14Z',
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
+    diff = compute_diff(e2, e1)
+    assert diff == [
+        '--- \n',
+        '+++ \n',
+        '@@ -2,3 +2,3 @@\n',
+        '     "fieldThree": "this is a field",\n',
+        '-    "generation": 1\n',
+        '+    "generation": 2\n',
+        ' }'
+    ]
+
+
+def test_compare_entities_updated_changed():
+    EntityTest2 = load_test_open_api_spec(reload=True,
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    appgate_metadata = {
+        'generation': 1,
+        'latestGeneration': 1,
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-16T12:20:14Z',
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
+
+    diff = compute_diff(e2, e1)
+    assert diff == [
+        '--- \n',
+        '+++ \n',
+        '@@ -2,3 +2,3 @@\n',
+        '     "fieldThree": "this is a field",\n',
+        '-    "updated": "2020-09-10T12:20:14.000Z"\n',
+        '+    "updated": "2020-09-16T12:20:14.000Z"\n',
+        ' }'
+    ]

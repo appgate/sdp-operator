@@ -6,7 +6,7 @@ from appgate.secrets import get_appgate_secret, AppgateSecretSimple, AppgateSecr
     AppgateSecretException, AppgateSecretPlainText
 from appgate.types import EntityWrapper
 from tests.utils import load_test_open_api_spec, ENCRYPTED_PASSWORD, \
-    FERNET_CIPHER, KEY
+    FERNET_CIPHER, KEY, _k8s_get_secret
 
 
 def test_write_only_password_attribute_dump():
@@ -130,17 +130,6 @@ def test_get_appgate_secret_simple_load_no_cipher():
     }
 
 
-def _k8s_get_secret(name: str, key: str) -> str:
-    k8s_secrets = {
-        'secret-storage-1': {
-            'field-one': '1234567890-from-k8s'
-        }
-    }
-    if name in k8s_secrets and key in k8s_secrets[name]:
-        return k8s_secrets[name][key]
-    raise Exception(f'Unable to get secret: {name}.{key}')
-
-
 def test_get_appgate_secret_k8s_simple_load():
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
@@ -221,12 +210,6 @@ def test_compare_entity_with_secrets():
 
 
 def test_compare_entity_with_secrets_with_metadata_1():
-    """
-    Same data
-    modified <= updated
-    current_generation <= latest_generation
-    Same entities
-    """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data_1 = {
@@ -277,12 +260,6 @@ def test_compare_entity_with_secrets_with_metadata_1():
 
 
 def test_compare_entity_with_secrets_with_metadata_2():
-    """
-    Same data
-    modified > updated
-    current_generation <= latest_generation
-    Different entities
-    """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data_1 = {
@@ -317,12 +294,6 @@ def test_compare_entity_with_secrets_with_metadata_2():
 
 
 def test_compare_entity_with_secrets_with_metadata_3():
-    """
-    Same data
-    modified <= updated
-    current_generation > latest_generation
-    Different entities
-    """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data_1 = {
@@ -357,12 +328,6 @@ def test_compare_entity_with_secrets_with_metadata_3():
 
 
 def test_compare_entity_with_secrets_with_metadata_4():
-    """
-    Same data
-    modified < updated
-    current_generation < latest_generation
-    Different entities
-    """
     EntityTest2 = load_test_open_api_spec(reload=True,
                                           k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
     data_1 = {
@@ -397,12 +362,6 @@ def test_compare_entity_with_secrets_with_metadata_4():
 
 
 def test_compare_entity_without_secrets_and_metadata():
-    """
-    Same data
-    modified <= updated
-    current_generation > latest_generation
-    Same entities entities since we dont have passwords
-    """
     EntityTest2WihoutPassword = load_test_open_api_spec(
         reload=True,
         k8s_get_secret=_k8s_get_secret).entities['EntityTest2WihoutPassword'].cls

@@ -127,3 +127,14 @@ def policy(name: str, id: str = None, entitlements: Optional[List[str]] = None) 
 
 class MockedClient(AppgateClient):
     pass
+
+
+def _k8s_get_secret(name: str, key: str) -> str:
+    k8s_secrets = {
+        'secret-storage-1': {
+            'field-one': '1234567890-from-k8s'
+        }
+    }
+    if name in k8s_secrets and key in k8s_secrets[name]:
+        return k8s_secrets[name][key]
+    raise Exception(f'Unable to get secret: {name}.{key}')
