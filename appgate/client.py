@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import uuid
 from typing import Dict, Any, Optional, List, Callable
@@ -101,21 +102,24 @@ class K8SConfigMapClient:
         self.namespace = namespace
         self.name = name
 
-    def init(self) -> None:
-        configmap = self._v1.read_namespaced_config_map(name=self.name, namespace=self.namespace)
+    async def init(self) -> None:
+        configmap = await asyncio.to_thread(self._v1.read_namespaced_config_map, **{
+            'name': self.name,
+            'namespace': self.namespace
+        })
         self._configmap_mt = configmap.metadata
         self._entries = {
             k: load_latest_entity_generation(k, v) for k, v in configmap.data.items()
         }
 
-    def read(self, key: str) -> Optional[LatestEntityGeneration]:
+    async def read(self, key: str) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
-            self.init()
+            await self.init()
         return self._entries.get(key)
 
-    def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
+    async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
-            self.init()
+            await self.init()
         prev_entry = self._entries.get(key) or LatestEntityGeneration()
         self._entries[key] = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
@@ -123,14 +127,17 @@ class K8SConfigMapClient:
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: dump_latest_entity_generation(self._entries[key])
         }, metadata=self._configmap_mt)
-        new_configmap = self._v1.patch_namespaced_config_map(name=self.name, namespace=self.namespace,
-                                                             body=body)
+        new_configmap = await asyncio.to_thread(self._v1.patch_namespaced_config_map, **{
+            'name': self.name,
+            'namespace': self.namespace,
+            'body': body
+        })
         self._configmap_mt = new_configmap.metadata
         return self._entries[key]
 
-    def delete(self, key: str) -> Optional[LatestEntityGeneration]:
+    async def delete(self, key: str) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
-            self.init()
+            await self.init()
         if key not in self._entries:
             return None
         entry = self._entries[key]
@@ -138,8 +145,9 @@ class K8SConfigMapClient:
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: None
         }, metadata=self._configmap_mt)
-        self._v1.patch_namespaced_config_map(name=self.name, namespace=self.namespace,
-                                             body=body)
+        await asyncio.to_thread(self._v1.patch_namespaced_config_map, **{
+            'name': self.name, 'namespace': self.namespace, 'body': body
+        })
         return entry
 
 

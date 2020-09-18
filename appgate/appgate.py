@@ -201,7 +201,7 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     # now
                     unique_entity_name = f'{event.kind}-{name}'
                     mt = ev.object.metadata
-                    latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
+                    latest_entity_generation = await k8s_configmap_client.read(entity_unique_id(kind, name))
                     if latest_entity_generation:
                         mt['latestGeneration'] = latest_entity_generation.generation
                         mt['modified'] = dump_datetime(latest_entity_generation.modified)
