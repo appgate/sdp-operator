@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 import hashlib
 import re
@@ -47,7 +48,7 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
             'subject': cert.subject.rfc4514_string(),
             'validFrom': valid_from,
             'validTo': valid_to,
-            'fingerprint': base64.b64encode(cert.fingerprint(hashes.SHA256())).decode(),
+            'fingerprint': binascii.hexlify(cert.fingerprint(hashes.SHA256())).decode(),
             'certificate': base64.b64encode(cert.public_bytes(Encoding.PEM)).decode(),
             'subjectPublicKey': base64.b64encode(cert.public_key().public_bytes(
                 Encoding.PEM,
