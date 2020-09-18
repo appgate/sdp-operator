@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from typing import Dict, List, Union, Optional, Callable
 
@@ -8,8 +9,8 @@ from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, K8S_LOADERS_FIELD_NAME, \
-    Entity_T
+from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, \
+    K8S_LOADERS_FIELD_NAME, Entity_T
 from appgate.openapi.utils import get_passwords
 
 
@@ -156,7 +157,7 @@ class PasswordAttribMaker(SimpleAttribMaker):
                instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
-        values['eq'] = instance_maker_config.compare_secrets
+        values['eq'] = False
 
         # TODO: Recursive fields
         def set_appgate_password_metadata(orig_values, entity: Entity_T) -> Entity_T:
@@ -191,7 +192,8 @@ def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
     Gets a secret from k8s
     """
     v1 = CoreV1Api()
-    data = v1.read_namespaced_secret(secret, namespace).data
+    resp = v1.read_namespaced_secret(name=secret, namespace=namespace)
+    data = resp.data
     k8s_secret = data.get(key)
     if not k8s_secret:
         raise AppgateSecretException(f'Unable to get secret {secret}.{key} '

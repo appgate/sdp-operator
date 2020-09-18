@@ -303,7 +303,6 @@ class Parser:
                 name=attrib_name,
                 entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
-                compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=None,
                 level=current_level + 1)
@@ -392,7 +391,6 @@ class Parser:
                 name=attrib_name,
                 entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
-                compare_secrets=attrib_maker_config.instance_maker_config.compare_secrets,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=None,
                 level=current_level + 1)
@@ -451,7 +449,7 @@ class Parser:
         return generated_entity
 
     def parse_definition(self, keys: List[List[str]], entity_name: str,
-                         singleton: bool, compare_secrets: bool) -> Optional[GeneratedEntity]:
+                         singleton: bool) -> Optional[GeneratedEntity]:
         while True:
             errors: List[str] = []
             try:
@@ -476,7 +474,6 @@ class Parser:
         instance_maker_config = InstanceMakerConfig(name=entity_name,
                                                     entity_name=entity_name,
                                                     definition=definition_to_use,
-                                                    compare_secrets=compare_secrets,
                                                     singleton=singleton,
                                                     api_path=api_path,
                                                     level=0)

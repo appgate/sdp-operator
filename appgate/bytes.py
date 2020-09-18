@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 import hashlib
 import re
@@ -40,6 +41,11 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
                             datetime_utc(cert.not_valid_before).isoformat(timespec='milliseconds'))
         valid_to = re.sub(r'\+\d\d:\d\d', 'Z',
                            datetime_utc(cert.not_valid_after).isoformat(timespec='milliseconds'))
+        public_key = cert.public_key().public_bytes(
+            Encoding.PEM,
+            PublicFormat.SubjectPublicKeyInfo).decode().splitlines()
+        del public_key[0]
+        del public_key[-1]
         cert_data = {
             'version': cert.version.value + 1,
             'serial': str(cert.serial_number),
@@ -47,11 +53,9 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
             'subject': cert.subject.rfc4514_string(),
             'validFrom': valid_from,
             'validTo': valid_to,
-            'fingerprint': base64.b64encode(cert.fingerprint(hashes.SHA256())).decode(),
+            'fingerprint': binascii.hexlify(cert.fingerprint(hashes.SHA256())).decode(),
             'certificate': base64.b64encode(cert.public_bytes(Encoding.PEM)).decode(),
-            'subjectPublicKey': base64.b64encode(cert.public_key().public_bytes(
-                Encoding.PEM,
-                PublicFormat.SubjectPublicKeyInfo)).decode(),
+            'subjectPublicKey': ''.join(public_key),
         }
         return loader(cert_data, None, entity_type)
     return certificate_bytes

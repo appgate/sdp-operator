@@ -12,6 +12,8 @@ paths:
     $ref: '#/entity-test1'
   /entity-test2:
     $ref: '#/entity-test2'
+  /entity-test2-without-password:
+    $ref: '#/entity-test2-without-password'
   /entity-test3:
     $ref: '#/entity-test3'
   /entity-test3-appgate:
@@ -64,6 +66,21 @@ entity-test2:
         application/json:
           schema:
             $ref: '#/definitions/EntityTest2'
+
+entity-test2-without-password:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest2WithoutPassword'
 
 entity-test3:
   get:
@@ -274,6 +291,12 @@ definitions:
         type: string
       fieldThree:
         type: string
+      updated:
+        type: string
+        format: 'date-time'
+      created:
+        type: string
+        format: 'date-time'
   EntityTest3:
     type: object
     properties:
@@ -485,3 +508,20 @@ definitions:
           subjectPublicKey:
             type: string
             format: byte
+  EntityTest2WithoutPassword:
+    type: object
+    properties:
+      fieldOne:
+        writeOnly: true
+        type: string
+      fieldTwo:
+        writeOnly: true
+        type: string
+      fieldThree:
+        type: string
+      updated:
+        type: string
+        format: 'date-time'
+      created:
+        type: string
+        format: 'date-time'

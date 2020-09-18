@@ -5,8 +5,6 @@ from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
-from typedload.datadumper import Dumper
-from typedload.dataloader import Loader
 from typedload.exceptions import TypedloadException
 
 from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
@@ -19,10 +17,11 @@ __all__ = [
     'APPGATE_DUMPER',
     'K8S_LOADER',
     'APPGATE_LOADER',
-    'APPGATE_DUMPER_WITH_SECRETS',
     'DIFF_DUMPER',
     'get_loader',
     'get_dumper',
+    'dump_datetime',
+    'parse_datetime',
 ]
 
 
@@ -55,18 +54,18 @@ def is_datetime_dumper(value: Any) -> bool:
     return isinstance(value, datetime.datetime)
 
 
-def parse_datetime(l: Loader, value, type_) -> datetime.datetime:
+def parse_datetime(value) -> datetime.datetime:
     try:
         return datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
     except Exception as e:
         raise TypedloadException(f'Unable to parse {value} as a datetime: {e}')
 
 
-def dump_datetime(d: Dumper, v: datetime.datetime) -> str:
+def dump_datetime(v: datetime.datetime) -> str:
     return v.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
-def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
+def get_dumper(platform_type: PlatformType):
 
     def _attrdump(d, value) -> Dict[str, Any]:
         r = {}
@@ -87,9 +86,6 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
                     continue
                 if read_only:
                     continue
-                if write_only and format == 'password':
-                    if not dump_secrets and platform_type == PlatformType.APPGATE:
-                        continue
 
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
@@ -98,7 +94,7 @@ def get_dumper(platform_type: PlatformType, dump_secrets: bool = False):
 
     dumper = datadumper.Dumper(**{})  # type: ignore
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
-    dumper.handlers.insert(0, (is_datetime_dumper, dump_datetime))
+    dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
     return dumper
 
 
@@ -185,7 +181,7 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
 
     loader = dataloader.Loader(**{})  # type: ignore
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
-    loader.handlers.insert(0, (is_datetime_loader, parse_datetime))
+    loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
     def load(data: Dict[str, Any], metadata: Optional[Dict[str, Any]],
              entity: type) -> Entity_T:
         data[APPGATE_METADATA_ATTRIB_NAME] = metadata or {}
@@ -210,5 +206,4 @@ K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))
 K8S_DUMPER = EntityDumper(dump=get_dumper(PlatformType.K8S).dump)
 APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
 APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE).dump)
-APPGATE_DUMPER_WITH_SECRETS = EntityDumper(dump=get_dumper(PlatformType.APPGATE, dump_secrets=True).dump)
 DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF).dump)

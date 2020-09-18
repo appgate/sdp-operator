@@ -16,17 +16,16 @@ from kubernetes.config import load_kube_config, list_kube_config_contexts, load_
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
-from appgate.attrs import K8S_LOADER
-from appgate.client import AppgateClient
-from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, K8S_APPGATE_VERSION, \
-    K8S_APPGATE_DOMAIN, SPEC_DIR
-from appgate.openapi.types import APISpec, Entity_T
+from appgate.attrs import K8S_LOADER, dump_datetime
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
+from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
+from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
 from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
 from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, LatestEntityGeneration
 
 __all__ = [
     'init_kubernetes',
@@ -50,6 +49,7 @@ NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
+APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -74,8 +74,8 @@ class Context:
     timeout: int = attrib()
     dry_run_mode: bool = attrib()
     cleanup_mode: bool = attrib()
-    dump_secrets: bool = attrib()
     api_spec: APISpec = attrib()
+    metadata_configmap: str = attrib()
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
 
@@ -89,12 +89,12 @@ def get_context(namespace: str, spec_directory: Optional[str],
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
     dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
     cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
-    dump_secrets = os.getenv(DUMP_SECRETS_ENV) or '0'
     spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags_arg = frozenset(target_tags) if target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
         frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
+    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or f'{namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -104,7 +104,6 @@ def get_context(namespace: str, spec_directory: Optional[str],
                                  if x[1] is None])
         raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
-                                 compare_secrets=dump_secrets == '1',
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
     return Context(namespace=namespace, user=user, password=password,
@@ -112,9 +111,9 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
-                   dump_secrets=dump_secrets == '1',
                    api_spec=api_spec,
-                   target_tags=target_tags_env if target_tags_env else None)
+                   target_tags=target_tags_env if target_tags_env else None,
+                   metadata_configmap=metadata_configmap)
 
 
 def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
@@ -158,14 +157,14 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             raise Exception('Error authenticating')
 
         entity_clients = generate_api_spec_clients(api_spec=api_spec,
-                                                   appgate_client=appgate_client,
-                                                   dump_secrets=ctx.dump_secrets)
+                                                   appgate_client=appgate_client)
         entities_set = {}
         for entity, client in entity_clients.items():
             entities = await client.get()
             if entities is not None:
-                entities_set[entity] = EntitiesSet(set(filter(lambda e: is_target(e, ctx.target_tags),
-                                                              entities)))
+                entities_set[entity] = EntitiesSet(set(map(EntityWrapper,
+                                                           filter(lambda e: is_target(e, ctx.target_tags),
+                                                                  entities))))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
@@ -177,19 +176,36 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     return appgate_state
 
 
-def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
+def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     queue: Queue[AppgateEvent],
                     load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-                    entity_type: type):
+                    entity_type: type, singleton: bool, k8s_configmap_client: K8SConfigMapClient):
+    namespace = ctx.namespace
     log.info(f'[{crd}/{namespace}] Loop for {crd}/{namespace} started')
     watcher = Watch().stream(get_crds().list_namespaced_custom_object, K8S_APPGATE_DOMAIN,
                              K8S_APPGATE_VERSION, namespace, crd)
     while True:
         try:
-            event = next(watcher)
+            data = next(watcher)
+            data_obj = data['object']
+            data_mt = data_obj['metadata']
+            kind = data_obj['kind']
+            spec = data_obj['spec']
+            event = EventObject(metadata=data_mt, spec=spec, kind=kind)
+            if singleton:
+                name = 'singleton'
+            else:
+                name = event.spec['name']
             if event:
-                ev = K8SEvent(event)
+                ev = K8SEvent(data['type'], event)
                 try:
+                    # names are not unique between entities so we need to come up with a unique name
+                    # now
+                    mt = ev.object.metadata
+                    latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
+                    if latest_entity_generation:
+                        mt['latestGeneration'] = latest_entity_generation.generation
+                        mt['modified'] = dump_datetime(latest_entity_generation.modified)
                     entity = load(ev.object.spec, ev.object.metadata, entity_type)
                 except TypedloadTypeError:
                     log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)
@@ -206,21 +222,23 @@ def run_entity_loop(namespace: str, crd: str, loop: asyncio.AbstractEventLoop,
             sys.exit(1)
 
 
-async def start_entity_loop(namespace: str, crd: str, entity_type: Type[Entity_T],
-                            queue: Queue[AppgateEvent]) -> None:
-    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, namespace,
+async def start_entity_loop(ctx: Context, crd: str, entity_type: Type[Entity_T],
+                            singleton: bool, queue: Queue[AppgateEvent],
+                            k8s_configmap_client: K8SConfigMapClient) -> None:
+    log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, ctx.namespace,
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_entity_loop,
-                             args=(namespace, crd, loop, queue, K8S_LOADER.load, entity_type),
+                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type, singleton,
+                                   k8s_configmap_client),
                              daemon=True)
         t.start()
 
     await asyncio.to_thread(run, asyncio.get_event_loop())  # type: ignore
 
 
-async def main_loop(queue: Queue, ctx: Context) -> None:
+async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient) -> None:
     namespace = ctx.namespace
     log.info('[appgate-operator/%s] Main loop started:', namespace)
     log.info('[appgate-operator/%s]   + namespace: %s', namespace, namespace)
@@ -229,7 +247,6 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
     log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
-
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
@@ -238,7 +255,6 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             {k: v.builtin_entities() for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
-
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
              namespace)
     while True:
@@ -246,7 +262,7 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)
-            expected_appgate_state.with_entity(event.entity, event.op, current_appgate_state)
+            expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
             # Resolve entities now, in order
             # this will be the Topological sort
@@ -285,9 +301,9 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
                     new_plan = await appgate_plan_apply(appgate_plan=plan, namespace=namespace,
                                                         entity_clients=generate_api_spec_clients(
                                                             api_spec=ctx.api_spec,
-                                                            appgate_client=appgate_client,
-                                                            dump_secrets=ctx.dump_secrets)
-                                                        if appgate_client else {})
+                                                            appgate_client=appgate_client)
+                                                        if appgate_client else {},
+                                                        k8s_configmap_client=k8s_configmap_client)
 
                     if appgate_client:
                         current_appgate_state = new_plan.appgate_state

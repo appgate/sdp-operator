@@ -6,19 +6,17 @@ from copy import deepcopy
 import datetime
 import time
 from functools import cached_property
-from logging import DEBUG
 from pathlib import Path
 from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet
 
 import yaml
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER, DIFF_DUMPER
-from appgate.client import EntityClient
+from appgate.attrs import K8S_DUMPER, DIFF_DUMPER, dump_datetime
+from appgate.client import EntityClient, K8SConfigMapClient, entity_unique_id
 from appgate.logger import log
-from appgate.openapi.openapi import K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
-from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES
+from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
 from appgate.openapi.utils import is_entity_t, has_name, is_builtin, get_passwords
 
 __all__ = [
@@ -36,12 +34,14 @@ __all__ = [
     'compute_diff',
 ]
 
+from appgate.types import EntityWrapper
+
 
 class EntitiesSet:
-    def __init__(self, entities: Optional[Set[Entity_T]] = None,
-                 entities_by_name: Optional[Dict[str, Entity_T]] = None,
-                 entities_by_id: Optional[Dict[str, Entity_T]] = None) -> None:
-        self.entities: Set[Entity_T] = entities or set()
+    def __init__(self, entities: Optional[Set[EntityWrapper]] = None,
+                 entities_by_name: Optional[Dict[str, EntityWrapper]] = None,
+                 entities_by_id: Optional[Dict[str, EntityWrapper]] = None) -> None:
+        self.entities: Set[EntityWrapper] = entities or set()
         if entities_by_name:
             self.entities_by_name = entities_by_name
         else:
@@ -68,7 +68,7 @@ class EntitiesSet:
     def builtin_entities(self) -> 'EntitiesSet':
         return EntitiesSet(entities={e for e in self.entities if is_builtin(e)})
 
-    def add(self, entity: Entity_T) -> None:
+    def add(self, entity: EntityWrapper) -> None:
         if entity.name in self.entities_by_name:
             # Entity is already registered, so this is in the best case a modification
             return self.modify(entity)
@@ -77,7 +77,7 @@ class EntitiesSet:
         self.entities_by_name[entity.name] = entity
         self.entities_by_id[entity.id] = entity
 
-    def delete(self, entity: Entity_T) -> None:
+    def delete(self, entity: EntityWrapper) -> None:
         if entity in self.entities:
             self.entities.remove(entity)
         if entity.name in self.entities_by_name:
@@ -87,23 +87,23 @@ class EntitiesSet:
         if entity.id in self.entities_by_id:
             del self.entities_by_id[entity.id]
 
-    def modify(self, entity: Entity_T) -> None:
+    def modify(self, entity: EntityWrapper) -> None:
         if entity.name not in self.entities_by_name:
             # Not yet in the system, register it with its own id
             return self.add(entity)
         # All the entities expect the one being modified
         self.entities = {e for e in self.entities if e.name != entity.name}
         # Replace always the id with the one registered in the system
-        self.entities.add(evolve(entity, id=self.entities_by_name[entity.name].id))
+        self.entities.add(entity.with_id(id=self.entities_by_name[entity.name].id))
 
 
-def entities_op(entity_set: EntitiesSet, entity: Entity_T,
+def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,
                 op: Literal['ADDED', 'DELETED', 'MODIFIED'],
                 current_entities: EntitiesSet) -> None:
     # Current state should always contain the real id!!
     cached_entity = current_entities.entities_by_name.get(entity.name)
     if cached_entity:
-        entity = evolve(entity, id=cached_entity.id)
+        entity = entity.with_id(id=cached_entity.id)
     if op == 'ADDED':
         entity_set.add(entity)
     elif op == 'DELETED':
@@ -112,7 +112,7 @@ def entities_op(entity_set: EntitiesSet, entity: Entity_T,
         entity_set.modify(entity)
 
 
-def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
+def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
     """
     name sould match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
@@ -125,7 +125,7 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
     singleton = entity_mt.get('singleton', False)
     metadata = {
         'name': entity_name,
-        'passwords': get_passwords(entity),
+        'passwords': get_passwords(entity.value),
         'singleton': singleton
     }
     if not singleton:
@@ -134,11 +134,11 @@ def dump_entity(entity: Entity_T, entity_type: str) -> Dict[str, Any]:
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
         'metadata': metadata,
-        'spec': K8S_DUMPER.dump(entity)
+        'spec': K8S_DUMPER.dump(entity.value)
     }
 
 
-def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
+def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
                   entity_type: str) -> Optional[List[str]]:
     entity_passwords = None
     if not entities:
@@ -161,18 +161,20 @@ def dump_entities(entities: Iterable[Entity_T], dump_file: Optional[Path],
 class AppgateState:
     entities_set: Dict[str, EntitiesSet] = attrib()
 
-    def with_entity(self, entity: Entity_T, op: str,
+    def with_entity(self, entity: EntityWrapper, op: str,
                     current_appgate_state: 'AppgateState') -> None:
         """
         Get the entity with op and register in the current state
         These entities are coming from k8s so they don't have any id
         """
-        entitites = lambda state: state.entities_set.get(type(entity).__name__)
-        if not entitites:
+        entities_fn = lambda state: state.entities_set.get(type(entity.value).__name__)
+        entities = entities_fn(self)
+        current_entities = entities_fn(current_appgate_state)
+        if not entities or not current_entities:
             log.error('[appgate-operator] Unknown entity type: %s', type(entity))
             return
         # TODO: Fix linter here!
-        entities_op(entitites(self), entity, op, entitites(current_appgate_state))  # type: ignore
+        entities_op(entities, entity, op, current_entities)  # type: ignore
 
     def copy(self, entities_set: Dict[str, EntitiesSet]) -> 'AppgateState':
         new_entities_set = {}
@@ -196,7 +198,7 @@ class AppgateState:
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
             entity_password_fields = dump_entities(self.entities_set[k].entities, p, k)
             if entity_password_fields:
-               password_fields[k] = entity_password_fields
+                password_fields[k] = entity_password_fields
         print('Passwords found in entities:')
         for entity_name, pwd_fields in password_fields.items():
             print(f'+ Entity: {entity_name}')
@@ -256,48 +258,46 @@ class Plan:
         return len(self.delete.entities or self.create.entities or self.modify.entities) > 0
 
 
-# TODO: Deal with repeated code
-async def plan_apply(plan: Plan, namespace: str,
+# TODO: Save the kind info the wrapper
+async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfigMapClient,
                      entity_client: Optional[EntityClient] = None) -> Plan:
     errors = set()
     for e in plan.create.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to create instance %s without id',
-                      namespace, e)
-        log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
-            if not await entity_client.post(e):
+            if not await entity_client.post(e.value):
                 errors.add(e.id)
+            else:
+                name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
+                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
+                                                  generation=e.value.appgate_metadata.current_generation)
+
     for e in plan.modify.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to modify instance %s without id',
-                      namespace, e)
-            continue
-        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e.value), e.name, e.id)
         diff = plan.modifications_diff.get(e.name)
         if diff:
             log.info('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
             for d in diff:
                 log.info('%s', d.rstrip())
         if entity_client:
-            if not await entity_client.put(e):
+            if not await entity_client.put(e.value):
                 errors.add(e.id)
+            else:
+                name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
+                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
+                                                  generation=e.value.appgate_metadata.current_generation)
+
     for e in plan.delete.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
-                      namespace, e)
-            continue
-        log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
             if not await entity_client.delete(e.id):
                 errors.add(e.id)
+            else:
+                name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
+                await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, name))
 
     for e in plan.share.entities:
-        if not e.id:
-            log.error('[appgate-operator/%s] Trying to delete instance %s without id',
-                      namespace, e)
-            continue
-        log.info('[appgate-operator/%s] = %s %s [%s]', namespace, type(e), e.name, e.id)
+        log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
 
     has_errors = len(errors) > 0
     return Plan(create=plan.create,
@@ -323,9 +323,11 @@ class AppgatePlan:
 
 
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
-                             entity_clients: Dict[str, EntityClient]) -> AppgatePlan:
+                             entity_clients: Dict[str, EntityClient],
+                             k8s_configmap_client: K8SConfigMapClient) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
-    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k))
+    entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k),
+                                         k8s_configmap_client=k8s_configmap_client)
                      for k, v in appgate_plan.entities_plan.items()}
     return AppgatePlan(entities_plan=entities_plan)
 
@@ -336,15 +338,28 @@ def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
         for field, errors in field_values.items():
             p1 = "they are" if len(errors) > 1 else "it is"
             log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
-                     'in the system.', namespace, k, ', '.join(errors), field, p1)
+                      'in the system.', namespace, k, ', '.join(errors), field, p1)
 
 
-def compute_diff(e1: Entity_T, e2: Entity_T) -> List[str]:
-    e1_dump = json.dumps(DIFF_DUMPER.dump(e1), indent=4)
-    e2_dump = json.dumps(DIFF_DUMPER.dump(e2), indent=4)
+def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
+    """
+    Computes a list with differences between e1 and e2.
+    e1 is current entity
+    e2 is expected entity
+    """
+    e1_dump = DIFF_DUMPER.dump(e1.value)
+    e2_dump = DIFF_DUMPER.dump(e2.value)
+    if e2.has_secrets() and e2.changed_generation():
+        e1_dump['generation'] = e2.value.appgate_metadata.latest_generation
+        e2_dump['generation'] = e2.value.appgate_metadata.current_generation
+    elif e2.has_secrets() and e2.updated(e1):
+        updated_field = getattr(e1.value, 'updated', None)
+        if updated_field:
+            e1_dump['updated'] = dump_datetime(updated_field)
+            e2_dump['updated'] = dump_datetime(e2.value.appgate_metadata.modified)
     diff = list(
-        difflib.unified_diff(e1_dump.splitlines(keepends=True),
-                             e2_dump.splitlines(keepends=True), n=1))
+        difflib.unified_diff(json.dumps(e1_dump, indent=4).splitlines(keepends=True),
+                             json.dumps(e2_dump, indent=4).splitlines(keepends=True), n=1))
     return diff
 
 
@@ -415,10 +430,10 @@ def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
 
 def resolve_entity(entity: Entity_T,
                    field: str,
-                   names: Dict[str, Entity_T],
-                   ids: Dict[str, Entity_T],
+                   names: Dict[str, EntityWrapper],
+                   ids: Dict[str, EntityWrapper],
                    missing_dependencies: Dict[str, Dict[str, FrozenSet[str]]],
-                   reverse: bool = False) -> Optional[Entity_T]:
+                   reverse: bool = False) -> Optional[EntityWrapper]:
     new_dependencies = set()
     missing_dependencies_set = set()
     log.debug(f'Getting field %s in entity %s', field, entity.__class__.__name__)
@@ -452,9 +467,9 @@ def resolve_entity(entity: Entity_T,
         missing_dependencies[entity.name][field] = frozenset(missing_dependencies_set)
     if new_dependencies:
         if is_iterable:
-            return evolve_rec(entity, field.split('.'), frozenset(new_dependencies))
+            return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
         else:
-            return evolve_rec(entity, field.split('.'), list(new_dependencies)[0])
+            return EntityWrapper(evolve_rec(entity, field.split('.'), list(new_dependencies)[0]))
     return None
 
 
@@ -471,7 +486,7 @@ def resolve_entities(e1: EntitiesSet, dependencies: List[Tuple[EntitiesSet, str]
         for dependency_entities, field in dependencies:
             names = dependency_entities.entities_by_name
             ids = dependency_entities.entities_by_id
-            new_e = resolve_entity(new_e or e, field, names, ids, missing_entities, reverse)
+            new_e = resolve_entity((new_e or e).value, field, names, ids, missing_entities, reverse)
         if new_e:
             to_remove.add(e)
             to_add.add(new_e)

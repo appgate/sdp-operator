@@ -1,35 +1,37 @@
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
     compute_diff
+from appgate.types import EntityWrapper
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
-    join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD
+    join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD, _k8s_get_secret
 
 
 def test_compare_policies_0():
     current_policies = EntitiesSet({
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     })
     expected_policies = EntitiesSet(set())
     plan = compare_entities(current_policies, expected_policies)
+
     assert plan.delete.entities == {
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     }
     # test that the ids are propagated when modifying
     delete_ids = [p.id for p in plan.delete.entities]
@@ -42,21 +44,21 @@ def test_compare_policies_0():
 def test_compare_policies_1():
     current_policies = EntitiesSet(set())
     expected_policies = EntitiesSet({
-        Policy(name='policy1',
-               expression='expression-1'),
-        Policy(name='policy2',
-               expression='expression-2'),
-        Policy(name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(name='policy3',
+                             expression='expression-3'))
     })
     plan = compare_entities(current_policies, expected_policies)
     assert plan.create.entities == {
-        Policy(name='policy1',
-               expression='expression-1'),
-        Policy(name='policy2',
-               expression='expression-2'),
-        Policy(name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(name='policy3',
+                             expression='expression-3'))
     }
     assert plan.modify.entities == set()
     assert plan.delete.entities == set()
@@ -64,41 +66,41 @@ def test_compare_policies_1():
 
 def test_compare_policies_2():
     current_policies = EntitiesSet({
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     })
     expected_policies = EntitiesSet({
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     })
     plan = compare_entities(current_policies, expected_policies)
     assert plan.modify.entities == set()
     assert plan.delete.entities == set()
     assert plan.create.entities == set()
     assert plan.share.entities == {
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     }
     share_ids = [p.id for p in plan.share.entities]
     assert len(list(filter(None, share_ids))) == 3
@@ -108,74 +110,82 @@ def test_compare_policies_2():
 
 def test_compare_policies_3():
     current_policies = EntitiesSet({
-        Policy(id='id1',
-               name='policy3',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy4',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy3',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy4',
+                             expression='expression-3'))
     })
     expected_policies = EntitiesSet({
-        Policy(name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy4',
-               expression='expression-3')
+        EntityWrapper(Policy(name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy4',
+                             expression='expression-3'))
     })
     plan = compare_entities(current_policies, expected_policies)
-    assert plan.delete.entities == {Policy(id='id1', name='policy3', expression='expression-1')}
+    assert plan.delete.entities == {
+        EntityWrapper(Policy(id='id1', name='policy3', expression='expression-1'))
+    }
     # test that the ids are propagated when modifying
     assert [p.id for p in plan.delete.entities] == ['id1']
-    assert plan.create.entities == {Policy(name='policy1', expression='expression-1')}
+    assert plan.create.entities == {
+        EntityWrapper(Policy(name='policy1', expression='expression-1'))
+    }
     assert plan.modify.entities == set()
 
 
 def test_compare_policies_4():
     current_policies = EntitiesSet({
-        Policy(id='id0',
-               name='policy0',
-               expression='expression-0'),
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-1'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-2'),
-        Policy(id='id3',
-               name='policy3',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id0',
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             name='policy3',
+                             expression='expression-3'))
     })
     expected_policies = EntitiesSet({
-        Policy(id='id0',
-               name='policy0',
-               expression='expression-0'),
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-2'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-3'),
-        Policy(name='policy4',
-               expression='expression-4')
+        EntityWrapper(Policy(id='id0',
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-3')),
+        EntityWrapper(Policy(name='policy4',
+                             expression='expression-4'))
     })
     plan = compare_entities(current_policies, expected_policies)
-    assert plan.delete.entities == {Policy(id='id3', name='policy3', expression='expression-3')}
+    assert plan.delete.entities == {
+        EntityWrapper(Policy(id='id3', name='policy3', expression='expression-3'))
+    }
     # test that the ids are propagated when modifying
     assert [p.id for p in plan.delete.entities] == ['id3']
-    assert plan.create.entities == {Policy(name='policy4', expression='expression-4')}
+    assert plan.create.entities == {
+        EntityWrapper(Policy(name='policy4', expression='expression-4'))
+    }
     assert plan.modify.entities == {
-        Policy(id='id1',
-               name='policy1',
-               expression='expression-2'),
-        Policy(id='id2',
-               name='policy2',
-               expression='expression-3')
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-3'))
     }
 
 
@@ -189,16 +199,16 @@ def test_normalize_entitlements_0():
 
 def test_normalize_entitlements_1():
     entitlements = EntitiesSet({
-        entitlement(name='entitlement-1', conditions=[
+        EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'condition1',
             'condition2',
             'condition3'
-        ]),
-        entitlement(name='entitlement-2', conditions=[
+        ])),
+        EntityWrapper(entitlement(name='entitlement-2', conditions=[
             'condition1',
             'condition2',
             'condition3',
-        ]),
+        ])),
     })
     conditions = EntitiesSet()
     entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
@@ -215,59 +225,59 @@ def test_normalize_entitlements_1():
 
 def test_normalize_entitlements_2():
     entitlements = EntitiesSet({
-        entitlement(name='entitlement-1', conditions=[
+        EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'condition1',
             'condition2',
             'condition3'
-        ]),
-        entitlement(name='entitlement-2', conditions=[
+        ])),
+        EntityWrapper(entitlement(name='entitlement-2', conditions=[
             'condition1',
             'condition4',
             'condition5',
-        ]),
+        ])),
     })
     conditions = EntitiesSet({
-        condition(id='c1', name='condition1'),
-        condition(id='c2', name='condition2'),
-        condition(id='c3', name='condition3'),
-        condition(id='c4', name='condition4'),
-        condition(id='c5', name='condition5'),
+        EntityWrapper(condition(id='c1', name='condition1')),
+        EntityWrapper(condition(id='c2', name='condition2')),
+        EntityWrapper(condition(id='c3', name='condition3')),
+        EntityWrapper(condition(id='c4', name='condition4')),
+        EntityWrapper(condition(id='c5', name='condition5')),
     })
     entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
     assert entitlements_set.entities == {
-        entitlement(name='entitlement-1', conditions=[
+        EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'c1',
             'c2',
             'c3'
-        ]),
-        entitlement(name='entitlement-2', conditions=[
+        ])),
+        EntityWrapper(entitlement(name='entitlement-2', conditions=[
             'c1',
             'c4',
             'c5',
-        ]),
+        ])),
     }
     assert conflicts is None
 
 
 def test_normalize_entitlements_3():
     entitlements = EntitiesSet({
-        entitlement(name='entitlement-1', conditions=[
+        EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'condition1',
             'condition2',
             'condition3'
-        ]),
-        entitlement(name='entitlement-2', conditions=[
+        ])),
+        EntityWrapper(entitlement(name='entitlement-2', conditions=[
             'condition1',
             'condition4',
             'condition5',
-        ]),
+        ])),
     })
     conditions = EntitiesSet({
-        condition(id='id1', name='condition1'),
-        condition(id='id2', name='condition2'),
-        condition(id='id3', name='condition3'),
-        condition(name='condition4'),
-        condition(name='condition5'),
+        EntityWrapper(condition(id='id1', name='condition1')),
+        EntityWrapper(condition(id='id2', name='condition2')),
+        EntityWrapper(condition(id='id3', name='condition3')),
+        EntityWrapper(condition(name='condition4')),
+        EntityWrapper(condition(name='condition5')),
     })
     entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
     assert conflicts == {
@@ -287,16 +297,16 @@ def test_normalize_policies_0():
 
 def test_normalize_policies_1():
     policies = EntitiesSet({
-        policy(name='policy-1', entitlements=[
+        EntityWrapper(policy(name='policy-1', entitlements=[
             'entitlement1',
             'entitlement2',
             'entitlement3'
-        ]),
-        policy(name='policy-2', entitlements=[
+        ])),
+        EntityWrapper(policy(name='policy-2', entitlements=[
             'entitlement1',
             'entitlement2',
             'entitlement3',
-        ]),
+        ])),
     })
     entitlements = EntitiesSet()
     policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
@@ -312,58 +322,58 @@ def test_normalize_policies_1():
 
 def test_normalize_policies_2():
     policies = EntitiesSet({
-        policy(name='policy-1', entitlements=[
+        EntityWrapper(policy(name='policy-1', entitlements=[
             'entitlement1',
             'entitlement2',
             'entitlement3'
-        ]),
-        policy(name='policy-2', entitlements=[
+        ])),
+        EntityWrapper(policy(name='policy-2', entitlements=[
             'entitlement1',
             'entitlement4',
             'entitlement5',
-        ]),
+        ])),
     })
     entitlements = EntitiesSet({
-            entitlement(id='e1', name='entitlement1'),
-            entitlement(id='e2', name='entitlement2'),
-            entitlement(id='e3', name='entitlement3'),
-            entitlement(id='e4', name='entitlement4'),
-            entitlement(id='e5', name='entitlement5'),
+            EntityWrapper(entitlement(id='e1', name='entitlement1')),
+            EntityWrapper(entitlement(id='e2', name='entitlement2')),
+            EntityWrapper(entitlement(id='e3', name='entitlement3')),
+            EntityWrapper(entitlement(id='e4', name='entitlement4')),
+            EntityWrapper(entitlement(id='e5', name='entitlement5')),
         })
     policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
     assert conflicts is None
     assert policies_set.entities == {
-        policy(name='policy-1', entitlements=[
+        EntityWrapper(policy(name='policy-1', entitlements=[
             'e1',
             'e2',
             'e3'
-        ]),
-        policy(name='policy-2', entitlements=[
+        ])),
+        EntityWrapper(policy(name='policy-2', entitlements=[
             'e1',
             'e4',
             'e5',
-        ]),
+        ])),
     }
 
 
 def test_normalize_policies_3():
     policies = EntitiesSet({
-        policy(name='policy-1', entitlements=[
+        EntityWrapper(policy(name='policy-1', entitlements=[
             'entitlement1',
             'entitlement2',
             'entitlement3'
-        ]),
-        policy(name='policy-2', entitlements=[
+        ])),
+        EntityWrapper(policy(name='policy-2', entitlements=[
             'entitlement1',
             'entitlement4',
             'entitlement5',
-        ]),
+        ])),
     })
     entitlements = EntitiesSet({
-        entitlement(id='id1', name='entitlement1'),
-        entitlement(id='id2', name='entitlement2'),
-        entitlement(id='id3', name='entitlement3'),
-        entitlement(name='entitlement5')
+        EntityWrapper(entitlement(id='id1', name='entitlement1')),
+        EntityWrapper(entitlement(id='id2', name='entitlement2')),
+        EntityWrapper(entitlement(id='id3', name='entitlement3')),
+        EntityWrapper(entitlement(name='entitlement5'))
     })
     policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
     assert conflicts == {
@@ -382,24 +392,24 @@ def test_dependencies_1():
     EntityDep1 = api.entities['EntityDep1'].cls
     EntityDep3 = api.entities['EntityDep3'].cls
     deps1 = EntitiesSet({
-        EntityDep1(id='d11', name='dep11'),
-        EntityDep1(id='d12', name='dep12'),
-        EntityDep1(id='d13', name='dep13'),
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     deps3 = EntitiesSet({
-        EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}))
+        EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'})))
     })
 
     # No conflits
     deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
     assert conflicts is None
     assert deps3_resolved.entities == {
-        EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}))
+        EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'})))
     }
 
     # Conflicts
     deps3 = EntitiesSet({
-        EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'}))
+        EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'})))
     })
     deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
     assert conflicts == {
@@ -420,33 +430,33 @@ def test_dependencies_2():
     EntityDep2 = api.entities['EntityDep2'].cls
     EntityDep4 = api.entities['EntityDep4'].cls
     deps1 = EntitiesSet({
-        EntityDep1(id='d11', name='dep11'),
-        EntityDep1(id='d12', name='dep12'),
-        EntityDep1(id='d13', name='dep13'),
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     deps2 = EntitiesSet({
-        EntityDep2(id='d21', name='dep21'),
-        EntityDep2(id='d22', name='dep22'),
-        EntityDep2(id='d23', name='dep23'),
+        EntityWrapper(EntityDep2(id='d21', name='dep21')),
+        EntityWrapper(EntityDep2(id='d22', name='dep22')),
+        EntityWrapper(EntityDep2(id='d23', name='dep23')),
     })
 
     # no conflicts
     deps4 = EntitiesSet({
-        EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}),
-                   dep2='dep23')
+        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}),
+                                 dep2='dep23'))
     })
     deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
                                                          (deps2, 'dep2')])
     assert conflicts is None
     assert deps3_resolved.entities == {
-        EntityDep4(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}),
-                   dep2='d23')
+        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}),
+                                 dep2='d23'))
     }
 
     # conflicts in field deps1
     deps4 = EntitiesSet({
-        EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'}),
-                   dep2='dep33')
+        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'}),
+                                 dep2='dep33'))
     })
     deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
                                                          (deps2, 'dep2')])
@@ -469,9 +479,9 @@ def test_dependencies_3():
     EntityDep5_Obj1 = api.entities['EntityDep5_Obj1'].cls
     EntityDep5_Obj1_Obj2 = api.entities['EntityDep5_Obj1_Obj2'].cls
     deps1 = EntitiesSet({
-        EntityDep1(id='d11', name='dep11'),
-        EntityDep1(id='d12', name='dep12'),
-        EntityDep1(id='d13', name='dep13'),
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     data = {
         'id': 'd51',
@@ -483,13 +493,13 @@ def test_dependencies_3():
         }
     }
     deps5 = EntitiesSet({
-        K8S_LOADER.load(data, None, EntityDep5)
+        EntityWrapper(K8S_LOADER.load(data, None, EntityDep5))
     })
     deps5_resolved, conflicts = resolve_entities(deps5, [(deps1, 'obj1.obj2.dep1')])
     assert conflicts is None
     assert deps5_resolved.entities == {
-        EntityDep5(id='d51', name='dep51',
-                   obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1='d11')))
+        EntityWrapper(EntityDep5(id='d51', name='dep51',
+                                 obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1='d11'))))
     }
 
 
@@ -509,27 +519,27 @@ def test_dependencies_4():
     EntityDep6_Obj1_Obj2_Deps1 = test_api_spec.entities['EntityDep6_Obj1_Obj2_Deps1'].cls
 
     deps1 = EntitiesSet({
-        EntityDep1(id='d11', name='dep11'),
-        EntityDep1(id='d12', name='dep12'),
-        EntityDep1(id='d13', name='dep13'),
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     deps2 = EntitiesSet({
-        EntityDep2(id='d21', name='dep21'),
-        EntityDep2(id='d22', name='dep22'),
-        EntityDep2(id='d23', name='dep23'),
+        EntityWrapper(EntityDep2(id='d21', name='dep21')),
+        EntityWrapper(EntityDep2(id='d22', name='dep22')),
+        EntityWrapper(EntityDep2(id='d23', name='dep23')),
     })
     deps3 = EntitiesSet({
-        EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'})),
-        EntityDep3(id='d32', name='dep32', deps1=frozenset({'dep11', 'dep13'})),
-        EntityDep3(id='d33', name='dep33', deps1=frozenset({'dep12', 'dep13'})),
+        EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}))),
+        EntityWrapper(EntityDep3(id='d32', name='dep32', deps1=frozenset({'dep11', 'dep13'}))),
+        EntityWrapper(EntityDep3(id='d33', name='dep33', deps1=frozenset({'dep12', 'dep13'}))),
     })
     deps4 = EntitiesSet({
-        EntityDep4(id='d41', name='dep41', deps1=frozenset({'dep11', 'dep12'}),
-                   dep2='dep21'),
-        EntityDep4(id='d42', name='dep42', deps1=frozenset({'dep11', 'dep13'}),
-                   dep2='dep22'),
-        EntityDep4(id='d43', name='dep43', deps1=frozenset({'dep12', 'dep13'}),
-                   dep2='dep23'),
+        EntityWrapper(EntityDep4(id='d41', name='dep41', deps1=frozenset({'dep11', 'dep12'}),
+                                 dep2='dep21')),
+        EntityWrapper(EntityDep4(id='d42', name='dep42', deps1=frozenset({'dep11', 'dep13'}),
+                                 dep2='dep22')),
+        EntityWrapper(EntityDep4(id='d43', name='dep43', deps1=frozenset({'dep12', 'dep13'}),
+                                 dep2='dep23')),
     })
 
     # no conflicts
@@ -550,7 +560,7 @@ def test_dependencies_4():
         }
     }
     deps6 = EntitiesSet({
-        K8S_LOADER.load(data, None, EntityDep6)
+        EntityWrapper(K8S_LOADER.load(data, None, EntityDep6))
     })
     appgate_state = AppgateState(entities_set={
         'EntityDep1': deps1,
@@ -563,39 +573,39 @@ def test_dependencies_4():
     conflicts = resolve_appgate_state(appgate_state, test_api_spec)
     assert conflicts == {}
     assert appgate_state.entities_set['EntityDep1'].entities == {
-        EntityDep1(id='d11', name='dep11'),
-        EntityDep1(id='d12', name='dep12'),
-        EntityDep1(id='d13', name='dep13'),
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
     }
     assert appgate_state.entities_set['EntityDep2'].entities == {
-        EntityDep2(id='d21', name='dep21'),
-        EntityDep2(id='d22', name='dep22'),
-        EntityDep2(id='d23', name='dep23'),
+        EntityWrapper(EntityDep2(id='d21', name='dep21')),
+        EntityWrapper(EntityDep2(id='d22', name='dep22')),
+        EntityWrapper(EntityDep2(id='d23', name='dep23')),
     }
     assert appgate_state.entities_set['EntityDep3'].entities == {
-        EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'})),
-        EntityDep3(id='d32', name='dep32', deps1=frozenset({'d11', 'd13'})),
-        EntityDep3(id='d33', name='dep33', deps1=frozenset({'d12', 'd13'})),
+        EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}))),
+        EntityWrapper(EntityDep3(id='d32', name='dep32', deps1=frozenset({'d11', 'd13'}))),
+        EntityWrapper(EntityDep3(id='d33', name='dep33', deps1=frozenset({'d12', 'd13'}))),
     }
     assert appgate_state.entities_set['EntityDep4'].entities == {
-        EntityDep4(id='d41', name='dep41', deps1=frozenset({'d11', 'd12'}),
-                   dep2='d21'),
-        EntityDep4(id='d42', name='dep42', deps1=frozenset({'d11', 'd13'}),
-                   dep2='d22'),
-        EntityDep4(id='d43', name='dep43', deps1=frozenset({'d12', 'd13'}),
-                   dep2='d23'),
+        EntityWrapper(EntityDep4(id='d41', name='dep41', deps1=frozenset({'d11', 'd12'}),
+                   dep2='d21')),
+        EntityWrapper(EntityDep4(id='d42', name='dep42', deps1=frozenset({'d11', 'd13'}),
+                                 dep2='d22')),
+        EntityWrapper(EntityDep4(id='d43', name='dep43', deps1=frozenset({'d12', 'd13'}),
+                                 dep2='d23')),
     }
     assert appgate_state.entities_set['EntityDep6'].entities == {
-        EntityDep6(name='dep61',
-                   deps4=frozenset({'d42', 'd41'}),
-                   obj1=EntityDep6_Obj1(dep3='d31',
-                                        obj2=EntityDep6_Obj1_Obj2(
-                                            deps1=frozenset({
-                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep11'),
-                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep12'),
-                                                EntityDep6_Obj1_Obj2_Deps1(dep1='dep13'),
-                                            }),
-                                            deps2=frozenset({'d21', 'd22'}))))
+        EntityWrapper(EntityDep6(name='dep61',
+                                 deps4=frozenset({'d42', 'd41'}),
+                                 obj1=EntityDep6_Obj1(dep3='d31',
+                                                      obj2=EntityDep6_Obj1_Obj2(
+                                                          deps1=frozenset({
+                                                              EntityDep6_Obj1_Obj2_Deps1(dep1='dep11'),
+                                                              EntityDep6_Obj1_Obj2_Deps1(dep1='dep12'),
+                                                              EntityDep6_Obj1_Obj2_Deps1(dep1='dep13'),
+                                                          }),
+                                                          deps2=frozenset({'d21', 'd22'})))))
     }
 
     # Test empty list in dependencies
@@ -611,7 +621,7 @@ def test_dependencies_4():
         }
     }
     deps6 = EntitiesSet({
-        K8S_LOADER.load(data, None, EntityDep6)
+        EntityWrapper(K8S_LOADER.load(data, None, EntityDep6))
     })
     appgate_state = AppgateState(entities_set={
         'EntityDep1': deps1,
@@ -624,12 +634,12 @@ def test_dependencies_4():
     conflicts = resolve_appgate_state(appgate_state, test_api_spec)
     assert conflicts == {}
     assert appgate_state.entities_set['EntityDep6'].entities == {
-        EntityDep6(name='dep61',
-                   deps4=frozenset(),
-                   obj1=EntityDep6_Obj1(dep3='d31',
-                                        obj2=EntityDep6_Obj1_Obj2(
-                                            deps1=frozenset(),
-                                            deps2=frozenset({'d21', 'd22'}))))
+        EntityWrapper(EntityDep6(name='dep61',
+                                 deps4=frozenset(),
+                                 obj1=EntityDep6_Obj1(dep3='d31',
+                                                      obj2=EntityDep6_Obj1_Obj2(
+                                                          deps1=frozenset(),
+                                                          deps2=frozenset({'d21', 'd22'})))))
     }
 
 
@@ -647,7 +657,7 @@ def test_compare_plan_entity_bytes():
         'fieldThree': 1563,
     }
     entities_current = EntitiesSet({
-        APPGATE_LOADER.load(e_data, None, EntityTest3Appgate)
+        EntityWrapper(APPGATE_LOADER.load(e_data, None, EntityTest3Appgate))
     })
     e_data = {
         'name': 'entity1',
@@ -659,13 +669,14 @@ def test_compare_plan_entity_bytes():
         'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
     }
     entities_expected = EntitiesSet({
-        K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
+        EntityWrapper(K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate))
     })
     plan = compare_entities(entities_current, entities_expected)
     assert plan.modify.entities == frozenset()
     assert plan.modifications_diff == {}
 
-    assert compute_diff(list(entities_current.entities)[0], list(entities_expected.entities)[0]) == []
+    assert compute_diff(list(entities_current.entities)[0],
+                        list(entities_expected.entities)[0]) == []
 
     # Let's change the bytes
     e_data = {
@@ -676,9 +687,9 @@ def test_compare_plan_entity_bytes():
     }
     new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
 
-    entities_expected = EntitiesSet({new_e})
+    entities_expected = EntitiesSet({EntityWrapper(new_e)})
     plan = compare_entities(entities_current, entities_expected)
-    assert plan.modify.entities == frozenset({new_e})
+    assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'entity1': ['--- \n', '+++ \n', '@@ -2,4 +2,4 @@\n',
                     '     "name": "entity1",\n',
@@ -730,14 +741,14 @@ def test_compare_plan_entity_pem():
         'fieldOne': PEM2
     }
     current_entities = EntitiesSet({
-        APPGATE_LOADER.load(appgate_data, None, EntityCert)
+        EntityWrapper(APPGATE_LOADER.load(appgate_data, None, EntityCert))
     })
     new_e = K8S_LOADER.load(k8s_data, None, EntityCert)
     expected_entities = EntitiesSet({
-        new_e
+        EntityWrapper(new_e)
     })
     plan = compare_entities(current_entities, expected_entities)
-    assert plan.modify.entities == frozenset({new_e})
+    assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'c1': [
             '--- \n', '+++ \n', '@@ -3,10 +3,10 @@\n',
@@ -774,3 +785,90 @@ def test_compare_plan_entity_pem():
             '0tLQo="\n'
         ]
     }
+
+
+def test_compare_entities_generation_changed():
+    EntityTest2 = load_test_open_api_spec(reload=True,
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    appgate_metadata = {
+        'generation': 2,
+        'latestGeneration': 1,
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-10T12:20:14Z',
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
+    diff = compute_diff(e2, e1)
+    assert diff == [
+        '--- \n',
+        '+++ \n',
+        '@@ -2,3 +2,3 @@\n',
+        '     "fieldThree": "this is a field",\n',
+        '-    "generation": 1\n',
+        '+    "generation": 2\n',
+        ' }'
+    ]
+
+
+def test_compare_entities_updated_changed():
+    EntityTest2 = load_test_open_api_spec(reload=True,
+                                          k8s_get_secret=_k8s_get_secret).entities['EntityTest2'].cls
+    data_1 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+    }
+    data_2 = {
+        'fieldOne': {
+            'type': 'k8s/secret',
+            'name': 'secret-storage-1',
+            'key': 'field-one'
+        },
+        'fieldTwo': 'this is write only',
+        'fieldThree': 'this is a field',
+        'created': '2020-09-10T12:20:14Z',
+        'updated': '2020-09-10T12:20:14Z'
+    }
+    appgate_metadata = {
+        'generation': 1,
+        'latestGeneration': 1,
+        'creationTimestamp': '2020-09-10T10:20:14Z',
+        'modificationTimestamp': '2020-09-16T12:20:14Z',
+    }
+    e1 = EntityWrapper(K8S_LOADER.load(data_1, appgate_metadata, EntityTest2))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2))
+
+    diff = compute_diff(e2, e1)
+    assert diff == [
+        '--- \n',
+        '+++ \n',
+        '@@ -2,3 +2,3 @@\n',
+        '     "fieldThree": "this is a field",\n',
+        '-    "updated": "2020-09-10T12:20:14.000Z"\n',
+        '+    "updated": "2020-09-16T12:20:14.000Z"\n',
+        ' }'
+    ]
