@@ -198,7 +198,7 @@ class AppgateState:
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
             entity_password_fields = dump_entities(self.entities_set[k].entities, p, k)
             if entity_password_fields:
-               password_fields[k] = entity_password_fields
+                password_fields[k] = entity_password_fields
         print('Passwords found in entities:')
         for entity_name, pwd_fields in password_fields.items():
             print(f'+ Entity: {entity_name}')
