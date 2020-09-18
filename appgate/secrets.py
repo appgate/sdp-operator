@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from typing import Dict, List, Union, Optional, Callable
 
@@ -191,7 +192,8 @@ def k8s_get_secret(namespace: str, secret: str, key: str) -> str:
     Gets a secret from k8s
     """
     v1 = CoreV1Api()
-    data = v1.read_namespaced_secret(secret, namespace).data
+    resp = v1.read_namespaced_secret(name=secret, namespace=namespace)
+    data = resp.data
     k8s_secret = data.get(key)
     if not k8s_secret:
         raise AppgateSecretException(f'Unable to get secret {secret}.{key} '

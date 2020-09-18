@@ -201,7 +201,7 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     # now
                     unique_entity_name = f'{event.kind}-{name}'
                     mt = ev.object.metadata
-                    latest_entity_generation = await k8s_configmap_client.read(entity_unique_id(kind, name))
+                    latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
                     if latest_entity_generation:
                         mt['latestGeneration'] = latest_entity_generation.generation
                         mt['modified'] = dump_datetime(latest_entity_generation.modified)
@@ -222,20 +222,20 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
 
 
 async def start_entity_loop(ctx: Context, crd: str, entity_type: Type[Entity_T],
-                            queue: Queue[AppgateEvent]) -> None:
+                            queue: Queue[AppgateEvent], k8s_configmap_client: K8SConfigMapClient) -> None:
     log.debug('[%s/%s] Starting loop event for entities on path: %s', crd, ctx.namespace,
               crd)
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(target=run_entity_loop,
-                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type),
+                             args=(ctx, crd, loop, queue, K8S_LOADER.load, entity_type, k8s_configmap_client),
                              daemon=True)
         t.start()
 
     await asyncio.to_thread(run, asyncio.get_event_loop())  # type: ignore
 
 
-async def main_loop(queue: Queue, ctx: Context) -> None:
+async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient) -> None:
     namespace = ctx.namespace
     log.info('[appgate-operator/%s] Main loop started:', namespace)
     log.info('[appgate-operator/%s]   + namespace: %s', namespace, namespace)
@@ -246,7 +246,6 @@ async def main_loop(queue: Queue, ctx: Context) -> None:
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
-    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(

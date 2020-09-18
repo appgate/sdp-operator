@@ -7,6 +7,7 @@ from typing import Optional, Dict, List
 import datetime
 import time
 
+from appgate.client import K8SConfigMapClient
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, start_entity_loop, log
@@ -19,16 +20,19 @@ from appgate.types import AppgateEvent
 async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
     ctx = init_kubernetes(namespace, spec_directory=spec_directory)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
+    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
+    await k8s_configmap_client.init()
     tasks = [
                 start_entity_loop(
                     ctx=ctx,
                     queue=events_queue,
                     crd=entity_names(e.cls, {})[2],
-                    entity_type=e.cls)
+                    entity_type=e.cls,
+                    k8s_configmap_client=k8s_configmap_client)
                 for e in ctx.api_spec.entities.values()
                 if e.api_path
             ] + [
-                main_loop(queue=events_queue, ctx=ctx)
+                main_loop(queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client)
             ]
 
     await asyncio.gather(*tasks)
