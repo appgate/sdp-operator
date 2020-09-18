@@ -110,7 +110,7 @@ class K8SConfigMapClient:
         })
         self._configmap_mt = configmap.metadata
         self._entries = {
-            k: load_latest_entity_generation(k, v) for k, v in configmap.data.items()
+            k: load_latest_entity_generation(k, v) for k, v in (configmap.data or {}).items()
         }
 
     def read(self, key: str) -> Optional[LatestEntityGeneration]:
