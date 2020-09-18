@@ -122,7 +122,7 @@ class K8SConfigMapClient:
         prev_entry = self._entries.get(key) or LatestEntityGeneration()
         self._entries[key] = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
-            modified=datetime.datetime.now())
+            modified=datetime.datetime.now().astimezone())
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: dump_latest_entity_generation(self._entries[key])
         }, metadata=self._configmap_mt)
