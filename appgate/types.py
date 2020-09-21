@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Any, FrozenSet
+from typing import Dict, Any, FrozenSet, Optional, List
 from attr import attrib, attrs, evolve
 
 from appgate.openapi.types import Entity_T
@@ -12,6 +12,20 @@ __all__ = [
     'EntityWrapper',
     'LatestEntityGeneration',
 ]
+
+
+@attrs(slots=True, frozen=True)
+class OperatorArguments:
+    namespace: Optional[str] = attrib(default=None)
+    spec_directory: Optional[str] = attrib(default=None)
+    dry_run: bool = attrib(default=False)
+    host: Optional[str] = attrib(default=None)
+    user: Optional[str] = attrib(default=None)
+    password: Optional[str] = attrib(default=None)
+    two_way_sync: bool = attrib(default=True)
+    timeout: str = attrib(default='30')
+    cleanup: bool = attrib(default=True)
+    target_tags: Optional[List[str]] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)

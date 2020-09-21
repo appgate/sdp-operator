@@ -25,7 +25,7 @@ from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, LatestEntityGeneration
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, OperatorArguments
 
 __all__ = [
     'init_kubernetes',
@@ -79,22 +79,23 @@ class Context:
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
 
-def get_context(namespace: str, spec_directory: Optional[str],
-                k8s_get_secret: Optional[Callable[[str, str], str]],
-                target_tags: Optional[List[str]] = None) -> Context:
-    user = os.getenv(USER_ENV)
-    password = os.getenv(PASSWORD_ENV)
-    controller = os.getenv(HOST_ENV)
-    timeout = os.getenv(TIMEOUT_ENV)
-    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or '1'
-    dry_run_mode = os.getenv(DRY_RUN_ENV) or '1'
-    cleanup_mode = os.getenv(CLEANUP_ENV) or '1'
-    spec_directory = os.getenv(SPEC_DIR_ENV) or spec_directory or SPEC_DIR
+def get_context(args: OperatorArguments,
+                k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> Context:
+    if not args.namespace:
+        raise Exception('Namespace must be defined in order to run the appgate-operator')
+    user = os.getenv(USER_ENV) or args.user
+    password = os.getenv(PASSWORD_ENV) or args.password
+    controller = os.getenv(HOST_ENV) or args.host
+    timeout = os.getenv(TIMEOUT_ENV) or args.timeout
+    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
+    dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
+    cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
+    spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
-    target_tags_arg = frozenset(target_tags) if target_tags else frozenset()
+    target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
         frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
-    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or f'{namespace}-configmap'
+    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or f'{args.namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -106,8 +107,8 @@ def get_context(namespace: str, spec_directory: Optional[str],
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
-    return Context(namespace=namespace, user=user, password=password,
-                   controller=controller, timeout=int(timeout) if timeout else 30,
+    return Context(namespace=args.namespace, user=user, password=password,
+                   controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
@@ -116,22 +117,21 @@ def get_context(namespace: str, spec_directory: Optional[str],
                    metadata_configmap=metadata_configmap)
 
 
-def init_kubernetes(namespace: Optional[str] = None, spec_directory: Optional[str] = None) -> Context:
+def init_kubernetes(args: OperatorArguments) -> Context:
     if 'KUBERNETES_PORT' in os.environ:
         load_incluster_config()
         # TODO: Discover it somehow
         # https://github.com/kubernetes-client/python/issues/363
-        namespace = namespace or os.getenv(NAMESPACE_ENV)
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
-        namespace = namespace or list_kube_config_contexts()[1]['context'].get('namespace')
+        namespace = args.namespace or list_kube_config_contexts()[1]['context'].get('namespace')
 
     if not namespace:
         raise Exception('Unable to discover namespace, please provide it.')
     ns: str = namespace  # lambda thinks it's an Optional
     return get_context(
-        namespace,
-        spec_directory,
+        args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns,
             key=key,
