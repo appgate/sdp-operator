@@ -30,4 +30,4 @@ jobs:
         MYPYPATH=mypy-stubs mypy appgate
     - name: Test with pytest
       run: |
-        pytest tests
+        PYTHONPATH=. pytest tests
