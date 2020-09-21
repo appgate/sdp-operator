@@ -124,8 +124,6 @@ def get_appgate_secret(value: PasswordField, secrets_cipher: Optional[Fernet],
       - dict:
         - AppgateSecretK8SSecretSimple
           {'type': 'k8s/secret', 'password': 'secret1'}
-        - AppgateSecretK8SSecretKey
-          {'type': 'k8s/secret-key', 'key': 'secret1'}
     """
     if AppgateSecretK8S.isinstance(value):
         if not k8s_get_client:
