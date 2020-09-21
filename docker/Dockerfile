@@ -9,7 +9,7 @@ RUN python3 -m venv /root/venv && \
     /root/venv/bin/pip install -r /root/requirements.txt && \
     apt-get autoremove gcc --yes
 COPY appgate /root/appgate/
-COPY api_specs /root/api_specs/
+COPY api_specs /root/appgate/api_specs/
 COPY docker/assets/run.sh /root/run.sh
 RUN chmod +x /root/run.sh
 WORKDIR /root
