@@ -110,11 +110,17 @@ def main() -> None:
     run.add_argument('--host', help='Controller host to connect', default=None)
     run.add_argument('--user', help='Username used for authentication', default=None)
     run.add_argument('--password', help='Password used for authentication', default=None)
+    run.add_argument('--cleanup', help='Delete entities not defined in expected state', default=True)
+    run.add_argument('--mt-config-map', help='Name for the configmap used for metadata',
+                     default=True)
     run.add_argument('--two-way-sync', help='Always update current state with latest appgate'
                                             ' state before applying a plan', default=True)
     run.add_argument('-t', '--tags', action='append',
-                               help='Tags to filter entities. Only entities with any of those tags will be dumped',
-                               default=[])
+                     help='Tags to filter entities. Only entities with any of those tags will be dumped',
+                     default=[])
+    run.add_argument('--timeout', help='Event loop timeout to determine when there are not more events',
+                     default=30)
+
     # dump entities
     dump_entities = subparsers.add_parser('dump-entities')
     dump_entities.set_defaults(cmd='dump-entities')
@@ -145,7 +151,8 @@ def main() -> None:
         main_run(OperatorArguments(
             namespace=args.namespace, spec_directory=args.spec_directory,
             dry_run=args.dry_run, user=args.user, password=args.password,
-            host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags))
+            host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
+            cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map))
     elif args.cmd == 'dump-entities':
         main_dump_entities(
             OperatorArguments(namespace='cli', spec_directory=args.spec_directory, target_tags=args.tags),

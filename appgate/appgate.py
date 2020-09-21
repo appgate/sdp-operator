@@ -95,7 +95,7 @@ def get_context(args: OperatorArguments,
     target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
         frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
-    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or f'{args.namespace}-configmap'
+    metadata_configmap = os.getenv(APPGATE_CONFIGMAP_ENV) or args.metadata_configmap or f'{args.namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
