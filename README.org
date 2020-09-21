@@ -21,7 +21,7 @@ The entities supported by the operator are:
 
    - Policy
    - Condition
-   - Eentitlement
+   - Entitlement
    - RingfenceRule
    - Appliance
    - Site
@@ -40,12 +40,12 @@ The entities supported by the operator are:
    - ClientConnection
 
 ** How it works
-Appgate entities are defined in terms of CRD in the k8s cluster so they can be
-managed (created, deleted or modified) using `kubctl` command with yaml files
+Appgate entities are defined in terms of [[https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/][CRD]] in the k8s cluster so they can be
+managed (created, deleted or modified) using `kubectl` command with yaml files
 representing those CRD. (see the directory `examples`).
 
-The appgate-operator when running will listen for changes on those CRD entities,
-note that the operator listen events inside a namespace.
+The appgate-operator, when running, will listen for changes on those CRD entities,
+note that the operator listen to events inside a namespace.
 
 When the operator starts, it gets the actual state from the appgate controller
 and from there it starts listening for events.
@@ -195,7 +195,7 @@ If the variable ~APPGATE_OPERATOR_FERNET_KEY~ is set and the value of the secret
 is a string then the operator will use the key to decrypt the secret.
 
 **** k8s secret store
-We can also use k8s secrets store mechanism to save the secrets and reference
+We can also use k8s the secrets store mechanism to save the secrets and reference
 them in the yaml file. In this case we just set the value of the field with the
 secret to a dictionary like this
 
@@ -206,11 +206,18 @@ secret to a dictionary like this
 
 *** bytes
 Some fields require bytes as a value (contents from a file for example) encoded
-in base64. For now we only support the enoded value directly in the yaml file.
+in base64. For now we only support the value encoded as base64 directly in the
+yaml file.
 
 ** Building
-We build one image per API version. Each image uses that specific API version by
-default but contains the specs for all the API versions supported.
+The appgate-operator is provided as a docker image tagged with the appgate API
+version. For example:
+
+ - appgate-operator:v12
+ - appgate-operator:v13
+
+Each image uses that specific API version by default but contains the specs for
+all the API versions supported.
 
 To build the images we use a docker image as a builder with all the dependencies
 needed.
@@ -348,7 +355,7 @@ Now the operator should get the new events and reacto to them.
 ** Deploying the operator on a cluster
 To deploy on a real k8s cluster follow these steps:
 
-To deploy the oeprator inside the k8s cluster we need to follow almost the same
+To deploy the operator inside the k8s cluster we need to follow almost the same
 steps as before. The only difference is that now we will create a deployment for
 the operator and it will run inside the cluster.
 
