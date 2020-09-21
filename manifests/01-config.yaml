@@ -2,10 +2,14 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: appgate-operator-conf
-  namespace: appgate-test-1
 data:
   appgate-operator-host: "https://ec2-3-82-220-231.compute-1.amazonaws.com:444"
-  appgate-operator-timeout: "5"
+  appgate-operator-timeout: "30"
   appgate-operator-dry-run: "0"
   appgate-operator-cleanup: "1"
   appgate-operator-two-way-sync: "1"
+  # Uncomment this if you want to use a FERNET key to decrypt secrets
+  # appgate-operator-fernet-key "FERNET_KEY_VALUE"
+  # Uncomment this if you want to replace the configmap store
+  # used to save entities metadata
+  # appgate-operator-config-map

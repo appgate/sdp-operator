@@ -1,0 +1,61 @@
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: simple-setup-ipv6
+  passwords: []
+  singleton: false
+  uuid: 60329888-6162-4835-8d27-957b12662410
+spec:
+  ipVersion6: true
+  name: simple_setup_ipv6
+  ranges:
+  - first: 2001:db8::1400:0
+    last: 2001:db8::14ff:ffff
+  tags:
+  - setup
+---
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: default-pool-v6
+  passwords: []
+  singleton: false
+  uuid: 6935b379-205d-4fdd-847f-a0b5f14aff53
+spec:
+  ipVersion6: true
+  name: default pool v6
+  ranges:
+  - first: fd00::ffff:c0a8:6401
+    last: fd00::ffff:c0a8:64fe
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: simple-setup-ipv4
+  passwords: []
+  singleton: false
+  uuid: bc5f8c54-23b7-4e36-852d-f93fc0480f73
+spec:
+  name: simple_setup_ipv4
+  ranges:
+  - first: 15.0.0.0
+    last: 15.255.255.254
+  tags:
+  - setup
+---
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: default-pool-v4
+  passwords: []
+  singleton: false
+  uuid: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+spec:
+  name: default pool v4
+  ranges:
+  - first: 192.168.100.1
+    last: 192.168.100.254
+  tags:
+  - builtin

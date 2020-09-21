@@ -1,0 +1,11 @@
+apiVersion: beta.appgate.com/v1
+kind: ClientConnection
+metadata:
+  name: clientconnection
+  passwords: []
+  singleton: true
+spec:
+  profiles:
+  - identityProviderName: local
+    name: test
+    spaKeyName: test

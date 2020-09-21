@@ -1,0 +1,51 @@
+apiVersion: beta.appgate.com/v1
+kind: RingfenceRule
+metadata:
+  name: block-in
+  passwords: []
+  singleton: false
+  uuid: bb4685b0-ae57-4ad4-b026-413699b25640
+spec:
+  actions:
+  - action: block 
+    direction: in
+    hosts: ['0.0.0.0/0', '::0']
+    ports: ['1-65535']
+    protocol: tcp
+  - action: block 
+    direction: in
+    hosts: ['0.0.0.0/0', '::0']
+    ports: ['1-65535']
+    protocol: udp
+  - action: block 
+    direction: in
+    hosts: ['0.0.0.0/0']
+    types: ['0-255']
+    protocol: icmp
+  - action: block 
+    direction: in
+    hosts: ['::0']
+    types: ['0-255']
+    protocol: icmpv6
+  name: Block-in
+  notes: "Built-in ringfence rule to block all in traffic on the device. Replaces the old 'deviceRingfence' flag."
+  tags: [builtin]
+---
+apiVersion: beta.appgate.com/v1
+kind: RingfenceRule
+metadata:
+  name: block-google-dns
+  passwords: []
+  singleton: false
+  uuid: f197f3d9-236b-436f-9155-1b967fb6d41b
+spec:
+  actions:
+  - action: allow
+    direction: out
+    hosts: [8.8.8.8]
+    ports: ['53']
+    protocol: tcp
+  name: block google dns
+  notes: Fence the ring
+  tags: [some, tag]
+

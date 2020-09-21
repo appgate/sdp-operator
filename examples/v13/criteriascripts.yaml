@@ -1,0 +1,26 @@
+apiVersion: beta.appgate.com/v1
+kind: CriteriaScripts
+metadata:
+  name: everyone
+  passwords: []
+  singleton: false
+  uuid: 7c643920-7112-11e6-8b77-86f30ca893d3
+spec:
+  expression: return true;
+  name: Everyone
+  notes: Filter for built-in Everyone.
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: CriteriaScripts
+metadata:
+  name: noone
+  passwords: []
+  singleton: false
+spec:
+  expression: return false;
+  name: Noone
+  notes: Something something something
+  tags:
+  - operator

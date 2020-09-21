@@ -1,0 +1,37 @@
+apiVersion: beta.appgate.com/v1
+kind: TrustedCertificate
+metadata:
+  name: test-vsphere 
+  passwords: []
+  singleton: false
+  uuid: 723d1a69-aef4-42ba-beaa-df3eaa8ad62a
+spec:
+  name: Test Vsphere
+  notes: got-env-vc.agi.appgate.com
+  pem: |
+    -----BEGIN CERTIFICATE-----
+    MIIEMTCCAxmgAwIBAgIJAMBKHz3hm2cvMA0GCSqGSIb3DQEBCwUAMIGjMQswCQYD
+    VQQDDAJDQTEZMBcGCgmSJomT8ixkARkWCWRjMmRldm9wczEVMBMGCgmSJomT8ixk
+    ARkWBWxvY2FsMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEjMCEG
+    A1UECgwaZ290LWVudi12Yy5hZ2kuYXBwZ2F0ZS5jb20xGzAZBgNVBAsMElZNd2Fy
+    ZSBFbmdpbmVlcmluZzAeFw0yMDA2MjcwOTM0NThaFw0zMDA2MjUwOTM0NThaMIGj
+    MQswCQYDVQQDDAJDQTEZMBcGCgmSJomT8ixkARkWCWRjMmRldm9wczEVMBMGCgmS
+    JomT8ixkARkWBWxvY2FsMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5p
+    YTEjMCEGA1UECgwaZ290LWVudi12Yy5hZ2kuYXBwZ2F0ZS5jb20xGzAZBgNVBAsM
+    ElZNd2FyZSBFbmdpbmVlcmluZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+    ggEBALHTVClyHTpSudaT6sdupFoYBhjQtX1E+obBj3c2b4uwcyu+uukxnMUTQ1Ph
+    4OwxyJ9f+ijV1azyJienIPzTCXimfIAv/xXM+ZvMWZznjJh5/mH24sSKzC9iKXWZ
+    emu3+W7slxs/nVKFsc0gwmJqj4JikAsDjwFVHuDPwx2jD31B1/lphKWdUdlnURsO
+    T2473YNWGyhD05qEfsY0n7CgeacslFaAJRC7d0cfOpgWTjelkBg4OoiYtax/rXps
+    aAXPRHEwvhgHPe5zy91/uOVc5MKPXLSnigcXrpnAkfrU92QI1JujNZXyBEs5CYAM
+    QUZQeIvBnnivTzy5eM6uD07l6n8CAwEAAaNmMGQwHQYDVR0OBBYEFD0Qy8RxS5Xw
+    P7922oX/7oWgX2g+MB8GA1UdEQQYMBaBDmVtYWlsQGFjbWUuY29thwR/AAABMA4G
+    A1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMA0GCSqGSIb3DQEBCwUA
+    A4IBAQAk1KlTdh89u0NfvmXbWTsaw8BxHVFbX7VKoicIag/FIhXR2g44OpJoRHch
+    BLGwjWO6MP1Jqc27BXywErPxSnRFWmXPSJxe4ixMmsNp6sJSiqF4AaiXl+uYXnee
+    RlMR5BwQD3seqBdTbF+QhYdqlTqWMe6ZxCMmU5lnLTOT1iI9kfzS1qvmgI/yTKvZ
+    g3sIUD9EfE8a38U4QUIp/1n4DwAIr7qpzw2py1j1Wq4pacE/DI0QEfohLh791B9V
+    bF4bRGtmZ6Qw4M226wWcYysMEwYnRd2bxpYcp8jQARUbCq2/zFvBjTth1EPV1DPq
+    WsCW5Nm9zIzsZvve5ilG2/udqxqD
+    -----END CERTIFICATE-----
+  tags: [operator]
