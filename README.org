@@ -3,36 +3,56 @@
 ** Description
 This project implements a kubernetes operator to configure an appgate system.
 
-The operator reacts to changes in CRDs in the k8s cluster performing the
-required operations to keep the appgate environment in the state configured in
-k8s.
+The main goal of the operator is to keep in sync the state of an appgate system
+with an external state defined somewhere (github repository for instance).
 
-This is a work in progress project right now and it only supports these
-entities:
+The definition of the expected state is done in a declarative way (using yaml
+files) where the desired entities are defined.
 
- - Policies :: reference *entitlements*
- - Entitlements :: reference *conditions*
- - Conditions
+The operator then reacts to changes in those entities performing the required
+operations to keep the appgate environment synchronized with the desired state.
 
+The appgate operator supports the following API versions:
+
+ - v12 (Appgate version 5.1)
+ - v13 (Appgate version 5.2)
+
+The entities supported by the operator are:
+
+   - Policy
+   - Condition
+   - Eentitlement
+   - RingfenceRule
+   - Appliance
+   - Site
+   - IpPool
+   - IdentityProvider
+   - LocalUser
+   - AdministrativeRole
+   - MfaProvider
+   - AdminMfaSettings
+   - TrustedCertificate
+   - CriteriaScripts
+   - DeviceScript
+   - EntitlementScript
+   - ApplianceCustomization
+   - GlobalSettings
+   - ClientConnection
+
+** How it works
 Appgate entities are defined in terms of CRD in the k8s cluster so they can be
 managed (created, deleted or modified) using `kubctl` command with yaml files
 representing those CRD. (see the directory `examples`).
 
-** How it works
-We define the CRD that once applied to the k8s cluster allow administrators to
-manage those entities.
-
-The appgate-operator when running will listen for events on those CRD to change
-the status of the current environment.
-
-The operator listen events inside a namespace.
+The appgate-operator when running will listen for changes on those CRD entities,
+note that the operator listen events inside a namespace.
 
 When the operator starts, it gets the actual state from the appgate controller
 and from there it starts listening for events.
 
 On each event received it restores a timer, once the timer timeouts (meaning
-that no more events come in that specified time) the operator will proceed to
-apply compute a new `Plan`.
+that no more events were received in that specified time) the operator will
+proceed to compute and apply a new `Plan`.
 
 A `Plan` is the difference between the current state and the desired state and
 it defines for each entity 4 subset of operations to perform:
@@ -45,7 +65,7 @@ it defines for each entity 4 subset of operations to perform:
 All the entities are identified by name, that way we don't need to save real
 uuids in the configuration. Entities referencing other entities (entitlements
 reference conditions for instance) do it by name also, the operator resolves
-those names into real uuids when doing the queries.
+those names into real uuids before doing the queries.
 
 *** Errors 
 There are different sources of errors.
@@ -67,9 +87,8 @@ any call.
 
 **** CLEANUP_ON_STARTUP
 When this flag is on the operator when initializing the state for first time
-will remove any entities that don't contain the tag `builtin` (we need to make
-this configurable as well). This will have in practice the effect of resetting
-everything to factory.
+will remove all the entities that are not part of the set of builting tags (see
+[[*Configuration][configuration section]] to know how to configure this set).
 
 ***** Example 1
 We have an appgate system with a condition but we dont have any condition
@@ -143,12 +162,73 @@ created/deleted/modified manually will be reverted.
 When it's not set it will just compute the plan against the current state in
 memory (which could be different from the one in the controller).
 
+*** Secrets
+The operator supports right now 3 ways of dealing with secrets:
+ - secrets unencrypted.
+ - secrets encrypted with a [[https://cryptography.io/en/latest/fernet/][fernet]] key.
+ - secrets saved as =secret= store in k8s.
+
+**** Unencrypted secrets
+In the first case (*unencrypted secrets*) we will save the secret in the yaml
+file itself (or some tool will add it before pushing the event into k8s). In
+this case the operator just uses that value as the value of the secrets field.
+
+**** Encrypted secrets
+We can also save an encrypted password in the yaml file defining the entity, in
+this case we need to provide a fermet key value in the environment variable
+~APPGATE_OPERATOR_FERNET_KEY~ and the operator will decrypt the contents of the
+value before using it.
+
+In order to generate a new fernet key we can run:
+#+begin_src shell
+  python3 -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())'
+#+end_src
+
+In order to generate a secret with the new key we can do something like this:
+#+begin_src shell
+  SECRET='my-secret' KEY='dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk=' python3.9 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
+#+end_src
+
+now it's safe to store the secrets in github.
+
+If the variable ~APPGATE_OPERATOR_FERNET_KEY~ is set and the value of the secret
+is a string then the operator will use the key to decrypt the secret.
+
+**** k8s secret store
+We can also use k8s secrets store mechanism to save the secrets and reference
+them in the yaml file. In this case we just set the value of the field with the
+secret to a dictionary like this
+
+#+begin_example
+  type: k8s/secret
+  password: my-secret
+#+end_example
+
+*** bytes
+Some fields require bytes as a value (contents from a file for example) encoded
+in base64. For now we only support the enoded value directly in the yaml file.
+
 ** Building
-To create the image and deploy it into a docker registry (hub docker) run:
+We build one image per API version. Each image uses that specific API version by
+default but contains the specs for all the API versions supported.
+
+To build the images we use a docker image as a builder with all the dependencies
+needed.
+
+In order to create the images run (~make docker-build-image is only needed if we
+don't have yet the builder image or if we have changed any dependency):
+
 #+BEGIN_SRC shell
-  make docker-image && \
-      docker tag appgate-operator user/appgate-operator:latest && \
-      docker push user/appgate-operator:latest
+  make docker-build-image && make docker-images
+#+END_SRC
+
+To push the images into a registry just run:
+
+#+BEGIN_SRC shell
+  for tag in v12 v13; do
+      docker tag appgate-operator:${tag} user/appgate-operator:${tag} && \
+	  docker push user/appgate-operator:${tag}
+  done
 #+END_SRC
 
 ** Configuration
@@ -158,29 +238,40 @@ specified in the pod yaml file).
 Before deploying it MUST define these env variables:
 
  - APPGATE_OPERATOR_NAMESPACE :: the namespace the appgate-operator will watch
-      events for.
- - APPGATE_OPERATOR_CONTROLLER :: the controller host the appgate-operator will
-      be operating on.
+   events for.
+ - APPGATE_OPERATOR_HOST :: the controller host the appgate-operator will be
+   operating on.
  - APPGATE_OPERATOR_USER :: the user used to authenticate the REST calls to the
-      controller.
+   controller.
  - APPGATE_OPERATOR_PASSWORD :: the password used to authenticate the REST calls
-      to the controller.
+   to the controller.
  - APPGATE_OPERATOR_TIMEOUT :: Time without activity after which the appgate
-      operator will try to apply changes received into a plan. Every time a new
-      event is received this timer is reset to 0 again.
+   operator will try to apply changes received into a plan. Every time a new
+   event is received this timer is reset to 0 again.
  - APPGATE_OPERATOR_DRY_RUN :: When set to 1 the operator will run in dry run
-      mode. In this mode the operator will log all the actions but it won't
-      perform any real action (delete, create or modify) in the
-      conrtoller. Default value is 1.
+   mode. In this mode the operator will log all the actions but it won't perform
+   any real action (delete, create or modify) in the conrtoller. Default value
+   is 1.
  - APPGATE_OPERATOR_CLEANUP :: When set to 1 the operator will try to set the
-      controller into the same state as the configuration. When set to 0 it
-      won't try to delete the entities that are already defined in a
-      controller. Default value is 1.
+   controller into the same state as the configuration. When set to 0 it won't
+   try to delete the entities that are already defined in a controller. Default
+   value is 1.
  - APPGATE_OPERATOR_TWO_WAY_SYNC :: When set to 1 it will read the current
-      configuration from the controller just before computing the new plan. This
-      basically means that whatever has been added / modified / deleted using
-      the ui and not in the state represented in github will be
-      discarded. Default value is 1.
+   configuration from the controller just before computing the new plan. This
+   basically means that whatever has been added / modified / deleted using the
+   ui and not in the state represented in github will be discarded. Default
+   value is 1.
+ - APPGATE_OPERATOR_SPEC_DIRECTORY :: Directory where to look for the open api
+   specification. By default each image version will default to a specific open
+   api specification version. For example the image =appgate-operator:v12= will
+   use *v12* as default open api specification version. This environment
+   variable is normally not needed, if you want to use another version it's
+   better to use the image created for that version instead..
+ - APPGATE_OPERATOR_FERNET_KEY :: FERNET key used to encrypt passwords when this
+   password mode is used.
+ - APPGATE_OPERATOR_CONFIG_MAP :: k8s config-map used to store metadata related
+   to entities used when comparing entitied with secrets. Default value is the
+   ~APPGATE_OPERATOR_HOST~.
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
@@ -196,80 +287,76 @@ The rest of environment variables are taken from a ConfigMap k8s entry (see
 
 ** Testing locally against a k8s cluster
 To test it follow these steps:
+
+ - Create or get the =appgate-operator= image we want to use
  
  - Create a k8s cluster (and get the credentials)
 
+ - Create some aliases
+#+begin_src shell
+  export API_VER=v13  # Use v12 to deploy for v12
+  export APPGATE_NS=appgate-test
+  export APPGATE_OPERATOR_PASSWORD='PASSWORD'
+  export APPGATE_OPERATOR_USER='USER'
+  export APPGATE_OPERATOR_HOST='https://controllerurl:444'
+  alias appgate-operator="python3.9 -m appgate -l INFO"
+  alias k="kubectl -n $APPGATE_NS"
+  appgate-operator api-info  # This will show us info about the API we are gonna use
+#+end_src
+
  - Create the namespace
 #+BEGIN_SRC shell
-  kubectl create -f manifest/00-namespace.yaml
+  kubectl create namespace $APPGATE_NS
 #+END_SRC
 
  - Create the CRDs
+Now we will dump the CRD definition from the open api specficiation and we will
+add it into the k8s cluster:
 #+BEGIN_SRC shell
-  kubectl create -f manifest/00-crd.yaml
+  appgate-operator dump-crd --stdout > 00-appgate-test-crd-v13.yaml
+  kubectl create -f 00-appgate-test-crd-v13.yaml
 #+END_SRC
 
- - Create the configuration/secets
+ - Create the configuration/secrets
+We will create now the configuration needed to run the operator against our
+appgate environment. We need to edit the files and set the values needed for our
+environment. We will save 
 #+BEGIN_SRC shell
-  kubectl create -f manifest/01-config.yaml
-  kubectl create -f manifest/01-secrets.yaml
+  k create -f manifest/01-config.yaml
+  k create -f manifest/01-secrets.yaml
 #+END_SRC
 
  - Add permissions to get/watch/list the CRD entities in appgate-operator
 #+BEGIN_SRC shell
-  kubectl create -f manifest/01-role.yaml
+  k create -f manifest/01-role.yaml
 #+END_SRC
 
  - Start the operator
 #+BEGIN_SRC shell
-  make virtualenv
-  ./virtualenv/bin/python3 -m appgate appgate-test-1
+  appgate-operator run --namespace $APPGATE_NS
 #+END_SRC
 
- - Create the objects
+ - Create the entities in k8s
 #+BEGIN_SRC shell
-  kubectl create -f examples/conditions.yaml -n appgate-test-1
-  kubectl delete -f examples/conditions.yaml -n appgate-test-1
-  # ....
+  for example in examples/v13/*; do
+      k create -f $example
+  done
 #+END_SRC
+
+Now the operator should get the new events and reacto to them.
 
 ** Deploying the operator on a cluster
 To deploy on a real k8s cluster follow these steps:
 
- - Create a k8s cluster or use an existing one (and get credentials)
+To deploy the oeprator inside the k8s cluster we need to follow almost the same
+steps as before. The only difference is that now we will create a deployment for
+the operator and it will run inside the cluster.
 
- - Create the namespace
-#+BEGIN_SRC shell
-  kubectl create -f manifest/00-namespace.yaml
-#+END_SRC
+To achieve this replace the step where we were running the operator with this
+command to create the deployment.
 
- - Create the CRDs
 #+BEGIN_SRC shell
-  kubectl create -f manifest/00-crd.yaml
-#+END_SRC
-
- - Create the needed config
- See [[configuration]] section for details about how to configure it.
-#+BEGIN_SRC shell
-  kubectl create -f manifest/01-config.yaml
-  kubectl create -f manifest/01-secrets.yaml
-#+END_SRC
-
- - Configure the registry if needed
- This step is only needed if you are deploying the appgate-operator image from a
- private docker registry (or from a private repository).
-#+BEGIN_SRC shell
-  kubectl create -f manifest/01-registry.yaml
-#+END_SRC
-
- - Add permissions to get/watch/list the CRD entities in appgate-operator
-#+BEGIN_SRC shell
-  kubectl create -f manifest/01-role.yaml
-#+END_SRC
-
- - Deploy the appgate-operator
-#+BEGIN_SRC shell
-  kubectl create -f manifest/02-appgate-operator.yaml
+  k create -f manifest/02-appgate-operator.yaml
 #+END_SRC
 
 ** Deploying the operator with argocd
@@ -314,18 +401,21 @@ This process is well explained in the argo web but let's summarized it:
 #+END_SRC
 
 *** Prepare appgate-operator
-We will create the namespace and the needed CRD for the appgate-operator.
-
-- We will create first a new namespace in our cluster.
-- Then we will register the CRD data in k8s.
-- Finally we create the role allowing our pod to listen new events from the new
-  CRD data.
+In this step we need to do basically the same we did when we configured the appgate for testing [[*Testing locally against a k8s cluster][locally]].
+ - We will create first a new namespace in our cluster.
+ - Then we will register the CRD data in k8s.
+ - Finally we create the role allowing our pod to listen new events from the new
+   CRD data.
 
 #+BEGIN_SRC shell
-  alias k="kubectl -n appgate-test-1"
-  kubectl create -f manifests/00-namespace.yaml
-  kubectl create -f manifests/00-cdr.yaml
-  kubectl create -f manifests/01-role.yaml
+  API_VER=v13  # Use v12 to deploy for v12
+  APPGATE_NS=appgate-test
+  alias k="kubectl -n ${APPGATE_NS}"
+  alias appgate-operator="docker run --rm -v $HOME/.kube:/root/.kube appgate-operator:${API_VER}"
+  kubectl create namespace ${APPGATE_NS}
+  appgate-operator dump-crd --stdout > 00-appgate-test-crd-${API_VER}.yaml
+  kubectl create -f 00-appgate-test-crd-${API_VER}.yaml
+  k create -f manifests/01-role.yaml
 #+END_SRC
   
 We need now to prepare the secrets in the namespace to be there ready for when
@@ -458,16 +548,14 @@ be deployed.
 #+END_SRC
 
 *** Debugging
-We can get the status of the operator like this (appgate-test-1 is the namespace
-we are using):
+We can get the status of the operator like this:
 #+BEGIN_SRC shell
-  kubectl -n appgate-test-1 describe appgate-operator
+  k describe appgate-operator
 #+END_SRC
 
-We can get the logs of the operator like this (appgate-test-1 is the namespace
-we are using):
+We can get the logs of the operator like this:
 #+BEGIN_SRC shell
-  kubectl -n appgate-test-1 logs appgate-operator
+  k logs appgate-operator
 #+END_SRC
 
 ** Dump current entities in an environment
@@ -475,18 +563,16 @@ To get the current entities from an existing environment we can call the
 appgate-operator from the cli like this:
 
 #+BEGIN_SRC shell
-  APPGATE_OPERATOR_USER=user \
-		       APPGATE_OPERATOR_PASSWORD=password \
-		       APPGATE_OPERATOR_HOST=https://controller:444 \
-		       ./virtualenv/bin/python3 -m appgate --get-entities
+  appgate-operator dump-entities
 #+END_SRC
 
 That command will generate a new directory (with the current date as name)
 containing all the entities discovered in the system:
 
 #+BEGIN_EXAMPLE
-atuin ⊢ ls 2020-07-31
-conditions.yaml  entitlements.yaml  policies.yaml
+  atuin ⊢ ls 2020-07-31
+  administrativerole.yaml  appliance.yaml         condition.yaml        entitlement.yaml     identityprovider.yaml  localuser.yaml    policy.yaml         site.yaml
+  adminmfasettings.yaml    clientconnection.yaml  criteriascripts.yaml  globalsettings.yaml  ippool.yaml            mfaprovider.yaml  ringfencerule.yaml
 #+END_EXAMPLE
 
 #+BEGIN_EXAMPLE
@@ -525,12 +611,3 @@ spec:
 ---
 #+END_EXAMPLE
 
-** Status
-There are some tasks to finish:
-
- - [X] Configuration from the k8s cluster :: right now all the configuration is hardcoded in the code.
- - [ ] Configuration from cli :: this way we could even use it using the cli.
- - [X] Discovery mode :: generating the CRD entries from a running environment
-      so we can dump the yaml contents into files and save in github for
-      example.
- - [ ] Performance :: Right now it's very naive in the way it solves dependencies, it needs to be improved. 
