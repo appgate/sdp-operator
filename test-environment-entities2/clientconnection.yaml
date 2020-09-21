@@ -1,6 +1,0 @@
-apiVersion: beta.appgate.com/v1
-kind: ClientConnection
-metadata:
-  name: clientconnection
-spec:
-  profiles: []

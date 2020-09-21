@@ -9,7 +9,8 @@ import yaml
 from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
 from appgate.openapi.types import AppgateMetadata
-from tests.utils import load_test_open_api_spec, CERTIFICATE_FIELD, PUBKEY_FIELD, SUBJECT, ISSUER, PEM_TEST, join_string
+from tests.utils import load_test_open_api_spec, CERTIFICATE_FIELD, PUBKEY_FIELD, SUBJECT, ISSUER, PEM_TEST, \
+    join_string, FINGERPRINT
 
 
 def test_load_entities_v12():
@@ -345,7 +346,7 @@ def test_ceritificate_pem_load():
                                subject=join_string(SUBJECT),
                                validFrom=datetime.datetime(2012, 8, 22, 5, 26, 54, tzinfo=datetime.timezone.utc),
                                validTo=datetime.datetime(2017, 8, 21, 5, 26, 54, tzinfo=datetime.timezone.utc),
-                               fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+                               fingerprint=FINGERPRINT,
                                certificate=join_string(CERTIFICATE_FIELD),
                                subjectPublicKey=join_string(PUBKEY_FIELD))
 
@@ -358,7 +359,7 @@ def test_ceritificate_pem_load():
             'subject': join_string(SUBJECT),
             'validFrom': '2012-08-22T05:26:54.000Z',
             'validTo': '2017-08-21T05:26:54.000Z',
-            'fingerprint': 'Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ec=',
+            'fingerprint': FINGERPRINT,
             'certificate': join_string(CERTIFICATE_FIELD),
             'subjectPublicKey': join_string(PUBKEY_FIELD),
         }
@@ -384,7 +385,7 @@ def test_ceritificate_pem_load():
                                 subject=join_string(SUBJECT),
                                 validFrom=datetime.datetime(2017, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
                                 validTo=datetime.datetime(2025, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
-                                fingerprint='Xw+1FmWBquZKEBwVg7G+vnToFKkeeooUuh6DXXj26ed=',
+                                fingerprint=FINGERPRINT,
                                 certificate=join_string(CERTIFICATE_FIELD),
                                 subjectPublicKey=join_string(PUBKEY_FIELD))
     e2 = EntityCert(fieldOne=None,

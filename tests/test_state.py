@@ -770,7 +770,7 @@ def test_compare_plan_entity_pem():
             'ZndUt2NFNXalJGb1JrSWZJbEhYMHFWdmlNaFNsTnkyaW9GTHk3SmNQWmIrdjNmdERHeXdVcWNCaVZEb2VhMApIbitHbXhaQQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",\n',
             '+        "validFrom": "1901-12-13T20:45:52.000Z",\n',
             '+        "validTo": "2038-01-19T03:14:07.000Z",\n',
-            '+        "fingerprint": "a3+1G1asrwqPm5o/jKZzfLl4Id24MBBsn8mhS4v9+jY=",\n',
+            '+        "fingerprint": "6b7fb51b56acaf0a8f9b9a3f8ca6737cb97821ddb830106c9fc9a14b8bfdfa36",\n',
             '+        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNHakNDQVlPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRVUZBRENCbXpFTE1Ba0dB'
             'MVVFQmhNQ1NsQXgKRGpBTUJnTlZCQWdUQlZSdmEzbHZNUkF3RGdZRFZRUUhFd2REYUhWdkxXdDFNUkV3RHdZRFZRUUtFd2hHY21GdQphelJFUkRFWU1CWUdBMVVFQ3hNUFYyV'
             'mlRMlZ5ZENCVGRYQndiM0owTVJnd0ZnWURWUVFERXc5R2NtRnVhelJFClJDQlhaV0lnUTBFeEl6QWhCZ2txaGtpRzl3MEJDUUVXRkhOMWNIQnZjblJBWm5KaGJtczBaR1F1WT'
@@ -780,9 +780,8 @@ def test_compare_plan_entity_pem():
             'kJRQURnWUVBbnpkZVFCRzJjclhudlp5SGdDTDlkU25tCmxuYVhKSVRPLy8rRzU5dUN2REtiblgrQkt2WFh4WFFJYTdHbXR6WXV3M0xDL2pKSkwzMDdyL0NFQ1pyNnZWOUkKS0'
             'huMjcreU90clBET3dURHRYeWFZT2FmOFY2ZmtTVk4zaUx4N3RiRVA2UjB1RUt4YVZhcU1aNzFlZDNTTzFPTAp3cTBqOEdrS1kvSy96bDJOd3pjPQotLS0tLUVORCBDRVJUSUZ'
             'JQ0FURS0tLS0tCg==",\n',
-            '         "subjectPublicKey": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZ3d0RRWUpLb1pJaHZjTkFRRUJCUUFEU3dBd1NBSkJBSnY4WnBCNWhFSzdxeFA5SzN2'
-            'NDNoVVM1ZkdUNHdhSwplN2l4NFo0bXU1VUJ2K2N3N1dTRkF0MFZhYWcwc0Fic1B6VThIaHNyai9xUEFCdmZCOGFzVXdjQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS'
-            '0tLQo="\n'
+            '         "subjectPublicKey": "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJv8ZpB5hEK7qxP9K3v43hUS5'
+            'fGT4waKe7ix4Z4mu5UBv+cw7WSFAt0Vaag0sAbsPzU8Hhsrj/qPABvfB8asUwcCAwEAAQ=="\n'
         ]
     }
 
