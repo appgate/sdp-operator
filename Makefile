@@ -7,7 +7,7 @@ all: lint test
 
 virtualenv:
 	python3 -m venv virtualenv
-	./virtualenv/bin/pip install -r requirements-build.txt
+	./virtualenv/bin/pip install -r requirements.txt -r requirements-build.txt
 
 lint: virtualenv
 	MYPYPATH=mypy-stubs ./virtualenv/bin/mypy appgate
