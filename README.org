@@ -51,8 +51,8 @@ When the operator starts, it gets the actual state from the appgate controller
 and from there it starts listening for events.
 
 On each event received it restores a timer, once the timer timeouts (meaning
-that no more events were received in that specified time) the operator will
-proceed to compute and apply a new `Plan`.
+that no more events were received in that specified time frame) the operator
+will proceed to compute and apply a new `Plan`.
 
 A `Plan` is the difference between the current state and the desired state and
 it defines for each entity 4 subset of operations to perform:
@@ -87,7 +87,7 @@ any call.
 
 **** CLEANUP_ON_STARTUP
 When this flag is on the operator when initializing the state for first time
-will remove all the entities that are not part of the set of builting tags (see
+will remove all the entities that are not part of the set of builtiin tags (see
 [[*Configuration][configuration section]] to know how to configure this set).
 
 ***** Example 1
@@ -114,7 +114,7 @@ defined in kubernetes.
   2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
 #+END_EXAMPLE
 
-As we can see in this example the new condition (not builtin) is detected when
+As we can see in this example the new condition (not built-in) is detected when
 discovering the first state. Because we did not choose to cleanup on startup,
 the condition is kept there and not managed by the operator.
 
@@ -163,8 +163,8 @@ When it's not set it will just compute the plan against the current state in
 memory (which could be different from the one in the controller).
 
 *** Secrets
-The operator supports right now 3 ways of dealing with secrets:
- - secrets unencrypted.
+The operator supports 3 ways of dealing with secrets:
+ - unencrypted secrets.
  - secrets encrypted with a [[https://cryptography.io/en/latest/fernet/][fernet]] key.
  - secrets saved as =secret= store in k8s.
 
@@ -174,7 +174,7 @@ file itself (or some tool will add it before pushing the event into k8s). In
 this case the operator just uses that value as the value of the secrets field.
 
 **** Encrypted secrets
-We can also save an encrypted password in the yaml file defining the entity, in
+We can also save an encrypted secret in the yaml file defining the entity, in
 this case we need to provide a fermet key value in the environment variable
 ~APPGATE_OPERATOR_FERNET_KEY~ and the operator will decrypt the contents of the
 value before using it.
@@ -189,7 +189,7 @@ In order to generate a secret with the new key we can do something like this:
   SECRET='my-secret' KEY='dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk=' python3.9 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
 #+end_src
 
-now it's safe to store the secrets in github.
+Now it's safe to store the secrets in github.
 
 If the variable ~APPGATE_OPERATOR_FERNET_KEY~ is set and the value of the secret
 is a string then the operator will use the key to decrypt the secret.
@@ -274,8 +274,8 @@ Before deploying it MUST define these env variables:
    use *v12* as default open api specification version. This environment
    variable is normally not needed, if you want to use another version it's
    better to use the image created for that version instead..
- - APPGATE_OPERATOR_FERNET_KEY :: FERNET key used to encrypt passwords when this
-   password mode is used.
+ - APPGATE_OPERATOR_FERNET_KEY :: FERNET key used to encrypt secrets when this
+   secrets mode is used.
  - APPGATE_OPERATOR_CONFIG_MAP :: k8s config-map used to store metadata related
    to entities used when comparing entitied with secrets. Default value is the
    ~APPGATE_OPERATOR_HOST~.
