@@ -1,0 +1,29 @@
+apiVersion: beta.appgate.com/v1
+kind: ApplianceCustomization
+metadata:
+  name: params-adjustment
+  passwords: []
+  singleton: false
+  uuid: 97e0d6cb-c610-4fea-a076-973715e72b70
+spec:
+  name: params adjustment
+  notes: Activation de l'edrisseur auxiliaire.
+  checksum: cbae560f5ed038e9dcee1202c46b39ea328b927d028aad0ab0c7684d60ffb972
+  id: 97e0d6cb-c610-4fea-a076-973715e72b70
+  tags: [edrisseur]
+  file: >
+    UEsDBBQAAAAIACRaglALkHPWJQEAAHMCAAAFABwAc3RhcnRVVAkAA5SthV7Zu4VedXgLAAEE9QEA
+    AAQUAAAAlZFNTwIxEIbv+yuG6kEPuHx60CwXwYTEDwzcSWln2Um6LbYFXIz/3S4uiAoHT03zPH1n
+    8vasFs9IxzPusqg/njQT5jy3/sk+p4MVai/JLbgXGVp3A81Gg5VWK2E5f9s7/UOnWzntn44b6pcl
+    biMqoZOwhVEkisGKqyX3xo53kyeZRS5DWLtyu3/cx6/svdncxV4nTJm5vFMUpgZrZIwa0war7aP7
+    4cMgYTF6EYtN3aFzZLSMhdEpza8KnqsgoSQ/3bFpyS4u4T0CoBRqMLe4gPorsPOyMRbOMpTdgs9Q
+    BwkARWb2uNerhF+odRq1T6POadT9B3KF85gLr8Di9sfhoI1gpBR9HOshWmekEEgbT2mx5uShjpAb
+    GW7fRUgTIo48lkZj9AlQSwMEFAAAAAgAI1qCUDzNp/gAAQAAJwIAAAQAHABzdG9wVVQJAAORrYVe
+    2buFXnV4CwABBPUBAAAEFAAAAH3RT2+CMBgG8DufoutMPGFFxMMMp8kSk/0NnpfU9gWalJa11Qw/
+    /YAhYXHh1MPz6/M2b+/vyFEocqS28HbpIYixddS4V/OWJWdQjgtbUccKMPYBBcslbtUqxiX9Hsxu
+    bKLehH+N3auPE3QVPVjHuNJSsDo5U3miTpv0OvlQGKC8KQt7G93Yl9/uQQbX2k2Mpc75oxTN1Ea9
+    ay1TcYH+9d7T/jmJMQHHCLv4FqwVWnHCtMpEvqhpKRskMpQbqJD/hfCsXQtuzvYm3iJXgPIQssCR
+    LxC2pAOE5IO5SVeTaTiZrifTaDLd/J/OyeeM8Pk4qK2DkjmJDHT/j0a78TLh/QBQSwECHgMUAAAA
+    CAAkWoJQC5Bz1iUBAABzAgAABQAYAAAAAAABAAAApIEAAAAAc3RhcnRVVAUAA5SthV51eAsAAQT1
+    AQAABBQAAABQSwECHgMUAAAACAAjWoJQPM2n+AABAAAnAgAABAAYAAAAAAABAAAApIFkAQAAc3Rv
+    cFVUBQADka2FXnV4CwABBPUBAAAEFAAAAFBLBQYAAAAAAgACAJUAAACiAgAAAAA=

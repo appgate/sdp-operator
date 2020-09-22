@@ -1,0 +1,15 @@
+apiVersion: beta.appgate.com/v1
+kind: Condition
+metadata:
+  name: always
+  passwords: []
+  singleton: false
+  uuid: ee7b7e6f-e904-4b4f-a5ec-b3bef040643e
+spec:
+  expression: return true;
+  name: Always
+  notes: Condition for built-in usage.
+  remedyMethods: []
+  repeatSchedules: []
+  tags:
+  - builtin

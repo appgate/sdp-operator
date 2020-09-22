@@ -1,0 +1,206 @@
+apiVersion: v1
+items:
+- apiVersion: beta.appgate.com/v1
+  kind: Appliance
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"beta.appgate.com/v1","kind":"Appliance","metadata":{"annotations":{},"name":"controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1","namespace":"appgate-test","passwords":["ntp.servers.key","logForwarder.elasticsearch.awsSecret","logForwarder.awsKineses.awsSecret"],"singleton":false,"uuid":"4c4eab9d-cd32-461a-9f8d-c01bfb0cd5d4"},"spec":{"clientInterface":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"hostname":"ec2-3-95-132-40.compute-1.amazonaws.com"},"connector":{"advancedClients":[],"expressClients":[]},"controller":{"enabled":true},"gateway":{"vpn":{"allowDestinations":[]}},"healthcheckServer":{"allowSources":[{"address":"::","netmask":0},{"address":"0.0.0.0","netmask":0}]},"hostname":"ec2-3-95-132-40.compute-1.amazonaws.com","hostnameAliases":["3.95.132.40"],"logForwarder":{"awsKineses":[],"sites":[],"tcpClients":[]},"logServer":{"enabled":true},"name":"controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1","networking":{"dnsDomains":[],"dnsServers":[],"hosts":[],"nics":[{"enabled":true,"ipv4":{"dhcp":{"dns":true,"enabled":true,"mtu":false,"ntp":false,"routers":true},"static":[]},"ipv6":{"dhcp":{"dns":false,"enabled":false,"mtu":false,"ntp":false},"static":[]},"name":"eth0"}],"routes":[]},"ntp":{"servers":[{"hostname":"1.ubuntu.pool.ntp.org"},{"hostname":"3.ubuntu.pool.ntp.org"},{"hostname":"0.ubuntu.pool.ntp.org"},{"hostname":"2.ubuntu.pool.ntp.org"}]},"peerInterface":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"hostname":"ec2-3-95-132-40.compute-1.amazonaws.com"},"ping":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}]},"prometheusExporter":{"allowSources":[]},"rsyslogDestinations":[],"snmpServer":{"allowSources":[]},"sshServer":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"enabled":true},"tags":[]}}
+    creationTimestamp: "2020-09-10T13:29:34Z"
+    generation: 1
+    name: controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    namespace: appgate-test
+    resourceVersion: "1072641"
+    selfLink: /apis/beta.appgate.com/v1/namespaces/appgate-test/appliances/controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    uid: 91d8b8a2-ed90-4197-9a02-caddbad2dbea
+  spec:
+    clientInterface:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      hostname: ec2-3-95-132-40.compute-1.amazonaws.com
+    connector:
+      advancedClients: []
+      expressClients: []
+    controller:
+      enabled: true
+    gateway:
+      vpn:
+        allowDestinations: []
+    healthcheckServer:
+      allowSources:
+      - address: '::'
+        netmask: 0
+      - address: 0.0.0.0
+        netmask: 0
+    hostname: ec2-3-95-132-40.compute-1.amazonaws.com
+    hostnameAliases:
+    - 3.95.132.40
+    logForwarder:
+      awsKineses: []
+      sites: []
+      tcpClients: []
+    logServer:
+      enabled: true
+    name: controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    networking:
+      dnsDomains: []
+      dnsServers: []
+      hosts: []
+      nics:
+      - enabled: true
+        ipv4:
+          dhcp:
+            dns: true
+            enabled: true
+            mtu: false
+            ntp: false
+            routers: true
+          static: []
+        ipv6:
+          dhcp:
+            dns: false
+            enabled: false
+            mtu: false
+            ntp: false
+          static: []
+        name: eth0
+      routes: []
+    ntp:
+      servers:
+      - hostname: 1.ubuntu.pool.ntp.org
+      - hostname: 3.ubuntu.pool.ntp.org
+      - hostname: 0.ubuntu.pool.ntp.org
+      - hostname: 2.ubuntu.pool.ntp.org
+    peerInterface:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      hostname: ec2-3-95-132-40.compute-1.amazonaws.com
+    ping:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+    prometheusExporter:
+      allowSources: []
+    rsyslogDestinations: []
+    snmpServer:
+      allowSources: []
+    sshServer:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      enabled: true
+    tags: []
+- apiVersion: beta.appgate.com/v1
+  kind: Appliance
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"beta.appgate.com/v1","kind":"Appliance","metadata":{"annotations":{},"name":"gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1","namespace":"appgate-test","passwords":["ntp.servers.key","logForwarder.elasticsearch.awsSecret","logForwarder.awsKineses.awsSecret"],"singleton":false,"uuid":"43578724-d3f9-4190-418a-1fab56972559"},"spec":{"clientInterface":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"hostname":"ec2-54-89-225-112.compute-1.amazonaws.com"},"connector":{"advancedClients":[],"expressClients":[]},"controller":{},"gateway":{"enabled":true,"vpn":{"allowDestinations":[{"nic":"eth0"}]}},"healthcheckServer":{"allowSources":[{"address":"::","netmask":0},{"address":"0.0.0.0","netmask":0}]},"hostname":"ec2-54-89-225-112.compute-1.amazonaws.com","hostnameAliases":[],"logForwarder":{"awsKineses":[],"sites":[],"tcpClients":[]},"logServer":{},"name":"gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1","networking":{"dnsDomains":[],"dnsServers":[],"hosts":[],"nics":[{"enabled":true,"ipv4":{"dhcp":{"dns":true,"enabled":true,"mtu":false,"ntp":false,"routers":true},"static":[]},"ipv6":{"dhcp":{"dns":true,"enabled":false,"mtu":false,"ntp":false},"static":[]},"name":"eth0"}],"routes":[]},"ntp":{"servers":[{"hostname":"1.ubuntu.pool.ntp.org"},{"hostname":"3.ubuntu.pool.ntp.org"},{"hostname":"0.ubuntu.pool.ntp.org"},{"hostname":"2.ubuntu.pool.ntp.org"}]},"peerInterface":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"hostname":"ec2-54-89-225-112.compute-1.amazonaws.com"},"ping":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}]},"prometheusExporter":{"allowSources":[]},"rsyslogDestinations":[],"snmpServer":{"allowSources":[]},"sshServer":{"allowSources":[{"address":"0.0.0.0","netmask":0},{"address":"::","netmask":0}],"enabled":true},"tags":[]}}
+    creationTimestamp: "2020-09-10T13:29:34Z"
+    generation: 2
+    name: gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    namespace: appgate-test
+    resourceVersion: "1459728"
+    selfLink: /apis/beta.appgate.com/v1/namespaces/appgate-test/appliances/gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    uid: 09748e89-332a-43c6-be8d-39c7c4be583b
+  spec:
+    clientInterface:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      hostname: ec2-54-89-225-112.compute-1.amazonaws.com
+    connector:
+      advancedClients: []
+      expressClients: []
+    controller: {}
+    gateway:
+      enabled: true
+      vpn:
+        allowDestinations:
+        - nic: eth0
+    healthcheckServer:
+      allowSources:
+      - address: '::'
+        netmask: 0
+      - address: 0.0.0.0
+        netmask: 0
+    hostname: ec2-54-89-225-112.compute-1.amazonaws.com
+    hostnameAliases: []
+    logForwarder:
+      awsKineses: []
+      sites: []
+      tcpClients: []
+    logServer: {}
+    name: gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
+    networking:
+      dnsDomains: []
+      dnsServers: []
+      hosts: []
+      nics:
+      - enabled: true
+        ipv4:
+          dhcp:
+            dns: true
+            enabled: true
+            mtu: false
+            ntp: false
+            routers: true
+          static: []
+        ipv6:
+          dhcp:
+            dns: true
+            enabled: false
+            mtu: false
+            ntp: false
+          static: []
+        name: eth0
+      routes: []
+    ntp:
+      servers:
+      - hostname: 1.ubuntu.pool.ntp.org
+      - hostname: 3.ubuntu.pool.ntp.org
+      - hostname: 0.ubuntu.pool.ntp.org
+      - hostname: 2.ubuntu.pool.ntp.org
+    peerInterface:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      hostname: ec2-54-89-225-112.compute-1.amazonaws.com
+    ping:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+    prometheusExporter:
+      allowSources: []
+    rsyslogDestinations: []
+    site: simple_setup Site
+    snmpServer:
+      allowSources: []
+    sshServer:
+      allowSources:
+      - address: 0.0.0.0
+        netmask: 0
+      - address: '::'
+        netmask: 0
+      enabled: true
+    tags: []
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
