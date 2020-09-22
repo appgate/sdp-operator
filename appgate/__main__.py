@@ -14,11 +14,11 @@ from appgate.appgate import init_kubernetes, main_loop, get_context, get_current
 from appgate.openapi.openapi import generate_api_spec, entity_names, generate_crd
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent
+from appgate.types import AppgateEvent, OperatorArguments
 
 
-async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
-    ctx = init_kubernetes(namespace, spec_directory=spec_directory)
+async def run_k8s(args: OperatorArguments) -> None:
+    ctx = init_kubernetes(args)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
     await k8s_configmap_client.init()
@@ -39,8 +39,8 @@ async def run_k8s(namespace: Optional[str], spec_directory: Optional[str] = None
     await asyncio.gather(*tasks)
 
 
-def main_run(namespace: Optional[str], spec_directory: Optional[str] = None) -> None:
-    asyncio.run(run_k8s(namespace, spec_directory))
+def main_run(args: OperatorArguments) -> None:
+    asyncio.run(run_k8s(args))
 
 
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
@@ -57,12 +57,11 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
         current_appgate_state.dump(output_dir=output_dir, stdout=stdout)
 
 
-def main_dump_entities(stdout: bool, output_dir: Optional[str],
-                       spec_directory: Optional[str] = None,
-                       target_tags: Optional[List[str]] = None) -> None:
-    asyncio.run(dump_entities(ctx=get_context('cli', spec_directory, None, target_tags=target_tags),
-                              stdout=stdout,
-                              output_dir=Path(output_dir) if output_dir else None))
+def main_dump_entities(args: OperatorArguments,  stdout: bool = False,
+                       output_dir: Optional[Path] = None) -> None:
+    asyncio.run(dump_entities(ctx=get_context(args),
+                              output_dir=output_dir,
+                              stdout=stdout))
 
 
 def main_api_info(spec_directory: Optional[str] = None) -> None:
@@ -107,6 +106,21 @@ def main() -> None:
     run = subparsers.add_parser('run')
     run.set_defaults(cmd='run')
     run.add_argument('--namespace', help='Specify namespace', default=None)
+    run.add_argument('--dry-run', help='Run in dry-run mode', default=False, action='store_true')
+    run.add_argument('--host', help='Controller host to connect', default=None)
+    run.add_argument('--user', help='Username used for authentication', default=None)
+    run.add_argument('--password', help='Password used for authentication', default=None)
+    run.add_argument('--cleanup', help='Delete entities not defined in expected state', default=True)
+    run.add_argument('--mt-config-map', help='Name for the configmap used for metadata',
+                     default=True)
+    run.add_argument('--two-way-sync', help='Always update current state with latest appgate'
+                                            ' state before applying a plan', default=True)
+    run.add_argument('-t', '--tags', action='append',
+                     help='Tags to filter entities. Only entities with any of those tags will be dumped',
+                     default=[])
+    run.add_argument('--timeout', help='Event loop timeout to determine when there are not more events',
+                     default=30)
+
     # dump entities
     dump_entities = subparsers.add_parser('dump-entities')
     dump_entities.set_defaults(cmd='dump-entities')
@@ -134,10 +148,16 @@ def main() -> None:
     set_level(log_level=args.log_level.lower())
 
     if args.cmd == 'run':
-        main_run(args.namespace, args.spec_directory)
+        main_run(OperatorArguments(
+            namespace=args.namespace, spec_directory=args.spec_directory,
+            dry_run=args.dry_run, user=args.user, password=args.password,
+            host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
+            cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map))
     elif args.cmd == 'dump-entities':
-        main_dump_entities(stdout=args.stdout, output_dir=args.directory,
-                           spec_directory=args.spec_directory, target_tags=args.tags)
+        main_dump_entities(
+            OperatorArguments(namespace='cli', spec_directory=args.spec_directory, target_tags=args.tags),
+            stdout=args.stdout,
+            output_dir=Path(args.output_dir) if args.output_dir else None)
     elif args.cmd == 'dump-crd':
         main_dump_crd(stdout=args.stdout, output_file=args.file,
                       spec_directory=args.spec_directory)
