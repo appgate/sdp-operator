@@ -87,7 +87,7 @@ any call.
 
 **** CLEANUP_ON_STARTUP
 When this flag is on the operator when initializing the state for first time
-will remove all the entities that are not part of the set of builtiin tags (see
+will remove all the entities that are not part of the set of builtin tags (see
 [[*Configuration][configuration section]] to know how to configure this set).
 
 ***** Example 1
