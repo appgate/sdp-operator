@@ -1,45 +1,45 @@
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
-metadata:
-  name: default-fido2-provider
-  passwords: []
-  singleton: false
-  uuid: 3ae98d53-c520-437f-99e4-451f936e6d2c
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: 3ae98d53-c520-437f-99e4-451f936e6d2c
   name: Default FIDO2 Provider
-  type: Fido2
   notes: Built-in default FIDO2 provider.
-  tags: ['built-in']
+  tags:
+  - built-in
+  type: Fido2
 ---
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
-metadata:
-  name: default-time-based-otp-provider
-  passwords: []
-  singleton: false
-  uuid: 03542d1e-733c-4c43-a567-d28fbc4649a7
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: 03542d1e-733c-4c43-a567-d28fbc4649a7
   name: Default Time-Based OTP Provider
-  type: DefaultTimeBased
   notes: Built-in default time-based OTP provider.
-  tags: ['built-in']
+  tags:
+  - built-in
+  type: DefaultTimeBased
 ---
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
-metadata:
-  name: my-super-provider
-  passwords: []
-  singleton: false
-  uuid: 6cc92b97-9277-4c42-9a83-a80a22da4111
 spec:
-  name: My Super Provider
-  type: Radius
-  notes: It's really super!
+  appgate_metadata:
+    passwords: []
+    uuid: 6cc92b97-9277-4c42-9a83-a80a22da4111
   authenticationProtocol: PAP
-  hostnames: [foo.example.com]
+  hostnames:
+  - foo.example.com
   mode: Challenge
+  name: My Super Provider
+  notes: It's really super!
   port: 1812
-  tags: [super, duper]
-  timeout: 6
-  useUserPassword: true
   sharedSecret: foobar
+  tags:
+  - super
+  - duper
+  timeout: 6
+  type: Radius
+  useUserPassword: true
+

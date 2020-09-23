@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 import datetime
 import time
 

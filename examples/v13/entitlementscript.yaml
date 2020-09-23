@@ -1,19 +1,19 @@
 apiVersion: beta.appgate.com/v1
 kind: EntitlementScript
-metadata:
-  name: hello
-  passwords: []
-  singleton: false
-  uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
   expression: "/* This should return an array of strings. Some examples below: (Please\
-  \ read the manual for all options)\n\nreturn [\n  '1.0.0.26', '1.0.0.0/28', // Ip\
-  \ adresses\n  'myserver1.com', 'myserver1.com, myserver2.com', // DNS\n  'aws://security-group:<NAME>',\
-  \ // Amazon Web Services\n  'azure://network-security-group:<NAME>', // Azure\n\
-  \  'esx://vm:<NAME>', // VMware vSphere\n  'gcp://instance=name:dln-instance-1',\
-  \ // Google Cloud Platform\n];\n\n*/\n\nreturn [];\n"
+    \ read the manual for all options)\n\nreturn [\n  '1.0.0.26', '1.0.0.0/28', //\
+    \ Ip adresses\n  'myserver1.com', 'myserver1.com, myserver2.com', // DNS\n  'aws://security-group:<NAME>',\
+    \ // Amazon Web Services\n  'azure://network-security-group:<NAME>', // Azure\n\
+    \  'esx://vm:<NAME>', // VMware vSphere\n  'gcp://instance=name:dln-instance-1',\
+    \ // Google Cloud Platform\n];\n\n*/\n\nreturn [];\n"
   name: Hello
   notes: Some notes
-  tags: [sdfd, bar]
+  tags:
+  - sdfd
+  - bar
   type: host
 

@@ -1,10 +1,5 @@
 apiVersion: beta.appgate.com/v1
 kind: Entitlement
-metadata:
-  name: simple-setup-ent-ping
-  passwords: []
-  singleton: false
-  uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
 spec:
   actions:
   - action: allow
@@ -17,19 +12,21 @@ spec:
     - 0-255
   appShortcutScripts: []
   appShortcuts: []
+  appgate_metadata:
+    passwords: []
+    uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
   conditions:
   - Always
   name: simple_setup_ENT_PING
   site: simple_setup Site
-  tags: ['sdp','operator','was','here']
+  tags:
+  - sdp
+  - operator
+  - was
+  - here
 ---
 apiVersion: beta.appgate.com/v1
 kind: Entitlement
-metadata:
-  name: simple-setup-ent-http
-  passwords: []
-  singleton: false
-  uuid: d8f09f37-9401-4136-b969-95ebbb175c1c
 spec:
   actions:
   - action: allow
@@ -43,8 +40,12 @@ spec:
     types: []
   appShortcutScripts: []
   appShortcuts: []
+  appgate_metadata:
+    passwords: []
+    uuid: d8f09f37-9401-4136-b969-95ebbb175c1c
   conditions:
   - Always
   name: simple_setup_ENT_HTTP
   site: simple_setup Site
   tags: []
+
