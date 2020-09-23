@@ -81,7 +81,8 @@ class Context:
 
 def get_context(args: OperatorArguments,
                 k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> Context:
-    if not args.namespace:
+    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    if not namespace:
         raise Exception('Namespace must be defined in order to run the appgate-operator')
     user = os.getenv(USER_ENV) or args.user
     password = os.getenv(PASSWORD_ENV) or args.password
@@ -107,7 +108,7 @@ def get_context(args: OperatorArguments,
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
-    return Context(namespace=args.namespace, user=user, password=password,
+    return Context(namespace=namespace, user=user, password=password,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
@@ -125,7 +126,7 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
-        namespace = args.namespace or list_kube_config_contexts()[1]['context'].get('namespace')
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
 
     if not namespace:
         raise Exception('Unable to discover namespace, please provide it.')
