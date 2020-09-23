@@ -206,7 +206,7 @@ def test_appgate_metadata_secrets_dump_from_appgate():
     e2_data = {
         'fieldThree': 'this is a field',
         'appgate_metadata': {
-            'password_fields': ['fieldOne'],
+            'passwordFields': ['fieldOne'],
             'passwords': {},
         }
     }
