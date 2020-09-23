@@ -1,11 +1,9 @@
 apiVersion: beta.appgate.com/v1
 kind: Site
-metadata:
-  name: simple-setup-site
-  passwords: []
-  singleton: false
-  uuid: 3d844467-8d82-42d2-946a-53b3d8ff11ec
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: 3d844467-8d82-42d2-946a-53b3d8ff11ec
   defaultGateway:
     excludedSubnets: []
   ipPoolMappings: []
@@ -30,12 +28,10 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: Site
-metadata:
-  name: default-site
-  passwords: []
-  singleton: false
-  uuid: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   defaultGateway:
     excludedSubnets: []
   entitlementBasedRouting: true
@@ -57,3 +53,4 @@ spec:
     snat: true
     tls: {}
     webProxyEnabled: false
+

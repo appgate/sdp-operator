@@ -16,7 +16,8 @@ from appgate.attrs import K8S_DUMPER, DIFF_DUMPER, dump_datetime
 from appgate.client import EntityClient, K8SConfigMapClient, entity_unique_id
 from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
-from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION
+from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, \
+    APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD
 from appgate.openapi.utils import is_entity_t, has_name, is_builtin, get_passwords
 
 __all__ = [
@@ -121,19 +122,14 @@ def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
     entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
-    entity_mt = getattr(entity, ENTITY_METADATA_ATTRIB_NAME, {})
+    entity_mt = getattr(entity.value, ENTITY_METADATA_ATTRIB_NAME, {})
     singleton = entity_mt.get('singleton', False)
-    metadata = {
-        'name': entity_name,
-        'passwords': get_passwords(entity.value),
-        'singleton': singleton
-    }
     if not singleton:
-        metadata['uuid'] = entity.id
+        entity.value = evolve(entity.value, appgate_metadata=evolve(entity.value.appgate_metadata,
+                                                                    uuid=entity.id))
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
-        'metadata': metadata,
         'spec': K8S_DUMPER.dump(entity.value)
     }
 
@@ -149,7 +145,8 @@ def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
         if i > 0:
             f.write('---\n')
         dumped_entity = dump_entity(e, entity_type)
-        entity_passwords = dumped_entity['metadata'].get('passwords')
+        entity_passwords = dumped_entity['spec'][APPGATE_METADATA_ATTRIB_NAME]\
+            .get(APPGATE_METADATA_PASSWORD_FIELDS_FIELD)
         yaml_dump = yaml.dump(dumped_entity, default_flow_style=False)
         f.write(yaml_dump)
     if dump_file:

@@ -10,7 +10,7 @@ from typedload.exceptions import TypedloadException
 from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
     CustomEntityLoader
 from appgate.openapi.types import Entity_T, ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME, \
-    LoaderFunc, DumperFunc
+    LoaderFunc, DumperFunc, APPGATE_METADATE_FIELDS, APPGATE_LOADERS_FIELD_NAME, K8S_LOADERS_FIELD_NAME
 
 __all__ = [
     'K8S_DUMPER',
@@ -75,20 +75,19 @@ def get_dumper(platform_type: PlatformType):
             write_only = attr.metadata.get('writeOnly', False)
             format = attr.metadata.get('format')
             name = attr.metadata.get('name', attr.name)
-
             if platform_type == PlatformType.DIFF and not attr.eq:
                 # DIFF mode we only dump eq fields
                 continue
             elif not platform_type == PlatformType.DIFF:
                 if not attr.repr:
                     continue
-                if name == APPGATE_METADATA_ATTRIB_NAME:
+                if name == APPGATE_METADATA_ATTRIB_NAME and platform_type == PlatformType.APPGATE:
                     continue
                 if read_only:
                     continue
-
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
+                r[name] = d.dump(attrval)
                 r[name] = d.dump(attrval)
         return r
 
@@ -107,13 +106,15 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
             if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
                 appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
                 if platform_type == PlatformType.K8S \
-                        and 'k8s_loader' in appgate_metadata:
-                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = appgate_metadata['k8s_loader']
+                        and K8S_LOADERS_FIELD_NAME in appgate_metadata:
+                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = \
+                        appgate_metadata[K8S_LOADERS_FIELD_NAME]
                     for el in (els or []):
                         entity = el.load(orig_values, entity)
                 elif platform_type == PlatformType.APPGATE \
-                        and 'appgate_loader' in appgate_metadata.get('metadata', {}):
-                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = appgate_metadata['appgate_loader']
+                        and APPGATE_LOADERS_FIELD_NAME in appgate_metadata:
+                    els: List[Union[CustomFieldsEntityLoader,
+                                    CustomEntityLoader]] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
                     for el in (els or []):
                         entity = el.load(orig_values, entity)
         except Exception as e:
@@ -158,13 +159,13 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
             try:
                 if platform_type == PlatformType.K8S \
                         and 'k8s_loader' in attribute.metadata:
-                    cls: Iterable[CustomLoader] = attribute.metadata['k8s_loader']
+                    cls: Iterable[CustomLoader] = attribute.metadata[K8S_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
                 elif platform_type == PlatformType.APPGATE \
                         and 'appgate_loader' in attribute.metadata:
-                    cls: Iterable[CustomLoader] = attribute.metadata['appgate_loader']
+                    cls: Iterable[CustomLoader] = attribute.metadata[APPGATE_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
@@ -184,7 +185,15 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
     loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
     def load(data: Dict[str, Any], metadata: Optional[Dict[str, Any]],
              entity: type) -> Entity_T:
-        data[APPGATE_METADATA_ATTRIB_NAME] = metadata or {}
+        metadata = metadata or {}
+        if APPGATE_METADATA_ATTRIB_NAME in data:
+            appgate_mt = data[APPGATE_METADATA_ATTRIB_NAME]
+        else:
+            appgate_mt = {}
+        for k in APPGATE_METADATE_FIELDS:
+            if k in metadata:
+                appgate_mt[k] = metadata[k]
+        data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         return loader.load(data, entity)
 
     if platform_type == PlatformType.K8S:

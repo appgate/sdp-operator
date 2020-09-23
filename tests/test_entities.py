@@ -56,22 +56,25 @@ def test_loader_2():
     """
     EntityTestWithId = load_test_open_api_spec(secrets_key=None,
                                                reload=True).entities['EntityTestWithId'].cls
+    appgate_metadata = {
+        'uuid': '666-666-666-666-666-777'
+    }
     entity_1 = {
         'fieldOne': 'this is read only',
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is deprecated',
         'fieldFour': 'this is a field',
     }
-    metadata = {
-        'uuid': '666-666-666-666-666-777'
-    }
+
     with patch('appgate.openapi.attribmaker.uuid4') as uuid4:
         uuid4.return_value = '111-111-111-111-111'
         e = K8S_LOADER.load(entity_1, None, EntityTestWithId)
         # Normally we create a new uuid value for id if it's not present
         assert e.id == '111-111-111-111-111'
+        entity_2 = entity_1
+        entity_2['appgate_metadata'] = appgate_metadata
         # If we have in metadata we use it
-        e = K8S_LOADER.load(entity_1, metadata, EntityTestWithId)
+        e = K8S_LOADER.load(entity_2, None, EntityTestWithId)
         assert e.id == '666-666-666-666-666-777'
 
 
@@ -81,16 +84,18 @@ def test_loader_3():
     """
     EntityTest1 = load_test_open_api_spec(secrets_key=None,
                                           reload=True).entities['EntityTest1'].cls
+    appgate_metadata = {
+        'uuid': '666-666-666-666-666-666'
+    }
     entity_1 = {
         'fieldOne': 'this is read only',
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is deprecated',
         'fieldFour': 'this is a field',
+        'appgate_metadata': appgate_metadata
     }
-    metadata = {
-        'uuid': '666-666-666-666-666-666'
-    }
-    e = K8S_LOADER.load(entity_1, metadata, EntityTest1)
+
+    e = K8S_LOADER.load(entity_1, None, EntityTest1)
     # We load instance metadata
     assert e.appgate_metadata == AppgateMetadata(uuid='666-666-666-666-666-666')
     assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
@@ -116,6 +121,7 @@ def test_dumper_1():
     e1_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
+        'appgate_metadata': {},
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e1_data
@@ -136,12 +142,16 @@ def test_dumper_2():
     }
     e = APPGATE_DUMPER.dump(e1)
     assert e == e1_data
-    e1_data = {
+
+    e2_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
+        'appgate_metadata': {
+            'uuid': '666-666-666-666-666'
+        }
     }
     e = K8S_DUMPER.dump(e1)
-    assert e == e1_data
+    assert e == e2_data
 
 
 def test_deprecated_entity():
@@ -180,6 +190,28 @@ def test_write_only_attribute_load():
     assert e == EntityTest2(fieldOne=None,
                             fieldTwo=None,
                             fieldThree='this is a field')
+    assert e.appgate_metadata.passwords == {
+        'fieldOne': '1234567890'
+    }
+    assert e.appgate_metadata.password_fields == ['fieldOne']
+
+
+def test_appgate_metadata_secrets_dump_from_appgate():
+    EntityTest2 = load_test_open_api_spec(secrets_key=None,
+                                          reload=True).entities['EntityTest2'].cls
+    e1_data = {
+        'fieldThree': 'this is a field',
+    }
+    e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)
+    e2_data = {
+        'fieldThree': 'this is a field',
+        'appgate_metadata': {
+            'passwordFields': ['fieldOne'],
+            'passwords': {},
+        }
+    }
+    d = K8S_DUMPER.dump(e1)
+    assert d == e2_data
 
 
 def test_read_only_write_only_eq():
@@ -310,6 +342,7 @@ def test_bytes_dump():
                     fieldTwo=SHA256_FILE)
     e_data = {
         'fieldOne': BASE64_FILE_W0,
+        'appgate_metadata': {},
     }
     # We don't dump the checksum field associated to bytes to K8S
     assert K8S_DUMPER.dump(e) == e_data
@@ -319,16 +352,18 @@ def test_bytes_diff_dump():
     # DIFF mode we should dump just the fields used for equality
     EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
                                                  reload=True).entities['EntityTest3Appgate'].cls
+    appgate_metadata = {
+        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
+    }
     e_data = {
         'name': 'entity1',
         'fieldOne': BASE64_FILE_W0,
         'fieldTwo': None,
         'fieldThree': None,
+        'appgate_metadata': appgate_metadata
     }
-    e_metadata = {
-        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
-    }
-    e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
+
+    e = K8S_LOADER.load(e_data, None, EntityTest3Appgate)
     assert DIFF_DUMPER.dump(e) == {
         'name': 'entity1',
         'fieldTwo': SHA256_FILE,

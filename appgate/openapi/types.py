@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, FrozenSet, Callable, Set, \
 
 from graphlib import TopologicalSorter
 
-from attr import attrib, attrs, Attribute
+from attr import attrib, attrs, Attribute, evolve
 
 from appgate.logger import log
 
@@ -49,6 +49,17 @@ K8S_LOADERS_FIELD_NAME = 'k8s_loader'
 PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list,
                 datetime.datetime)
 UUID_REFERENCE_FIELD = 'x-uuid-ref'
+APPGATE_METADATA_PASSWORD_FIELDS_FIELD = 'passwordFields'
+APPGATE_METADATA_GENERATION_FIELD = 'generation'
+APPGATE_METADATA_LATEST_GENERATION_FIELD = 'latestGeneration'
+APPGATE_METADATA_MODIFICATION_FIELD = 'modificationTimestamp'
+APPGATE_METADATA_CREATION_FIELD = 'creationTime'
+APPGATE_METADATE_FIELDS = {
+    APPGATE_METADATA_CREATION_FIELD,
+    APPGATE_METADATA_MODIFICATION_FIELD,
+    APPGATE_METADATA_GENERATION_FIELD,
+    APPGATE_METADATA_LATEST_GENERATION_FIELD,
+}
 
 
 def normalize_attrib_name(name: str) -> str:
@@ -80,6 +91,15 @@ class AppgateMetadata:
     }, default=f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}')
     uuid: Optional[str] = attrib(default=None)
     passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
+    password_fields: Optional[List[str]] = attrib(default=None, metadata={
+        'name': 'passwordFields'
+    })
+
+    def with_password_values(self, passwords: Dict[str, Union[str, Dict[str, str]]]) -> 'AppgateMetadata':
+        return evolve(self, passwords=passwords)
+
+    def with_password_fields(self, fields: List[str]) -> 'AppgateMetadata':
+        return evolve(self, password_fields=fields)
 
 
 @attrs()

@@ -1,12 +1,10 @@
 apiVersion: beta.appgate.com/v1
 kind: LocalUser
-metadata:
-  name: bobbytables
-  passwords:
-    - password
-  singleton: false
-  uuid: 95c4360a-7b4b-4de6-9527-e0b714f9d344
 spec:
+  appgate_metadata:
+    passwords:
+    - password
+    uuid: 95c4360a-7b4b-4de6-9527-e0b714f9d344
   email: bobby@tables.com
   failedLoginAttempts: 0
   firstName: Bobby
@@ -14,4 +12,6 @@ spec:
   name: bobbytables
   notes: My notes
   password: foobar
-  tags: [operator]
+  tags:
+  - operator
+

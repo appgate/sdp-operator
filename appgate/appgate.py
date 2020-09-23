@@ -19,7 +19,8 @@ from kubernetes.watch import Watch
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
-from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN
+from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
+    APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
 from appgate.secrets import k8s_get_secret
 
@@ -203,8 +204,8 @@ def run_entity_loop(ctx: Context, crd: str, loop: asyncio.AbstractEventLoop,
                     mt = ev.object.metadata
                     latest_entity_generation = k8s_configmap_client.read(entity_unique_id(kind, name))
                     if latest_entity_generation:
-                        mt['latestGeneration'] = latest_entity_generation.generation
-                        mt['modified'] = dump_datetime(latest_entity_generation.modified)
+                        mt[APPGATE_METADATA_LATEST_GENERATION_FIELD] = latest_entity_generation.generation
+                        mt[APPGATE_METADATA_MODIFICATION_FIELD] = dump_datetime(latest_entity_generation.modified)
                     entity = load(ev.object.spec, ev.object.metadata, entity_type)
                 except TypedloadTypeError:
                     log.exception('[%s/%s] Unable to parse event %s', crd, namespace, event)

@@ -1,11 +1,9 @@
 apiVersion: beta.appgate.com/v1
 kind: IdentityProvider
-metadata:
-  name: connector
-  passwords: []
-  singleton: false
-  uuid: b2cdefce-1efe-4a7e-85d1-7976920f118f
 spec:
+  appgate_metadata:
+    passwords: []
+    uuid: b2cdefce-1efe-4a7e-85d1-7976920f118f
   claimMappings:
   - attributeName: peerHostname
     claimName: peerHostname
@@ -33,13 +31,11 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: IdentityProvider
-metadata:
-  name: local
-  passwords: []
-  singleton: false
-  uuid: b5ea7cf0-6e75-11e4-9803-0800200c9a66
 spec:
   adminProvider: true
+  appgate_metadata:
+    passwords: []
+    uuid: b5ea7cf0-6e75-11e4-9803-0800200c9a66
   claimMappings:
   - attributeName: username
     claimName: username
@@ -67,3 +63,4 @@ spec:
   tags:
   - builtin
   type: LocalDatabase
+

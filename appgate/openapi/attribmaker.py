@@ -2,8 +2,7 @@ from uuid import uuid4
 from typing import Optional, Dict, Any, List
 
 from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
-    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig, UUID_REFERENCE_FIELD
-
+    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig, UUID_REFERENCE_FIELD, K8S_LOADERS_FIELD_NAME
 
 write_only_formats = {'PEM', 'password'}
 
