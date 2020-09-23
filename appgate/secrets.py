@@ -10,7 +10,7 @@ from kubernetes.client import CoreV1Api
 from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import SimpleAttribMaker
 from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, \
-    K8S_LOADERS_FIELD_NAME, Entity_T
+    K8S_LOADERS_FIELD_NAME, Entity_T, APPGATE_LOADERS_FIELD_NAME
 from appgate.openapi.utils import get_passwords
 
 
@@ -157,16 +157,19 @@ class PasswordAttribMaker(SimpleAttribMaker):
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = False
 
+        # sets appgate_metadata.passwords
         # TODO: Recursive fields
         def set_appgate_password_metadata(orig_values, entity: Entity_T) -> Entity_T:
             password_fields = get_passwords(entity)
             orig_passwords = {}
+            field_passwords = []
             for field in password_fields:
+                field_passwords.append(field)
                 if field in orig_values:
                     orig_passwords[field] = orig_values[field]
-            return evolve(entity,
-                          appgate_metadata=evolve(entity.appgate_metadata,
-                                                  passwords=orig_passwords))
+            appgate_mt = entity.appgate_metadata.with_password_fields(field_passwords)\
+                .with_password_values(orig_passwords)
+            return evolve(entity, appgate_metadata=appgate_mt)
 
         if 'metadata' not in values:
             values['metadata'] = {}
@@ -174,6 +177,11 @@ class PasswordAttribMaker(SimpleAttribMaker):
             CustomAttribLoader(
                 loader=lambda v: appgate_secret_load(v, self.secrets_cipher, self.k8s_get_client),
                 field=self.name),
+            CustomEntityLoader(
+                loader=set_appgate_password_metadata
+            )
+        ]
+        values['metadata'][APPGATE_LOADERS_FIELD_NAME] = [
             CustomEntityLoader(
                 loader=set_appgate_password_metadata
             )

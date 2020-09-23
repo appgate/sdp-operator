@@ -18,6 +18,7 @@ def test_write_only_password_attribute_dump():
         'fieldOne': '1234567890',
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
+        'appgate_metadata': {},
     }
     assert K8S_DUMPER.dump(e) == e_data
     e_data = {
