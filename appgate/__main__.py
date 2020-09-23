@@ -155,9 +155,10 @@ def main() -> None:
             cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map))
     elif args.cmd == 'dump-entities':
         main_dump_entities(
-            OperatorArguments(namespace='cli', spec_directory=args.spec_directory, target_tags=args.tags),
+            OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
+                              target_tags=args.tags),
             stdout=args.stdout,
-            output_dir=Path(args.output_dir) if args.output_dir else None)
+            output_dir=Path(args.directory) if args.directory else None)
     elif args.cmd == 'dump-crd':
         main_dump_crd(stdout=args.stdout, output_file=args.file,
                       spec_directory=args.spec_directory)
