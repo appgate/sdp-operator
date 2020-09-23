@@ -78,10 +78,10 @@ K3v43hUS5fGT4waKe7ix4Z4mu5UBv+cw7WSFAt0Vaag0sAbsPzU8Hhsrj/qPABvfB8
 asUwcCAwEAAQ==
 '''
 
-ISSUER = '''1.2.840.113549.1.9.1=support@frank4dd.com,CN=Frank4DD Web CA,
-OU=WebCert Support,O=Frank4DD,L=Chuo-ku,ST=Tokyo,C=JP'''
+ISSUER = '''1.2.840.113549.1.9.1=support@frank4dd.com, CN=Frank4DD Web CA,
+ OU=WebCert Support, O=Frank4DD, L=Chuo-ku, ST=Tokyo, C=JP'''
 
-SUBJECT = 'CN=www.example.com,O=Frank4DD,ST=Tokyo,C=JP'
+SUBJECT = 'CN=www.example.com, O=Frank4DD, ST=Tokyo, C=JP'
 
 FINGERPRINT = '5f0fb5166581aae64a101c1583b1bebe74e814a91e7a8a14ba1e835d78f6e9e7'
 

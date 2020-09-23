@@ -193,7 +193,7 @@ def test_write_only_attribute_load():
     assert e.appgate_metadata.passwords == {
         'fieldOne': '1234567890'
     }
-    assert e.appgate_metadata.password_fields == ['fieldOne']
+    assert e.appgate_metadata.password_fields == frozenset({'fieldOne'})
 
 
 def test_appgate_metadata_secrets_dump_from_appgate():
