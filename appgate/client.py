@@ -124,7 +124,7 @@ class K8SConfigMapClient:
     def read(self, key: str) -> Optional[LatestEntityGeneration]:
         entry = self._entries.get(key)
         log.info('[k8s-configmap-client/%s/%s] Reading %s: %s', self.name, self.namespace,
-                 key, dump_latest_entity_generation(entry) or 'not found')
+                 key, dump_latest_entity_generation(entry) if entry else 'not found')
         return entry
 
     async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
