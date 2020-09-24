@@ -20,6 +20,9 @@ __all__ = [
 ]
 
 
+class AppgateException(Exception):
+    pass
+
 
 class EntityClient:
     def __init__(self, path: str, appgate_client: 'AppgateClient',
@@ -212,17 +215,14 @@ class AppgateClient:
                         return await resp.json()
                 else:
                     error_data = await resp.text()
+                    log.error('[aggpate-client] %s :: %s: %s', url, resp.status,
+                              error_data)
                     if data:
-                        log.error('[aggpate-client] %s :: %s: %s', url, resp.status,
-                                  error_data)
                         log.error('[appgate-client] payload :: %s', data)
-                    else:
-                        log.error('[aggpate-client] %s :: %s', url, resp.status)
-                        log.error('[appgate-client] payload :: %s', data)
-                    return None
+                    raise AppgateException(f'Error: [{method} {url} {resp.status}] {error_data}')
         except InvalidURL:
             log.error('[appgate-client] Error preforming query: %s', url)
-            return None
+            raise AppgateException(f'Error: [{method} {url}] InvalidURL')
 
     async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('POST', path=path, data=body)

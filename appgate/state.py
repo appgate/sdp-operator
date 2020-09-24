@@ -262,12 +262,13 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
     for e in plan.create.entities:
         log.info('[appgate-operator/%s] + %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
-            if not await entity_client.post(e.value):
-                errors.add(e.id)
-            else:
+            try:
+                await entity_client.post(e.value)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
+            except Exception:
+                errors.add(e.id)
 
     for e in plan.modify.entities:
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e.value), e.name, e.id)
@@ -277,21 +278,23 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             for d in diff:
                 log.info('%s', d.rstrip())
         if entity_client:
-            if not await entity_client.put(e.value):
-                errors.add(e.id)
-            else:
+            try:
+                await entity_client.put(e.value)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
+            except Exception:
+                errors.add(e.id)
 
     for e in plan.delete.entities:
         log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e.value), e.name, e.id)
         if entity_client:
-            if not await entity_client.delete(e.id):
-                errors.add(e.id)
-            else:
+            try:
+                await entity_client.delete(e.id)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, name))
+            except Exception:
+                errors.add(e.id)
 
     for e in plan.share.entities:
         log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
