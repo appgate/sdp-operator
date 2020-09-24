@@ -64,8 +64,6 @@ class EntityClient:
             path = self.path
         data = await self._client.put(path, body=self.dump(entity))
         if not data:
-            log.error('[aggpate-client] PUT %s :: Expecting a response but we got empty data',
-                      self.path)
             return None
         return self.load(data)  # type: ignore
 
