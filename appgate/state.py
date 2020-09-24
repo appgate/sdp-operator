@@ -7,7 +7,7 @@ import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet, Iterator
 
 import yaml
 from attr import attrib, attrs, evolve
@@ -342,14 +342,18 @@ class AppgatePlan:
     def needs_apply(self) -> bool:
         return any(v.needs_apply for v in self.entities_plan.values())
 
+    def ordered_entities_plan(self, api_spec: APISpec) -> Iterator[Tuple[str, Plan]]:
+        return map(lambda k: (k, self.entities_plan[k]), api_spec.entities_sorted)
+
 
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
                              entity_clients: Dict[str, EntityClient],
-                             k8s_configmap_client: K8SConfigMapClient) -> AppgatePlan:
+                             k8s_configmap_client: K8SConfigMapClient,
+                             api_spec: APISpec) -> AppgatePlan:
     log.info('[appgate-operator/%s] AppgatePlan Summary:', namespace)
     entities_plan = {k: await plan_apply(v, namespace=namespace, entity_client=entity_clients.get(k),
                                          k8s_configmap_client=k8s_configmap_client)
-                     for k, v in appgate_plan.entities_plan.items()}
+                     for k, v in appgate_plan.ordered_entities_plan(api_spec)}
     return AppgatePlan(entities_plan=entities_plan)
 
 

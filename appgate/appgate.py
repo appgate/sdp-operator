@@ -304,7 +304,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                                                             api_spec=ctx.api_spec,
                                                             appgate_client=appgate_client)
                                                         if appgate_client else {},
-                                                        k8s_configmap_client=k8s_configmap_client)
+                                                        k8s_configmap_client=k8s_configmap_client,
+                                                        api_spec=ctx.api_spec)
 
                     if appgate_client:
                         current_appgate_state = new_plan.appgate_state
