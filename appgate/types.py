@@ -2,6 +2,7 @@ import datetime
 from typing import Dict, Any, FrozenSet, Optional, List
 from attr import attrib, attrs, evolve
 
+from appgate.logger import log
 from appgate.openapi.types import Entity_T
 
 
@@ -77,7 +78,7 @@ class EntityWrapper:
         assert isinstance(other, self.__class__)
         mt = self.value.appgate_metadata
         if getattr(other.value, 'updated', None) is not None:
-            return mt.modified > other.value.updated
+            return mt.modified > (other.value.updated + datetime.timedelta(seconds=2))
         return False
 
     def needs_update(self, other: object) -> bool:
@@ -97,8 +98,12 @@ class EntityWrapper:
             raise Exception(f'Wrong other argument {other}')
         if not self.has_secrets():
             return self.value == other.value
-        if self.needs_update(other):
-            return False
+        if self.value.appgate_metadata.from_appgate and not other.value.appgate_metadata.from_appgate:
+            if other.needs_update(self):
+                return False
+        elif not self.value.appgate_metadata.from_appgate and other.value.appgate_metadata.from_appgate:
+            if self.needs_update(other):
+                return False
         return self.value == other.value
 
     def __hash__(self) -> int:

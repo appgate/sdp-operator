@@ -94,6 +94,9 @@ class AppgateMetadata:
     password_fields: Optional[FrozenSet[str]] = attrib(default=None, metadata={
         'name': 'passwordFields'
     })
+    from_appgate: Optional[bool] = attrib(default=None, repr=False, metadata={
+        'name': 'fromAppgate'
+    })
 
     def with_password_values(self, passwords: Dict[str, Union[str, Dict[str, str]]]) -> 'AppgateMetadata':
         return evolve(self, passwords=passwords)
