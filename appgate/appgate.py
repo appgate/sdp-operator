@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import logging
 import os
 import sys
@@ -6,7 +7,7 @@ from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Type, Dict, Callable, Any, List, FrozenSet
+from typing import Optional, Type, Dict, Callable, Any, FrozenSet
 import threading
 
 from attr import attrib, attrs
@@ -306,6 +307,13 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                                                         if appgate_client else {},
                                                         k8s_configmap_client=k8s_configmap_client,
                                                         api_spec=ctx.api_spec)
+                    maybe_errors = filter(None, map(lambda p: p.errors, new_plan.entities_plan.values()))
+                    errors = filter(lambda s: len(s) > 0, itertools.chain.from_iterable(maybe_errors))
+                    if errors:
+                        log.error('[appgate-operator/%s] Found errors when applying plan:', namespace)
+                        for e in errors:
+                            log.error('[appgate-operator/%s] Error %s:', e)
+                        sys.exit(1)
 
                     if appgate_client:
                         current_appgate_state = new_plan.appgate_state
