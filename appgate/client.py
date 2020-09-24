@@ -122,6 +122,8 @@ class K8SConfigMapClient:
         }
 
     def read(self, key: str) -> Optional[LatestEntityGeneration]:
+        log.info('[k8s-configmap-client/%s/%s] Reading %s: %s', self.name, self.namespace,
+                 key, self._entries.get(key))
         return self._entries.get(key)
 
     async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
