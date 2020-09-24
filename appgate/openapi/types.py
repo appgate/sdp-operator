@@ -91,15 +91,18 @@ class AppgateMetadata:
     }, default=f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}')
     uuid: Optional[str] = attrib(default=None)
     passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
-    password_fields: Optional[List[str]] = attrib(default=None, metadata={
+    password_fields: Optional[FrozenSet[str]] = attrib(default=None, metadata={
         'name': 'passwordFields'
+    })
+    from_appgate: Optional[bool] = attrib(default=None, repr=False, metadata={
+        'name': 'fromAppgate'
     })
 
     def with_password_values(self, passwords: Dict[str, Union[str, Dict[str, str]]]) -> 'AppgateMetadata':
         return evolve(self, passwords=passwords)
 
     def with_password_fields(self, fields: List[str]) -> 'AppgateMetadata':
-        return evolve(self, password_fields=fields)
+        return evolve(self, password_fields=frozenset(fields))
 
 
 @attrs()

@@ -112,7 +112,7 @@ def main() -> None:
     run.add_argument('--password', help='Password used for authentication', default=None)
     run.add_argument('--cleanup', help='Delete entities not defined in expected state', default=True)
     run.add_argument('--mt-config-map', help='Name for the configmap used for metadata',
-                     default=True)
+                     default=None)
     run.add_argument('--two-way-sync', help='Always update current state with latest appgate'
                                             ' state before applying a plan', default=True)
     run.add_argument('-t', '--tags', action='append',

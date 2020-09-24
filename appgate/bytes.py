@@ -49,8 +49,8 @@ def create_certificate_loader(loader: LoaderFunc, entity_type: type) -> Callable
         cert_data = {
             'version': cert.version.value + 1,
             'serial': str(cert.serial_number),
-            'issuer': cert.issuer.rfc4514_string(),
-            'subject': cert.subject.rfc4514_string(),
+            'issuer': ', '.join(cert.issuer.rfc4514_string().split(',')),
+            'subject': ', '.join(cert.subject.rfc4514_string().split(',')),
             'validFrom': valid_from,
             'validTo': valid_to,
             'fingerprint': binascii.hexlify(cert.fingerprint(hashes.SHA256())).decode(),

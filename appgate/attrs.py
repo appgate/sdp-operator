@@ -193,6 +193,8 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
         for k in APPGATE_METADATE_FIELDS:
             if k in metadata:
                 appgate_mt[k] = metadata[k]
+        if platform_type == PlatformType.APPGATE:
+            appgate_mt['fromAppgate'] = True
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         return loader.load(data, entity)
 
