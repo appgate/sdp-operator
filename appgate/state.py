@@ -173,6 +173,12 @@ class AppgateState:
         # TODO: Fix linter here!
         entities_op(entities, entity, op, current_entities)  # type: ignore
 
+    def sync_generations(self) -> 'AppgateState':
+        return AppgateState(entities_set={
+            k: EntitiesSet({entity_sync_generation(e) for e in v.entities})
+            for k, v in self.entities_set.items()
+        })
+
     def copy(self, entities_set: Dict[str, EntitiesSet]) -> 'AppgateState':
         new_entities_set = {}
         for k, v in self.entities_set.items():
@@ -203,12 +209,22 @@ class AppgateState:
                 print(f'  - {password_field}')
 
 
+def entity_sync_generation(entity_wrapper: EntityWrapper) -> EntityWrapper:
+    """
+    Syncs current generation to latest.
+    """
+    entity = entity_wrapper.value
+    appgate_metadata = evolve(entity.appgate_metadata,
+                              latest_generation=entity.appgate_metadata.current_generation)
+    return EntityWrapper(evolve(entity, appgate_metadata=appgate_metadata))
+
+
 def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
                    errors: Optional[Set[str]] = None) -> EntitiesSet:
     entities = set()
     errors = errors or set()
     entities.update(share.entities)
-    entities.update({e for e in modify.entities if e.id not in errors})
+    entities.update({entity_sync_generation(e) for e in modify.entities if e.id not in errors})
     entities.update({e for e in create.entities if e.id not in errors})
     return EntitiesSet(entities)
 
@@ -315,6 +331,11 @@ class AppgatePlan:
 
     @cached_property
     def appgate_state(self) -> AppgateState:
+        """
+        Return an AppgateState from the AppgatePlan
+        It will synchronized the current and latest generation since this is called
+        once a plan has been applied properly.
+        """
         return AppgateState({k: v.entities for k, v in self.entities_plan.items()})
 
     @cached_property

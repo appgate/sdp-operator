@@ -308,5 +308,6 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
 
                     if appgate_client:
                         current_appgate_state = new_plan.appgate_state
+                        expected_appgate_state = expected_appgate_state.sync_generations()
             else:
                 log.info('[appgate-operator/%s] Nothing changed! Keeping watching!', namespace)
