@@ -48,6 +48,8 @@ class EntityClient:
             return [self.load(data)]
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
+        log.info('[appgate-client/%s] POST %s [%s]', entity.__class__.__name__, entity.name,
+                 entity.id)
         body = self.dump(entity)
         body['id'] = entity.id
         data = await self._client.post(self.path,
@@ -59,6 +61,8 @@ class EntityClient:
         return self.load(data)  # type: ignore
 
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
+        log.info('[appgate-client/%s] PUT %s [%s]', entity.__class__.__name__, entity.name,
+                 entity.id)
         path = f'{self.path}/{entity.id}'
         if self.singleton:
             path = self.path
@@ -105,6 +109,8 @@ class K8SConfigMapClient:
         self.name = name
 
     async def init(self) -> None:
+        log.info('[k8s-configmap-client/%s/%s] Initializing config-map %s', self.name, self.namespace,
+                 self.name)
         configmap = await asyncio.to_thread(  # type: ignore
             self._v1.read_namespaced_config_map,
             name=self.name,
@@ -125,9 +131,12 @@ class K8SConfigMapClient:
         self._entries[key] = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
             modified=datetime.datetime.now().astimezone())
+        gen = dump_latest_entity_generation(self._entries[key])
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            key: dump_latest_entity_generation(self._entries[key])
+            key: gen
         }, metadata=self._configmap_mt)
+        log.info('[k8s-configmap-client/%s/%s] Updating entry %s -> %s', self.name, self.namespace,
+                 key, gen)
         new_configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
@@ -147,6 +156,7 @@ class K8SConfigMapClient:
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: None
         }, metadata=self._configmap_mt)
+        log.info('[k8s-configmap-client/%s/%s] Deleting entry %s', self.name, self.namespace, key)
         await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
