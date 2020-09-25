@@ -1,4 +1,5 @@
 import difflib
+import itertools
 import json
 import re
 import sys
@@ -18,7 +19,7 @@ from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, \
     APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD
-from appgate.openapi.utils import is_entity_t, has_name, is_builtin, get_passwords
+from appgate.openapi.utils import is_entity_t, has_name, is_builtin
 
 __all__ = [
     'AppgateState',
@@ -283,8 +284,8 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
-            except Exception:
-                errors.add(e.id)
+            except Exception as err:
+                errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
     for e in plan.modify.entities:
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e.value), e.name, e.id)
@@ -299,8 +300,8 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
                                                   generation=e.value.appgate_metadata.current_generation)
-            except Exception:
-                errors.add(e.id)
+            except Exception as err:
+                errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
     for e in plan.delete.entities:
         log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e.value), e.name, e.id)
@@ -309,8 +310,8 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 await entity_client.delete(e.id)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
                 await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, name))
-            except Exception:
-                errors.add(e.id)
+            except Exception as err:
+                errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
     for e in plan.share.entities:
         log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
@@ -344,6 +345,12 @@ class AppgatePlan:
 
     def ordered_entities_plan(self, api_spec: APISpec) -> Iterator[Tuple[str, Plan]]:
         return map(lambda k: (k, self.entities_plan[k]), api_spec.entities_sorted)
+
+    @cached_property
+    def errors(self) -> List[str]:
+        maybe_errors = filter(None, map(lambda p: p.errors, self.entities_plan.values()))
+        errors = list(filter(lambda s: len(s) > 0, itertools.chain.from_iterable(maybe_errors)))
+        return errors
 
 
 async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
@@ -533,7 +540,7 @@ def resolve_appgate_state(appgate_state: AppgateState,
     log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
     for entity_name in entities_sorted:
         for entity_dependency in entities[entity_name].dependencies:
-            log.debug('[appgate-state] Checking dependencies %s for of type %s.%s',
+            log.debug('[appgate-state] Checking dependencies %s for %s.%s',
                       entity_dependency.dependencies, entity_name,
                       entity_dependency.field_path)
             deps_tuple = []
