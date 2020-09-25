@@ -216,8 +216,7 @@ class AppgateClient:
         try:
             async with method(url=url,  # type: ignore
                               headers=headers,
-                              json=data,
-                              ssl=False) as resp:
+                              json=data) as resp:
                 status_code = resp.status // 100
                 if status_code == 2:
                     if resp.status == 204:
