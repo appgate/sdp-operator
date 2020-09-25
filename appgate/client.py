@@ -137,7 +137,7 @@ class K8SConfigMapClient:
         gen = dump_latest_entity_generation(self._entries[key])
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: gen
-        }, metadata=self._configmap_mt)
+        })
         log.info('[k8s-configmap-client/%s/%s] Updating entry %s -> %s', self.name, self.namespace,
                  key, gen)
         new_configmap = await asyncio.to_thread(  # type: ignore
@@ -158,14 +158,15 @@ class K8SConfigMapClient:
         del self._entries[key]
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: None
-        }, metadata=self._configmap_mt)
+        })
         log.info('[k8s-configmap-client/%s/%s] Deleting entry %s', self.name, self.namespace, key)
-        await asyncio.to_thread(  # type: ignore
+        new_configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
             namespace=self.namespace,
             body=body,
         )
+        self._configmap_mt = new_configmap.metadata
         return entry
 
 
