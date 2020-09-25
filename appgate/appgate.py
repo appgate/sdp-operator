@@ -317,8 +317,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
 
                     if len(new_plan.errors) > 0:
                         log.error('[appgate-operator/%s] Found errors when applying plan:', namespace)
-                        for e in new_plan.errors:
-                            log.error('[appgate-operator/%s] Error %s:', namespace, e)
+                        for err in new_plan.errors:
+                            log.error('[appgate-operator/%s] Error %s:', namespace, err)
                         sys.exit(1)
 
                     if appgate_client:
