@@ -307,12 +307,11 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                                                         if appgate_client else {},
                                                         k8s_configmap_client=k8s_configmap_client,
                                                         api_spec=ctx.api_spec)
-                    maybe_errors = filter(None, map(lambda p: p.errors, new_plan.entities_plan.values()))
-                    errors = list(filter(lambda s: len(s) > 0, itertools.chain.from_iterable(maybe_errors)))
-                    if len(errors) > 0:
+
+                    if len(new_plan.errors) > 0:
                         log.error('[appgate-operator/%s] Found errors when applying plan:', namespace)
-                        for e in errors:
-                            log.error('[appgate-operator/%s] Error %s:', e)
+                        for e in new_plan.errors:
+                            log.error('[appgate-operator/%s] Error %s:', namespace, e)
                         sys.exit(1)
 
                     if appgate_client:
