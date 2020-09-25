@@ -163,7 +163,7 @@ class K8SConfigMapClient:
         await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
-            namesapce=self.namespace,
+            namespace=self.namespace,
             body=body,
         )
         return entry
