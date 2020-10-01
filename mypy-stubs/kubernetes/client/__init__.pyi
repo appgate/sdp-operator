@@ -14,11 +14,11 @@ class V1ObjectMeta:
 
 
 class V1ConfigMap:
-    def __init__(self, kind: str, api_version: str, metadata: Optional[V1ObjectMeta],
-                 data: Dict[str, Optional[str]]) -> None: ...
+    def __init__(self, kind: str, api_version: str, data: Dict[str, Optional[str]],
+                 metadata: Optional[V1ObjectMeta] = None) -> None: ...
     kind: str
     api_version: str
-    metadata: V1ObjectMeta
+    metadata: Optional[V1ObjectMeta]
     data: Dict[str, str]
 
 

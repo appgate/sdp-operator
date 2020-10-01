@@ -266,6 +266,13 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                      event.op, str(type(event.entity)), event.entity.name)
             expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
+            # Log all entities in expected state
+            log.info('[appgate-operator/%s] Expected entities:', namespace)
+            for entity_type, xs in expected_appgate_state.entities_set.items():
+                for entity_name, e in xs.entities_by_name.items():
+                    log.info('[appgate-operator/%s] %s: %s: %s', namespace, entity_type, entity_name,
+                             e.id)
+
             # Resolve entities now, in order
             # this will be the Topological sort
             total_conflicts = resolve_appgate_state(appgate_state=expected_appgate_state,
@@ -310,8 +317,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
 
                     if len(new_plan.errors) > 0:
                         log.error('[appgate-operator/%s] Found errors when applying plan:', namespace)
-                        for e in new_plan.errors:
-                            log.error('[appgate-operator/%s] Error %s:', namespace, e)
+                        for err in new_plan.errors:
+                            log.error('[appgate-operator/%s] Error %s:', namespace, err)
                         sys.exit(1)
 
                     if appgate_client:
