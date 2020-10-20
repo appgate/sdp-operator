@@ -7,10 +7,10 @@ PYTHON3=python3.9
 all: lint test
 
 lint:
-	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy appgate
+	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate
 
 test:
-	$(PYTHON3) -m pytest tests
+	$(PYTHON3) -m pytest -p no:cacheprovider tests
 
 docker-build-image:
 	docker build -f docker/Dockerfile-build . -t appgate-operator-builder
