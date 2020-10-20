@@ -1,28 +1,25 @@
 .PHONY: lint all
 SPEC_VERSIONS := $(wildcard api_specs/*)
+PYTHON3=python3.9
 
 .PHONY: $(SPEC_VERSIONS)
 
 all: lint test
 
-virtualenv:
-	python3 -m venv virtualenv
-	./virtualenv/bin/pip install -r requirements.txt -r requirements-build.txt
+lint:
+	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate
 
-lint: virtualenv
-	MYPYPATH=mypy-stubs ./virtualenv/bin/mypy appgate
-
-test: virtualenv
-	./virtualenv/bin/python -m pytest tests
+test:
+	$(PYTHON3) -m pytest -p no:cacheprovider tests
 
 docker-build-image:
 	docker build -f docker/Dockerfile-build . -t appgate-operator-builder
 
 docker-all: docker-build-image
-	docker run --rm -it -v ${PWD}:/root appgate-operator-builder make all
+	docker run --rm -it -v ${PWD}:/build appgate-operator-builder make all
 
 docker-shell: docker-build-image
-	docker run --rm -it -v ${PWD}:/root appgate-operator-builder bash
+	docker run --rm -it -v ${PWD}:/build appgate-operator-builder bash
 
 docker-images: docker-all $(SPEC_VERSIONS)
 
@@ -32,4 +29,3 @@ $(SPEC_VERSIONS):
 	docker build --build-arg SPEC_VERSION=$(SPEC_VERSION) -f docker/Dockerfile . -t appgate-operator:$(SPEC_VERSION)
 
 clean:
-	rm -r virtualenv
