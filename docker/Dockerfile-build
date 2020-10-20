@@ -1,6 +1,7 @@
 FROM python:3.9-slim
 RUN apt-get update && \
     apt-get install make gcc libffi-dev --yes
-COPY requirements-build.txt /root/
-RUN pip3 install -r /root/requirements-build.txt
-WORKDIR /root
+COPY requirements-build.txt /build/
+COPY requirements.txt /build/
+RUN pip3 install -r /build/requirements-build.txt -r /build/requirements.txt
+WORKDIR /build
