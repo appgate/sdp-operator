@@ -279,6 +279,9 @@ Before deploying it MUST define these env variables:
  - APPGATE_OPERATOR_CONFIG_MAP :: k8s config-map used to store metadata related
    to entities used when comparing entitied with secrets. Default value is the
    ~APPGATE_OPERATOR_HOST~.
+ - APPGATE_OPERATOR_SSL_NO_VERIFY :: When set to 1 the operator won't verify the
+   validity of the SSL cerficate. Use this if you have a self signed
+   certificate. Not recommended on production. Default value is 0.
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
