@@ -51,6 +51,7 @@ TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
 APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
+APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -78,6 +79,7 @@ class Context:
     api_spec: APISpec = attrib()
     metadata_configmap: str = attrib()
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    no_verify: bool = attrib(default=True)
 
 
 def get_context(args: OperatorArguments,
@@ -93,6 +95,7 @@ def get_context(args: OperatorArguments,
     dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
     cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
+    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY) or '0'
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
@@ -115,6 +118,7 @@ def get_context(args: OperatorArguments,
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
+                   no_verify=no_verify == '1',
                    target_tags=target_tags_env if target_tags_env else None,
                    metadata_configmap=metadata_configmap)
 
@@ -148,7 +152,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     api_spec = ctx.api_spec
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password,
-                             version=api_spec.api_version) as appgate_client:
+                             version=api_spec.api_version,
+                             no_verify=ctx.no_verify) as appgate_client:
         log.info('[appgate-operator/%s] Updating current state from controller',
                  ctx.namespace)
 
@@ -303,7 +308,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                         appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
                             user=ctx.user, password=ctx.password,
-                            version=ctx.api_spec.api_version))
+                            version=ctx.api_spec.api_version, no_verify=ctx.no_verify))
                     else:
                         log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
                                     namespace)

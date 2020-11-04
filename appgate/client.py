@@ -171,7 +171,8 @@ class K8SConfigMapClient:
 
 
 class AppgateClient:
-    def __init__(self, controller: str, user: str, password: str, version: int) -> None:
+    def __init__(self, controller: str, user: str, password: str, version: int,
+                 no_verify: bool = False) -> None:
         self.controller = controller
         self.user = user
         self.password = password
@@ -179,6 +180,8 @@ class AppgateClient:
         self.device_id = str(uuid.uuid4())
         self._token = None
         self.version = version
+        self.no_verify = no_verify
+
 
     async def close(self) -> None:
         await self._session.close()
@@ -217,7 +220,8 @@ class AppgateClient:
         try:
             async with method(url=url,  # type: ignore
                               headers=headers,
-                              json=data) as resp:
+                              json=data,
+                              ssl=not self.no_verify) as resp:
                 status_code = resp.status // 100
                 if status_code == 2:
                     if resp.status == 204:

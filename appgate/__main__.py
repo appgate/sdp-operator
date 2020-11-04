@@ -120,12 +120,16 @@ def main() -> None:
                      default=[])
     run.add_argument('--timeout', help='Event loop timeout to determine when there are not more events',
                      default=30)
+    run.add_argument('--no-verify', action='store_true', default=False,
+                               help='Disable SSL strict verification.')
 
     # dump entities
     dump_entities = subparsers.add_parser('dump-entities')
     dump_entities.set_defaults(cmd='dump-entities')
     dump_entities.add_argument('--stdout', action='store_true', default=False,
                                help='Dump entities into stdout')
+    dump_entities.add_argument('--no-verify', action='store_true', default=False,
+                               help='Disable SSL strict verification.')
     dump_entities.add_argument('--directory', help='Directory where to dump entities. '
                                'Default value: "YYYY-MM-DD_HH-MM-entities"',
                                default=None)
@@ -152,11 +156,12 @@ def main() -> None:
             namespace=args.namespace, spec_directory=args.spec_directory,
             dry_run=args.dry_run, user=args.user, password=args.password,
             host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
-            cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map))
+            cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
+            no_verify=args.no_verify))
     elif args.cmd == 'dump-entities':
         main_dump_entities(
             OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
-                              target_tags=args.tags),
+                              target_tags=args.tags, no_verify=args.no_verify),
             stdout=args.stdout,
             output_dir=Path(args.directory) if args.directory else None)
     elif args.cmd == 'dump-crd':
