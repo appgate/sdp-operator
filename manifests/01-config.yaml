@@ -8,6 +8,7 @@ data:
   appgate-operator-dry-run: "0"
   appgate-operator-cleanup: "1"
   appgate-operator-two-way-sync: "1"
+  appgate-operator-ssl-no-verify: "0"
   # Uncomment this if you want to use a FERNET key to decrypt secrets
   # appgate-operator-fernet-key "FERNET_KEY_VALUE"
   # Uncomment this if you want to replace the configmap store
