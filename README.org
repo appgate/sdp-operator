@@ -332,13 +332,13 @@ We will create now the configuration needed to run the operator against our
 appgate environment. We need to edit the files and set the values needed for our
 environment. We will save 
 #+BEGIN_SRC shell
-  k create -f manifest/01-config.yaml
-  k create -f manifest/01-secrets.yaml
+  k create -f manifests/01-config.yaml
+  k create -f manifests/01-secrets.yaml
 #+END_SRC
 
  - Add permissions to get/watch/list the CRD entities in appgate-operator
 #+BEGIN_SRC shell
-  k create -f manifest/01-role.yaml
+  k create -f manifests/01-role.yaml
 #+END_SRC
 
  - Start the operator
@@ -366,7 +366,7 @@ To achieve this replace the step where we were running the operator with this
 command to create the deployment.
 
 #+BEGIN_SRC shell
-  k create -f manifest/02-appgate-operator.yaml
+  k create -f manifests/02-appgate-operator.yaml
 #+END_SRC
 
 ** Deploying the operator with argocd
