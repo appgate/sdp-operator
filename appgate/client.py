@@ -1,6 +1,8 @@
 import asyncio
 import datetime
+import ssl
 import uuid
+from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 from aiohttp import InvalidURL
@@ -172,7 +174,7 @@ class K8SConfigMapClient:
 
 class AppgateClient:
     def __init__(self, controller: str, user: str, password: str, version: int,
-                 no_verify: bool = False) -> None:
+                 no_verify: bool = False, cafile: Optional[Path] = None) -> None:
         self.controller = controller
         self.user = user
         self.password = password
@@ -181,6 +183,7 @@ class AppgateClient:
         self._token = None
         self.version = version
         self.no_verify = no_verify
+        self.ssl_context = ssl.create_default_context(cafile=str(cafile)) if cafile else None
 
 
     async def close(self) -> None:
@@ -221,7 +224,8 @@ class AppgateClient:
             async with method(url=url,  # type: ignore
                               headers=headers,
                               json=data,
-                              ssl=not self.no_verify) as resp:
+                              ssl=self.ssl_context,
+                              verify_ssl=not self.no_verify) as resp:
                 status_code = resp.status // 100
                 if status_code == 2:
                     if resp.status == 204:

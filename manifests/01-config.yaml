@@ -9,8 +9,16 @@ data:
   appgate-operator-cleanup: "1"
   appgate-operator-two-way-sync: "1"
   appgate-operator-ssl-no-verify: "0"
+
+  # Uncomment this to specify a custom CA certificate used to create the
+  # certificates provided by the appgate controllers
+  # VALUE is a base64 ca certificate in one line. Output from the command:
+  # `cat cacert | base64 -w0`
+  #appgate-operator-cacert "VALUE"
+  
   # Uncomment this if you want to use a FERNET key to decrypt secrets
   # appgate-operator-fernet-key "FERNET_KEY_VALUE"
+
   # Uncomment this if you want to replace the configmap store
   # used to save entities metadata
-  # appgate-operator-config-map
+  # appgate-operator-config-map "VALUE"

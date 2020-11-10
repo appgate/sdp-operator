@@ -252,6 +252,8 @@ Before deploying it MUST define these env variables:
    controller.
  - APPGATE_OPERATOR_PASSWORD :: the password used to authenticate the REST calls
    to the controller.
+
+Optional environment variables that the operator uses:
  - APPGATE_OPERATOR_TIMEOUT :: Time without activity after which the appgate
    operator will try to apply changes received into a plan. Every time a new
    event is received this timer is reset to 0 again.
@@ -282,6 +284,10 @@ Before deploying it MUST define these env variables:
  - APPGATE_OPERATOR_SSL_NO_VERIFY :: When set to 1 the operator won't verify the
    validity of the SSL cerficate. Use this if you have a self signed
    certificate. Not recommended on production. Default value is 0.
+ - APPGATE_OPERATOR_CACERT :: Base64 encoded CA certificate used by controllers
+   in the appgate system. The certifacate must be base64 encoded in one
+   line. Example:
+ : =cat cert.ca | base64 -w0=
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
