@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import itertools
 import logging
 import os
@@ -86,10 +87,14 @@ class Context:
 
 
 def save_cert(cert: str) -> Path:
+    try:
+        bytes_decoded: bytes = base64.b64decode(cert)
+    except Exception as e:
+        raise Exception(f'Error decoding PEM certificate: {str(e)}')
     fd, cert_name = tempfile.mkstemp()
     cert_path = Path(cert_name)
-    with cert_path.open() as f:
-        f.write(cert)
+    with cert_path.open('w') as f:
+        f.write(bytes_decoded.decode())
     os.close(fd)
     return cert_path
 
