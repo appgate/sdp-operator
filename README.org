@@ -287,7 +287,7 @@ Optional environment variables that the operator uses:
  - APPGATE_OPERATOR_CACERT :: Base64 encoded CA certificate used by controllers
    in the appgate system. The certifacate must be base64 encoded in one
    line. Example:
- : =cat cert.ca | base64 -w0=
+ : cat cert.ca | base64 -w0
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
