@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List
 from attr import attrib, attrs, evolve
 
@@ -29,6 +30,7 @@ class OperatorArguments:
     target_tags: Optional[List[str]] = attrib(default=None)
     metadata_configmap: Optional[str] = attrib(default=None)
     no_verify: bool = attrib(default=False)
+    cafile: Optional[Path] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)

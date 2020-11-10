@@ -112,6 +112,8 @@ def get_context(args: OperatorArguments,
     appgate_cacert_path = None
     if no_verify != '1' and appgate_cacert:
         appgate_cacert_path = save_cert(appgate_cacert)
+    elif no_verify and args.cafile:
+        appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
@@ -137,7 +139,7 @@ def get_context(args: OperatorArguments,
                    no_verify=no_verify == '1',
                    target_tags=target_tags_env if target_tags_env else None,
                    metadata_configmap=metadata_configmap,
-                   cert_path=appgate_cacert_path)
+                   cafile=appgate_cacert_path)
 
 
 def init_kubernetes(args: OperatorArguments) -> Context:

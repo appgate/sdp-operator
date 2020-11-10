@@ -120,8 +120,8 @@ def main() -> None:
                      default=[])
     run.add_argument('--timeout', help='Event loop timeout to determine when there are not more events',
                      default=30)
-    run.add_argument('--no-verify', action='store_true', default=False,
-                               help='Disable SSL strict verification.')
+    run.add_argument('--no-verify', action='store_true', default=False, help='Disable SSL strict verification.')
+    run.add_argument('--cafile', help='cacert file used for ssl verification.', default=None)
 
     # dump entities
     dump_entities = subparsers.add_parser('dump-entities')
@@ -133,6 +133,7 @@ def main() -> None:
     dump_entities.add_argument('--directory', help='Directory where to dump entities. '
                                'Default value: "YYYY-MM-DD_HH-MM-entities"',
                                default=None)
+    dump_entities.add_argument('--cafile', help='cacert file used for ssl verification.', default=None)
     dump_entities.add_argument('-t', '--tags', action='append',
                                help='Tags to filter entities. Only entities with any of those tags will be dumped',
                                default=[])
@@ -150,18 +151,24 @@ def main() -> None:
 
     args = parser.parse_args()
     set_level(log_level=args.log_level.lower())
-
     if args.cmd == 'run':
+        if args.cafile and not Path(args.cafile).exists():
+            print(f'cafile file not found: {args.cafile}')
+            sys.exit(1)
         main_run(OperatorArguments(
             namespace=args.namespace, spec_directory=args.spec_directory,
             dry_run=args.dry_run, user=args.user, password=args.password,
             host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
             cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
-            no_verify=args.no_verify))
+            no_verify=args.no_verify, cafile=Path(args.cafile)))
     elif args.cmd == 'dump-entities':
+        if args.cafile and not Path(args.cafile).exists():
+            print(f'cafile file not found: {args.cafile}')
+            sys.exit(1)
         main_dump_entities(
             OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
-                              target_tags=args.tags, no_verify=args.no_verify),
+                              target_tags=args.tags, no_verify=args.no_verify,
+                              cafile=Path(args.cafile)),
             stdout=args.stdout,
             output_dir=Path(args.directory) if args.directory else None)
     elif args.cmd == 'dump-crd':
