@@ -224,7 +224,8 @@ class AppgateClient:
             async with method(url=url,  # type: ignore
                               headers=headers,
                               json=data,
-                              ssl=self.ssl_context or not self.no_verify) as resp:
+                              ssl=self.ssl_context,
+                              verify_ssl=not self.no_verify) as resp:
                 status_code = resp.status // 100
                 if status_code == 2:
                     if resp.status == 204:
