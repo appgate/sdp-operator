@@ -3,6 +3,7 @@ import itertools
 import logging
 import os
 import sys
+import tempfile
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
@@ -52,6 +53,7 @@ SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
 APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
 APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
+APPGATE_SSL_CACERT = 'APPGATE_OPERATOR_CACERT'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -80,6 +82,16 @@ class Context:
     metadata_configmap: str = attrib()
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
     no_verify: bool = attrib(default=True)
+    cafile: Optional[Path] = attrib(default=None)
+
+
+def save_cert(cert: str) -> Path:
+    fd, cert_name = tempfile.mkstemp()
+    cert_path = Path(cert_name)
+    with cert_path.open() as f:
+        f.write(cert)
+    os.close(fd)
+    return cert_path
 
 
 def get_context(args: OperatorArguments,
@@ -96,6 +108,10 @@ def get_context(args: OperatorArguments,
     cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     no_verify = os.getenv(APPGATE_SSL_NO_VERIFY) or '0'
+    appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
+    appgate_cacert_path = None
+    if no_verify != '1' and appgate_cacert:
+        appgate_cacert_path = save_cert(appgate_cacert)
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
     target_tags_env = target_tags_arg.union(
@@ -120,7 +136,8 @@ def get_context(args: OperatorArguments,
                    api_spec=api_spec,
                    no_verify=no_verify == '1',
                    target_tags=target_tags_env if target_tags_env else None,
-                   metadata_configmap=metadata_configmap)
+                   metadata_configmap=metadata_configmap,
+                   cert_path=appgate_cacert_path)
 
 
 def init_kubernetes(args: OperatorArguments) -> Context:
@@ -153,7 +170,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password,
                              version=api_spec.api_version,
-                             no_verify=ctx.no_verify) as appgate_client:
+                             no_verify=ctx.no_verify,
+                             cafile=ctx.cafile) as appgate_client:
         log.info('[appgate-operator/%s] Updating current state from controller',
                  ctx.namespace)
 
@@ -308,7 +326,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                         appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
                             user=ctx.user, password=ctx.password,
-                            version=ctx.api_spec.api_version, no_verify=ctx.no_verify))
+                            version=ctx.api_spec.api_version, no_verify=ctx.no_verify,
+                            cafile=ctx.cafile))
                     else:
                         log.warning('[appgate-operator/%s] Running in dry-mode, nothing will be created',
                                     namespace)
