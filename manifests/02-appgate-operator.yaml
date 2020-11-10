@@ -58,6 +58,12 @@ spec:
                 configMapKeyRef:
                   name: appgate-operator-conf
                   key: appgate-operator-ssl-no-verify
+            # Uncomment if you have a self signed certificate in yout appgate collective
+            #- name: APPGATE_OPERATOR_CACERT
+            #  valueFrom:
+            #    configMapKeyRef:
+            #      name: appgate-operator-conf
+            #      key: appgate-operator-cacert
             # Uncomment if you want to use a FERNET key to decrypt secrets
             #- name: APPGATE_OPERATOR_FERNET_KEY
             #  valueFrom:
