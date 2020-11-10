@@ -160,15 +160,16 @@ def main() -> None:
             dry_run=args.dry_run, user=args.user, password=args.password,
             host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
             cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
-            no_verify=args.no_verify, cafile=Path(args.cafile)))
+            no_verify=args.no_verify, cafile=Path(args.cafile) if args.cafile else None))
     elif args.cmd == 'dump-entities':
         if args.cafile and not Path(args.cafile).exists():
             print(f'cafile file not found: {args.cafile}')
             sys.exit(1)
+
         main_dump_entities(
             OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
                               target_tags=args.tags, no_verify=args.no_verify,
-                              cafile=Path(args.cafile)),
+                              cafile=Path(args.cafile) if args.cafile else None),
             stdout=args.stdout,
             output_dir=Path(args.directory) if args.directory else None)
     elif args.cmd == 'dump-crd':
