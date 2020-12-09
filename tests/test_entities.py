@@ -376,7 +376,7 @@ def test_bytes_diff_dump():
     }
 
 
-def test_ceritificate_pem_load():
+def test_certificate_pem_load():
     EntityCert = load_test_open_api_spec(secrets_key=None,
                                          reload=True).entities['EntityCert'].cls
     EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls

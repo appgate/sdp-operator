@@ -477,9 +477,8 @@ definitions:
         format: PEM
       fieldTwo:
         type: object
-        format:
-          type: certificate
-          source: fieldOne
+        format: certificate
+        x-certificate-source: fieldOne
         readOnly: true
         properties:
           version:
