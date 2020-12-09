@@ -279,9 +279,8 @@ definitions:
         type: string
       fieldFour:
         type: string
-      fromm:
+      from:
         type: string
-        x-name: from
   EntityTest2:
     type: object
     properties:

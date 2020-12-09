@@ -61,8 +61,12 @@ APPGATE_METADATE_FIELDS = {
     APPGATE_METADATA_LATEST_GENERATION_FIELD,
 }
 
+RESERVED_NAMES = {'from'}
+
 
 def normalize_attrib_name(name: str) -> str:
+    if name in RESERVED_NAMES:
+        name = name + name[-1]
     if NAMES_REGEXP.match(name):
         return re.sub(r'\.', '_', name)
     return name
@@ -213,13 +217,12 @@ class InstanceMakerConfig:
     def attrib_maker_config(self, attribute: str) -> 'AttribMakerConfig':
         properties = self.definition.get('properties', {})
         definition = properties.get(attribute)
-        x_name = definition.get('x-name')
         if not definition:
             log.error('Unable to find attribute %s in %s', attribute, ', '.join(properties.keys()))
             raise OpenApiParserException(f'Unable to find attribute %s')
         return AttribMakerConfig(
             instance_maker_config=self,
-            name=normalize_attrib_name(x_name or attribute),
+            name=attribute,
             definition=definition
         )
 
