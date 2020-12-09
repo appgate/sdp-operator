@@ -307,15 +307,13 @@ definitions:
       fieldTwo:
         readOnly: true
         type: string
-        format:
-          type: checksum
-          source: fieldOne
+        format: checksum
+        x-checksum-source: fieldOne
       fieldThree:
         readOnly: true
         type: number
-        format:
-          type: size
-          source: fieldOne
+        format: size
+        x-size-source: fieldOne
   EntityTest3Appgate:
     type: object
     properties:
@@ -331,15 +329,13 @@ definitions:
       fieldTwo:
         readOnly: true
         type: string
-        format:
-          type: checksum
-          source: fieldOne
+        format: checksum
+        x-checksum-source: fieldOne
       fieldThree:
         readOnly: true
         type: number
-        format:
-          type: size
-          source: fieldOne
+        format: size
+        x-size-source: fieldOne
   EntityTest4:
     type: object
     properties:
