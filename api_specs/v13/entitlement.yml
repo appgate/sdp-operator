@@ -180,7 +180,7 @@ definitions:
             default: and
           conditions:
             type: array
-            description: List of Condition IDs applies to this Entitleent.
+            description: List of Condition IDs applies to this Entitlement.
             items:
               x-uuid-ref: Condition
               type: string
