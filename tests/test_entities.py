@@ -34,10 +34,11 @@ def test_loader_1():
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is deprecated',
         'fieldFour': 'this is a field',
+        'from': 'this has a weird key name',
     }
     e = APPGATE_LOADER.load(entity_1, None, EntityTest1)
     assert e == EntityTest1(fieldOne='this is read only', fieldTwo=None,
-                            fieldFour='this is a field')
+                            fieldFour='this is a field', fromm='this has a weird key name')
     assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
                             fieldFour='this is a field that changed')
     assert e.fieldOne == 'this is read only'
@@ -45,9 +46,11 @@ def test_loader_1():
 
     e = K8S_LOADER.load(entity_1, None, EntityTest1)
     assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field')
+                            fieldFour='this is a field',
+                            fromm='this has a weird key name')
     assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field that changed')
+                            fieldFour='this is a field that changed',
+                            fromm='this has a weird key name')
 
 
 def test_loader_2():
@@ -111,16 +114,18 @@ def test_dumper_1():
     EntityTest1 = load_test_open_api_spec(secrets_key=None,
                                           reload=True).entities['EntityTest1'].cls
     e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
-                     fieldFour='this is a field')
+                     fieldFour='this is a field', fromm='this is a field with a weird name')
     e1_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
+        'from': 'this is a field with a weird name',
     }
     e = APPGATE_DUMPER.dump(e1)
     assert e == e1_data
     e1_data = {
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
+        'from': 'this is a field with a weird name',
         'appgate_metadata': {},
     }
     e = K8S_DUMPER.dump(e1)
@@ -371,7 +376,7 @@ def test_bytes_diff_dump():
     }
 
 
-def test_ceritificate_pem_load():
+def test_certificate_pem_load():
     EntityCert = load_test_open_api_spec(secrets_key=None,
                                          reload=True).entities['EntityCert'].cls
     EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls

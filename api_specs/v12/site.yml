@@ -174,8 +174,7 @@ definitions:
             items:
               type: object
               properties:
-                fromm:
-                  x-name: from
+                from:
                   type: string
                   format: uuid
                   x-uuid-ref: IpPool

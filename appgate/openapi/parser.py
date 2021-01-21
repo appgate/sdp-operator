@@ -338,22 +338,22 @@ class Parser:
                                          default=None,
                                          factory=None,
                                          definition=attrib_maker_config.definition)
-            elif isinstance(format, dict) and 'type' in format and format['type'] == 'checksum':
+            elif format == 'checksum' and 'x-checksum-source' in attrib_maker_config.definition:
                 return checksum_attrib_maker(name=attrib_name,
                                              tpe=TYPES_MAP[tpe],
                                              base_tpe=TYPES_MAP[tpe],
                                              default=DEFAULT_MAP.get(tpe),
                                              factory=None,
                                              definition=attrib_maker_config.definition,
-                                             source_field=format['source'])
-            elif isinstance(format, dict) and 'type' in format and format['type'] == 'size':
+                                             source_field=attrib_maker_config.definition['x-checksum-source'])
+            elif format == 'size' and 'x-size-source' in attrib_maker_config.definition:
                 return size_attrib_maker(name=attrib_name,
                                          tpe=TYPES_MAP[tpe],
                                          base_tpe=TYPES_MAP[tpe],
                                          default=DEFAULT_MAP.get(tpe),
                                          factory=None,
                                          definition=attrib_maker_config.definition,
-                                         source_field=format['source'])
+                                         source_field=attrib_maker_config.definition['x-size-source'])
             elif attrib_name == 'id':
                 return IdAttribMaker(name=attrib_name,
                                      tpe=TYPES_MAP[tpe],
@@ -399,14 +399,14 @@ class Parser:
             log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
             format = definition.get('format', None)
-            if isinstance(format, dict) and 'type' in format and format['type'] == 'certificate':
+            if format == 'certificate' and 'x-certificate-source' in attrib_maker_config.definition:
                 return certificate_attrib_maker(name=instance_maker_config.name,
                                                 tpe=generated_entity.cls,
                                                 base_tpe=generated_entity.cls,
                                                 default=None,
                                                 factory=None,
                                                 definition=attrib_maker_config.definition,
-                                                source_field=format['source'],
+                                                source_field=attrib_maker_config.definition['x-certificate-source'],
                                                 loader=K8S_LOADER.load)
             else:
                 return SimpleAttribMaker(name=instance_maker_config.name,
