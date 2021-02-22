@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: DeviceScript
+metadata:
+  name: fooscript
 spec:
   appgate_metadata:
     passwords: []
@@ -11,4 +13,3 @@ spec:
   tags:
   - foo
   - bar
-

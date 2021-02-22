@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: Site
+metadata:
+  name: simple-setup-site
 spec:
   appgate_metadata:
     passwords: []
@@ -28,6 +30,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: Site
+metadata:
+  name: default-site
 spec:
   appgate_metadata:
     passwords: []
@@ -53,4 +57,3 @@ spec:
     snat: true
     tls: {}
     webProxyEnabled: false
-

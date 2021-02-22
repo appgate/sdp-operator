@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: Entitlement
+metadata:
+  name: simple-setup-ent-ping
 spec:
   actions:
   - action: allow
@@ -27,6 +29,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: Entitlement
+metadata:
+  name: simple-setup-ent-http
 spec:
   actions:
   - action: allow
@@ -48,4 +52,3 @@ spec:
   name: simple_setup_ENT_HTTP
   site: simple_setup Site
   tags: []
-

@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: AdministrativeRole
+metadata:
+  name: system-administration
 spec:
   appgate_metadata:
     passwords: []
@@ -19,6 +21,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: AdministrativeRole
+metadata:
+  name: api-access
 spec:
   appgate_metadata:
     passwords: []
@@ -151,4 +155,3 @@ spec:
     type: Create
   tags:
   - builtin
-

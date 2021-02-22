@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
+metadata:
+  name: default-fido2-provider
 spec:
   appgate_metadata:
     passwords: []
@@ -12,6 +14,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
+metadata:
+  name: default-time-based-otp-provider
 spec:
   appgate_metadata:
     passwords: []
@@ -24,6 +28,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: MfaProvider
+metadata:
+  name: my-super-provider
 spec:
   appgate_metadata:
     passwords: []
@@ -42,4 +48,3 @@ spec:
   timeout: 6
   type: Radius
   useUserPassword: true
-

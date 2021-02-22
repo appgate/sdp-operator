@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: IpPool
+metadata:
+  name: simple-setup-ipv6
 spec:
   appgate_metadata:
     passwords: []
@@ -14,6 +16,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: IpPool
+metadata:
+  name: default-pool-v6
 spec:
   appgate_metadata:
     passwords: []
@@ -28,6 +32,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: IpPool
+metadata:
+  name: simple-setup-ipv4
 spec:
   appgate_metadata:
     passwords: []
@@ -41,6 +47,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: IpPool
+metadata:
+  name: default-pool-v4
 spec:
   appgate_metadata:
     passwords: []
@@ -51,4 +59,3 @@ spec:
     last: 192.168.100.254
   tags:
   - builtin
-

@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: Policy
+metadata:
+  name: simple-setup-pol
 spec:
   administrativeRoles: []
   appgate_metadata:
@@ -18,6 +20,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: Policy
+metadata:
+  name: builtin-administrator-policy
 spec:
   administrativeRoles:
   - System Administration
@@ -39,4 +43,3 @@ spec:
   ringfenceRules: []
   tags:
   - builtin
-
