@@ -65,6 +65,7 @@ def main_dump_entities(args: OperatorArguments,  stdout: bool = False,
                                   stdout=stdout))
     except AppgateException:
         log.error('[dump-entities] Unable to perform operation')
+        sys.exit(1)
 
 
 def main_api_info(spec_directory: Optional[str] = None) -> None:
