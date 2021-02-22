@@ -114,15 +114,18 @@ def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,
         entity_set.modify(entity)
 
 
+def k8s_name(name: str) -> str:
+    # This is ugly but we need to go from a bigger set of strings
+    # into a smaller one :(
+    return re.sub('[^a-z0-9-.]+', '-', name.strip().lower())
+
+
 def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
     """
     name sould match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
-    entity_name = entity.name if has_name(entity) else entity_type.lower()
-    # This is ugly but we need to go from a bigger set of strings
-    # into a smaller one :(
-    entity_name = re.sub('[^a-z0-9-.]+', '-', entity_name.strip().lower())
+    entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
     entity_mt = getattr(entity.value, ENTITY_METADATA_ATTRIB_NAME, {})
     singleton = entity_mt.get('singleton', False)
     if not singleton:
@@ -131,6 +134,9 @@ def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
     return {
         'apiVersion': f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}',
         'kind': entity_type,
+        'metadata': {
+            'name': entity_name if entity.is_singleton() else k8s_name(entity.name)
+        },
         'spec': K8S_DUMPER.dump(entity.value)
     }
 
