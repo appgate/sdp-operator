@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: Appliance
+metadata:
+  name: controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
 spec:
   appgate_metadata:
     passwords: []
@@ -93,6 +95,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: Appliance
+metadata:
+  name: gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
 spec:
   appgate_metadata:
     passwords: []
@@ -183,4 +187,3 @@ spec:
       netmask: 0
     enabled: true
   tags: []
-

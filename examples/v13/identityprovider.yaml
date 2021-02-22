@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: IdentityProvider
+metadata:
+  name: connector
 spec:
   appgate_metadata:
     passwords: []
@@ -31,6 +33,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: IdentityProvider
+metadata:
+  name: local
 spec:
   adminProvider: true
   appgate_metadata:
@@ -63,4 +67,3 @@ spec:
   tags:
   - builtin
   type: LocalDatabase
-

@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: LocalUser
+metadata:
+  name: bobbytables
 spec:
   appgate_metadata:
     passwords:
@@ -14,4 +16,3 @@ spec:
   password: foobar
   tags:
   - operator
-

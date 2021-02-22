@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: TrustedCertificate
+metadata:
+  name: test-vsphere
 spec:
   appgate_metadata:
     passwords: []
@@ -59,4 +61,3 @@ spec:
     '
   tags:
   - operator
-

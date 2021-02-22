@@ -72,8 +72,6 @@ def get_dumper(platform_type: PlatformType):
         for attr in value.__attrs_attrs__:
             attrval = getattr(value, attr.name)
             read_only = attr.metadata.get('readOnly', False)
-            write_only = attr.metadata.get('writeOnly', False)
-            format = attr.metadata.get('format')
             name = attr.metadata.get('name', attr.name)
             if platform_type == PlatformType.DIFF and not attr.eq:
                 # DIFF mode we only dump eq fields
@@ -88,7 +86,7 @@ def get_dumper(platform_type: PlatformType):
             if not (d.hidedefault and attrval == attr.default):
                 name = attr.metadata.get('name', attr.name)
                 r[name] = d.dump(attrval)
-                r[name] = d.dump(attrval)
+
         return r
 
     dumper = datadumper.Dumper(**{})  # type: ignore

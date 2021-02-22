@@ -91,6 +91,9 @@ class EntityWrapper:
             return True
         return False
 
+    def is_singleton(self) -> bool:
+        return self.value._entity_metadata.get('singleton', False)
+
     def has_secrets(self) -> bool:
         # We have passwords use modified/created
         entity_mt = self.value._entity_metadata

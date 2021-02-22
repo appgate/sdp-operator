@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: RingfenceRule
+metadata:
+  name: block-in
 spec:
   actions:
   - action: block
@@ -43,6 +45,8 @@ spec:
 ---
 apiVersion: beta.appgate.com/v1
 kind: RingfenceRule
+metadata:
+  name: block-google-dns
 spec:
   actions:
   - action: allow
@@ -60,4 +64,3 @@ spec:
   tags:
   - some
   - tag
-

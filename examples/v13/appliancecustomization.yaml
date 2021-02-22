@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: ApplianceCustomization
+metadata:
+  name: params-adjustment
 spec:
   appgate_metadata:
     passwords: []
@@ -20,4 +22,3 @@ spec:
   notes: Activation de l'edrisseur auxiliaire.
   tags:
   - edrisseur
-

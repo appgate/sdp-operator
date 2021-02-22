@@ -1,5 +1,7 @@
 apiVersion: beta.appgate.com/v1
 kind: EntitlementScript
+metadata:
+  name: hello
 spec:
   appgate_metadata:
     passwords: []
@@ -16,4 +18,3 @@ spec:
   - sdfd
   - bar
   type: host
-
