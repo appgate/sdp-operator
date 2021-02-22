@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable
 import aiohttp
-from aiohttp import InvalidURL
+from aiohttp import InvalidURL, ClientConnectorCertificateError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
@@ -185,12 +185,15 @@ class AppgateClient:
         self.no_verify = no_verify
         self.ssl_context = ssl.create_default_context(cafile=str(cafile)) if cafile else None
 
-
     async def close(self) -> None:
         await self._session.close()
 
     async def __aenter__(self) -> 'AppgateClient':
-        await self.login()
+        try:
+            await self.login()
+        except Exception as e:
+            await self.close()
+            raise e
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -242,6 +245,9 @@ class AppgateClient:
         except InvalidURL:
             log.error('[appgate-client] Error preforming query: %s', url)
             raise AppgateException(f'Error: [{method} {url}] InvalidURL')
+        except ClientConnectorCertificateError as e:
+            log.error('[appgate-client] Certificate error: %s', e.certificate_error)
+            raise AppgateException(f'Error: [{method} {url}] CertificateError')
 
     async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('POST', path=path, data=body)

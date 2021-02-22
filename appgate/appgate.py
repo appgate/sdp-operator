@@ -174,18 +174,16 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     Gets the current AppgateState for controller
     """
     api_spec = ctx.api_spec
+    log.info('[appgate-operator/%s] Updating current state from controller',
+             ctx.namespace)
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password,
                              version=api_spec.api_version,
                              no_verify=ctx.no_verify,
                              cafile=ctx.cafile) as appgate_client:
-        log.info('[appgate-operator/%s] Updating current state from controller',
-                 ctx.namespace)
-
         if not appgate_client.authenticated:
             log.error('[appgate-operator/%s] Unable to authenticate with controller',
                       ctx.namespace)
-            await appgate_client.close()
             raise Exception('Error authenticating')
 
         entity_clients = generate_api_spec_clients(api_spec=api_spec,
@@ -200,7 +198,6 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
-            await appgate_client.close()
             raise Exception('Error reading current state')
 
         appgate_state = AppgateState(entities_set=entities_set)

@@ -7,7 +7,7 @@ from typing import Optional, Dict
 import datetime
 import time
 
-from appgate.client import K8SConfigMapClient
+from appgate.client import K8SConfigMapClient, AppgateException
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, start_entity_loop, log
@@ -59,9 +59,12 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
 
 def main_dump_entities(args: OperatorArguments,  stdout: bool = False,
                        output_dir: Optional[Path] = None) -> None:
-    asyncio.run(dump_entities(ctx=get_context(args),
-                              output_dir=output_dir,
-                              stdout=stdout))
+    try:
+        asyncio.run(dump_entities(ctx=get_context(args),
+                                  output_dir=output_dir,
+                                  stdout=stdout))
+    except AppgateException:
+        log.error('[dump-entities] Unable to perform operation')
 
 
 def main_api_info(spec_directory: Optional[str] = None) -> None:
