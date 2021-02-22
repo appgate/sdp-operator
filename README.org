@@ -329,7 +329,7 @@ To test it follow these steps:
 Now we will dump the CRD definition from the open api specficiation and we will
 add it into the k8s cluster:
 #+BEGIN_SRC shell
-  appgate-operator dump-crd --stdout > 00-appgate-test-crd-v13.yaml
+  appgate-operator dump-crd --spec-directory api_specs/${API_VER} --stdout > 00-appgate-test-crd-${API_VER}.yaml
   kubectl create -f 00-appgate-test-crd-v13.yaml
 #+END_SRC
 
@@ -429,7 +429,7 @@ In this step we need to do basically the same we did when we configured the appg
   alias k="kubectl -n ${APPGATE_NS}"
   alias appgate-operator="docker run --rm -v $HOME/.kube:/root/.kube appgate-operator:${API_VER}"
   kubectl create namespace ${APPGATE_NS}
-  appgate-operator dump-crd --stdout > 00-appgate-test-crd-${API_VER}.yaml
+  appgate-operator dump-crd -spec-directory api_specs/${API_VER} --stdout > 00-appgate-test-crd-${API_VER}.yaml
   kubectl create -f 00-appgate-test-crd-${API_VER}.yaml
   k create -f manifests/01-role.yaml
 #+END_SRC
