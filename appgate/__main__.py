@@ -184,8 +184,8 @@ def main() -> None:
             main_api_info(spec_directory=args.spec_directory)
         else:
             parser.print_help()
-    except AppgateException:
-        log.error('[%s] Unable to perform operation', args.cmd)
+    except AppgateException as e:
+        log.error('[%s] %s', args.cmd, e.message or 'Unable to perform operation')
         sys.exit(1)
 
 

@@ -20,7 +20,7 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id, AppgateException
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
@@ -90,7 +90,7 @@ def save_cert(cert: str) -> Path:
     try:
         bytes_decoded: bytes = base64.b64decode(cert)
     except Exception as e:
-        raise Exception(f'Error decoding PEM certificate: {str(e)}')
+        raise AppgateException(f'Error decoding PEM certificate: {str(e)}')
     fd, cert_name = tempfile.mkstemp()
     cert_path = Path(cert_name)
     with cert_path.open('w') as f:
@@ -103,7 +103,7 @@ def get_context(args: OperatorArguments,
                 k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> Context:
     namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     if not namespace:
-        raise Exception('Namespace must be defined in order to run the appgate-operator')
+        raise AppgateException('Namespace must be defined in order to run the appgate-operator')
     user = os.getenv(USER_ENV) or args.user
     password = os.getenv(PASSWORD_ENV) or args.password
     controller = os.getenv(HOST_ENV) or args.host
@@ -131,7 +131,7 @@ def get_context(args: OperatorArguments,
                                            (PASSWORD_ENV, password),
                                            (HOST_ENV, controller)]
                                  if x[1] is None])
-        raise Exception(f'Unable to create appgate-controller context, missing: {missing_envs}')
+        raise AppgateException(f'Unable to create appgate-controller context, missing: {missing_envs}')
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
@@ -158,7 +158,7 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
 
     if not namespace:
-        raise Exception('Unable to discover namespace, please provide it.')
+        raise AppgateException('Unable to discover namespace, please provide it.')
     ns: str = namespace  # lambda thinks it's an Optional
     return get_context(
         args=args,
@@ -184,7 +184,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         if not appgate_client.authenticated:
             log.error('[appgate-operator/%s] Unable to authenticate with controller',
                       ctx.namespace)
-            raise Exception('Error authenticating')
+            raise AppgateException('Error authenticating')
 
         entity_clients = generate_api_spec_clients(api_spec=api_spec,
                                                    appgate_client=appgate_client)
@@ -198,7 +198,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
-            raise Exception('Error reading current state')
+            raise AppgateException('Error reading current state')
 
         appgate_state = AppgateState(entities_set=entities_set)
 
