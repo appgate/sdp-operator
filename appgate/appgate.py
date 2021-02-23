@@ -112,12 +112,13 @@ def get_context(args: OperatorArguments,
     dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
     cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
-    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY) or '0'
+    no_verify = (os.getenv(APPGATE_SSL_NO_VERIFY), '0') == '1' or args.no_verify
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
     appgate_cacert_path = None
-    if no_verify != '1' and appgate_cacert:
+    verify = not no_verify
+    if verify and appgate_cacert:
         appgate_cacert_path = save_cert(appgate_cacert)
-    elif no_verify and args.cafile:
+    elif verify and args.cafile:
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
@@ -141,7 +142,7 @@ def get_context(args: OperatorArguments,
                    cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
-                   no_verify=no_verify == '1',
+                   no_verify=no_verify,
                    target_tags=target_tags_env if target_tags_env else None,
                    metadata_configmap=metadata_configmap,
                    cafile=appgate_cacert_path)
@@ -176,6 +177,9 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     api_spec = ctx.api_spec
     log.info('[appgate-operator/%s] Updating current state from controller',
              ctx.namespace)
+    if ctx.no_verify:
+        log.warning('[appgate-operator/%s] Ignoring SSL certificates!',
+                    ctx.namespace)
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password,
                              version=api_spec.api_version,
