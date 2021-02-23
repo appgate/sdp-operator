@@ -182,7 +182,6 @@ definitions:
         description: Represents a MFA Provider.
         required:
           - type
-          - hostnames
         properties:
           type:
             type: string

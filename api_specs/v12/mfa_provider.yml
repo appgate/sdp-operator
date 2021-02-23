@@ -181,8 +181,6 @@ definitions:
         description: Represents a MFA Provider.
         required:
           - type
-          - hostnames
-          - port
         properties:
           type:
             type: string
