@@ -1,0 +1,57 @@
+claim-names:
+  get:
+    summary: List all Claim Names.
+    description: >-
+      Claim Names list includes available User, Device and System claims.
+      Some of these claims are static and some change according to the Identity Provider configurations.
+    tags:
+      - Conditions
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: List of Claim Names.
+        content:
+          application/json:
+            schema:
+              properties:
+                user:
+                  $ref: '#/definitions/ClaimNames'
+                device:
+                  $ref: '#/definitions/ClaimNames'
+                system:
+                  $ref: '#/definitions/ClaimNames'
+                onDemand:
+                  $ref: '#/definitions/ClaimNames'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+definitions:
+  ClaimNames:
+    type: array
+    items:
+      type: object
+      description: Details of a Claim.
+      properties:
+        claimName:
+          type: string
+          description: Name of the Claim that's available to the JavaScript engine.
+          example: username
+        type:
+          type: string
+          description: Data type of the Claim.
+          enum:
+            - boolean
+            - string
+            - number
+            - date
+            - list
+        availableForPolicy:
+          type: boolean
+          description: >-
+            Whether the claim is available to Policy and Criteria Scripts or not.
+            All Claims are available to Conditions and Entitlement Scripts.
