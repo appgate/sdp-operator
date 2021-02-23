@@ -13,6 +13,7 @@ __all__ = [
     'AppgateEvent',
     'EntityWrapper',
     'LatestEntityGeneration',
+    'OperatorArguments',
 ]
 
 
