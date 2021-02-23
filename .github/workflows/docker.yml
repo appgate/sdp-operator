@@ -1,0 +1,75 @@
+name: Docker
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  IMAGE_NAME: sdp-operator
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9-dev
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt -r requirements-build.txt
+    - name: Lint with mypy
+      run: |
+        MYPYPATH=mypy-stubs mypy appgate
+    - name: Test with pytest
+      run: |
+        PYTHONPATH=. pytest tests
+
+  v12:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run:  build --build-arg SPEC_VERSION=v12 -f docker/Dockerfile . -t sdp-operator:v12
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Push image
+        run: |
+          docker tag sdp-operator:v12 ghcr.io/appgate/sdp-operator:v12
+          docker push sdp-operator:v12
+
+  v13:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run:  build --build-arg SPEC_VERSION=v13 -f docker/Dockerfile . -t sdp-operator:v13
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Push image
+        run: |
+          docker tag sdp-operator:v13 ghcr.io/appgate/sdp-operator:v13
+          docker push sdp-operator:v13
+
+  v14:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run:  build --build-arg SPEC_VERSION=v14 -f docker/Dockerfile . -t sdp-operator:v14
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Push image
+        run: |
+          docker tag sdp-operator:v14 ghcr.io/appgate/sdp-operator:v14
+          docker push sdp-operator:v14
+

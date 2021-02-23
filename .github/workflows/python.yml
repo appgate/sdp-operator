@@ -4,8 +4,6 @@
 name: AppGate SDP Operator
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
