@@ -81,9 +81,11 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
     # We need the context here or just parse it
     entities = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None).entities
+    output_path = None
     if not stdout:
         output_file_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-crd.yml'
-        f = (Path(output_file) if output_file else Path(output_file_format)).open('w')
+        output_path = Path(output_file) if output_file else Path(output_file_format)
+        f = output_path.open('w')
     else:
         f = sys.stdout
     short_names: Dict[str, str] = {}
@@ -92,6 +94,8 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
         if i > 0:
             f.write('---\n')
         f.write(generate_crd(e, short_names))
+    if output_path:
+        log.info('[dump-crd] File %s generated with CRD definitions', output_path)
 
 
 def main() -> None:
