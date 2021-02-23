@@ -23,9 +23,12 @@ docker-shell: docker-build-image
 
 docker-images: docker-all $(SPEC_VERSIONS)
 
-$(SPEC_VERSIONS):
+clean-cache:
+	find appgate -name "__pycache__" -print | xargs rm -r $1
+
+$(SPEC_VERSIONS): clean-cache
 	$(eval SPEC_VERSION := $(subst api_specs/,,$@))
 	@echo "Building image for API version $(SPEC_VERSION)"
-	docker build --build-arg SPEC_VERSION=$(SPEC_VERSION) -f docker/Dockerfile . -t appgate-operator:$(SPEC_VERSION)
+	@docker build --build-arg SPEC_VERSION=$(SPEC_VERSION) -f docker/Dockerfile . -t appgate-operator:$(SPEC_VERSION)
 
 clean:
