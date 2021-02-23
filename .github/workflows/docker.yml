@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build image
-        run:  build --build-arg SPEC_VERSION=v12 -f docker/Dockerfile . -t sdp-operator:v12
+        run:  docker build --build-arg SPEC_VERSION=v12 -f docker/Dockerfile . -t sdp-operator:v12
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build image
-        run:  build --build-arg SPEC_VERSION=v13 -f docker/Dockerfile . -t sdp-operator:v13
+        run:  docker build --build-arg SPEC_VERSION=v13 -f docker/Dockerfile . -t sdp-operator:v13
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build image
-        run:  build --build-arg SPEC_VERSION=v14 -f docker/Dockerfile . -t sdp-operator:v14
+        run:  docker build --build-arg SPEC_VERSION=v14 -f docker/Dockerfile . -t sdp-operator:v14
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
