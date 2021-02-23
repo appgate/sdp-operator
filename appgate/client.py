@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable
 import aiohttp
-from aiohttp import InvalidURL, ClientConnectorCertificateError
+from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
@@ -23,7 +23,8 @@ __all__ = [
 
 
 class AppgateException(Exception):
-    pass
+    def __init__(self, message: Optional[str] = None) -> None:
+        self.message = message
 
 
 class EntityClient:
@@ -214,7 +215,7 @@ class AppgateClient:
         }
         method = verbs.get(verb)
         if not method:
-            raise Exception(f'Unknown HTTP method: {verb}')
+            raise AppgateException(f'Unknown HTTP method: {verb}')
         headers = {
             'Accept': f'application/vnd.appgate.peer-v{self.version}+json',
             'Content-Type': 'application/json'
@@ -246,8 +247,12 @@ class AppgateClient:
             log.error('[appgate-client] Error preforming query: %s', url)
             raise AppgateException(f'Error: [{method} {url}] InvalidURL')
         except ClientConnectorCertificateError as e:
-            log.error('[appgate-client] Certificate error: %s', e.certificate_error)
-            raise AppgateException(f'Error: [{method} {url}] CertificateError')
+            log.error('[appgate-client] Certificate error when connecting to %s: %s',
+                      e.host, e.certificate_error)
+            raise AppgateException(f'Error: {e.certificate_error}')
+        except ClientConnectorError as e:
+            log.error('[appgate-client] Error establishing connection with %s: %s', e.host, e.strerror)
+            raise AppgateException(f'Error: {e.strerror}')
 
     async def post(self, path: str, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         return await self.request('POST', path=path, data=body)

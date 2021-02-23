@@ -59,13 +59,9 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
 
 def main_dump_entities(args: OperatorArguments,  stdout: bool = False,
                        output_dir: Optional[Path] = None) -> None:
-    try:
-        asyncio.run(dump_entities(ctx=get_context(args),
-                                  output_dir=output_dir,
-                                  stdout=stdout))
-    except AppgateException:
-        log.error('[dump-entities] Unable to perform operation')
-        sys.exit(1)
+    asyncio.run(dump_entities(ctx=get_context(args),
+                              output_dir=output_dir,
+                              stdout=stdout))
 
 
 def main_api_info(spec_directory: Optional[str] = None) -> None:
@@ -85,9 +81,11 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
     # We need the context here or just parse it
     entities = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None).entities
+    output_path = None
     if not stdout:
         output_file_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-crd.yml'
-        f = (Path(output_file) if output_file else Path(output_file_format)).open('w')
+        output_path = Path(output_file) if output_file else Path(output_file_format)
+        f = output_path.open('w')
     else:
         f = sys.stdout
     short_names: Dict[str, str] = {}
@@ -96,6 +94,8 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
         if i > 0:
             f.write('---\n')
         f.write(generate_crd(e, short_names))
+    if output_path:
+        log.info('[dump-crd] File %s generated with CRD definitions', output_path)
 
 
 def main() -> None:
@@ -155,34 +155,38 @@ def main() -> None:
 
     args = parser.parse_args()
     set_level(log_level=args.log_level.lower())
-    if args.cmd == 'run':
-        if args.cafile and not Path(args.cafile).exists():
-            print(f'cafile file not found: {args.cafile}')
-            sys.exit(1)
-        main_run(OperatorArguments(
-            namespace=args.namespace, spec_directory=args.spec_directory,
-            dry_run=args.dry_run, user=args.user, password=args.password,
-            host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
-            cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
-            no_verify=args.no_verify, cafile=Path(args.cafile) if args.cafile else None))
-    elif args.cmd == 'dump-entities':
-        if args.cafile and not Path(args.cafile).exists():
-            print(f'cafile file not found: {args.cafile}')
-            sys.exit(1)
+    try:
+        if args.cmd == 'run':
+            if args.cafile and not Path(args.cafile).exists():
+                print(f'cafile file not found: {args.cafile}')
+                sys.exit(1)
+            main_run(OperatorArguments(
+                namespace=args.namespace, spec_directory=args.spec_directory,
+                dry_run=args.dry_run, user=args.user, password=args.password,
+                host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
+                cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
+                no_verify=args.no_verify, cafile=Path(args.cafile) if args.cafile else None))
+        elif args.cmd == 'dump-entities':
+            if args.cafile and not Path(args.cafile).exists():
+                print(f'cafile file not found: {args.cafile}')
+                sys.exit(1)
 
-        main_dump_entities(
-            OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
-                              target_tags=args.tags, no_verify=args.no_verify,
-                              cafile=Path(args.cafile) if args.cafile else None),
-            stdout=args.stdout,
-            output_dir=Path(args.directory) if args.directory else None)
-    elif args.cmd == 'dump-crd':
-        main_dump_crd(stdout=args.stdout, output_file=args.file,
-                      spec_directory=args.spec_directory)
-    elif args.cmd == 'api-info':
-        main_api_info(spec_directory=args.spec_directory)
-    else:
-        parser.print_help()
+            main_dump_entities(
+                OperatorArguments(namespace='cli', spec_directory=args.spec_directory,
+                                  target_tags=args.tags, no_verify=args.no_verify,
+                                  cafile=Path(args.cafile) if args.cafile else None),
+                stdout=args.stdout,
+                output_dir=Path(args.directory) if args.directory else None)
+        elif args.cmd == 'dump-crd':
+            main_dump_crd(stdout=args.stdout, output_file=args.file,
+                          spec_directory=args.spec_directory)
+        elif args.cmd == 'api-info':
+            main_api_info(spec_directory=args.spec_directory)
+        else:
+            parser.print_help()
+    except AppgateException as e:
+        log.error('[%s] %s', args.cmd, e.message or 'Unable to perform operation')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
