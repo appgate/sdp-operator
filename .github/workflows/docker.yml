@@ -59,7 +59,7 @@ jobs:
           docker push sdp-operator:v13
 
   v14:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
