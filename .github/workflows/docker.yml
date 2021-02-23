@@ -31,7 +31,7 @@ jobs:
   v12:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
       - name: Build image
@@ -46,7 +46,7 @@ jobs:
   v13:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
       - name: Build image
@@ -61,7 +61,7 @@ jobs:
   v14:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
       - name: Build image
