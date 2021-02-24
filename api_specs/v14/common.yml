@@ -1,0 +1,299 @@
+parameters:
+  authorization:
+    name: Authorization
+    in: header
+    description: The Token from the LoginResponse.
+    required: true
+    schema:
+      type: string
+      example: "Bearer <base64 token>"
+  id:
+    name: id
+    in: path
+    description: ID of the object.
+    required: true
+    schema:
+      type: string
+      format: uuid
+      example: 12699e27-b584-464a-81ee-5b4784b6d425
+  query:
+    name: query
+    in: query
+    description: Query string to filter the result list. It's used for various fields depending on the object type.
+    schema:
+      type: string
+  range:
+    name: range
+    in: query
+    description: >-
+     'Range string to limit the result list. Format: -. 3-10 means he items between the (including) 3rd and the 10th
+      will be returned. Defaults to all objects.'
+    schema:
+      type: string
+      example: 0-10
+  orderBy:
+    name: orderBy
+    in: query
+    description: The field name to sort the result list. Supported fields vary from object to object. Defaults to certain field depending on the object type.
+    schema:
+      type: string
+      example: name
+  descending:
+    name: descending
+    in: query
+    description: >-
+      Whether the sorting is applied descending or ascending. Defaults to certain field depending on the object type.
+    schema:
+      type: string
+  filterBy:
+    name: filterBy
+    in: query
+    description: >-
+      Filters the result list by the given field and value. Supported fields vary from object to object.
+      The filters can be combined with each other as well as the generic query field.
+      The given value is checked for inclusion.
+      The representation of the dynamic query parameters is not correct at the moment. See the example for getting a better idea.
+    schema:
+      type: object
+      additionalProperties:
+        type: string
+    style: form
+    explode: true
+    allowEmptyValue: true
+    example: 'name=us-east&tags=aws'
+  distinguishedName:
+    name: distinguished-name
+    in: path
+    description: >-
+      Distinguished name of the user&devices which will be affected by the operation.
+      Format: 'CN=\<device ID\>,CN=\<username\>,OU=\<provider name\>'
+    required: true
+    schema:
+      type: string
+      example: 'CN=4c07bc6757ea42ddb702c2d6c45419fc,CN=user,OU=ldap'
+
+definitions:
+  Error:
+    type: object
+    description: Generic HTTP error.
+    properties:
+      id:
+        type: string
+        description: Machine readable error code.
+      message:
+        type: string
+        description: Human readable error details.
+  ValidationError:
+    type: object
+    description: Http 422 error for object validation.
+    properties:
+      id:
+        type: string
+        description: Machine readable error code.
+      message:
+        type: string
+        description: Human readable error details.
+      errors:
+        type: array
+        description: List of fields with validation errors.
+        items:
+          type: object
+          properties:
+            field:
+              type: string
+              description: Name of the field that failed validation.
+              example: name
+            message:
+              type: string
+              description: Failure reason.
+              example: may not be null
+  BaseEntity:
+    type: object
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: ID of the object.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      name:
+        type: string
+        description: Name of the object.
+        example: object
+      notes:
+        type: string
+        description: Notes for the object. Used for documentation purposes.
+        example: This object has been created for test purposes.
+      created:
+        type: string
+        format: date-time
+        description: Create date.
+        readOnly: true
+      updated:
+        type: string
+        format: date-time
+        description: Last update date.
+        readOnly: true
+      tags:
+        type: array
+        description: Array of tags.
+        items:
+          type: string
+        example:
+          - developer
+          - api-created
+  ResultList:
+    type: object
+    properties:
+      query:
+        type: string
+        description: The query applied to the list.
+      range:
+        type: string
+        description: >-
+          'The range applied to the list. Format: -/. 3-5/8 means, out of 8 count (query affects the total), the items
+          between (including) the 3rd and the 5th are returned.'
+        example: 0-30/54
+      orderBy:
+        type: string
+        description: The field name used to sort the list.
+        example: name
+      descending:
+        type: boolean
+        description: Whether the sorting is applied descending or ascending.
+      filterBy:
+        type: array
+        description: The filters applied to the list.
+        items:
+          $ref: '#/definitions/FilterBy'
+  FilterBy:
+    type: object
+    properties:
+      name:
+        type: string
+        description: The field name the filter is applied to.
+        example: name
+      value:
+        type: string
+        description: The value used for comparison.
+        example: AWS
+  DeviceAndUser:
+    type: object
+    properties:
+      distinguishedName:
+        type: string
+        description: 'Distinguished name of a user&device combination. Format: "CN=,CN=,OU="'
+        example: CN=4c07bc6757ea42ddb702c2d6c45419fc,CN=user,OU=ldap
+      deviceId:
+        type: string
+        format: uuid
+        description: The device ID, same as the one in the Distinguished Name.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      username:
+        type: string
+        description: The username, same as the one in the Distinguished Name.
+        example: user
+      providerName:
+        type: string
+        description: The provider name of the user, same as the one in the Distinguished Name.
+        example: ldap
+  User:
+    properties:
+      userDistinguishedName:
+        type: string
+        description: 'Distinguished name of a user. Format: "CN=,OU="'
+        example: 'CN=user,OU=ldap'
+      username:
+        type: string
+        description: The username, same as the one in the user Distinguished Name.
+        example: user
+      providerName:
+        type: string
+        description: The provider name of the user, same as the one in the user Distinguished Name.
+        example: ldap
+
+responses:
+  ChangeData:
+    description: Appliance change information.
+    content:
+      application/json:
+        schema:
+          type: object
+          description: Appliance Change information
+          required:
+            - id
+            - status
+          properties:
+            id:
+              type: string
+              description: Id for this change
+            result:
+              type: string
+              description: Result of the requested change
+            status:
+              type: string
+              description: Status of the requested change
+            details:
+              type: string
+              description: Description of the requested change
+  ChangeId:
+    description: Appliance accepted the request and it's enabling/disabling maintenance mode.
+    content:
+      appliance/json:
+        schema:
+          type: object
+          description: Appliance change id for the result of the maintenance mode
+          properties:
+            id:
+              type: string
+              description: Id for this change
+  JsonError:
+    description: JSON error. Check the JSON format.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  PaymentError:
+    description: Insufficient license.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  TokenError:
+    description: Token error. Login again.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  PermissionError:
+    description: Insufficient permissions to access this resource.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  NotFoundError:
+    description: The requested resource can not be found.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  ConflictError:
+    description: The submitted resource conflicts with another.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'
+  ValidationError:
+    description: Request validation error. Check "errors" array for details.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/ValidationError'
+  UnexpectedError:
+    description: Unexpected server side error.
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Error'

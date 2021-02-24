@@ -1,0 +1,217 @@
+device-scripts:
+  get:
+    summary: List all Device Claim Scripts.
+    description: List all Device Claim Scripts visible to current user.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Device Claim Scripts.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DeviceScriptList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new Device Claim Script.
+    description: Create a new Device Claim Script.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created Device Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DeviceScript'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/DeviceScript'
+device-scripts-id:
+  get:
+    summary: Get a specific Device Claim Script.
+    description: Get a specific Device Claim Script.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single Device Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DeviceScript'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing Device Claim Script.
+    description: Update an existing Device Claim Script.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated Device Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DeviceScript'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/DeviceScript'
+  delete:
+    summary: Delete a specific Device Claim Script.
+    description: Delete a specific Device Claim Script.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: Device Claim Script was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+device-scripts-download-id:
+  get:
+    summary: Download a Device Claim Script.
+    description: Download the raw script.
+    tags:
+      - Device Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Device Claim Script including the binary.
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  type: string
+                  description: Name of the Device Claim Script object.
+                  example: AntivirusCheck
+                filename:
+                  type: string
+                  description: The name of the file to be downloaded as to the client devices.
+                  example: av_check.exe
+                file:
+                  type: string
+                  format: byte
+                  description: The Device Claim Script binary in Base64 format.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  DeviceScript:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/DeviceScript'
+    description: Device Claim Script object.
+    required: true
+
+definitions:
+  DeviceScriptList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Device Claim Scripts.
+        properties:
+          data:
+            type: array
+            description: List of Device Claim Scripts.
+            items:
+              $ref: '#/definitions/DeviceScript'
+  DeviceScript:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents a Device Claim Script.
+        required:
+          - filename
+        properties:
+          filename:
+            type: string
+            description: The name of the file to be downloaded as to the client devices.
+            example: test.sh
+          file:
+            type: string
+            format: byte
+            writeOnly: true
+            description: The Device Claim Script binary in Base64 format.
+          checksum:
+            type: string
+            readOnly: true
+            deprecated: true
+            description: >-
+              MD5 checksum of the file. It's used by the Client to decide whether to download the script again or not.
+              Deprecated as of 5.0. Use checksumSha256 field.
+            example: 9a913c1e1eccf35e6e78542b2152f7a7
+          checksumSha256:
+            format: checksum
+            x-checksum-source: file
+            type: string
+            readOnly: true
+            description: >-
+              SHA256 checksum of the file. It's used by the Client to decide whether to download the script again or not.
+            example: ee9040f65c341855e070ff438eb0ea9d5b831b2a2c270fb7ef592d750408e3b3

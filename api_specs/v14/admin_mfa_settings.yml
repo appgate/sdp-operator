@@ -1,0 +1,81 @@
+admin-mfa-settings:
+  get:
+    summary: View Admin MFA settings.
+    description: View Admin MFA settings.
+    tags:
+      - MFA for Admins
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Admin MFA settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AdminMfaSettings'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  delete:
+    summary: Reset Admin MFA settings to disabled.
+    description: Reset Admin MFA settings to disabled.
+    tags:
+      - MFA for Admins
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Admin MFA settings were reset successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update Admin MFA settings.
+    description: Update Admin MFA settings.
+    tags:
+      - MFA for Admins
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Admin MFA settings were updated successfully.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/AdminMfaSettings'
+      description: Admin MFA settings.
+
+definitions:
+  AdminMfaSettings:
+    type: object
+    properties:
+      providerId:
+        type: string
+        format: uuid
+        x-uuid-ref: MfaProvider
+        description: The MFA provider ID to use during Multi-Factor Authentication. If null, Admin MFA is disabled.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      exemptedUsers:
+        type: array
+        description: List of users to be excluded from MFA during admin login.
+        items:
+          type: string
+          description: User Distinguished Name.
+          example: 'CN=user,OU=provider'

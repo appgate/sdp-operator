@@ -7,7 +7,9 @@ RUN apt-get update && \
 COPY requirements.txt /root/
 RUN python3 -m venv /root/venv && \
     /root/venv/bin/pip install -r /root/requirements.txt && \
-    apt-get autoremove gcc --yes
+    apt-get autoremove gcc --yes && \
+    rm -r /root/.cache && rm /root/requirements.txt
+
 COPY appgate /root/appgate/
 COPY api_specs /root/appgate/api_specs/
 COPY docker/assets/run.sh /root/run.sh

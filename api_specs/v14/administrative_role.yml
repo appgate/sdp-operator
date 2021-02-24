@@ -1,0 +1,286 @@
+administrative-roles:
+  get:
+    summary: List all Administrative Roles.
+    description: List all Administrative Roles visible to current user.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Administrative Roles.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AdministrativeRoleList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new Administrative Role.
+    description: Create a new Administrative Role.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created Administrative Role.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AdministrativeRole'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/AdministrativeRole'
+administrative-roles-id:
+  get:
+    summary: Get a specific Administrative Role.
+    description: Get a specific Administrative Role.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single Administrative Role.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AdministrativeRole'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing Administrative Role.
+    description: Update an existing Administrative Role.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated Administrative Role.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AdministrativeRole'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/AdministrativeRole'
+  delete:
+    summary: Delete a specific Administrative Role.
+    description: Delete a specific Administrative Role.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: Administrative Role were deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+administrative-roles-type-target-map:
+  get:
+    summary: Get Administrative Privilege type target map. For internal use.
+    description: The type target map summarizes what kind of Privileges one can create.
+    tags:
+      - Administrative Roles
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Type Target map.
+        content:
+          application/json:
+            schema:
+              properties:
+                actionMatrixMap:
+                  type: object
+                  description: >-
+                    Administrative Privileges action matrix.
+                    It is a static dictionary object that may change between Controller versions.
+                  additionalProperties: true
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  AdministrativeRole:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/AdministrativeRole'
+    description: Administrative Role object.
+    required: true
+
+definitions:
+  AdministrativeRoleList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Administrative Roles.
+        properties:
+          data:
+            type: array
+            description: List of Administrative Roles.
+            items:
+              $ref: '#/definitions/AdministrativeRole'
+  AdministrativeRole:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents an Administrative Role.
+        required:
+          - privileges
+        properties:
+          privileges:
+            type: array
+            description: Administrative privilege list.
+            items:
+              $ref: '#/definitions/AdministrativePrivilege'
+  AdministrativePrivilege:
+    type: object
+    description: >-
+      Administrative Privilege item.
+      Use type-target-map API to get the details on which types are valid for which targets and their scopes.
+    required:
+      - type
+      - target
+    properties:
+      type:
+        type: string
+        description: The type of the Privilege defines the possible administrator actions.
+        enum:
+          - All
+          - View
+          - Create
+          - Edit
+          - Tag
+          - Delete
+          - Revoke
+          - Export
+          - Upgrade
+          - RenewCertificate
+          - DownloadLogs
+          - Test
+          - GetUserAttributes
+          - Backup
+          - CheckStatus
+          - Reevaluate
+      target:
+        type: string
+        description: The target of the Privilege defines the possible target objects for that type.
+        enum:
+          - All
+          - Appliance
+          - Condition
+          - CriteriaScript
+          - Entitlement
+          - AdministrativeRole
+          - IdentityProvider
+          - MfaProvider
+          - IpPool
+          - LocalUser
+          - Policy
+          - Site
+          - DeviceScript
+          - EntitlementScript
+          - RingfenceRule
+          - ApplianceCustomization
+          - OtpSeed
+          - TokenRecord
+          - Blacklist
+          - UserLicense
+          - OnBoardedDevice
+          - AllocatedIp
+          - SessionInfo
+          - AuditLog
+          - AdminMessage
+          - GlobalSetting
+          - CaCertificate
+          - File
+          - FailedAuthentication
+      scope:
+        type: object
+        description: >-
+          The scope of the Privilege. Only applicable to certain type-target combinations.
+          Some types depends on the IdP/MFA type, such as GetUserAttributes.
+          This field must be omitted if not applicable.
+        properties:
+          all:
+            type: boolean
+            description: >-
+              'If "true", all objects are accessible.
+              For example, "type: Edit - target: Condition - scope.all: true" means the administrator can edit all
+              Conditions in the system.'
+          ids:
+            type: array
+            description: Specific object IDs this Privilege would have access to.
+            items:
+              type: string
+              format: uuid
+              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+          tags:
+            type: array
+            description: Object tags this privilege would have access to.
+            items:
+              type: string
+              example: tag
+      defaultTags:
+        type: array
+        description: >-
+          The items in this list would be added automatically to the newly created objects' tags.
+          Only applicable on "Create" type and targets with tagging capability.
+          This field must be omitted if not applicable.
+        items:
+          type: string
+          example: api-created

@@ -10,6 +10,7 @@ mfa-providers:
       - $ref: './common.yml#/parameters/range'
       - $ref: './common.yml#/parameters/orderBy'
       - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
     responses:
       '200':
         description: List of MFA Providers.
@@ -198,10 +199,22 @@ definitions:
             type: number
             description: Port to connect.
             example: 1812
+          inputType:
+            type: string
+            description: >
+              The input type used in the client to enter the MFA code. 
+               * "Masked" - The input is masked the same way as a password field.
+               * "Numeric" - The input is marked as a numeric input.
+               * "Text" - The input is handled as a regular plain text field.
+            example: Number
+            enum:
+              - Masked
+              - Numeric
+              - Text
+            default: Masked
           sharedSecret:
             type: string
             writeOnly: true
-            format: password
             description: Radius shared secret to authenticate to the server.
           authenticationProtocol:
             type: string

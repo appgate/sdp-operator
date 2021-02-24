@@ -1,0 +1,188 @@
+dns-rules:
+  get:
+    summary: List all DNS Rules.
+    description: List all DNS Rules visible to current user.
+    tags:
+      - DNS Rules
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of DNS Rules.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DnsRuleList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new DNS Rule.
+    description: Create a new DNS Rule.
+    tags:
+      - DNS Rules
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created DNS Rule.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DnsRule'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/DnsRule'
+dns-rules-id:
+  get:
+    summary: Get a specific DNS Rule.
+    description: Get a specific DNS Rule.
+    tags:
+      - DNS Rules
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single DNS Rule object.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DnsRule'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing DNS Rule.
+    description: Update an existing DNS Rule.
+    tags:
+      - DNS Rules
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated DNS Rule.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DnsRule'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/DnsRule'
+  delete:
+    summary: Delete a specific DNS Rule.
+    description: Delete a specific DNS Rule.
+    tags:
+      - DNS Rules
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: DNS Rule was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  DnsRule:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/DnsRule'
+    description: DNS Rule object.
+    required: true
+
+definitions:
+  DnsRuleList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of DNS Rules.
+        properties:
+          data:
+            type: array
+            description: List of DNS Rules.
+            items:
+              $ref: '#/definitions/DnsRule'
+  DnsRule:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents an DNS Rule.
+        required:
+          - actions
+        properties:
+          actions:
+            type: array
+            description: List of all DNS actions in this DNS Rule.
+            items:
+              type: object
+              required:
+                - classification
+                - action
+              properties:
+                classification:
+                  type: string
+                  format: uuid
+                  description: ID of the DNS Classification.
+                  example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+                action:
+                  type: string
+                  description: Applied action to the traffic.
+                  enum:
+                    - allow
+                    - block
+                    - ignore
+                    - redirect
+                condition:
+                  type: string
+                  format: uuid
+                  description: ID of the Condition.
+                  example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+                redirectionHost:
+                  type: string
+                  format: uuid
+                  description: ID of the DNS Redirection Host in the Global Settings.
+                  example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
