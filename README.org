@@ -1,3 +1,5 @@
+[![Docker](https://github.com/appgate/sdp-operator/actions/workflows/docker.yml/badge.svg)](https://github.com/appgate/sdp-operator/actions/workflows/docker.yml)
+
 * appgate-operator
 
 ** Description
