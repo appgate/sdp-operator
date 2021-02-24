@@ -44,7 +44,7 @@ jobs:
       - name: Push image
         run: |
           docker tag sdp-operator:v12 ghcr.io/appgate/sdp-operator:v12
-          docker push sdp-operator:v12
+          docker push ghcr.io/appgate/sdp-operator:v12
 
   v13:
     needs: build
@@ -65,7 +65,7 @@ jobs:
       - name: Push image
         run: |
           docker tag sdp-operator:v13 ghcr.io/appgate/sdp-operator:v13
-          docker push sdp-operator:v13
+          docker push ghcr.io/appgate/sdp-operator:v13
 
   v14:
     needs: build
