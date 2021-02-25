@@ -69,7 +69,9 @@ definitions:
       fedora:
         $ref: '#/definitions/Client'
       redHat7:
-        $ref: '#/definitions/Client'
+        allOf:
+          - $ref: '#/definitions/Client'
+          - deprecated: true
   Client:
     type: object
     description: Client Auto-Update settings for the specified platform.

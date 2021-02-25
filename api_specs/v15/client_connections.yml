@@ -1,10 +1,7 @@
 client-connections:
   get:
     summary: View Client Connection settings.
-    description: >-
-      View Client Connection settings.
-      With API version 12, this API has changed significantly in order to manage client profiles.
-      It is still possible to use the older APIs using older Accept headers.
+    description: View Client Connection settings.
     tags:
       - Client Connections
     parameters:
@@ -36,10 +33,7 @@ client-connections:
         $ref: './common.yml#/responses/UnexpectedError'
   put:
     summary: Update Client Connection settings.
-    description: >-
-      Update Client Connection settings.
-      With API version 12, this API has changed significantly in order to manage client profiles.
-      It is still possible to use the older APIs using older Accept headers.
+    description: Update Client Connection settings.
     tags:
       - Client Connections
     parameters:
@@ -145,11 +139,15 @@ definitions:
     properties:
       spaMode:
         type: string
-        default: TCP
-        description: SPA mode.
+        description: SPA mode. Deprecated as of 5.4. Use global-settings API instead.
+        deprecated: true
         enum:
           - TCP
           - 'UDP-TCP'
+      profileHostname:
+        type: string
+        description: The hostname to use for generating profile URLs.
+        example: appgate.company.com
       profiles:
         type: array
         description: Client Profiles.

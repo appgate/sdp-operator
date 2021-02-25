@@ -70,3 +70,7 @@ definitions:
             type: string
             format: date-time
             description: On-boarding time.
+          lastSeenAt:
+            type: string
+            format: date-time
+            description: The time when the device last signed in. 'null' if it has signed in last on a Controller that was older than 5.4 at the time.

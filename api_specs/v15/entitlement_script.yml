@@ -157,6 +157,10 @@ entitlement-scripts-test:
                   type: string
                   description: The error text. Available if the evaluation has an error.
                   example: 'Expression does not return list. Received: Boolean'
+                executionMs:
+                  type: number
+                  description: How long it took to evaluate the expression.
+                  example: 201
       '400':
         $ref: './common.yml#/responses/JsonError'
       '401':

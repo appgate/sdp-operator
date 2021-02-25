@@ -257,22 +257,21 @@ definitions:
                     type: string
                     description: IPv6 address for routing tunnel traffic.
                     example: '2001:db8:0:0:0:ff00:42:8329'
-              webProxyEnabled:
+              urlAccessEnabled:
                 type: boolean
-                description: Flag for manipulating web proxy p12 file. Setting this false will delete the existing p12 file from database.
-              webProxyKeyStore:
-                type: string
-                format: byte
-                writeOnly: true
-                description: The PKCS12 package to be used for web proxy. The file must be with no password and must include the full certificate chain and a private key. In Base64 format.
-              webProxyVerifyUpstreamCertificate:
-                type: boolean
-                description: Gateway will verify the certificate of the endpoints.
-                default: true
-              webProxyCertificateSubjectName:
-                type: string
-                readOnly: true
-                description: The subject name of the certificate with private key in the PKCS12 file for web proxy assigned to this site.
+                description: Whether to enable URL Access feature or not.
+              urlAccessP12s:
+                type: array
+                description: P12 files for proxying traffic for URL Access feature.
+                items:
+                  allOf:
+                    - $ref: 'appliance.yml#/definitions/P12'
+                    - type: object
+                      properties:
+                        verifyUpstream:
+                          type: boolean
+                          description: Gateway will verify upstream certificate of the endpoints.
+                          default: true
               ipAccessLogIntervalSeconds:
                 type: number
                 description: Frequency configuration for generating IP Access audit logs for a connection.
@@ -311,6 +310,13 @@ definitions:
                     searchDomains:
                       type: array
                       description: DNS search domains that will be used to resolve hostnames within the Site.
+                      deprecated: true
+                      items:
+                        type: string
+                        example: company.com
+                    matchDomains:
+                      type: array
+                      description: The DNS resolver will only attempt to resolve names matching the match domains. If match domains are not specified the DNS resolver will attempt to resolve all hostnames.
                       items:
                         type: string
                         example: company.com

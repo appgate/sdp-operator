@@ -95,7 +95,7 @@ appliances-backup-id:
     summary: Download an Appliance Backup.
     description: >-
       Download a completed Appliance Backup with the given ID of an Appliance.
-      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v14+gpg** as it returns a GPG
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v15+gpg** as it returns a GPG
       file as blob instead of JSON.
     tags:
       - Appliance Backup

@@ -1,9 +1,9 @@
-license-users:
+fido2-devices:
   get:
-    summary: List all User Licenses.
-    description: List all User Licenses.
+    summary: List all registered FIDO2 Devices.
+    description: List all registered FIDO2 Devices.
     tags:
-      - Licensed Users
+      - FIDO2 Devices
     parameters:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/query'
@@ -13,35 +13,36 @@ license-users:
       - $ref: './common.yml#/parameters/filterBy'
     responses:
       '200':
-        description: List of User Licenses.
+        description: List of FIDO2 Devices.
         content:
           application/json:
             schema:
-              $ref: '#/definitions/UserLicenseList'
+              $ref: '#/definitions/Fido2DeviceList'
       '401':
         $ref: './common.yml#/responses/TokenError'
       '403':
         $ref: './common.yml#/responses/PermissionError'
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
-license-users-distinguished-name:
+fido2-devices-distinguished-name:
   delete:
-    summary: Delete a User License for the given Distinguished Name.
-    description: Delete a User License for the given Distinguished Name.
+    summary: Delete a registered FIDO2 Device for the given Distinguished Name.
+    description: Delete a registered FIDO2 Device for the given Distinguished Name.
     tags:
-      - Licensed Users
+      - FIDO2 Devices
     parameters:
       - $ref: './common.yml#/parameters/authorization'
       - name: distinguished-name
         in: path
-        description: 'Distinguished name of the user whose license to be deleted. Format: "CN=,OU="'
+        description: >-
+          'Distinguished name of the user whose registered FIDO2 Device to be deleted. Format: "CN=,OU="'
         required: true
         schema:
           type: string
           example: 'CN=user,OU=ldap'
     responses:
       '204':
-        description: User License was removed successfully.
+        description: registered FIDO2 Device was removed successfully.
       '401':
         $ref: './common.yml#/responses/TokenError'
       '403':
@@ -52,23 +53,27 @@ license-users-distinguished-name:
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:
-  UserLicenseList:
+  Fido2DeviceList:
     allOf:
       - $ref: './common.yml#/definitions/ResultList'
       - type: object
-        description: Represents a list of User Licenses.
+        description: Represents a list of registered FIDO2 Devices.
         properties:
           data:
             type: array
-            description: List of User Licenses.
+            description: List of registered FIDO2 Devices.
             items:
-              $ref: '#/definitions/UserLicense'
-  UserLicense:
+              $ref: '#/definitions/Fido2Device'
+  Fido2Device:
     allOf:
       - $ref: './common.yml#/definitions/User'
       - type: object
         properties:
-          created:
+          deviceId:
             type: string
-            format: date-time
-            description: Creation date.
+            description: The device ID reported by the FIDO2 device during registration. May be empty.
+            example: 1.3.6.1.4.1.41482.1.2
+          deviceName:
+            type: string
+            description: The device name reported by the FIDO2 device during registration. May be empty.
+            example: 'YubiKey NEO/NEO-n'

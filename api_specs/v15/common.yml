@@ -215,6 +215,40 @@ definitions:
         example: ldap
 
 responses:
+  ChangeData:
+    description: Appliance change information.
+    content:
+      application/json:
+        schema:
+          type: object
+          description: Appliance Change information
+          required:
+            - id
+            - status
+          properties:
+            id:
+              type: string
+              description: Id for this change
+            result:
+              type: string
+              description: Result of the requested change
+            status:
+              type: string
+              description: Status of the requested change
+            details:
+              type: string
+              description: Description of the requested change
+  ChangeId:
+    description: Appliance accepted the request and it's enabling/disabling maintenance mode.
+    content:
+      appliance/json:
+        schema:
+          type: object
+          description: Appliance change id for the result of the maintenance mode
+          properties:
+            id:
+              type: string
+              description: Id for this change
   JsonError:
     description: JSON error. Check the JSON format.
     content:

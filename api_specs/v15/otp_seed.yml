@@ -1,9 +1,9 @@
-license-users:
+otp-seeds:
   get:
-    summary: List all User Licenses.
-    description: List all User Licenses.
+    summary: List all Default Time-Based OTP Provider Seeds.
+    description: List all Default Time-Based OTP Provider Seeds.
     tags:
-      - Licensed Users
+      - Default Time-Based OTP Provider Seeds
     parameters:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/query'
@@ -13,35 +13,36 @@ license-users:
       - $ref: './common.yml#/parameters/filterBy'
     responses:
       '200':
-        description: List of User Licenses.
+        description: List of Default Time-Based OTP Provider Seeds.
         content:
           application/json:
             schema:
-              $ref: '#/definitions/UserLicenseList'
+              $ref: '#/definitions/OtpSeedList'
       '401':
         $ref: './common.yml#/responses/TokenError'
       '403':
         $ref: './common.yml#/responses/PermissionError'
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
-license-users-distinguished-name:
+otp-seeds-distinguished-name:
   delete:
-    summary: Delete a User License for the given Distinguished Name.
-    description: Delete a User License for the given Distinguished Name.
+    summary: Delete a Default Time-Based OTP Provider Seed for the given Distinguished Name.
+    description: Delete a Default Time-Based OTP Provider Seed for the given Distinguished Name.
     tags:
-      - Licensed Users
+      - Default Time-Based OTP Provider Seeds
     parameters:
       - $ref: './common.yml#/parameters/authorization'
       - name: distinguished-name
         in: path
-        description: 'Distinguished name of the user whose license to be deleted. Format: "CN=,OU="'
+        description: >-
+          'Distinguished name of the user whose Default Time-Based OTP Provider Seed to be deleted. Format: "CN=,OU="'
         required: true
         schema:
           type: string
           example: 'CN=user,OU=ldap'
     responses:
       '204':
-        description: User License was removed successfully.
+        description: Default Time-Based OTP Provider Seed was removed successfully.
       '401':
         $ref: './common.yml#/responses/TokenError'
       '403':
@@ -52,23 +53,22 @@ license-users-distinguished-name:
         $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:
-  UserLicenseList:
+  OtpSeedList:
     allOf:
       - $ref: './common.yml#/definitions/ResultList'
       - type: object
-        description: Represents a list of User Licenses.
+        description: Represents a list of Default Time-Based OTP Provider Seeds.
         properties:
           data:
             type: array
-            description: List of User Licenses.
+            description: List of Default Time-Based OTP Provider Seeds.
             items:
-              $ref: '#/definitions/UserLicense'
-  UserLicense:
+              $ref: '#/definitions/OtpSeed'
+  OtpSeed:
     allOf:
       - $ref: './common.yml#/definitions/User'
       - type: object
         properties:
-          created:
-            type: string
-            format: date-time
-            description: Creation date.
+          verified:
+            type: boolean
+            description: Whether the generated Seed successully used by the User at least once or not.

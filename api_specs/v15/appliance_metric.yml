@@ -3,7 +3,7 @@ appliances-metrics:
     summary: Get all the Prometheus metrics for an Appliance.
     description: >-
       Get all the Prometheus metrics for the given Appliance.
-      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v14+text** as it returns plain text instead of JSON.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v15+text** as it returns plain text instead of JSON.
     tags:
       - Appliance Metrics
     parameters:
@@ -30,7 +30,7 @@ appliances-metrics-id:
     summary: Get a specific Prometheus metric for an Appliance.
     description: >-
       Get a specific Prometheus metrics for the given Appliance.
-      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v14+text** as it returns plain text instead of JSON.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v15+text** as it returns plain text instead of JSON.
     tags:
       - Appliance Metrics
     parameters:

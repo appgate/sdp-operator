@@ -185,6 +185,10 @@ stats-appliances:
                       type: number
                       description: The number of active Appliances with the Connector role enabled.
                       example: 6
+                    portalCount:
+                      type: number
+                      description: The number of active Appliances with the Portal role enabled.
+                      example: 6
                     data:
                       type: array
                       items:
@@ -233,11 +237,13 @@ stats-appliances:
                           logForwarder:
                             $ref: '#/definitions/ApplianceRole'
                           gateway:
-                            $ref: '#/definitions/GatewayApplianceRole'
+                            $ref: '#/definitions/ApplianceWithSessionsRole'
                           connector:
                             $ref: '#/definitions/ApplianceRole'
-                          appliance:
+                          portal:
                             $ref: '#/definitions/ApplianceRole'
+                          appliance:
+                            $ref: '#/definitions/ApplianceWithSessionsRole'
                           cpu:
                             type: number
                             format: float
@@ -640,6 +646,12 @@ session-info-distinguished-name:
                                     items:
                                       type: string
                                       example: 0-255
+                            policyNames:
+                              type: array
+                              description: Names of the Policies that has granted this Entitlement.
+                              items:
+                                type: string
+                                example: Finance
                       discoveredApps:
                         type: array
                         description: >-
@@ -650,6 +662,10 @@ session-info-distinguished-name:
                           type: string
                           description: Full hostname for the Discovered App.
                           example: new-service.internal.company.com
+                      vpn:
+                        type: object
+                        description: VPN details of the session
+                        additionalProperties: true
                       site:
                         type: string
                         description: The Site name for the Gateway.
@@ -819,12 +835,12 @@ definitions:
         type: string
         description: Optional details for extra information like error messages.
         example: Cannot reach appliance. Please check Controller logs.
-  GatewayApplianceRole:
+  ApplianceWithSessionsRole:
     allOf:
       - $ref: '#/definitions/ApplianceRole'
       - type: object
         properties:
           numberOfSessions:
             type: integer
-            description: Number of active sessions on the gateway.
+            description: Number of active sessions on the Gateway or Portal.
             example: 156

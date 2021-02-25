@@ -24,32 +24,6 @@ license-users:
         $ref: './common.yml#/responses/PermissionError'
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
-license-users-distinguished-name:
-  delete:
-    summary: Delete a User License for the given Distinguished Name.
-    description: Delete a User License for the given Distinguished Name.
-    tags:
-      - Licensed Users
-    parameters:
-      - $ref: './common.yml#/parameters/authorization'
-      - name: distinguished-name
-        in: path
-        description: 'Distinguished name of the user whose license to be deleted. Format: "CN=,OU="'
-        required: true
-        schema:
-          type: string
-          example: 'CN=user,OU=ldap'
-    responses:
-      '204':
-        description: User License was removed successfully.
-      '401':
-        $ref: './common.yml#/responses/TokenError'
-      '403':
-        $ref: './common.yml#/responses/PermissionError'
-      '404':
-        $ref: './common.yml#/responses/NotFoundError'
-      '500':
-        $ref: './common.yml#/responses/UnexpectedError'
 
 definitions:
   UserLicenseList:
@@ -68,7 +42,17 @@ definitions:
       - $ref: './common.yml#/definitions/User'
       - type: object
         properties:
+          type:
+            type: string
+            description: Type of User License.
+            enum:
+              - Normal
+              - Portal
           created:
             type: string
             format: date-time
             description: Creation date.
+          lastSeenAt:
+            type: string
+            format: date-time
+            description: The time when the user last signed in.

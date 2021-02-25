@@ -230,6 +230,7 @@ definitions:
             properties:
               enabled:
                 type: boolean
+                default: false
               url:
                 type: string
                 description: The URL to set on the Client OS.
@@ -243,9 +244,77 @@ definitions:
             properties:
               enabled:
                 type: boolean
+                default: false
               dnsSuffix:
                 type: string
                 description: Client checks if the DNS suffix has been configured on the OS to decide whether it's on a trusted network or not.
+          clientSettings:
+            type: object
+            description: Settings that admins can apply to the Client.
+            properties:
+              enabled:
+                type: boolean
+                description: Enable Client Settings for this Policy.
+                default: false
+              entitlementsList:
+                type: string
+                description: Show or hide Entitlement List on Client UI.
+                enum:
+                   - Show
+                   - Hide
+              attentionLevel:
+                type: string
+                enum:
+                   - Show
+                   - Low
+                   - Medium
+                   - High
+                description: Set the Attention Level automatically on Client and hide the option. "Show" will leave option to the user.
+              autoStart:
+                type: string
+                enum:
+                   - Show
+                   - Enabled
+                   - Disabled
+                description: Set the Autostart setting automatically on Client and hide the option. "Show" will leave option to the user.
+              addRemoveProfiles:
+                type: string
+                description: Allow adding and removing profiles on Client.
+                enum:
+                   - Show
+                   - Hide
+              keepMeSignedIn:
+                type: string
+                enum:
+                  - Show
+                  - Enabled
+                  - Disabled
+                description: Set the "Keep me signed-in" setting for credential providers automatically on Client and hide the option. "Show" will leave option to the user.
+              samlAutoSignIn:
+                type: string
+                enum:
+                   - Show
+                   - Enabled
+                   - Disabled
+                description: Set the "SAML/Certificate auto sign-in" setting automatically on Client and hide the option. "Show" will leave option the user.
+              quit:
+                type: string
+                description: Show or hide "Quit" on Client UI.
+                enum:
+                  - Show
+                  - Hide
+              signOut:
+                type: string
+                description: Show or hide "Sign out" on Client UI.
+                enum:
+                  - Show
+                  - Hide
+              suspend:
+                type: string
+                description: Show or hide "Suspend" feature on Client UI.
+                enum:
+                   - Show
+                   - Hide
           administrativeRoles:
             type: array
             description: List of Administrative Role IDs in this Policy.

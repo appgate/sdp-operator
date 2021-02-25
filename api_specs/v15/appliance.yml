@@ -42,6 +42,8 @@ appliances:
         $ref: './common.yml#/responses/JsonError'
       '401':
         $ref: './common.yml#/responses/TokenError'
+      '402':
+        $ref: './common.yml#/responses/PaymentError'
       '403':
         $ref: './common.yml#/responses/PermissionError'
       '409':
@@ -95,6 +97,8 @@ appliances-id:
         $ref: './common.yml#/responses/JsonError'
       '401':
         $ref: './common.yml#/responses/TokenError'
+      '402':
+        $ref: './common.yml#/responses/PaymentError'
       '403':
         $ref: './common.yml#/responses/PermissionError'
       '404':
@@ -134,6 +138,7 @@ appliances-export:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
       - $ref: '#/parameters/latestVersion'
+      - $ref: '#/parameters/version'
     responses:
       '200':
         description: Exported JSON Appliance seed. Body must be saved as seed.json file.
@@ -167,6 +172,7 @@ appliances-export-iso:
       - $ref: './common.yml#/parameters/authorization'
       - $ref: './common.yml#/parameters/id'
       - $ref: '#/parameters/latestVersion'
+      - $ref: '#/parameters/version'
     responses:
       '200':
         description: Exported ISO Appliance seed.
@@ -213,7 +219,8 @@ appliances-renew-certificate:
 appliances-admin-interface-p12:
   post:
     summary: Upload and apply HTTPS certificate on the admin interface of an active Appliance.
-    description: Upload and apply HTTPS certificate on the admin interface of an active Appliance.
+    description: Upload and apply HTTPS certificate on the admin interface of an active Appliance. Deprecated as of 5.4. Use adminInterface.httpsP12 field instead.
+    deprecated: true
     tags:
       - Appliances
     parameters:
@@ -429,16 +436,52 @@ appliances-name-resolution-status:
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
+change:
+  get:
+    summary: Get all change information from an Appliance.
+    description: >-
+      When a change is requested on an appliance it returns a change id.
+      We can use that change id to get information about that change.
+    tags:
+      - Appliance Change
+    parameters:
+      - in: path
+        name: changeId
+        description: Change id
+        schema:
+          type: string
+        required: true
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        $ref: './common.yml#/responses/ChangeData'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
 parameters:
   latestVersion:
     name: latestVersion
     in: query
     description: >-
-      If the Appliance object created on an old Controller and the version field is older than the current peer version,
-      Controller generates a seed for that specific version.
-      Adding this parameter overrides the version to the current one.
+      When a Controller creates an appliance object it is saved with the current API version. This API version will be used when the seed for that appliance is generated. 
+      If the appliance version is now newer than this, the correct API version must be used for the seed. 
+      Use latestVersion to override the default API version. The latest API version is shown at the top of this API specification.
     schema:
       type: boolean
+  version:
+    name: version
+    in: query
+    description: >-
+      Can be used to set a specific version to the Appliance prior to exporting the seed.
+    schema:
+      type: number
 
 requestBodies:
   Appliance:
@@ -503,7 +546,6 @@ definitions:
       - type: object
         description: Represents an Appliance.
         required:
-          - hostname
           - clientInterface
           - peerInterface
           - networking
@@ -527,7 +569,8 @@ definitions:
             example: 9
           hostname:
             type: string
-            description: Generic hostname of the appliance. Used as linux hostname and to identify within logs.
+            description: Generic hostname of the appliance. Used as linux hostname and to identify within logs. If empty, peerInterface.hostname will be used to generate it.
+            deprecated: true
             example: 'appgate.company.com'
           site:
             type: string
@@ -627,6 +670,8 @@ definitions:
                   - "ECDHE-RSA-AES128-GCM-SHA256"
               allowSources:
                 $ref: '#/definitions/AllowSources'
+              httpsP12:
+                $ref: '#/definitions/P12'
           networking:
             type: object
             description: Networking configuration of the system.
@@ -704,10 +749,6 @@ definitions:
                                 type: integer
                                 description: Netmask of the network interface.
                                 example: 24
-                              hostname:
-                                type: string
-                                description: NIC hostname.
-                                example: 'appgate.company.com'
                               snat:
                                 type: boolean
                                 description: Enable SNAT on this IP.
@@ -752,10 +793,6 @@ definitions:
                                 type: integer
                                 description: Netmask of the network interface.
                                 example: 24
-                              hostname:
-                                type: string
-                                description: NIC hostname.
-                                example: 'appgate.company.com'
                               snat:
                                 type: boolean
                                 description: Enable SNAT on this IP.
@@ -928,7 +965,7 @@ definitions:
             properties:
               enabled:
                 type: boolean
-                description: Whether the Controller is enabled on this appliance or not.
+                description: Whether the Controller is enabled on this appliance or not. Cannot be enabled on an inactive Appliance since some checks need to be done first.
                 default: false
           gateway:
             type: object
@@ -1060,6 +1097,10 @@ definitions:
                       type: boolean
                       description: Use Source NAT for the resources.
                       default: true
+                    dnatToResource:
+                      type: boolean
+                      description: Apply destination NAT to traffic from tunnel into a resource
+                      default: false
               advancedClients:
                 type: array
                 description: A list of Clients to run on the appliance with the given configuration. Requires manual Policy configuration.
@@ -1083,6 +1124,73 @@ definitions:
                       type: boolean
                       description: Use Source NAT for the Client tunnel.
                       default: true
+                    snatToResources:
+                      type: boolean
+                      description: >-
+                        Use SNAT for outgoing traffic from the Express Connector,
+                        endpoints will see traffic as coming from the Connector itself
+                      default: false
+                    dnatToResource:
+                      type: boolean
+                      description: Apply destination NAT to traffic from tunnel into a resource
+                      default: false
+                    defaultGateway:
+                      type: boolean
+                      description: Use this connector client as a default gw for local resources
+                      default: false
+          portal:
+            type: object
+            description: Portal settings.
+            properties:
+              enabled:
+                type: boolean
+                description: Whether the Portal is enabled on this appliance or not.
+                default: false
+              httpsP12:
+                $ref: '#/definitions/P12'
+              proxyP12s:
+                type: array
+                description: P12 files for proxying traffic to HTTPS endpoints.
+                items:
+                  allOf:
+                    - $ref: '#/definitions/P12'
+                    - type: object
+                      properties:
+                        verifyUpstream:
+                          type: boolean
+                          description: Portal will verify upstream certificate of the endpoints.
+                          default: true
+              profiles:
+                type: array
+                description: Names of the profiles in this Collective to use in the Portal.
+                items:
+                  type: string
+                  example: Portal Users
+              externalProfiles:
+                type: array
+                description: Profiles from other Collectives to use in the Portal.
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      description: Identifier to track the object on update since all the other fields are write-only. A random one will be assigned if left empty.
+                    url:
+                      type: string
+                      writeOnly: true
+                      description: Appgate URL from Client Connections.
+                      example: appgate://appgate.company.com/eyJjYUZpbmdlcnByaW50IjoiMmM4ZTBiNTM5YTM4NjRkYmVkYzhiOWRkMTcwYzM0NGFhMjZjZTVhNjA4MmY3YTI0YzRkZTU4ZGQ3NWRjNWZhMCIsImlkZW50aXR5UHJvdmlkZXJOYW1lIjoibG9jYWwifQ==
+                    hostname:
+                      type: string
+                      readOnly: true
+                      description: Hostname parsed from the given URL.
+                      example: appgate.company.com
+                    profileName:
+                      type: string
+                      readOnly: true
+                      description: Profile name parsed from the given URL.
+                      example: Portal Users
           rsyslogDestinations:
             type: array
             description: Rsyslog destination settings to forward appliance logs.
@@ -1225,3 +1333,24 @@ definitions:
         type: string
         format: byte
         description: The ISO file in base64 format. Response must be Base64 decoded and saved as an ISO file.
+  P12:
+    type: object
+    description: PKCS12 object with X.509 certificate and private key.
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: Identifier to track the object on update since all the other fields are write-only. A random one will be assigned if left empty.
+      content:
+        type: string
+        format: byte
+        writeOnly: true
+        description: Contens of the P12 file.
+      password:
+        type: string
+        writeOnly: true
+        description: Password for the P12 file.
+      subjectName:
+        type: string
+        readOnly: true
+        description: Subject name of the certificate in the file.
