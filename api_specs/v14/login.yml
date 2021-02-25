@@ -56,6 +56,13 @@ identity-provider-names:
                         type: string
                         description: Name of the identity provider.
                         example: local
+                      displayName:
+                        type: string
+                        description: User friendly name of the identity provider.
+                        example: Company Local Identities
+                      default:
+                        type: boolean
+                        description: Whether the identity provider is marked as default or not.
                       type:
                         type: string
                         description: The type of the identity provider.
@@ -280,21 +287,6 @@ authorization:
               $ref: './common.yml#/definitions/Error'
       '422':
         $ref: './common.yml#/responses/ValidationError'
-      '500':
-        $ref: './common.yml#/responses/UnexpectedError'
-logout:
-  post:
-    summary: Logout
-    description: The tokens for this session will be revoked
-    parameters:
-      - $ref: './common.yml#/parameters/authorization'
-    tags:
-      - Login
-    responses:
-      '204':
-        description: Logout was successfull. The tokens are revoked immediately.
-      '401':
-        $ref: './common.yml#/responses/TokenError'
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
 

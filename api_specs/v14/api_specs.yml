@@ -4,7 +4,7 @@ tags:
   - name: Controller
 info:
   title: Appgate SDP Controller REST API
-  version: API version 15
+  version: API version 14
   description: |-
     # About
       This specification documents the REST API calls for the Appgate SDP Controller.
@@ -26,7 +26,7 @@ info:
 
       All requests must have the **Accept** header as:
 
-      **application/vnd.appgate.peer-v15+json**
+      **application/vnd.appgate.peer-v14+json**
     # API Conventions
       API conventions are  important to understand and follow strictly.
 
@@ -104,7 +104,6 @@ x-tagGroups:
 #      - DNS Rules
   - name: System
     tags:
-      - Appliance Change
       - Appliances
       - Sites
       - IP Pools
@@ -156,8 +155,6 @@ paths:
     $ref: './login.yml#/authentication-otp'
   /authorization:
     $ref: './login.yml#/authorization'
-  /logout:
-    $ref: './login.yml#/logout'
   /admin-messages:
     $ref: './dashboard.yml#/admin-messages'
   /admin-messages/summarize:
@@ -312,6 +309,8 @@ paths:
     $ref: './blacklist.yml#/blacklist-distinguished-name'
   /license/users:
     $ref: './user_license.yml#/license-users'
+  /license/users/{distinguished-name}:
+    $ref: './user_license.yml#/license-users-distinguished-name'
   /on-boarded-devices:
     $ref: 'on-boarded_device.yml#/on-boarded-devices'
   /on-boarded-devices/{distinguished-name}:
@@ -338,18 +337,12 @@ paths:
     $ref: './ca.yml#/certificate-authority-ca-next-switch'
   /license:
     $ref: './license.yml#/license'
-  /license/{id}:
-    $ref: './license.yml#/license-id'
   /license/next:
     $ref: './license.yml#/license-next'
   /dns-classifications:
     $ref: './dns_classification.yml#/dns-classifications'
   /dns-classifications/{id}:
     $ref: './dns_classification.yml#/dns-classifications-id'
-  /appliances/{id}/change/{changeId}:
-    $ref: './appliance.yml#/change'
-  /appliances/{id}/maintenance:
-    $ref: './appliance_upgrade.yml#/appliances-maintenance'
   /appliances/{id}/upgrade:
     $ref: './appliance_upgrade.yml#/appliances-upgrade'
   /appliances/{id}/upgrade/prepare:
@@ -413,12 +406,8 @@ components:
           properties:
             userLockoutThreshold:
               type: integer
-              description: After how many failed authentication attempts will a local user be locked out from authenticating again.
+              description: After how many failed authentication attempts will a local user be locked out from authenticating again for 1 minute.
               default: 5
-            userLockoutDurationMinutes:
-              type: integer
-              description: For how long lockout will last for local users.
-              default: 1
             minPasswordLength:
               type: integer
               description: Minimum password length requirement for local users.
