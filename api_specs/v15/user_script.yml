@@ -1,0 +1,160 @@
+user-scripts:
+  get:
+    summary: List all user Claim Scripts.
+    description: List all User Claim Scripts visible to current user.
+    tags:
+      - User Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of User Claim Scripts.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/UserScriptList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new User Claim Script.
+    description: Create a new User Claim Script.
+    tags:
+      - User Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created User Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/UserScript'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/UserScript'
+user-scripts-id:
+  get:
+    summary: Get a specific User Claim Script.
+    description: Get a specific User Claim Script.
+    tags:
+      - User Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single User Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/UserScript'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing User Claim Script.
+    description: Update an existing User Claim Script.
+    tags:
+      - User Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated User Claim Script.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/UserScript'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/UserScript'
+  delete:
+    summary: Delete a specific User Claim Script.
+    description: Delete a specific User Claim Script.
+    tags:
+      - User Claim Scripts
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: User Claim Script was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  UserScript:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/UserScript'
+    description: User Claim Script object.
+    required: true
+
+definitions:
+  UserScriptList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of User Claim Scripts.
+        properties:
+          data:
+            type: array
+            description: List of User Claim Scripts.
+            items:
+              $ref: '#/definitions/UserScript'
+  UserScript:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents a User Claim Script.
+        required:
+          - expression
+        properties:
+          expression:
+            type: string
+            description: A JavaScript expression that returns an object.
+            example: "return {'posture': 25};"

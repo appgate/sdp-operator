@@ -1,0 +1,200 @@
+token-records-dn:
+  get:
+    summary: List all Distinguished Names active in the past 24 hour.
+    description: >-
+      List all Distinguished Names active in the past 24 hour.
+      Includes the users who has at least one token that has not expired past 24 hours.
+      If a token was created 30 hours ago and it has 10 hours expiration time, it will be in this list.
+    tags:
+      - Active Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Distinguished Names.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/DistinguishedNameList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+token-records-revoked-by-dn:
+  put:
+    summary: Revoke all Tokens ending with the given Distinguished Name substring.
+    description: Revoke all Tokens belong to the user&devices ending with the given Distinguished Name substring.
+    tags:
+      - Active Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/distinguishedName'
+      - $ref: '#/parameters/siteId'
+      - name: tokenType
+        in: query
+        description: Optional query parameter to revoke only certain types of tokens.
+        schema:
+          type: string
+          enum:
+            - Claims
+            - AdminClaims
+            - Entitlement
+            - Administration
+    responses:
+      '200':
+        description: Tokens were revoked successfully. Returns the list of revoked Tokens.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/TokenRevocationRequest'
+token-records-revoked-by-type:
+  put:
+    summary: Revoke all Tokens with given type.
+    description: Revoke all Tokens with given type.
+    tags:
+      - Active Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/siteId'
+      - name: token-type
+        in: path
+        description: The type of the tokens.
+        required: true
+        schema:
+          type: string
+          enum:
+            - All
+            - Claims
+            - AdminClaims
+            - Entitlement
+            - Administration
+    responses:
+      '200':
+        description: Tokens were revoked successfully. Returns the list of revoked tokens.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/TokenRevocationRequest'
+token-records-reeval-by-dn:
+  post:
+    summary: Reevaluate all sessions with given Distinguished Name substring.
+    description: Reevaluate all sessions belongs to the user&devices ending with the given Distinguished Name substring.
+    tags:
+      - Active Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/distinguishedName'
+    responses:
+      '200':
+        description: List of reevaluated Distinguished Names.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reevaluatedDistinguishedNames:
+                  type: array
+                  description: List of reevaluated Distinguished Names.
+                  items:
+                    type: string
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+parameters:
+  siteId:
+    name: siteId
+    in: query
+    description: Optional query parameter to revoke only entitlement tokens for the given Site ID.
+    schema:
+      type: string
+
+requestBodies:
+  TokenRevocationRequest:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/TokenRevocationRequest'
+    description: Token revocation details.
+
+definitions:
+  DistinguishedNameList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Distinguished Names.
+        properties:
+          data:
+            type: array
+            description: List of Distinguished Names.
+            items:
+              $ref: '#/definitions/DistinguishedName'
+  DistinguishedName:
+    allOf:
+      - $ref: './common.yml#/definitions/DeviceAndUser'
+      - type: object
+        description: Represents a user and device combination.
+        properties:
+          lastTokenIssuedAt:
+            type: string
+            description: The last time a Token issued to this user&device.
+          hostname:
+            type: string
+            description: >-
+              The hostname recorded for the given user&device during On-Boarding. It may be empty if the Client cannot
+              resolve or Token belongs to an Admin UI session.
+            example: user.ad.company.com
+  TokenRevocationRequest:
+    type: object
+    description: Details for token revocation.
+    properties:
+      revocationReason:
+        type: string
+        description: Optional reason text for the revocation. The value is stored and logged.
+        example: Pushing the policy changes.
+      delayMinutes:
+        type: integer
+        description: >-
+          The delay time for token revocation in minutes. Client will renew the token(s) at
+          least 5 minutes before the revocation time, without losing connection.
+        default: 5
+      tokensPerSecond:
+        type: number
+        description: >-
+          Only used when revoking all Tokens. In order to spread the workload on the Controllers, tokens are revoked in
+          batches according to this value.
+        default: 7
+      specificDistinguishedNames:
+        type: array
+        description: >-
+          Only used when revoking all Tokens. Specific distinguished names can be defined to renew tokens in bulk for a specific list of devices.
+        items:
+          type: string

@@ -1,0 +1,326 @@
+entitlements:
+  get:
+    summary: List all Entitlements.
+    description: List all Entitlements visible to current user.
+    tags:
+      - Entitlements
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Entitlements.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntitlementList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new Entitlement.
+    description: Create a new Entitlement.
+    tags:
+      - Entitlements
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created Entitlement.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Entitlement'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/Entitlement'
+entitlements-id:
+  get:
+    summary: Get a specific Entitlement.
+    description: Get a specific Entitlement.
+    tags:
+      - Entitlements
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single Entitlement.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Entitlement'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing Entitlement.
+    description: Update an existing Entitlement.
+    tags:
+      - Entitlements
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated Entitlement.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Entitlement'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/Entitlement'
+  delete:
+    summary: Delete a specific Entitlement.
+    description: Delete a specific Entitlement.
+    tags:
+      - Entitlements
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: Entitlement was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  Entitlement:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Entitlement'
+    description: Entitlement object.
+    required: true
+
+definitions:
+  EntitlementList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Entitlements.
+        properties:
+          data:
+            type: array
+            description: List of Entitlements.
+            items:
+              $ref: '#/definitions/Entitlement'
+  Entitlement:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents an Entitlement.
+        required:
+          - site
+          - conditions
+          - actions
+        properties:
+          disabled:
+            type: boolean
+            description: If true, the Entitlement will be disregarded during authorization.
+            default: false
+          site:
+            type: string
+            format: uuid
+            x-uuid-ref: Site
+            description: ID of the Site for this Entitlement.
+            example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+          siteName:
+            type: string
+            readOnly: true
+            description: Name of the Site for this Entitlement. For convenience only.
+            example: Default Site
+          conditionLogic:
+            type: string
+            description: Whether all the Conditions must succeed to have access to this Entitlement or just one.
+            enum:
+              - and
+              - or
+            default: and
+          conditions:
+            type: array
+            description: List of Condition IDs applies to this Entitlement.
+            items:
+              x-uuid-ref: Condition
+              type: string
+              format: uuid
+              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+          actions:
+            type: array
+            description: List of all IP Access actions in this Entitlement.
+            items:
+              type: object
+              description: IP Access action.
+              required:
+                - subtype
+                - action
+                - hosts
+              properties:
+                subtype:
+                  type: string
+                  description: Type of the IP Access action.
+                  enum:
+                    - icmp_up
+                    - icmp_down
+                    - icmpv6_up
+                    - icmpv6_down
+                    - udp_up
+                    - udp_down
+                    - tcp_up
+                    - tcp_down
+                    - ah_up
+                    - ah_down
+                    - esp_up
+                    - esp_down
+                    - gre_up
+                    - gre_down
+                    - http_up
+                action:
+                  type: string
+                  description: Applied action to the traffic.
+                  enum:
+                    - allow
+                    - block
+                    - alert
+                hosts:
+                  type: array
+                  description: Hosts to apply the action to. See admin manual for possible values.
+                  items:
+                    type: string
+                  example:
+                    - 10.0.0.1
+                    - 10.0.0.0/24
+                    - hostname.company.com
+                    - 'dns://hostname.company.com'
+                    - 'aws://security-group:accounting'
+                ports:
+                  type: array
+                  description: >-
+                    Destination port.
+                    Multiple ports can be entered comma separated.
+                    Port ranges can be entered dash separated.
+                    Only valid for tcp and udp subtypes
+                  items:
+                    type: string
+                  example:
+                    - 80
+                    - 1024-65535
+                types:
+                  type: array
+                  description: ICMP type. Only valid for icmp subtypes.
+                  items:
+                    type: string
+                  example:
+                    - 0-255
+                monitor:
+                  type: object
+                  description: >-
+                    Only available for tcp_up subtype.
+                    If enabled, Gateways will monitor this action for responsiveness and act accordingly.
+                    See admin manual for more details.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    timeout:
+                      type: integer
+                      description: Number of seconds the action needs to be unresponsive to mark the action unhealthy.
+                      default: 30
+          appShortcuts:
+            type: array
+            description: Array of App Shortcuts.
+            items:
+              $ref: '#/definitions/AppShortcut'
+          appShortcutScripts:
+            type: array
+            description: List of Entitlement Script IDs used for creating App Shortcuts dynamically.
+            items:
+              x-uuid-ref: EntitlementScript
+              type: string
+              format: uuid
+              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+  AppShortcut:
+    type: object
+    description: Publishes the configured URL as an app on the client using the display name as the app name.
+    required:
+      - name
+      - url
+    properties:
+      name:
+        type: string
+        description: Name for the App Shortcut which will be visible on the Client UI.
+        example: Accounting Software
+      description:
+        type: string
+        description: Description for the App Shortcut which will be visible on the Client UI.
+        example: This app will get you to the Accounting Software.
+      url:
+        type: string
+        description: The URL that will be triggered on the OS to be handled. For example, an HTTPS URL will start the browser for the given URL.
+        example: "https://service.company.com"
+      colorCode:
+        type: integer
+        description: |
+          The code of the published app on the client.
+          - 1: Light Green
+          - 2: Green
+          - 3: Indigo
+          - 4: Deep Purple
+          - 5: Yellow
+          - 6: Lime
+          - 7: Light Blue
+          - 8: Blue
+          - 9: Amber
+          - 10: Orange
+          - 11: Cyan
+          - 12: Teal
+          - 13: Deep Orange
+          - 14: Red
+          - 15: Gray
+          - 16: Brown
+          - 17: Pink
+          - 18: Purple
+          - 19: Blue Gray
+          - 20: Near Black
+        default: 1

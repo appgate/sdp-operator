@@ -1,0 +1,180 @@
+client-connections:
+  get:
+    summary: View Client Connection settings.
+    description: View Client Connection settings.
+    tags:
+      - Client Connections
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        $ref: '#/responses/ClientConnections'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  delete:
+    summary: Reset Client Connections to the default settings.
+    description: Reset Client Connections to the default settings.
+    tags:
+      - Client Connections
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Client Connection settings were reset successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update Client Connection settings.
+    description: Update Client Connection settings.
+    tags:
+      - Client Connections
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        $ref: '#/responses/ClientConnections'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/ClientConnections'
+      description: Client Connection settings.
+      required: true
+client-connections-url:
+  get:
+    summary: Get connection URL for the profile.
+    description: Get connection URL for the profile.
+    tags:
+      - Client Connections
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/profileName'
+    responses:
+      '200':
+        description: Connection URL for the given profile.
+        content:
+          application/json:
+            schema:
+              properties:
+                url:
+                  type: string
+                  description: Connection URL for the profile.
+                  example: appgate://appgate.company.com/eyJjYUZpbmdlcnByaW50IjoiMmM4ZTBiNTM5YTM4NjRkYmVkYzhiOWRkMTcwYzM0NGFhMjZjZTVhNjA4MmY3YTI0YzRkZTU4ZGQ3NWRjNWZhMCIsImlkZW50aXR5UHJvdmlkZXJOYW1lIjoibG9jYWwifQ==
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+client-connections-barcode:
+  get:
+    summary: Get QR code for connection URL.
+    description: Get QR code for connection URL.
+    tags:
+      - Client Connections
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/profileName'
+    responses:
+      '200':
+        description: QR code for the given profile.
+        content:
+          application/json:
+            schema:
+              properties:
+                barcode:
+                  type: string
+                  format: byte
+                  description: The QR code image in JPG format, in base64 format.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+parameters:
+  profileName:
+    name: profileName
+    in: path
+    description: Name of the profile.
+    required: true
+    schema:
+      type: string
+      example: Company%20Employee
+
+responses:
+  ClientConnections:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/ClientConnections'
+    description: Client Connection settings.
+
+definitions:
+  ClientConnections:
+    type: object
+    properties:
+      spaMode:
+        type: string
+        description: SPA mode. Deprecated as of 5.4. Use global-settings API instead.
+        deprecated: true
+        enum:
+          - TCP
+          - 'UDP-TCP'
+      profileHostname:
+        type: string
+        description: The hostname to use for generating profile URLs.
+        example: appgate.company.com
+      profiles:
+        type: array
+        description: Client Profiles.
+        items:
+          type: object
+          required:
+            - name
+            - spaKeyName
+            - identityProviderName
+          properties:
+            name:
+              type: string
+              description: A name to identify the client profile. It will appear on the client UI.
+              example: Company Employee
+            spaKeyName:
+              type: string
+              description: >-
+                SPA key name to be used in the profile.
+                Same key names in different profiles will have the same SPA key.
+                SPA key is used by the client to connect to the controllers.
+              example: test_key
+            identityProviderName:
+              type: string
+              description: Name of the Identity Provider to be used to authenticate.
+              example: local
+            url:
+              type: string
+              description: Connection URL for the profile.
+              example: appgate://appgate.company.com/xyz....
+              readOnly: true

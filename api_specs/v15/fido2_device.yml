@@ -1,0 +1,79 @@
+fido2-devices:
+  get:
+    summary: List all registered FIDO2 Devices.
+    description: List all registered FIDO2 Devices.
+    tags:
+      - FIDO2 Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of FIDO2 Devices.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Fido2DeviceList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+fido2-devices-distinguished-name:
+  delete:
+    summary: Delete a registered FIDO2 Device for the given Distinguished Name.
+    description: Delete a registered FIDO2 Device for the given Distinguished Name.
+    tags:
+      - FIDO2 Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - name: distinguished-name
+        in: path
+        description: >-
+          'Distinguished name of the user whose registered FIDO2 Device to be deleted. Format: "CN=,OU="'
+        required: true
+        schema:
+          type: string
+          example: 'CN=user,OU=ldap'
+    responses:
+      '204':
+        description: registered FIDO2 Device was removed successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+definitions:
+  Fido2DeviceList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of registered FIDO2 Devices.
+        properties:
+          data:
+            type: array
+            description: List of registered FIDO2 Devices.
+            items:
+              $ref: '#/definitions/Fido2Device'
+  Fido2Device:
+    allOf:
+      - $ref: './common.yml#/definitions/User'
+      - type: object
+        properties:
+          deviceId:
+            type: string
+            description: The device ID reported by the FIDO2 device during registration. May be empty.
+            example: 1.3.6.1.4.1.41482.1.2
+          deviceName:
+            type: string
+            description: The device name reported by the FIDO2 device during registration. May be empty.
+            example: 'YubiKey NEO/NEO-n'

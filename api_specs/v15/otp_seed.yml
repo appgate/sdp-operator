@@ -1,0 +1,74 @@
+otp-seeds:
+  get:
+    summary: List all Default Time-Based OTP Provider Seeds.
+    description: List all Default Time-Based OTP Provider Seeds.
+    tags:
+      - Default Time-Based OTP Provider Seeds
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Default Time-Based OTP Provider Seeds.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/OtpSeedList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+otp-seeds-distinguished-name:
+  delete:
+    summary: Delete a Default Time-Based OTP Provider Seed for the given Distinguished Name.
+    description: Delete a Default Time-Based OTP Provider Seed for the given Distinguished Name.
+    tags:
+      - Default Time-Based OTP Provider Seeds
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - name: distinguished-name
+        in: path
+        description: >-
+          'Distinguished name of the user whose Default Time-Based OTP Provider Seed to be deleted. Format: "CN=,OU="'
+        required: true
+        schema:
+          type: string
+          example: 'CN=user,OU=ldap'
+    responses:
+      '204':
+        description: Default Time-Based OTP Provider Seed was removed successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+definitions:
+  OtpSeedList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Default Time-Based OTP Provider Seeds.
+        properties:
+          data:
+            type: array
+            description: List of Default Time-Based OTP Provider Seeds.
+            items:
+              $ref: '#/definitions/OtpSeed'
+  OtpSeed:
+    allOf:
+      - $ref: './common.yml#/definitions/User'
+      - type: object
+        properties:
+          verified:
+            type: boolean
+            description: Whether the generated Seed successully used by the User at least once or not.
