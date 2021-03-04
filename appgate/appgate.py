@@ -26,7 +26,7 @@ from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV, BUILTIN_TAGS, APPGATE_FILTER_TAGS_ENV, \
-    APPGATE_BUILTIN_TAGS_ENV
+    APPGATE_BUILTIN_TAGS_ENV, has_tag
 from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
@@ -220,7 +220,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    set(filter(lambda e: is_target(e, ctx.target_tags),
+                    set(filter(lambda e: is_target(e, ctx.target_tags) and not has_tag(e, ctx.filter_tags),
                                [EntityWrapper(e) for e in entities])))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
@@ -347,7 +347,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags, ctx.filter_tags)
+                                       ctx.builtin_tags, ctx.filter_tags, ctx.target_tags)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
