@@ -17,7 +17,7 @@ from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
     ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
-    is_object, is_ref, is_array, builtin_tags
+    is_object, is_ref, is_array, BUILTIN_TAGS
 from appgate.secrets import PasswordAttribMaker
 
 
@@ -87,7 +87,7 @@ class InstanceMaker:
         if 'id' not in self.attributes and instance_maker_config.singleton:
             self.attributes['id'] = create_default_attrib('id', self.name)
         if 'tags' not in self.attributes and instance_maker_config.singleton:
-            self.attributes['tags'] = create_default_attrib('tags', builtin_tags())
+            self.attributes['tags'] = create_default_attrib('tags', BUILTIN_TAGS)
 
         # Get values from attrib makers
         values = dict(

@@ -5,7 +5,6 @@ from appgate.logger import log
 from appgate.openapi.types import Entity_T, AttributesDict, PYTHON_TYPES
 
 __all__ = [
-    'builtin_tags',
     'is_ref',
     'is_array',
     'is_object',
@@ -13,7 +12,7 @@ __all__ = [
     'is_compound',
     'has_id',
     'has_default',
-    'is_builtin',
+    'has_tag',
     'is_target',
     'has_name',
     'get_field',
@@ -21,13 +20,16 @@ __all__ = [
     'join',
     'make_explicit_references',
     'APPGATE_TARGET_TAGS_ENV',
+    'APPGATE_FILTER_TAGS_ENV',
     'APPGATE_BUILTIN_TAGS_ENV',
+    'BUILTIN_TAGS',
 ]
 
 from appgate.types import EntityWrapper
 
-APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
+APPGATE_FILTER_TAGS_ENV = 'APPGATE_OPERATOR_FILTER_TAGS'
 APPGATE_TARGET_TAGS_ENV = 'APPGATE_OPERATOR_TARGET_TAGS'
+APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
 BUILTIN_TAGS = frozenset({'builtin'})
 
 
@@ -119,19 +121,20 @@ def join(sep: str, xs: Iterable[Any]) -> str:
     return sep.join(map(str, xs))
 
 
-def builtin_tags() -> FrozenSet[str]:
-    custom_tags = os.getenv(APPGATE_BUILTIN_TAGS_ENV, '')
-    return BUILTIN_TAGS.union(frozenset(custom_tags.split(',')))
+def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None) -> bool:
+    """
+    Predicate that return true if entity has any tag in the set tags
+    """
+    return tags is not None and any(map(lambda t: t in (entity.tags or frozenset()), tags))
 
 
-def is_builtin(entity: EntityWrapper) -> bool:
-    return any(map(lambda t: t in (entity.tags or frozenset()), builtin_tags()))
-
-
-def is_target(entity: Entity_T, tags: Optional[FrozenSet[str]] = None) -> bool:
-    if not tags:
-        return True
-    return any(map(lambda t: t in (entity.tags or frozenset()), tags))
+def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None) -> bool:
+    """
+    Predicate that return true if entity is member of the target set.
+    An entity is member of the target set if target is not defined at all or if it has
+    any tag that belongs to the set of target_tags
+    """
+    return target_tags is None or has_tag(entity, target_tags)
 
 
 def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
