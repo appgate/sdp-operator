@@ -290,7 +290,7 @@ Optional environment variables that the operator uses:
    format). It can be encoded in base64 or just the contents of the PEM
    certificate as a string, using the former makes it easier to add the
    certificate in k8s. Example:
- : export APPGATE_OPERATOR_CACERT=`cat cert.ca | base64`
+ : export APPGATE_OPERATOR_CACERT=`cat cert.ca | base64 -w 0`
  : export APPGATE_OPERATOR_CACERT=`cat cert.ca`
       
 *** Configuration when runinng the operator locally
