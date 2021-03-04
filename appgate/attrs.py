@@ -84,9 +84,16 @@ def get_dumper(platform_type: PlatformType):
                     continue
                 if read_only:
                     continue
-            if not (d.hidedefault and attrval == attr.default):
-                name = attr.metadata.get('name', attr.name)
-                r[name] = d.dump(attrval)
+            if d.hidedefault:
+                if attrval == attr.default:
+                    continue
+                elif hasattr(attr.default, 'factory') and attrval == attr.default.factory():
+                    continue
+            d_val = d.dump(attrval)
+            if isinstance(d_val, dict) and not d_val:
+                continue
+            name = attr.metadata.get('name', attr.name)
+            r[name] = d_val
 
         return r
 

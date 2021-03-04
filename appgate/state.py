@@ -147,15 +147,22 @@ def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
     if not entities:
         log.warning(f'No entities of type: {entity_type} found')
         return None
-    f = dump_file.open('w') if dump_file else sys.stdout
+    dumped_entities = []
     for i, e in enumerate(entities):
+        dumped_entity = dump_entity(e, entity_type)
+        if not dumped_entity.get('spec'):
+            continue
+        appgate_metadata = dumped_entity['spec'].get(APPGATE_METADATA_ATTRIB_NAME)
+        if appgate_metadata:
+            entity_passwords = appgate_metadata.get(APPGATE_METADATA_PASSWORD_FIELDS_FIELD)
+        dumped_entities.append(yaml.safe_dump(dumped_entity, default_flow_style=False))
+    if not dumped_entities:
+        return None
+    f = dump_file.open('w') if dump_file else sys.stdout
+    for i, e in enumerate(dumped_entities):
         if i > 0:
             f.write('---\n')
-        dumped_entity = dump_entity(e, entity_type)
-        entity_passwords = dumped_entity['spec'][APPGATE_METADATA_ATTRIB_NAME]\
-            .get(APPGATE_METADATA_PASSWORD_FIELDS_FIELD)
-        yaml_dump = yaml.dump(dumped_entity, default_flow_style=False)
-        f.write(yaml_dump)
+        f.write(e)
     if dump_file:
         f.close()
     return entity_passwords
