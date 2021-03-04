@@ -147,7 +147,7 @@ def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
     if not entities:
         log.warning(f'No entities of type: {entity_type} found')
         return None
-    dumped_entities = []
+    dumped_entities: List[str] = []
     for i, e in enumerate(entities):
         dumped_entity = dump_entity(e, entity_type)
         if not dumped_entity.get('spec'):
@@ -159,10 +159,10 @@ def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
     if not dumped_entities:
         return None
     f = dump_file.open('w') if dump_file else sys.stdout
-    for i, e in enumerate(dumped_entities):
+    for i, de in enumerate(dumped_entities):
         if i > 0:
             f.write('---\n')
-        f.write(e)
+        f.write(de)
     if dump_file:
         f.close()
     return entity_passwords

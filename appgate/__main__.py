@@ -124,13 +124,13 @@ def main_validate_entities(files: List[str],
                 data = yaml.safe_load_all(f.read())
                 for d in data:
                     try:
-                        k = d.get('kind')
+                        kind = d.get('kind')
                         name = d['metadata']['name']
-                        api_spec.validate(d, K8S_LOADER)
-                        print(f' - {k}::{name}: OK.')
+                        api_spec.validate(d, kind, K8S_LOADER)
+                        print(f' - {kind}::{name}: OK.')
                     except AppgateException as e:
                         errors = errors + 1
-                        print(f' - {k}::{name}: ERROR: loading entity: {e}.')
+                        print(f' - {kind}::{name}: ERROR: loading entity: {e}.')
             except yaml.YAMLError as e:
                 errors = errors + 1
                 print(f' - {file}: ERROR: parsing entity: {e}.')

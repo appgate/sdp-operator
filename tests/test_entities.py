@@ -126,7 +126,6 @@ def test_dumper_1():
         'fieldTwo': 'this is write only',
         'fieldFour': 'this is a field',
         'from': 'this is a field with a weird name',
-        'appgate_metadata': {},
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e1_data
@@ -212,7 +211,6 @@ def test_appgate_metadata_secrets_dump_from_appgate():
         'fieldThree': 'this is a field',
         'appgate_metadata': {
             'passwordFields': ['fieldOne'],
-            'passwords': {},
         }
     }
     d = K8S_DUMPER.dump(e1)
@@ -347,7 +345,6 @@ def test_bytes_dump():
                     fieldTwo=SHA256_FILE)
     e_data = {
         'fieldOne': BASE64_FILE_W0,
-        'appgate_metadata': {},
     }
     # We don't dump the checksum field associated to bytes to K8S
     assert K8S_DUMPER.dump(e) == e_data
