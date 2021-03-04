@@ -20,7 +20,8 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id, AppgateException
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
+from appgate.openapi.types import AppgateException
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD

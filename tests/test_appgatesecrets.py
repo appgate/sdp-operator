@@ -18,7 +18,6 @@ def test_write_only_password_attribute_dump():
         'fieldOne': '1234567890',
         'fieldTwo': 'this is write only',
         'fieldThree': 'this is a field',
-        'appgate_metadata': {},
     }
     assert K8S_DUMPER.dump(e) == e_data
     e_data = {
@@ -41,6 +40,7 @@ def test_write_only_password_attribute_load():
     # writeOnly passwords are not loaded from Appgate
     assert e.fieldOne is None
     assert e.fieldTwo is None
+    assert e.fieldThree == 'this is a field'
     assert e.fieldThree == 'this is a field'
     # writeOnly passwords are not compared
     assert e == EntityTest2(fieldOne='wrong-password',

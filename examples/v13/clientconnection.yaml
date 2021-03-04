@@ -3,8 +3,6 @@ kind: ClientConnection
 metadata:
   name: clientconnection
 spec:
-  appgate_metadata:
-    passwords: []
   profiles:
   - identityProviderName: local
     name: test

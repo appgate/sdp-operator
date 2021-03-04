@@ -1,13 +1,17 @@
 import asyncio
+import itertools
 import sys
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import datetime
 import time
 
-from appgate.client import K8SConfigMapClient, AppgateException
+import yaml
+
+from appgate.client import K8SConfigMapClient
+from appgate.openapi.types import AppgateException
 from appgate.logger import set_level
 from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
     Context, start_entity_loop, log
@@ -15,6 +19,7 @@ from appgate.openapi.openapi import generate_api_spec, entity_names, generate_cr
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
 from appgate.types import AppgateEvent, OperatorArguments
+from appgate.attrs import K8S_LOADER
 
 
 async def run_k8s(args: OperatorArguments) -> None:
@@ -98,6 +103,40 @@ def main_dump_crd(stdout: bool, output_file: Optional[str],
         log.info('[dump-crd] File %s generated with CRD definitions', output_path)
 
 
+def main_validate_entities(files: List[str],
+                           spec_directory: Optional[str] = None) -> int:
+
+    api_spec = generate_api_spec(
+        spec_directory=Path(spec_directory) if spec_directory else None)
+    candidates = [Path(f) for f in files]
+    errors = 0
+    while candidates:
+        file = candidates.pop()
+        if not file.exists():
+            errors = errors + 1
+            print(f' - {file}: ERROR: file does not exist.')
+            continue
+        if file.is_dir():
+            candidates.extend(itertools.chain(file.glob('*.yaml'), file.glob('*.yml')))
+            continue
+        with file.open() as f:
+            try:
+                data = yaml.safe_load_all(f.read())
+                for d in data:
+                    try:
+                        kind = d.get('kind')
+                        name = d['metadata']['name']
+                        api_spec.validate(d, kind, K8S_LOADER)
+                        print(f' - {kind}::{name}: OK.')
+                    except AppgateException as e:
+                        errors = errors + 1
+                        print(f' - {kind}::{name}: ERROR: loading entity: {e}.')
+            except yaml.YAMLError as e:
+                errors = errors + 1
+                print(f' - {file}: ERROR: parsing entity: {e}.')
+    return errors
+
+
 def main() -> None:
     set_level(log_level='info')
     parser = ArgumentParser('appgate-operator')
@@ -149,6 +188,11 @@ def main() -> None:
     dump_crd.add_argument('--file', help='File where to dump CRD definitions. '
                                          'Default value: "YYYY-MM-DD_HH-MM-crd.yaml"',
                           default=None)
+    # validate entities
+    validate_entities = subparsers.add_parser('validate-entities')
+    validate_entities.set_defaults(cmd='validate-entities')
+    validate_entities.add_argument('files', type=str, metavar='file', nargs='+',
+                                   help='Directory from where to get the entities to validate')
     # api info
     api_info = subparsers.add_parser('api-info')
     api_info.set_defaults(cmd='api-info')
@@ -182,6 +226,10 @@ def main() -> None:
                           spec_directory=args.spec_directory)
         elif args.cmd == 'api-info':
             main_api_info(spec_directory=args.spec_directory)
+        elif args.cmd == 'validate-entities':
+            res = main_validate_entities(spec_directory=args.spec_directory,
+                                         files=args.files)
+            sys.exit(res)
         else:
             parser.print_help()
     except AppgateException as e:

@@ -72,6 +72,11 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
+class AppgateException(Exception):
+    def __init__(self, message: Optional[str] = None) -> None:
+        self.message = message
+
+
 class OpenApiParserException(Exception):
     pass
 
@@ -122,6 +127,15 @@ class Entity_T:
 
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
 DumperFunc = Callable[[Entity_T], Dict[str, Any]]
+
+@attrs()
+class EntityLoader:
+    load: LoaderFunc = attrib()
+
+
+@attrs()
+class EntityDumper:
+    dump: DumperFunc = attrib()
 
 
 @attrs(frozen=True, slots=True)
@@ -246,3 +260,15 @@ class APISpec:
     @property
     def api_entities(self) -> EntitiesDict:
         return {k: v for k, v in self.entities.items() if v.api_path is not None}
+
+    def loader(self, loader: EntityLoader, entity_type: type) -> Callable[[Dict[str, Any]], Entity_T]:
+        def _load(data: Dict[str, Any]) -> Entity_T:
+            return loader.load(data, None, entity_type)
+        return _load
+
+    def validate(self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader) -> Entity_T:
+        entity_type = self.entities.get(entity_kind)
+        if not entity_type:
+            raise AppgateException(f'[api-spec] Not type defined for entity kind {entity_kind}')
+        load = self.loader(loader, entity_type.cls)
+        return load(data['spec'])

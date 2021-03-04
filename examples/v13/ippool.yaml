@@ -4,7 +4,6 @@ metadata:
   name: simple-setup-ipv6
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 60329888-6162-4835-8d27-957b12662410
   ipVersion6: true
   name: simple_setup_ipv6
@@ -20,7 +19,6 @@ metadata:
   name: default-pool-v6
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 6935b379-205d-4fdd-847f-a0b5f14aff53
   ipVersion6: true
   name: default pool v6
@@ -36,7 +34,6 @@ metadata:
   name: simple-setup-ipv4
 spec:
   appgate_metadata:
-    passwords: []
     uuid: bc5f8c54-23b7-4e36-852d-f93fc0480f73
   name: simple_setup_ipv4
   ranges:
@@ -51,7 +48,6 @@ metadata:
   name: default-pool-v4
 spec:
   appgate_metadata:
-    passwords: []
     uuid: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
   name: default pool v4
   ranges:

@@ -4,7 +4,6 @@ metadata:
   name: hello
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
   expression: "/* This should return an array of strings. Some examples below: (Please\
     \ read the manual for all options)\n\nreturn [\n  '1.0.0.26', '1.0.0.0/28', //\
