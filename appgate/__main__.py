@@ -115,6 +115,7 @@ def main_validate_entities(files: List[str],
         if not file.exists():
             errors = errors + 1
             print(f' - {file}: ERROR: file does not exist.')
+            continue
         if file.is_dir():
             candidates.extend(itertools.chain(file.glob('*.yaml'), file.glob('*.yml')))
             continue
