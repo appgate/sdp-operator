@@ -286,10 +286,12 @@ Optional environment variables that the operator uses:
  - APPGATE_OPERATOR_SSL_NO_VERIFY :: When set to 1 the operator won't verify the
    validity of the SSL cerficate. Use this if you have a self signed
    certificate. Not recommended on production. Default value is 0.
- - APPGATE_OPERATOR_CACERT :: Base64 encoded CA certificate used by controllers
-   in the appgate system. The certifacate must be base64 encoded in one
-   line. Example:
- : cat cert.ca | base64 -w0
+ - APPGATE_OPERATOR_CACERT :: CA Certificate used by controllers (PEM
+   format). It can be encoded in base64 or just the contents of the PEM
+   certificate as a string, using the former makes it easier to add the
+   certificate in k8s. Example:
+ : export APPGATE_OPERATOR_CACERT=`cat cert.ca | base64`
+ : export APPGATE_OPERATOR_CACERT=`cat cert.ca`
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
