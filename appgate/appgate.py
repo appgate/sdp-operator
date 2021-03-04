@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import binascii
 import logging
 import os
 import sys
@@ -87,7 +89,11 @@ class Context:
 def save_cert(cert: str) -> Path:
     cert_path = Path(tempfile.mktemp())
     with cert_path.open('w') as f:
-        f.write(cert)
+        if cert.startswith('-----BEGIN CERTIFICATE-----'):
+            f.write(cert)
+        else:
+            bytes_decoded: bytes = base64.b64decode(cert)
+            f.write(bytes_decoded.decode())
     return cert_path
 
 
@@ -109,7 +115,10 @@ def get_context(args: OperatorArguments,
     appgate_cacert_path = None
     verify = not no_verify
     if verify and appgate_cacert:
-        appgate_cacert_path = save_cert(appgate_cacert)
+        try:
+            appgate_cacert_path = save_cert(appgate_cacert)
+        except (binascii.Error, binascii.Incomplete) as e:
+            raise AppgateException(f'[get-context] Unable to decode the cerificate provided: {e}')
         log.debug(f'[get_context] Saving certificate in {appgate_cacert_path}')
     elif verify and args.cafile:
         appgate_cacert_path = args.cafile
