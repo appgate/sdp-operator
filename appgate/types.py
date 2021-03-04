@@ -29,6 +29,8 @@ class OperatorArguments:
     timeout: str = attrib(default='30')
     cleanup: bool = attrib(default=True)
     target_tags: Optional[List[str]] = attrib(default=None)
+    builtin_tags: Optional[List[str]] = attrib(default=None)
+    filter_tags: Optional[List[str]] = attrib(default=None)
     metadata_configmap: Optional[str] = attrib(default=None)
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)
