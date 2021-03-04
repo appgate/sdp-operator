@@ -631,3 +631,146 @@ spec:
 ---
 #+END_EXAMPLE
 
+** Verify entities dumped from an environment
+If we have a set of entities dumped from an environment (like we did in the
+previous step) we can validate them against different API version.
+
+Suppose that we have a directory =exacmples/v13= with entities dumped from an
+environment (running v13 of the API).
+
+We can now test if those entities are compatible with different version.
+
+Against the same api version (v13):
+
+#+begin_example
+  appgate-operator --spec-dir api_specs/v13 validate-entities examples/v13
+#+end_example
+
+That command will try to load all the entities defined in yaml files inside that
+directory (*.yaml and *.yml files) using the API v13 and it will report errors
+found when loading the entities:
+
+#+begin_example
+   - Appliance::controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - Appliance::gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - DeviceScript::fooscript: OK.
+   - TrustedCertificate::test-vsphere: OK.
+   - EntitlementScript::hello: OK.
+   - AdminMfaSettings::adminmfasettings: OK.
+   - ClientConnection::clientconnection: OK.
+   - LocalUser::bobbytables: OK.
+   - Condition::always: OK.
+   - IpPool::simple-setup-ipv6: OK.
+   - IpPool::default-pool-v6: OK.
+   - IpPool::simple-setup-ipv4: OK.
+   - IpPool::default-pool-v4: OK.
+   - IdentityProvider::connector: OK.
+   - IdentityProvider::local: OK.
+   - GlobalSettings::globalsettings: OK.
+   - CriteriaScripts::everyone: OK.
+   - CriteriaScripts::noone: OK.
+   - RingfenceRule::block-in: OK.
+   - RingfenceRule::block-google-dns: OK.
+   - Policy::simple-setup-pol: OK.
+   - Policy::builtin-administrator-policy: OK.
+   - MfaProvider::default-fido2-provider: OK.
+   - MfaProvider::default-time-based-otp-provider: OK.
+   - MfaProvider::my-super-provider: OK.
+   - ApplianceCustomization::params-adjustment: OK.
+   - AdministrativeRole::system-administration: OK.
+   - AdministrativeRole::api-access: OK.
+   - Site::simple-setup-site: OK.
+   - Site::default-site: OK.
+   - Entitlement::simple-setup-ent-ping: OK.
+   - Entitlement::simple-setup-ent-http: OK.
+#+end_example
+
+We can see that it managed to load those entities using v13. We can try the
+same entities this time against v15 of the API:
+
+#+begin_example
+  appgate-operator --spec-dir api_specs/v15 validate-entities examples/v13
+#+end_example
+
+Once again we can see that they are compatible since we didn't get any error:
+
+#+begin_example
+   - Appliance::controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - Appliance::gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - DeviceScript::fooscript: OK.
+   - TrustedCertificate::test-vsphere: OK.
+   - EntitlementScript::hello: OK.
+   - AdminMfaSettings::adminmfasettings: OK.
+   - ClientConnection::clientconnection: OK.
+   - LocalUser::bobbytables: OK.
+   - Condition::always: OK.
+   - IpPool::simple-setup-ipv6: OK.
+   - IpPool::default-pool-v6: OK.
+   - IpPool::simple-setup-ipv4: OK.
+   - IpPool::default-pool-v4: OK.
+   - IdentityProvider::connector: OK.
+   - IdentityProvider::local: OK.
+   - GlobalSettings::globalsettings: OK.
+   - CriteriaScripts::everyone: OK.
+   - CriteriaScripts::noone: OK.
+   - RingfenceRule::block-in: OK.
+   - RingfenceRule::block-google-dns: OK.
+   - Policy::simple-setup-pol: OK.
+   - Policy::builtin-administrator-policy: OK.
+   - MfaProvider::default-fido2-provider: OK.
+   - MfaProvider::default-time-based-otp-provider: OK.
+   - MfaProvider::my-super-provider: OK.
+   - ApplianceCustomization::params-adjustment: OK.
+   - AdministrativeRole::system-administration: OK.
+   - AdministrativeRole::api-access: OK.
+   - Site::simple-setup-site: OK.
+   - Site::default-site: OK.
+   - Entitlement::simple-setup-ent-ping: OK.
+   - Entitlement::simple-setup-ent-http: OK.
+#+end_example
+
+Let's see what happens if we try to load them from an older version (like v12):
+
+#+begin_example
+  appgate-operator --spec-dir api_specs/v12 validate-entities examples/v13
+#+end_example
+
+This time the validator complains about some entities not being able to be
+loaded (because API incompatibilities):
+
+#+begin_example
+   - Appliance::controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - Appliance::gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1: OK.
+   - DeviceScript::fooscript: OK.
+   - TrustedCertificate::test-vsphere: OK.
+   - EntitlementScript::hello: OK.
+   - AdminMfaSettings::adminmfasettings: OK.
+   - ClientConnection::clientconnection: OK.
+   - LocalUser::bobbytables: OK.
+   - Condition::always: OK.
+   - IpPool::simple-setup-ipv6: OK.
+   - IpPool::default-pool-v6: OK.
+   - IpPool::simple-setup-ipv4: OK.
+   - IpPool::default-pool-v4: OK.
+   - IdentityProvider::connector: OK.
+   - IdentityProvider::local: OK.
+   - GlobalSettings::globalsettings: OK.
+   - CriteriaScripts::everyone: OK.
+   - CriteriaScripts::noone: OK.
+   - RingfenceRule::block-in: ERROR: loading entity: loader: PlatformType.K8S, type: <class 'appgate.openapi.parser.RingfenceRule_Actions'>, value: [{'action': 'block', 'direction': 'in', 'hosts': ['0.0.0.0/0', '::0'], 'ports': ['1-65535'], 'protocol': 'tcp'}, {'action': 'block', 'direction': 'in', 'hosts': ['0.0.0.0/0', '::0'], 'ports': ['1-65535'], 'protocol': 'udp'}, {'action': 'block', 'direction': 'in', 'hosts': ['0.0.0.0/0'], 'protocol': 'icmp', 'types': ['0-255']}, {'action': 'block', 'direction': 'in', 'hosts': ['::0'], 'protocol': 'icmpv6', 'types': ['0-255']}].
+   - RingfenceRule::block-google-dns: ERROR: loading entity: loader: PlatformType.K8S, type: <class 'appgate.openapi.parser.RingfenceRule_Actions'>, value: [{'action': 'allow', 'direction': 'out', 'hosts': ['8.8.8.8'], 'ports': ['53'], 'protocol': 'tcp'}].
+   - Policy::simple-setup-pol: OK.
+   - Policy::builtin-administrator-policy: OK.
+   - MfaProvider::default-fido2-provider: OK.
+   - MfaProvider::default-time-based-otp-provider: OK.
+   - MfaProvider::my-super-provider: OK.
+   - ApplianceCustomization::params-adjustment: OK.
+   - AdministrativeRole::system-administration: OK.
+   - AdministrativeRole::api-access: OK.
+   - Site::simple-setup-site: OK.
+   - Site::default-site: OK.
+   - Entitlement::simple-setup-ent-ping: OK.
+   - Entitlement::simple-setup-ent-http: OK.
+#+end_example
+
+
