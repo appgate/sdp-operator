@@ -15,7 +15,6 @@ spec:
   appShortcutScripts: []
   appShortcuts: []
   appgate_metadata:
-    passwords: []
     uuid: 9eb29d80-0bd2-47c9-b849-816962a81b19
   conditions:
   - Always
@@ -45,7 +44,6 @@ spec:
   appShortcutScripts: []
   appShortcuts: []
   appgate_metadata:
-    passwords: []
     uuid: d8f09f37-9401-4136-b969-95ebbb175c1c
   conditions:
   - Always

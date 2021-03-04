@@ -4,7 +4,6 @@ metadata:
   name: params-adjustment
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 97e0d6cb-c610-4fea-a076-973715e72b70
   checksum: cbae560f5ed038e9dcee1202c46b39ea328b927d028aad0ab0c7684d60ffb972
   file: 'UEsDBBQAAAAIACRaglALkHPWJQEAAHMCAAAFABwAc3RhcnRVVAkAA5SthV7Zu4VedXgLAAEE9QEA

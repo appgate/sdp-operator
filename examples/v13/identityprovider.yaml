@@ -4,7 +4,6 @@ metadata:
   name: connector
 spec:
   appgate_metadata:
-    passwords: []
     uuid: b2cdefce-1efe-4a7e-85d1-7976920f118f
   claimMappings:
   - attributeName: peerHostname
@@ -38,7 +37,6 @@ metadata:
 spec:
   adminProvider: true
   appgate_metadata:
-    passwords: []
     uuid: b5ea7cf0-6e75-11e4-9803-0800200c9a66
   claimMappings:
   - attributeName: username

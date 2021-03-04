@@ -4,7 +4,6 @@ metadata:
   name: test-vsphere
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 723d1a69-aef4-42ba-beaa-df3eaa8ad62a
   name: Test Vsphere
   notes: got-env-vc.agi.appgate.com

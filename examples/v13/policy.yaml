@@ -5,7 +5,6 @@ metadata:
 spec:
   administrativeRoles: []
   appgate_metadata:
-    passwords: []
     uuid: 427d30cf-b4a9-4973-bd74-08df84d585e8
   entitlementLinks: []
   entitlements:
@@ -26,7 +25,6 @@ spec:
   administrativeRoles:
   - System Administration
   appgate_metadata:
-    passwords: []
     uuid: 172143a0-7ed4-11e4-b4a9-0800200c9a66
   entitlementLinks: []
   entitlements: []

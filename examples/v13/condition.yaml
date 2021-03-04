@@ -4,7 +4,6 @@ metadata:
   name: always
 spec:
   appgate_metadata:
-    passwords: []
     uuid: ee7b7e6f-e904-4b4f-a5ec-b3bef040643e
   expression: return true;
   name: Always

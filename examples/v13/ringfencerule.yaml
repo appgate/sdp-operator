@@ -35,7 +35,6 @@ spec:
     types:
     - 0-255
   appgate_metadata:
-    passwords: []
     uuid: bb4685b0-ae57-4ad4-b026-413699b25640
   name: Block-in
   notes: Built-in ringfence rule to block all in traffic on the device. Replaces the
@@ -57,7 +56,6 @@ spec:
     - '53'
     protocol: tcp
   appgate_metadata:
-    passwords: []
     uuid: f197f3d9-236b-436f-9155-1b967fb6d41b
   name: block google dns
   notes: Fence the ring

@@ -4,7 +4,7 @@ metadata:
   name: bobbytables
 spec:
   appgate_metadata:
-    passwords:
+    passwordFields:
     - password
     uuid: 95c4360a-7b4b-4de6-9527-e0b714f9d344
   email: bobby@tables.com

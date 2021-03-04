@@ -3,8 +3,6 @@ kind: AdminMfaSettings
 metadata:
   name: adminmfasettings
 spec:
-  appgate_metadata:
-    passwords: []
   exemptedUsers:
   - CN=admin,OU=local
   providerId: 03542d1e-733c-4c43-a567-d28fbc4649a7

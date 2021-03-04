@@ -4,7 +4,6 @@ metadata:
   name: controller-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
 spec:
   appgate_metadata:
-    passwords: []
     uuid: b34183fa-e24e-4a25-8fdf-264a5221cadd
   clientInterface:
     allowSources:
@@ -99,7 +98,6 @@ metadata:
   name: gateway-8b61286b-caf5-47df-8702-c1506a4afe3c-site1
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 9f8cde7c-c231-4a86-b150-10a05c6e3648
   clientInterface:
     allowSources:

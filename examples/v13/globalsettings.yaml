@@ -6,7 +6,7 @@ spec:
   administrationTokenExpiration: 1337
   appDiscoveryDomains: []
   appgate_metadata:
-    passwords:
+    passwordFields:
     - backupPassphrase
   auditLogPersistenceMode: Default
   backupApiEnabled: false

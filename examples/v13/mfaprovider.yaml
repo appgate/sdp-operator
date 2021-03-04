@@ -4,7 +4,6 @@ metadata:
   name: default-fido2-provider
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 3ae98d53-c520-437f-99e4-451f936e6d2c
   name: Default FIDO2 Provider
   notes: Built-in default FIDO2 provider.
@@ -18,7 +17,6 @@ metadata:
   name: default-time-based-otp-provider
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 03542d1e-733c-4c43-a567-d28fbc4649a7
   name: Default Time-Based OTP Provider
   notes: Built-in default time-based OTP provider.
@@ -32,7 +30,6 @@ metadata:
   name: my-super-provider
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 6cc92b97-9277-4c42-9a83-a80a22da4111
   authenticationProtocol: PAP
   hostnames:

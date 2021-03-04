@@ -4,7 +4,6 @@ metadata:
   name: system-administration
 spec:
   appgate_metadata:
-    passwords: []
     uuid: b0adbc60-7ed4-11e4-b4a9-0800200c9a66
   name: System Administration
   notes: Built-in Administrative Role that has access to all.
@@ -25,7 +24,6 @@ metadata:
   name: api-access
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 72cbe03c-4e35-4ff8-9e2b-9bcf88e689f5
   name: Api Access
   notes: Built-in Administrative Role for API usage..

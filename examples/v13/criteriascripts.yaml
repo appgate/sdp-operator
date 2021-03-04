@@ -4,7 +4,6 @@ metadata:
   name: everyone
 spec:
   appgate_metadata:
-    passwords: []
     uuid: 7c643920-7112-11e6-8b77-86f30ca893d3
   expression: return true;
   name: Everyone
@@ -17,8 +16,6 @@ kind: CriteriaScripts
 metadata:
   name: noone
 spec:
-  appgate_metadata:
-    passwords: []
   expression: return false;
   name: Noone
   notes: Something something something
