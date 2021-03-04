@@ -10,7 +10,7 @@ from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
-from appgate.openapi.types import Entity_T
+from appgate.openapi.types import Entity_T, AppgateException
 from appgate.types import LatestEntityGeneration
 
 
@@ -20,11 +20,6 @@ __all__ = [
     'K8SConfigMapClient',
     'entity_unique_id'
 ]
-
-
-class AppgateException(Exception):
-    def __init__(self, message: Optional[str] = None) -> None:
-        self.message = message
 
 
 class EntityClient:

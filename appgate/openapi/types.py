@@ -72,6 +72,11 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
+class AppgateException(Exception):
+    def __init__(self, message: Optional[str] = None) -> None:
+        self.message = message
+
+
 class OpenApiParserException(Exception):
     pass
 

@@ -2,16 +2,15 @@ import datetime
 import enum
 from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
-from attr import attrib, attrs
 from typedload import dataloader
 from typedload import datadumper
-from typedload.exceptions import TypedloadException
+from typedload.exceptions import TypedloadException, TypedloadValueError
 
 from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
     CustomEntityLoader
 from appgate.openapi.types import Entity_T, ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME, \
-    LoaderFunc, DumperFunc, APPGATE_METADATE_FIELDS, APPGATE_LOADERS_FIELD_NAME, K8S_LOADERS_FIELD_NAME, EntityLoader, \
-    EntityDumper
+    APPGATE_METADATE_FIELDS, APPGATE_LOADERS_FIELD_NAME, K8S_LOADERS_FIELD_NAME, EntityLoader, \
+    EntityDumper, AppgateException
 
 __all__ = [
     'K8S_DUMPER',
@@ -203,7 +202,10 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
         if platform_type == PlatformType.APPGATE:
             appgate_mt['fromAppgate'] = True
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
-        return loader.load(data, entity)
+        try:
+            return loader.load(data, entity)
+        except TypedloadValueError as e:
+            raise AppgateException(f'loader: {platform_type}, value: {e.value}, type: {e.type_}')
 
     if platform_type == PlatformType.K8S:
         return load  # type: ignore
