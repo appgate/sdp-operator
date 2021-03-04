@@ -118,7 +118,7 @@ def get_context(args: OperatorArguments,
         try:
             appgate_cacert_path = save_cert(appgate_cacert)
         except (binascii.Error, binascii.Incomplete) as e:
-            raise AppgateException('[get-context] Unable to decode the cerificate provided: %s', e)
+            raise AppgateException(f'[get-context] Unable to decode the cerificate provided: {e}')
         log.debug(f'[get_context] Saving certificate in {appgate_cacert_path}')
     elif verify and args.cafile:
         appgate_cacert_path = args.cafile
