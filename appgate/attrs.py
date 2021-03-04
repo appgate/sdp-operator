@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
 from typedload import dataloader
 from typedload import datadumper
-from typedload.exceptions import TypedloadException, TypedloadValueError
+from typedload.exceptions import TypedloadException, TypedloadValueError, TypedloadTypeError
 
 from appgate.customloaders import CustomFieldsEntityLoader, CustomLoader, CustomAttribLoader, \
     CustomEntityLoader
@@ -204,8 +204,8 @@ def get_loader(platform_type: PlatformType) -> Callable[[Dict[str, Any], Optiona
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         try:
             return loader.load(data, entity)
-        except TypedloadValueError as e:
-            raise AppgateException(f'loader: {platform_type}, value: {e.value}, type: {e.type_}')
+        except (TypedloadValueError, TypedloadTypeError) as e:
+            raise AppgateException(f'loader: {platform_type}, type: {e.type_}, value: {e.value}')
 
     if platform_type == PlatformType.K8S:
         return load  # type: ignore
