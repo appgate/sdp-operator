@@ -266,12 +266,9 @@ class APISpec:
             return loader.load(data, None, entity_type)
         return _load
 
-    def validate(self, data: Dict[str, Any], loader: EntityLoader) -> Entity_T:
-        entity_kind = data.get('kind')
-        if not entity_kind:
-            print('error')
+    def validate(self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader) -> Entity_T:
         entity_type = self.entities.get(entity_kind)
         if not entity_type:
-            print('error')
+            raise AppgateException(f'[api-spec] Not type defined for entity kind {entity_kind}')
         load = self.loader(loader, entity_type.cls)
         return load(data['spec'])
