@@ -9,7 +9,7 @@ from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Type, Dict, Callable, Any, FrozenSet, Tuple, Iterable, List
+from typing import Optional, Type, Dict, Callable, Any, FrozenSet, Tuple, Iterable, List, Set
 import threading
 
 from attr import attrib, attrs
@@ -41,6 +41,7 @@ __all__ = [
     'start_entity_loop',
     'Context',
     'log',
+    'filter_appgate_entities',
 ]
 
 
@@ -193,6 +194,17 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         ))
 
 
+def filter_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
+                            filter_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
+    """
+    Filter entities according to target_tags and filter_tags
+    Returns the entities that are member of target_tags (all entities if None)
+    but not member of filter_tags
+    """
+    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, filter_tags),
+                      [EntityWrapper(e) for e in entities]))
+
+
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
     """
     Gets the current AppgateState for controller
@@ -220,8 +232,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    set(filter(lambda e: is_target(e, ctx.target_tags) and not has_tag(e, ctx.filter_tags),
-                               [EntityWrapper(e) for e in entities])))
+                    filter_appgate_entities(entities, ctx.target_tags, ctx.filter_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
@@ -347,7 +358,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags, ctx.filter_tags, ctx.target_tags)
+                                       ctx.builtin_tags,)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)

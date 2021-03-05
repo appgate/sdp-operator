@@ -1,3 +1,4 @@
+from appgate.appgate import filter_appgate_entities
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
     compute_diff
@@ -6,6 +7,85 @@ from appgate.openapi.utils import BUILTIN_TAGS
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
     join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD, _k8s_get_secret
+
+
+def test_filter_appgate_entities():
+    entities = [
+        Policy(id='id0',
+               name='policy0',
+               expression='expression-0',
+               tags=frozenset({'tag1', 'tag2', 'tag3'})),
+        Policy(id='id1',
+               name='policy1',
+               expression='expression-1',
+               tags=frozenset({'tag1', 'tag4', 'tag5'})),
+        Policy(id='id2',
+               name='policy2',
+               expression='expression-2',
+               tags=frozenset({'tag3', 'tag6', 'tag7'})),
+        Policy(id='id3',
+               name='policy3',
+               expression='expression-3',
+               tags=frozenset({'tag4', 'tag9', 'tag10'}))
+    ]
+    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=None)
+    assert frozenset(set(EntityWrapper(a) for a in entities)) == r1
+
+    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag1'}), filter_tags=None)
+    assert r1 == frozenset(set(EntityWrapper(a) for a in [
+        Policy(id='id0',
+               name='policy0',
+               expression='expression-0',
+               tags=frozenset({'tag1', 'tag2', 'tag3'})),
+        Policy(id='id1',
+               name='policy1',
+               expression='expression-1',
+               tags=frozenset({'tag1', 'tag4', 'tag5'}))
+        ]))
+
+    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag1'}), filter_tags=frozenset({'tag2'}))
+    assert r1 == frozenset(set(EntityWrapper(a) for a in [
+        Policy(id='id1',
+               name='policy1',
+               expression='expression-1',
+               tags=frozenset({'tag1', 'tag4', 'tag5'}))]))
+
+    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag2'}))
+    assert r1 == frozenset(set(EntityWrapper(a) for a in [
+        Policy(id='id1',
+               name='policy1',
+               expression='expression-1',
+               tags=frozenset({'tag1', 'tag4', 'tag5'})),
+        Policy(id='id2',
+               name='policy2',
+               expression='expression-2',
+               tags=frozenset({'tag3', 'tag6', 'tag7'})),
+        Policy(id='id3',
+               name='policy3',
+               expression='expression-3',
+               tags=frozenset({'tag4', 'tag9', 'tag10'}))
+    ]))
+
+    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag7'}))
+    assert r1 == frozenset(set(EntityWrapper(a) for a in [
+        Policy(id='id0',
+               name='policy0',
+               expression='expression-0',
+               tags=frozenset({'tag1', 'tag2', 'tag3'})),
+        Policy(id='id1',
+               name='policy1',
+               expression='expression-1',
+               tags=frozenset({'tag1', 'tag4', 'tag5'})),
+        Policy(id='id3',
+               name='policy3',
+               expression='expression-3',
+               tags=frozenset({'tag4', 'tag9', 'tag10'}))]))
+
+    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag1', 'tag4', 'tag6', 'tag9'}))
+    assert r1 == frozenset()
+
+    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag11', 'tag12'}), filter_tags=None)
+    assert r1 == frozenset()
 
 
 def test_compare_policies_0():
@@ -21,7 +101,7 @@ def test_compare_policies_0():
                              expression='expression-3'))
     })
     expected_policies = EntitiesSet(set())
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, frozenset(), frozenset())
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
 
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1',
@@ -52,7 +132,7 @@ def test_compare_policies_1():
         EntityWrapper(Policy(name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
     assert plan.create.entities == {
         EntityWrapper(Policy(name='policy1',
                              expression='expression-1')),
@@ -88,7 +168,7 @@ def test_compare_policies_2():
                              name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
     assert plan.modify.entities == set()
     assert plan.delete.entities == set()
     assert plan.create.entities == set()
@@ -131,7 +211,7 @@ def test_compare_policies_3():
                              name='policy4',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1', name='policy3', expression='expression-1'))
     }
@@ -171,7 +251,7 @@ def test_compare_policies_4():
         EntityWrapper(Policy(name='policy4',
                              expression='expression-4'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id3', name='policy3', expression='expression-3'))
     }
@@ -672,7 +752,7 @@ def test_compare_plan_entity_bytes():
     entities_expected = EntitiesSet({
         EntityWrapper(K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate))
     })
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
     assert plan.modify.entities == frozenset()
     assert plan.modifications_diff == {}
 
@@ -689,7 +769,7 @@ def test_compare_plan_entity_bytes():
     new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
 
     entities_expected = EntitiesSet({EntityWrapper(new_e)})
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'entity1': ['--- \n', '+++ \n', '@@ -2,4 +2,4 @@\n',
@@ -748,7 +828,7 @@ def test_compare_plan_entity_pem():
     expected_entities = EntitiesSet({
         EntityWrapper(new_e)
     })
-    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS, frozenset(), None)
+    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'c1': [
