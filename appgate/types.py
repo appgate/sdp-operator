@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List
 from attr import attrib, attrs, evolve
 
-from appgate.logger import log
 from appgate.openapi.types import Entity_T
 
 
