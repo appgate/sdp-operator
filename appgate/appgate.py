@@ -111,7 +111,7 @@ def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
                                               (args.filter_tags, APPGATE_FILTER_TAGS_ENV),
                                               (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV)]):
         xs = frozenset(tags_arg) if tags_arg else frozenset()
-        ys = filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))
+        ys = filter(None, os.getenv(tags_env, '').split(','))
         ts = None
         if xs or ys:
             ts = xs.union(ys)
