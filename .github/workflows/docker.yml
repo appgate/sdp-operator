@@ -88,3 +88,23 @@ jobs:
           docker tag sdp-operator:v14 ghcr.io/appgate/sdp-operator:v14
           docker push ghcr.io/appgate/sdp-operator:v14
 
+  v15:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: docker-images
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run:  docker build --build-arg SPEC_VERSION=v15 -f docker/Dockerfile . -t sdp-operator:v15
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.PACKAGES_USER }}
+          password: ${{ secrets.PACKAGES_TOKEN }}
+      - name: Push image
+        run: |
+          docker tag sdp-operator:v15 ghcr.io/appgate/sdp-operator:v15
+          docker push ghcr.io/appgate/sdp-operator:v15
