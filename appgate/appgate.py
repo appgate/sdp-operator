@@ -115,7 +115,7 @@ def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
         ts = None
         if xs or ys:
             ts = xs.union(ys)
-        tags[i] = ts
+        tags.append(ts)
     return tags
 
 
