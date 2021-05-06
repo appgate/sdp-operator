@@ -25,7 +25,7 @@ from appgate.openapi.types import AppgateException
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
-from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV, BUILTIN_TAGS, APPGATE_FILTER_TAGS_ENV, \
+from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV, BUILTIN_TAGS, APPGATE_EXCLUDE_TAGS_ENV, \
     APPGATE_BUILTIN_TAGS_ENV, has_tag
 from appgate.secrets import k8s_get_secret
 
@@ -41,7 +41,7 @@ __all__ = [
     'start_entity_loop',
     'Context',
     'log',
-    'filter_appgate_entities',
+    'exclude_appgate_entities',
 ]
 
 
@@ -88,8 +88,8 @@ class Context:
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
     # builtin tags are the entities that we consider builtin
     builtin_tags: FrozenSet[str] = attrib(default=BUILTIN_TAGS)
-    # filter tags if specified tells which entities do we want to exclude
-    filter_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    # exclude tags if specified tells which entities do we want to exclude
+    exclude_tags: Optional[FrozenSet[str]] = attrib(default=None)
     no_verify: bool = attrib(default=True)
     cafile: Optional[Path] = attrib(default=None)
 
@@ -108,7 +108,7 @@ def save_cert(cert: str) -> Path:
 def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
     tags: List[Optional[FrozenSet[str]]] = []
     for i, (tags_arg, tags_env) in enumerate([(args.target_tags, APPGATE_TARGET_TAGS_ENV),
-                                              (args.filter_tags, APPGATE_FILTER_TAGS_ENV),
+                                              (args.exclude_tags, APPGATE_EXCLUDE_TAGS_ENV),
                                               (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV)]):
         xs = frozenset(tags_arg) if tags_arg else frozenset()
         ys = filter(None, os.getenv(tags_env, '').split(','))
@@ -145,7 +145,7 @@ def get_context(args: OperatorArguments,
     elif verify and args.cafile:
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
-    target_tags, filter_tags, builtin_tags = get_tags(args)
+    target_tags, exclude_tags, builtin_tags = get_tags(args)
     metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
 
     if not user or not password or not controller:
@@ -167,7 +167,7 @@ def get_context(args: OperatorArguments,
                    no_verify=no_verify,
                    target_tags=target_tags if target_tags else None,
                    builtin_tags=builtin_tags if builtin_tags else BUILTIN_TAGS,
-                   filter_tags=filter_tags if filter_tags else None,
+                   exclude_tags=exclude_tags if exclude_tags else None,
                    metadata_configmap=metadata_configmap,
                    cafile=appgate_cacert_path)
 
@@ -194,14 +194,14 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         ))
 
 
-def filter_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
-                            filter_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
+def exclude_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
+                             exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
     """
-    Filter entities according to target_tags and filter_tags
+    Filter out entities according to target_tags and exclude_rags
     Returns the entities that are member of target_tags (all entities if None)
-    but not member of filter_tags
+    but not member of exclude_tags
     """
-    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, filter_tags),
+    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
                       [EntityWrapper(e) for e in entities]))
 
 
@@ -232,7 +232,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    filter_appgate_entities(entities, ctx.target_tags, ctx.filter_tags))
+                    exclude_appgate_entities(entities, ctx.target_tags, ctx.exclude_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)

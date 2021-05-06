@@ -301,7 +301,7 @@ Optional environment variables that the operator uses:
    entities we are interested on. Only the entities in this set (entities with
    tags belonging to this set) will be selected from the appgate system. If no
    target tags are defined then all the entities will be selected.
- - APPGATE_OPERATOR_FILTER_TAGS :: List of tags (comma separated) defining the
+ - APPGATE_OPERATOR_EXCLUDE_TAGS :: List of tags (comma separated) defining the
    set of entities we want to filter out explicitly from being
    selected. Entities with tags in this set will not be retrieved to compute the
    working plan.

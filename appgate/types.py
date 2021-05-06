@@ -29,7 +29,7 @@ class OperatorArguments:
     cleanup: bool = attrib(default=True)
     target_tags: List[str] = attrib(factory=list)
     builtin_tags: List[str] = attrib(factory=list)
-    filter_tags: List[str] = attrib(factory=list)
+    exclude_tags: List[str] = attrib(factory=list)
     metadata_configmap: Optional[str] = attrib(default=None)
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)

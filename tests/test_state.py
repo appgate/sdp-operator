@@ -1,4 +1,4 @@
-from appgate.appgate import filter_appgate_entities
+from appgate.appgate import exclude_appgate_entities
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
     compute_diff
@@ -28,10 +28,10 @@ def test_filter_appgate_entities():
                expression='expression-3',
                tags=frozenset({'tag4', 'tag9', 'tag10'}))
     ]
-    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=None)
+    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=None)
     assert frozenset(set(EntityWrapper(a) for a in entities)) == r1
 
-    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag1'}), filter_tags=None)
+    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=None)
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id0',
                name='policy0',
@@ -43,14 +43,14 @@ def test_filter_appgate_entities():
                tags=frozenset({'tag1', 'tag4', 'tag5'}))
         ]))
 
-    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag1'}), filter_tags=frozenset({'tag2'}))
+    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id1',
                name='policy1',
                expression='expression-1',
                tags=frozenset({'tag1', 'tag4', 'tag5'}))]))
 
-    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag2'}))
+    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id1',
                name='policy1',
@@ -66,7 +66,7 @@ def test_filter_appgate_entities():
                tags=frozenset({'tag4', 'tag9', 'tag10'}))
     ]))
 
-    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag7'}))
+    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag7'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id0',
                name='policy0',
@@ -81,10 +81,10 @@ def test_filter_appgate_entities():
                expression='expression-3',
                tags=frozenset({'tag4', 'tag9', 'tag10'}))]))
 
-    r1 = filter_appgate_entities(entities, target_tags=None, filter_tags=frozenset({'tag1', 'tag4', 'tag6', 'tag9'}))
+    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag1', 'tag4', 'tag6', 'tag9'}))
     assert r1 == frozenset()
 
-    r1 = filter_appgate_entities(entities, target_tags=frozenset({'tag11', 'tag12'}), filter_tags=None)
+    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag11', 'tag12'}), exclude_tags=None)
     assert r1 == frozenset()
 
 
