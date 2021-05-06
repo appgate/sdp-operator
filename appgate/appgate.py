@@ -9,7 +9,7 @@ from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Type, Dict, Callable, Any, FrozenSet
+from typing import Optional, Type, Dict, Callable, Any, FrozenSet, Tuple, Iterable, List, Set
 import threading
 
 from attr import attrib, attrs
@@ -25,7 +25,8 @@ from appgate.openapi.types import AppgateException
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
 from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
-from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV
+from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV, BUILTIN_TAGS, APPGATE_EXCLUDE_TAGS_ENV, \
+    APPGATE_BUILTIN_TAGS_ENV, has_tag
 from appgate.secrets import k8s_get_secret
 
 from appgate.state import AppgateState, create_appgate_plan, \
@@ -40,6 +41,7 @@ __all__ = [
     'start_entity_loop',
     'Context',
     'log',
+    'exclude_appgate_entities',
 ]
 
 
@@ -82,7 +84,12 @@ class Context:
     cleanup_mode: bool = attrib()
     api_spec: APISpec = attrib()
     metadata_configmap: str = attrib()
+    # target tags if specified tells which entities do we want to work on
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    # builtin tags are the entities that we consider builtin
+    builtin_tags: FrozenSet[str] = attrib(default=BUILTIN_TAGS)
+    # exclude tags if specified tells which entities do we want to exclude
+    exclude_tags: Optional[FrozenSet[str]] = attrib(default=None)
     no_verify: bool = attrib(default=True)
     cafile: Optional[Path] = attrib(default=None)
 
@@ -96,6 +103,20 @@ def save_cert(cert: str) -> Path:
             bytes_decoded: bytes = base64.b64decode(cert)
             f.write(bytes_decoded.decode())
     return cert_path
+
+
+def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
+    tags: List[Optional[FrozenSet[str]]] = []
+    for i, (tags_arg, tags_env) in enumerate([(args.target_tags, APPGATE_TARGET_TAGS_ENV),
+                                              (args.exclude_tags, APPGATE_EXCLUDE_TAGS_ENV),
+                                              (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV)]):
+        xs = frozenset(tags_arg) if tags_arg else frozenset()
+        ys = filter(None, os.getenv(tags_env, '').split(','))
+        ts = None
+        if xs or ys:
+            ts = xs.union(ys)
+        tags[i] = ts
+    return tags
 
 
 def get_context(args: OperatorArguments,
@@ -124,9 +145,7 @@ def get_context(args: OperatorArguments,
     elif verify and args.cafile:
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
-    target_tags_arg = frozenset(args.target_tags) if args.target_tags else frozenset()
-    target_tags_env = target_tags_arg.union(
-        frozenset(filter(None, os.getenv(APPGATE_TARGET_TAGS_ENV, '').split(','))))
+    target_tags, exclude_tags, builtin_tags = get_tags(args)
     metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
 
     if not user or not password or not controller:
@@ -146,7 +165,9 @@ def get_context(args: OperatorArguments,
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
                    no_verify=no_verify,
-                   target_tags=target_tags_env if target_tags_env else None,
+                   target_tags=target_tags if target_tags else None,
+                   builtin_tags=builtin_tags if builtin_tags else BUILTIN_TAGS,
+                   exclude_tags=exclude_tags if exclude_tags else None,
                    metadata_configmap=metadata_configmap,
                    cafile=appgate_cacert_path)
 
@@ -171,6 +192,17 @@ def init_kubernetes(args: OperatorArguments) -> Context:
             key=key,
             secret=secret
         ))
+
+
+def exclude_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
+                             exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
+    """
+    Filter out entities according to target_tags and exclude_rags
+    Returns the entities that are member of target_tags (all entities if None)
+    but not member of exclude_tags
+    """
+    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
+                      [EntityWrapper(e) for e in entities]))
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
@@ -199,14 +231,12 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         for entity, client in entity_clients.items():
             entities = await client.get()
             if entities is not None:
-                entities_set[entity] = EntitiesSet(set(map(EntityWrapper,
-                                                           filter(lambda e: is_target(e, ctx.target_tags),
-                                                                  entities))))
+                entities_set[entity] = EntitiesSet(
+                    exclude_appgate_entities(entities, ctx.target_tags, ctx.exclude_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
             raise AppgateException('Error reading current state')
-
         appgate_state = AppgateState(entities_set=entities_set)
 
     return appgate_state
@@ -288,7 +318,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
-            {k: v.builtin_entities() for k, v in current_appgate_state.entities_set.items()})
+            {k: v.entities_with_tags(ctx.builtin_tags) for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
@@ -327,7 +357,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             # Create a plan
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
-            plan = create_appgate_plan(current_appgate_state, expected_appgate_state)
+            plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
+                                       ctx.builtin_tags,)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)

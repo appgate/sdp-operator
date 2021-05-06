@@ -19,7 +19,7 @@ from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, \
     APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD
-from appgate.openapi.utils import is_entity_t, has_name, is_builtin
+from appgate.openapi.utils import is_entity_t, has_name, has_tag, is_target
 
 __all__ = [
     'AppgateState',
@@ -67,8 +67,8 @@ class EntitiesSet:
                            entities_by_name=deepcopy(self.entities_by_name),
                            entities_by_id=deepcopy(self.entities_by_id))
 
-    def builtin_entities(self) -> 'EntitiesSet':
-        return EntitiesSet(entities={e for e in self.entities if is_builtin(e)})
+    def entities_with_tags(self, tags: FrozenSet[str]) -> 'EntitiesSet':
+        return EntitiesSet(entities={e for e in self.entities if has_tag(e, tags)})
 
     def add(self, entity: EntityWrapper) -> None:
         if entity.name in self.entities_by_name:
@@ -409,20 +409,22 @@ def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
 
 
 def compare_entities(current: EntitiesSet,
-                     expected: EntitiesSet) -> Plan:
+                     expected: EntitiesSet,
+                     builtin_tags: FrozenSet[str]) -> Plan:
     current_entities = current.entities
     current_names = {e.name for e in current_entities}
     expected_entities = expected.entities
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
     to_delete = EntitiesSet(set(filter(
-        lambda e: e.name not in expected_names and not is_builtin(e),
+        lambda e: e.name not in expected_names and not has_tag(e, builtin_tags),
         current_entities)))
     to_create = EntitiesSet(set(filter(
         lambda e: e.name not in current_names and e.name not in shared_names,
         expected_entities)))
     to_modify = EntitiesSet(set(filter(
-        lambda e: e.name in shared_names and e not in current_entities, expected_entities)))
+        lambda e: e.name in shared_names and e not in current_entities,
+        expected_entities)))
     modifications_diff = {}
     for e in to_modify.entities:
         current_entity = current.entities_by_name.get(e.name)
@@ -569,11 +571,12 @@ def resolve_appgate_state(appgate_state: AppgateState,
 
 
 def create_appgate_plan(current_state: AppgateState,
-                        expected_state: AppgateState) -> AppgatePlan:
+                        expected_state: AppgateState,
+                        builtin_tags: FrozenSet[str]) -> AppgatePlan:
     """
     Creates a new AppgatePlan to apply
     """
-    entities_plan = {k: compare_entities(current_state.entities_set[k], v)
+    entities_plan = {k: compare_entities(current_state.entities_set[k], v, builtin_tags)
                      for k, v in expected_state.entities_set.items()}
     return AppgatePlan(entities_plan=entities_plan)
 

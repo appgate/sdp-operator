@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List
 from attr import attrib, attrs, evolve
 
-from appgate.logger import log
 from appgate.openapi.types import Entity_T
 
 
@@ -28,7 +27,9 @@ class OperatorArguments:
     two_way_sync: bool = attrib(default=True)
     timeout: str = attrib(default='30')
     cleanup: bool = attrib(default=True)
-    target_tags: Optional[List[str]] = attrib(default=None)
+    target_tags: List[str] = attrib(factory=list)
+    builtin_tags: List[str] = attrib(factory=list)
+    exclude_tags: List[str] = attrib(factory=list)
     metadata_configmap: Optional[str] = attrib(default=None)
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)

@@ -292,6 +292,19 @@ Optional environment variables that the operator uses:
    certificate in k8s. Example:
  : export APPGATE_OPERATOR_CACERT=`cat cert.ca | base64 -w 0`
  : export APPGATE_OPERATOR_CACERT=`cat cert.ca`
+ - APPGATE_OPERATOR_BUILTIN_TAGS :: List of tags (comma separated) defining
+   builtin entities. Builtin entities are never deleted and when running in
+   cleanup mode they are used to compute what entities should be
+   deleted. Entities with tags belonging to this set are considered builtin
+   entities.
+ - APPGATE_OPERATOR_TARGET_TAGS :: List of tags (comma separated) defining the
+   entities we are interested on. Only the entities in this set (entities with
+   tags belonging to this set) will be selected from the appgate system. If no
+   target tags are defined then all the entities will be selected.
+ - APPGATE_OPERATOR_EXCLUDE_TAGS :: List of tags (comma separated) defining the
+   set of entities we want to filter out explicitly from being
+   selected. Entities with tags in this set will not be retrieved to compute the
+   working plan.
       
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
