@@ -47,6 +47,7 @@ __all__ = [
 
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
+PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
 TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
 HOST_ENV = 'APPGATE_OPERATOR_HOST'
 DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
@@ -77,6 +78,7 @@ class Context:
     namespace: str = attrib()
     user: str = attrib()
     password: str = attrib()
+    provider: str = attrib()
     controller: str = attrib()
     two_way_sync: bool = attrib()
     timeout: int = attrib()
@@ -126,6 +128,7 @@ def get_context(args: OperatorArguments,
         raise AppgateException('Namespace must be defined in order to run the appgate-operator')
     user = os.getenv(USER_ENV) or args.user
     password = os.getenv(PASSWORD_ENV) or args.password
+    provider = os.getenv(PROVIDER_ENV) or args.provider
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
@@ -159,6 +162,7 @@ def get_context(args: OperatorArguments,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
     return Context(namespace=namespace, user=user, password=password,
+                   provider=provider,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
@@ -216,7 +220,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         log.warning('[appgate-operator/%s] Ignoring SSL certificates!',
                     ctx.namespace)
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
-                             password=ctx.password,
+                             password=ctx.password, provider=ctx.provider,
                              version=api_spec.api_version,
                              no_verify=ctx.no_verify,
                              cafile=ctx.cafile) as appgate_client:
@@ -367,7 +371,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                     if not ctx.dry_run_mode:
                         appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
-                            user=ctx.user, password=ctx.password,
+                            user=ctx.user, password=ctx.password, provider=ctx.provider,
                             version=ctx.api_spec.api_version, no_verify=ctx.no_verify,
                             cafile=ctx.cafile))
                     else:
