@@ -264,7 +264,7 @@ class AppgateClient:
 
     async def login(self) -> None:
         body = {
-            'providerName': 'local',
+            'providerName': self.provider,
             'username': self.user,
             'password': self.password,
             'deviceId': self.device_id
