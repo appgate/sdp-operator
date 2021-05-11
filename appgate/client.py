@@ -169,11 +169,12 @@ class K8SConfigMapClient:
 
 
 class AppgateClient:
-    def __init__(self, controller: str, user: str, password: str, version: int,
+    def __init__(self, controller: str, user: str, password: str, provider: str, version: int,
                  no_verify: bool = False, cafile: Optional[Path] = None) -> None:
         self.controller = controller
         self.user = user
         self.password = password
+        self.provider = provider
         self._session = aiohttp.ClientSession()
         self.device_id = str(uuid.uuid4())
         self._token = None

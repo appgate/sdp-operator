@@ -24,6 +24,7 @@ class OperatorArguments:
     host: Optional[str] = attrib(default=None)
     user: Optional[str] = attrib(default=None)
     password: Optional[str] = attrib(default=None)
+    provider: str = attrib(default='local')
     two_way_sync: bool = attrib(default=True)
     timeout: str = attrib(default='30')
     cleanup: bool = attrib(default=True)
