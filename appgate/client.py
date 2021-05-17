@@ -161,10 +161,11 @@ class K8SConfigMapClient:
         if not self._configmap_mt:
             await self.init()
         prev_entry = self.get_entity_generation(key) or LatestEntityGeneration()
-        self._entries[key] = LatestEntityGeneration(
+        entry = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
             modified=datetime.datetime.now().astimezone())
-        gen = dump_latest_entity_generation(self._entries[key])
+        gen = dump_latest_entity_generation(entry)
+        self._entries[key] = entry
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: gen
         })
@@ -177,7 +178,7 @@ class K8SConfigMapClient:
             body=body
         )
         self._configmap_mt = new_configmap.metadata
-        return self._entries[key]
+        return entry
 
     async def delete(self, key: str) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
