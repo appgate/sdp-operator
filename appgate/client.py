@@ -3,7 +3,7 @@ import datetime
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List, Callable, Union
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
@@ -94,7 +94,7 @@ def dump_latest_entity_generation(entry: LatestEntityGeneration) -> str:
 
 
 def entity_unique_id(entity_type: str, name: str) -> str:
-    name = name.replace(' ','').lower()
+    name = name.replace(' ', '').lower()
     return f'{entity_type}-{name}'
 
 
@@ -102,7 +102,7 @@ class K8SConfigMapClient:
     def __init__(self, namespace: str, name: str) -> None:
         self._v1 = CoreV1Api()
         self._configmap_mt: Optional[V1ObjectMeta] = None
-        self._entries: Dict[str, LatestEntityGeneration] = {}
+        self._entries: Dict[str, Union[LatestEntityGeneration, str]] = {}
         self.namespace = namespace
         self.name = name
 
@@ -119,16 +119,48 @@ class K8SConfigMapClient:
             k: load_latest_entity_generation(k, v) for k, v in (configmap.data or {}).items()
         }
 
-    def read(self, key: str) -> Optional[LatestEntityGeneration]:
+    def get_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
         entry = self._entries.get(key)
+        if entry is None:
+            return entry
+        assert isinstance(entry, LatestEntityGeneration)
+        return entry
+
+    def read(self, key: str) -> Optional[LatestEntityGeneration]:
+        entry = self.get_entity_generation(key)
         log.info('[k8s-configmap-client/%s/%s] Reading %s: %s', self.name, self.namespace,
                  key, dump_latest_entity_generation(entry) if entry else 'not found')
         return entry
 
+    async def ensure_device_id(self) -> str:
+        """
+        Try to get the device id from the config map.
+        If that fails, generate one and store it in the configmap.
+        """
+        key = 'appgate-operator-device-id'
+        if (device_id := self._entries.get(key)) is not None:
+            assert isinstance(device_id, str)
+            return device_id
+        device_id = str(uuid.uuid4())
+        self._entries[key] = device_id
+        body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
+            'appgate-operator-device-id': device_id
+        })
+        log.info('[k8s-configmap-client/%s/%s] Saving device id %s: %s', self.name, self.namespace,
+                 key, device_id)
+        new_configmap = await asyncio.to_thread(  # type: ignore
+            self._v1.patch_namespaced_config_map,
+            name=self.name,
+            namespace=self.namespace,
+            body=body
+        )
+        self._configmap_mt = new_configmap.metadata
+        return device_id
+
     async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             await self.init()
-        prev_entry = self._entries.get(key) or LatestEntityGeneration()
+        prev_entry = self.get_entity_generation(key) or LatestEntityGeneration()
         self._entries[key] = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
             modified=datetime.datetime.now().astimezone())
@@ -153,6 +185,7 @@ class K8SConfigMapClient:
         if key not in self._entries:
             return None
         entry = self._entries[key]
+        assert isinstance(entry, LatestEntityGeneration)
         del self._entries[key]
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: None
@@ -170,14 +203,14 @@ class K8SConfigMapClient:
 
 class AppgateClient:
     def __init__(self, controller: str, user: str, password: str, provider: str,
-                 version: int, device_id: Optional[str] = None,
+                 version: int, device_id: str,
                  no_verify: bool = False, cafile: Optional[Path] = None) -> None:
         self.controller = controller
         self.user = user
         self.password = password
         self.provider = provider
         self._session = aiohttp.ClientSession()
-        self.device_id = device_id if device_id is not None else str(uuid.uuid4())
+        self.device_id = device_id
         self._token = None
         self.version = version
         self.no_verify = no_verify

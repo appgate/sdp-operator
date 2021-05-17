@@ -223,6 +223,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     if ctx.no_verify:
         log.warning('[appgate-operator/%s] Ignoring SSL certificates!',
                     ctx.namespace)
+    if ctx.device_id is None:
+        raise AppgateException('No device id specified')
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password, provider=ctx.provider,
                              device_id=ctx.device_id,
@@ -374,6 +376,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
                     if not ctx.dry_run_mode:
+                        if ctx.device_id is None:
+                            raise AppgateException('No device id specified')
                         appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
                             user=ctx.user, password=ctx.password, provider=ctx.provider,
