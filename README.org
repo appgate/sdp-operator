@@ -254,6 +254,11 @@ Before deploying it MUST define these env variables:
    controller.
  - APPGATE_OPERATOR_PASSWORD :: the password used to authenticate the REST calls
    to the controller.
+ - APPGATE_OPERATOR_PROVIDER :: the provider used to authenticate the REST calls
+   to the controller. The provider will default to local if not set.
+ - APPGATE_OPERATOR_DEVICE_ID :: the device id used to authenticate the REST calls
+   to the controller. The device id will be generated and stored in the operator's
+   metadata configmap if not set. It will then be re-used in subsequent runs.
 
 Optional environment variables that the operator uses:
  - APPGATE_OPERATOR_TIMEOUT :: Time without activity after which the appgate
