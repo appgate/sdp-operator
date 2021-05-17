@@ -48,6 +48,7 @@ __all__ = [
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
 PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
+DEVICE_ID_ENV = 'APPGATE_OPERATOR_DEVICE_ID'
 TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
 HOST_ENV = 'APPGATE_OPERATOR_HOST'
 DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
@@ -94,6 +95,7 @@ class Context:
     exclude_tags: Optional[FrozenSet[str]] = attrib(default=None)
     no_verify: bool = attrib(default=True)
     cafile: Optional[Path] = attrib(default=None)
+    device_id: Optional[str] = attrib(default=None)
 
 
 def save_cert(cert: str) -> Path:
@@ -129,6 +131,7 @@ def get_context(args: OperatorArguments,
     user = os.getenv(USER_ENV) or args.user
     password = os.getenv(PASSWORD_ENV) or args.password
     provider = os.getenv(PROVIDER_ENV) or args.provider
+    device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
     two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
@@ -163,6 +166,7 @@ def get_context(args: OperatorArguments,
                                  k8s_get_secret=k8s_get_secret)
     return Context(namespace=namespace, user=user, password=password,
                    provider=provider,
+                   device_id=device_id,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
                    cleanup_mode=cleanup_mode == '1',
@@ -221,6 +225,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
                     ctx.namespace)
     async with AppgateClient(controller=ctx.controller, user=ctx.user,
                              password=ctx.password, provider=ctx.provider,
+                             device_id=ctx.device_id,
                              version=api_spec.api_version,
                              no_verify=ctx.no_verify,
                              cafile=ctx.cafile) as appgate_client:
@@ -372,6 +377,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                         appgate_client = await exit_stack.enter_async_context(AppgateClient(
                             controller=ctx.controller,
                             user=ctx.user, password=ctx.password, provider=ctx.provider,
+                            device_id=ctx.device_id,
                             version=ctx.api_spec.api_version, no_verify=ctx.no_verify,
                             cafile=ctx.cafile))
                     else:
