@@ -130,7 +130,7 @@ class K8SConfigMapClient:
         If that fails, generate one and store it in the configmap.
         """
         try:
-            device_id = self._data[self._device_id_key()]
+            return self._data[self._device_id_key()]
         except KeyError:
             device_id = str(uuid.uuid4())
             self._data[self._device_id_key()] = device_id
