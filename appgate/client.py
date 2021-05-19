@@ -124,7 +124,7 @@ class K8SConfigMapClient:
     def _device_id_key() -> str:
         return 'device-id'
 
-    async def _patch_key(self, key: str, value: Optional[str]) -> V1ObjectMeta:
+    async def _patch_key(self, key: str, value: Optional[str]) -> Optional[V1ObjectMeta]:
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
             key: value,
         })
@@ -136,10 +136,10 @@ class K8SConfigMapClient:
         )
         return configmap.metadata
 
-    async def _update_key(self, key: str, value: str) -> V1ObjectMeta:
+    async def _update_key(self, key: str, value: str) -> Optional[V1ObjectMeta]:
         return await self._patch_key(key, value)
 
-    async def _delete_key(self, key: str) -> V1ObjectMeta:
+    async def _delete_key(self, key: str) -> Optional[V1ObjectMeta]:
         return await self._patch_key(key, None)
 
     async def ensure_device_id(self) -> str:
