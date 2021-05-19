@@ -75,17 +75,14 @@ class EntityClient:
         return True
 
 
-def load_latest_entity_generation(key: str, v: Any) -> LatestEntityGeneration:
-    if isinstance(v, str):
-        try:
-            generation, modified = v.split(',', maxsplit=2)
-            return LatestEntityGeneration(generation=int(generation),
-                                          modified=parse_datetime(modified))
-        except Exception:
-            log.error('Error getting entry from configmap entry %s, defaulting to generation 0',
-                      key)
-            return LatestEntityGeneration()
-    else:
+def load_latest_entity_generation(key: str, value: str) -> LatestEntityGeneration:
+    try:
+        generation, modified = value.split(',', maxsplit=2)
+        return LatestEntityGeneration(generation=int(generation),
+                                      modified=parse_datetime(modified))
+    except Exception:
+        log.error('Error getting entry from configmap entry %s, defaulting to generation 0',
+                  key)
         return LatestEntityGeneration()
 
 
@@ -102,9 +99,11 @@ class K8SConfigMapClient:
     def __init__(self, namespace: str, name: str) -> None:
         self._v1 = CoreV1Api()
         self._configmap_mt: Optional[V1ObjectMeta] = None
-        self._entries: Dict[str, Union[LatestEntityGeneration, str]] = {}
         self.namespace = namespace
         self.name = name
+        # Store configmap data locally as a key-value store of strings,
+        # convert to and from higher level types at the boundaries.
+        self._data: Dict[str, str] = {}
 
     async def init(self) -> None:
         log.info('[k8s-configmap-client/%s/%s] Initializing config-map %s', self.name, self.namespace,
@@ -115,39 +114,32 @@ class K8SConfigMapClient:
             namespace=self.namespace
         )
         self._configmap_mt = configmap.metadata
-        self._entries = {
-            k: load_latest_entity_generation(k, v) for k, v in (configmap.data or {}).items()
-        }
+        self._data = configmap.data or {}
 
-    def get_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
-        entry = self._entries.get(key)
-        if entry is None:
-            return entry
-        assert isinstance(entry, LatestEntityGeneration)
-        return entry
+    @staticmethod
+    def _entry_key(key: str) -> str:
+        return f'entry.{key}'
 
-    def read(self, key: str) -> Optional[LatestEntityGeneration]:
-        entry = self.get_entity_generation(key)
-        log.info('[k8s-configmap-client/%s/%s] Reading %s: %s', self.name, self.namespace,
-                 key, dump_latest_entity_generation(entry) if entry else 'not found')
-        return entry
+    @staticmethod
+    def _device_id_key() -> str:
+        return 'device-id'
 
     async def ensure_device_id(self) -> str:
         """
         Try to get the device id from the config map.
         If that fails, generate one and store it in the configmap.
         """
-        key = 'appgate-operator-device-id'
-        if (device_id := self._entries.get(key)) is not None:
-            assert isinstance(device_id, str)
-            return device_id
-        device_id = str(uuid.uuid4())
-        self._entries[key] = device_id
+        try:
+            device_id = self._data[self._device_id_key()]
+        except KeyError:
+            device_id = str(uuid.uuid4())
+            self._data[self._device_id_key()] = device_id
+
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            'appgate-operator-device-id': device_id
+            'device-id': device_id,
         })
-        log.info('[k8s-configmap-client/%s/%s] Saving device id %s: %s', self.name, self.namespace,
-                 key, device_id)
+        log.info('[k8s-configmap-client/%s/%s] Saving device id: %s',
+                 self.name, self.namespace, device_id)
         new_configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
@@ -157,19 +149,32 @@ class K8SConfigMapClient:
         self._configmap_mt = new_configmap.metadata
         return device_id
 
-    async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
+    def get_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
+        entry_key = self._entry_key(key)
+        if (value := self._data.get(entry_key)) is None:
+            return None
+        return load_latest_entity_generation(key, value)
+
+    def read_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
+        entry = self.get_entity_generation(key)
+        log.info('[k8s-configmap-client/%s/%s] Reading entity generation %s: %s', self.name, self.namespace,
+                 key, dump_latest_entity_generation(entry) if entry else 'not found')
+        return entry
+
+    async def update_entity_generation(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             await self.init()
-        prev_entry = self.get_entity_generation(key) or LatestEntityGeneration()
+        prev_entry = self.get_entity_generation(key)
         entry = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
             modified=datetime.datetime.now().astimezone())
         gen = dump_latest_entity_generation(entry)
-        self._entries[key] = entry
+        entry_key = self._entry_key(key)
+        self._data[entry_key] = gen
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            key: gen
+            f'entity-generations/{key}': gen
         })
-        log.info('[k8s-configmap-client/%s/%s] Updating entry %s -> %s', self.name, self.namespace,
+        log.info('[k8s-configmap-client/%s/%s] Updating entity generation %s -> %s', self.name, self.namespace,
                  key, gen)
         new_configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
@@ -180,18 +185,18 @@ class K8SConfigMapClient:
         self._configmap_mt = new_configmap.metadata
         return entry
 
-    async def delete(self, key: str) -> Optional[LatestEntityGeneration]:
+    async def delete_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             await self.init()
-        if key not in self._entries:
+        entry_key = self._entry_key(key)
+        if entry_key not in self._data:
             return None
-        entry = self._entries[key]
-        assert isinstance(entry, LatestEntityGeneration)
-        del self._entries[key]
+        entry = self.get_entity_generation(key)
+        del self._data[entry_key]
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            key: None
+            entry_key: None
         })
-        log.info('[k8s-configmap-client/%s/%s] Deleting entry %s', self.name, self.namespace, key)
+        log.info('[k8s-configmap-client/%s/%s] Deleting entity generation %s', self.name, self.namespace, key)
         new_configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
