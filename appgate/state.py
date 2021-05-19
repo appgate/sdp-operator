@@ -121,8 +121,8 @@ def k8s_name(name: str) -> str:
 
 
 def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
-    """
-    name sould match this regexp:
+    r"""
+    name should match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
     entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
