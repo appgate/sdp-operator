@@ -164,7 +164,7 @@ class K8SConfigMapClient:
     async def update_entity_generation(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             await self.init()
-        prev_entry = self.get_entity_generation(key)
+        prev_entry = self.get_entity_generation(key) or LatestEntityGeneration()
         entry = LatestEntityGeneration(
             generation=generation or (prev_entry.generation + 1),
             modified=datetime.datetime.now().astimezone())
