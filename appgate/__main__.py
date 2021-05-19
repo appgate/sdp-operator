@@ -31,6 +31,8 @@ async def run_k8s(args: OperatorArguments) -> None:
 
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
+        log.info('[appgate-operator/%s] Read device id from config map: %s',
+                 ctx.namespace, ctx.device_id)
 
     tasks = [
                 start_entity_loop(
