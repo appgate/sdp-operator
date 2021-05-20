@@ -300,7 +300,7 @@ class AppgateClient:
             'password': self.password,
             'deviceId': self.device_id
         }
-        resp = await self.post('/admin/login', body=body)
+        resp = await self.post('admin/login', body=body)
         if resp:
             self._token = resp['token']
 
