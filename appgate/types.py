@@ -34,6 +34,7 @@ class OperatorArguments:
     metadata_configmap: Optional[str] = attrib(default=None)
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)
+    device_id: Optional[str] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)

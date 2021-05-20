@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import sys
+import uuid
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
@@ -27,6 +28,12 @@ async def run_k8s(args: OperatorArguments) -> None:
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
     await k8s_configmap_client.init()
+
+    if ctx.device_id is None:
+        ctx.device_id = await k8s_configmap_client.ensure_device_id()
+        log.info('[appgate-operator/%s] Read device id from config map: %s',
+                 ctx.namespace, ctx.device_id)
+
     tasks = [
                 start_entity_loop(
                     ctx=ctx,

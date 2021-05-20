@@ -3,7 +3,7 @@ import datetime
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List, Callable, Union
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
@@ -75,17 +75,14 @@ class EntityClient:
         return True
 
 
-def load_latest_entity_generation(key: str, v: Any) -> LatestEntityGeneration:
-    if isinstance(v, str):
-        try:
-            generation, modified = v.split(',', maxsplit=2)
-            return LatestEntityGeneration(generation=int(generation),
-                                          modified=parse_datetime(modified))
-        except Exception:
-            log.error('Error getting entry from configmap entry %s, defaulting to generation 0',
-                      key)
-            return LatestEntityGeneration()
-    else:
+def load_latest_entity_generation(key: str, value: str) -> LatestEntityGeneration:
+    try:
+        generation, modified = value.split(',', maxsplit=2)
+        return LatestEntityGeneration(generation=int(generation),
+                                      modified=parse_datetime(modified))
+    except Exception:
+        log.error('Error getting entry from configmap entry %s, defaulting to generation 0',
+                  key)
         return LatestEntityGeneration()
 
 
@@ -94,7 +91,7 @@ def dump_latest_entity_generation(entry: LatestEntityGeneration) -> str:
 
 
 def entity_unique_id(entity_type: str, name: str) -> str:
-    name = name.replace(' ','').lower()
+    name = name.replace(' ', '').lower()
     return f'{entity_type}-{name}'
 
 
@@ -102,9 +99,11 @@ class K8SConfigMapClient:
     def __init__(self, namespace: str, name: str) -> None:
         self._v1 = CoreV1Api()
         self._configmap_mt: Optional[V1ObjectMeta] = None
-        self._entries: Dict[str, LatestEntityGeneration] = {}
         self.namespace = namespace
         self.name = name
+        # Store configmap data locally as a key-value store of strings,
+        # convert to and from higher level types at the boundaries.
+        self._data: Dict[str, str] = {}
 
     async def init(self) -> None:
         log.info('[k8s-configmap-client/%s/%s] Initializing config-map %s', self.name, self.namespace,
@@ -115,68 +114,100 @@ class K8SConfigMapClient:
             namespace=self.namespace
         )
         self._configmap_mt = configmap.metadata
-        self._entries = {
-            k: load_latest_entity_generation(k, v) for k, v in (configmap.data or {}).items()
-        }
+        self._data = configmap.data or {}
 
-    def read(self, key: str) -> Optional[LatestEntityGeneration]:
-        entry = self._entries.get(key)
-        log.info('[k8s-configmap-client/%s/%s] Reading %s: %s', self.name, self.namespace,
-                 key, dump_latest_entity_generation(entry) if entry else 'not found')
-        return entry
+    @staticmethod
+    def _entry_key(key: str) -> str:
+        return f'entry.{key}'
 
-    async def update(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
-        if not self._configmap_mt:
-            await self.init()
-        prev_entry = self._entries.get(key) or LatestEntityGeneration()
-        self._entries[key] = LatestEntityGeneration(
-            generation=generation or (prev_entry.generation + 1),
-            modified=datetime.datetime.now().astimezone())
-        gen = dump_latest_entity_generation(self._entries[key])
+    @staticmethod
+    def _device_id_key() -> str:
+        return 'device-id'
+
+    async def _patch_key(self, key: str, value: Optional[str]) -> Optional[V1ObjectMeta]:
         body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            key: gen
+            key: value,
         })
-        log.info('[k8s-configmap-client/%s/%s] Updating entry %s -> %s', self.name, self.namespace,
-                 key, gen)
-        new_configmap = await asyncio.to_thread(  # type: ignore
+        configmap = await asyncio.to_thread(  # type: ignore
             self._v1.patch_namespaced_config_map,
             name=self.name,
             namespace=self.namespace,
             body=body
         )
-        self._configmap_mt = new_configmap.metadata
-        return self._entries[key]
+        return configmap.metadata
 
-    async def delete(self, key: str) -> Optional[LatestEntityGeneration]:
+    async def _update_key(self, key: str, value: str) -> Optional[V1ObjectMeta]:
+        return await self._patch_key(key, value)
+
+    async def _delete_key(self, key: str) -> Optional[V1ObjectMeta]:
+        return await self._patch_key(key, None)
+
+    async def ensure_device_id(self) -> str:
+        """
+        Try to get the device id from the config map.
+        If that fails, generate one and store it in the configmap.
+        """
+        try:
+            return self._data[self._device_id_key()]
+        except KeyError:
+            device_id = str(uuid.uuid4())
+            self._data[self._device_id_key()] = device_id
+
+        log.info('[k8s-configmap-client/%s/%s] Saving device id: %s',
+                 self.name, self.namespace, device_id)
+        self._configmap_mt = await self._update_key('device-id', device_id)
+        return device_id
+
+    def get_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
+        entry_key = self._entry_key(key)
+        if (value := self._data.get(entry_key)) is None:
+            return None
+        return load_latest_entity_generation(key, value)
+
+    def read_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
+        entry = self.get_entity_generation(key)
+        log.info('[k8s-configmap-client/%s/%s] Reading entity generation %s: %s', self.name, self.namespace,
+                 key, dump_latest_entity_generation(entry) if entry else 'not found')
+        return entry
+
+    async def update_entity_generation(self, key: str, generation: Optional[int]) -> Optional[LatestEntityGeneration]:
         if not self._configmap_mt:
             await self.init()
-        if key not in self._entries:
+        prev_entry = self.get_entity_generation(key) or LatestEntityGeneration()
+        entry = LatestEntityGeneration(
+            generation=generation or (prev_entry.generation + 1),
+            modified=datetime.datetime.now().astimezone())
+        gen = dump_latest_entity_generation(entry)
+        entry_key = self._entry_key(key)
+        self._data[entry_key] = gen
+        log.info('[k8s-configmap-client/%s/%s] Updating entity generation %s -> %s', self.name, self.namespace,
+                 key, gen)
+        self._configmap_mt = await self._update_key(entry_key, gen)
+        return entry
+
+    async def delete_entity_generation(self, key: str) -> Optional[LatestEntityGeneration]:
+        if not self._configmap_mt:
+            await self.init()
+        entry_key = self._entry_key(key)
+        if entry_key not in self._data:
             return None
-        entry = self._entries[key]
-        del self._entries[key]
-        body = V1ConfigMap(api_version='v1', kind='ConfigMap', data={
-            key: None
-        })
-        log.info('[k8s-configmap-client/%s/%s] Deleting entry %s', self.name, self.namespace, key)
-        new_configmap = await asyncio.to_thread(  # type: ignore
-            self._v1.patch_namespaced_config_map,
-            name=self.name,
-            namespace=self.namespace,
-            body=body,
-        )
-        self._configmap_mt = new_configmap.metadata
+        entry = self.get_entity_generation(key)
+        del self._data[entry_key]
+        log.info('[k8s-configmap-client/%s/%s] Deleting entity generation %s', self.name, self.namespace, key)
+        self._configmap_mt = await self._delete_key(entry_key)
         return entry
 
 
 class AppgateClient:
-    def __init__(self, controller: str, user: str, password: str, provider: str, version: int,
+    def __init__(self, controller: str, user: str, password: str, provider: str,
+                 version: int, device_id: str,
                  no_verify: bool = False, cafile: Optional[Path] = None) -> None:
         self.controller = controller
         self.user = user
         self.password = password
         self.provider = provider
         self._session = aiohttp.ClientSession()
-        self.device_id = str(uuid.uuid4())
+        self.device_id = device_id
         self._token = None
         self.version = version
         self.no_verify = no_verify
@@ -269,7 +300,7 @@ class AppgateClient:
             'password': self.password,
             'deviceId': self.device_id
         }
-        resp = await self.post('/admin/login', body=body)
+        resp = await self.post('admin/login', body=body)
         if resp:
             self._token = resp['token']
 

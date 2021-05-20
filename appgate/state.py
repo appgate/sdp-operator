@@ -19,7 +19,7 @@ from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, \
     APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD
-from appgate.openapi.utils import is_entity_t, has_name, has_tag, is_target
+from appgate.openapi.utils import is_entity_t, has_name, has_tag
 
 __all__ = [
     'AppgateState',
@@ -121,8 +121,8 @@ def k8s_name(name: str) -> str:
 
 
 def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
-    """
-    name sould match this regexp:
+    r"""
+    name should match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
     entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
@@ -295,8 +295,9 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             try:
                 await entity_client.post(e.value)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
-                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
-                                                  generation=e.value.appgate_metadata.current_generation)
+                await k8s_configmap_client.update_entity_generation(
+                    key=entity_unique_id(e.value.__class__.__name__, name),
+                    generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
@@ -311,8 +312,9 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             try:
                 await entity_client.put(e.value)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
-                await k8s_configmap_client.update(key=entity_unique_id(e.value.__class__.__name__, name),
-                                                  generation=e.value.appgate_metadata.current_generation)
+                await k8s_configmap_client.update_entity_generation(
+                    key=entity_unique_id(e.value.__class__.__name__, name),
+                    generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
@@ -322,7 +324,7 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             try:
                 await entity_client.delete(e.id)
                 name = 'singleton' if e.value._entity_metadata.get('singleton', False) else e.name
-                await k8s_configmap_client.delete(entity_unique_id(e.value.__class__.__name__, name))
+                await k8s_configmap_client.delete_entity_generation(entity_unique_id(e.value.__class__.__name__, name))
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
 
