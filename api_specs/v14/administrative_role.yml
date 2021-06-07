@@ -240,7 +240,7 @@ definitions:
           - TokenRecord
           - Blacklist
           - UserLicense
-          - OnBoardedDevice
+          - RegisteredDevice
           - AllocatedIp
           - SessionInfo
           - AuditLog

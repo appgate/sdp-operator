@@ -337,10 +337,6 @@ definitions:
   LoginResponse:
     type: object
     properties:
-      version:
-        type: string
-        description: The controller version
-        example: 4.3.0-20000
       user:
         type: object
         description: Information about logged in user, such as username and email address, if exists.
