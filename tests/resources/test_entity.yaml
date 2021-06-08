@@ -4,7 +4,7 @@ tags:
   - name: UnitTest
 info:
   version: Appgate Operator 666
-  title: AppGate SDP Operator Unit Test
+  title: Appgate SDP Operator Unit Test
   description: Unit Test files
 
 paths:
