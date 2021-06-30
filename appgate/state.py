@@ -247,8 +247,11 @@ def merge_entities(share: EntitiesSet, create: EntitiesSet, modify: EntitiesSet,
 class Plan:
     share: EntitiesSet = attrib(factory=EntitiesSet)
     delete: EntitiesSet = attrib(factory=EntitiesSet)
+    not_to_delete: EntitiesSet = attrib(factory=EntitiesSet)
     create: EntitiesSet = attrib(factory=EntitiesSet)
+    not_to_create: EntitiesSet = attrib(factory=EntitiesSet)
     modify: EntitiesSet = attrib(factory=EntitiesSet)
+    not_to_modify: EntitiesSet = attrib(factory=EntitiesSet)
     modifications_diff: Dict[str, List[str]] = attrib(factory=dict)
     errors: Optional[Set[str]] = attrib(default=None)
 
@@ -333,9 +336,12 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
 
     has_errors = len(errors) > 0
     return Plan(create=plan.create,
+                not_to_create=plan.not_to_create,
                 share=plan.share,
                 delete=plan.delete,
+                not_to_delete=plan.not_to_delete,
                 modify=plan.modify,
+                not_to_modify=plan.not_to_modify,
                 modifications_diff=plan.modifications_diff,
                 errors=errors if has_errors else None)
 
@@ -420,27 +426,36 @@ def compare_entities(current: EntitiesSet,
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
 
+    def _to_delete_filter(e: EntityWrapper) -> bool:
+        return e.name not in expected_names and not has_tag(e, builtin_tags)\
+               and is_target(e, target_tags)
+
+    def _to_create_filter(e: EntityWrapper) -> bool:
+        return e.name not in current_names and e.name not in shared_names
+
+    def _to_modify_filter(e: EntityWrapper) -> bool:
+        return e.name in shared_names and e not in current_entities\
+               and is_target(e, target_tags)
+
     # Compute the set of entities to delete
     #  - Don't delete builtin entities
     #  - Don't delete entities that are not in target (if target set is
     #    not defined, all entities are in target)
-    to_delete = EntitiesSet(set(filter(
-        lambda e: e.name not in expected_names and not has_tag(e, builtin_tags)
-                  and is_target(e, target_tags),
-        current_entities)))
+    xs, ys = itertools.tee(current_entities)
+    to_delete = EntitiesSet(set(filter(_to_delete_filter, xs)))
+    not_to_delete = EntitiesSet(set(itertools.filterfalse(_to_delete_filter, ys)))
 
     # Compute the set of entities to create
-    to_create = EntitiesSet(set(filter(
-        lambda e: e.name not in current_names and e.name not in shared_names,
-        expected_entities)))
+    xs, ys = itertools.tee(expected_entities)
+    to_create = EntitiesSet(set(filter(_to_create_filter, xs)))
+    not_to_create = EntitiesSet(set(itertools.filterfalse(_to_create_filter, ys)))
 
     # Compute the set of entities to modify
     #  - Don't modify entities that are not in target (if target set is
     #    not defined, all entities are in target)
-    to_modify = EntitiesSet(set(filter(
-        lambda e: e.name in shared_names and e not in current_entities
-                  and is_target(e, target_tags),
-        expected_entities)))
+    xs, ys = itertools.tee(expected_entities)
+    to_modify = EntitiesSet(set(filter(_to_modify_filter, xs)))
+    not_to_modify = EntitiesSet(set(itertools.filterfalse(_to_modify_filter, ys)))
 
     modifications_diff = {}
     for e in to_modify.entities:
@@ -456,8 +471,11 @@ def compare_entities(current: EntitiesSet,
         lambda e: e.name in shared_names and e in current_entities, expected_entities)))
 
     return Plan(delete=to_delete,
+                not_to_delete=not_to_delete,
                 create=to_create,
+                not_to_create=not_to_create,
                 modify=to_modify,
+                not_to_modify=not_to_modify,
                 modifications_diff=modifications_diff,
                 share=to_share)
 
