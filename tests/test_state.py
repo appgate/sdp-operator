@@ -101,7 +101,7 @@ def test_compare_policies_0():
                              expression='expression-3'))
     })
     expected_policies = EntitiesSet(set())
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
 
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1',
@@ -132,7 +132,7 @@ def test_compare_policies_1():
         EntityWrapper(Policy(name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.create.entities == {
         EntityWrapper(Policy(name='policy1',
                              expression='expression-1')),
@@ -168,7 +168,7 @@ def test_compare_policies_2():
                              name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.modify.entities == set()
     assert plan.delete.entities == set()
     assert plan.create.entities == set()
@@ -211,7 +211,7 @@ def test_compare_policies_3():
                              name='policy4',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1', name='policy3', expression='expression-1'))
     }
@@ -251,7 +251,7 @@ def test_compare_policies_4():
         EntityWrapper(Policy(name='policy4',
                              expression='expression-4'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id3', name='policy3', expression='expression-3'))
     }
@@ -752,7 +752,7 @@ def test_compare_plan_entity_bytes():
     entities_expected = EntitiesSet({
         EntityWrapper(K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate))
     })
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset()
     assert plan.modifications_diff == {}
 
@@ -769,7 +769,7 @@ def test_compare_plan_entity_bytes():
     new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
 
     entities_expected = EntitiesSet({EntityWrapper(new_e)})
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'entity1': ['--- \n', '+++ \n', '@@ -2,4 +2,4 @@\n',
@@ -828,7 +828,7 @@ def test_compare_plan_entity_pem():
     expected_entities = EntitiesSet({
         EntityWrapper(new_e)
     })
-    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS)
+    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'c1': [
