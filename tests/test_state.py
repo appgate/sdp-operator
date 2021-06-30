@@ -270,6 +270,177 @@ def test_compare_policies_4():
     }
 
 
+def test_compare_policies_builtin_tags():
+    """
+    Test compare_plan with different options
+    """
+    ###
+    # Test when no target tags are specified
+    ###
+    current_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             tags=frozenset({'builtin'}),
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    })
+    expected_policies = EntitiesSet()
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    # Policies with tag builtin are not deleted
+    assert {p.name for p in plan.delete.entities} == {'policy2', 'policy3'}
+    assert {p.id for p in plan.delete.entities} == {'id2', 'id3'}
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    # Policies with tag builtin are not deleted
+    assert {p.name for p in plan.delete.entities} == set()
+    assert {p.id for p in plan.delete.entities} == set()
+    assert plan.create.entities == set()
+    # Policies modified:
+    #  - builtin ones are modified because target set is not specified
+    #  - all entities match target set if this is set is None
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    }
+
+    ###
+    # Test with target tags
+    ###
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag1', 'tag2'}))
+    # Policies with tag builtin are not deleted
+    assert {p.name for p in plan.delete.entities} == set()
+    assert {p.id for p in plan.delete.entities} == set()
+    assert plan.create.entities == set()
+    # Policies modified:
+    #  - builtin ones are NOT modified because target set IS specified
+    #  - all entities with tags in the target set
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    }
+
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag1'}))
+    # Policies with tag builtin are not deleted
+    assert plan.delete.entities == set()
+    assert plan.create.entities == set()
+    # Policies modified:
+    #  - builtin ones are NOT modified because target set IS specified
+    #  - all entities with tags in the target set
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+    }
+
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset())
+    # Policies with tag builtin are not deleted
+    assert plan.delete.entities == set()
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag2'}))
+
+    # Policies with tag builtin are not deleted
+    assert plan.delete.entities == {EntityWrapper(Policy(id='id3',
+                                                         tags=frozenset({'tag2'}),
+                                                         name='policy3',
+                                                         expression='expression-3'))}
+    assert plan.create.entities == {EntityWrapper(Policy(id='id5',
+                                                         name='policy5',
+                                                         tags=frozenset({'tag5'}),
+                                                         expression='expression-5'))}
+    assert plan.modify.entities == set()
+
+
+def test_compare_policies_builtin_tags2():
+    "Test that builting tags "
+    current_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             tags=frozenset({'builtin'}),
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    })
+    expected_policies = EntitiesSet()
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+
+    # Policies with tag builtin are not deleted
+    assert {p.name for p in plan.delete.entities} == {'policy2', 'policy3'}
+    assert {p.id for p in plan.delete.entities} == {'id2', 'id3'}
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+
 def test_normalize_entitlements_0():
     entitlements = EntitiesSet()
     conditions = EntitiesSet()
@@ -653,6 +824,7 @@ def test_dependencies_4():
     })
     conflicts = resolve_appgate_state(appgate_state, test_api_spec)
     assert conflicts == {}
+    print(appgate_state.entities_set['EntityDep1'].entities)
     assert appgate_state.entities_set['EntityDep1'].entities == {
         EntityWrapper(EntityDep1(id='d11', name='dep11')),
         EntityWrapper(EntityDep1(id='d12', name='dep12')),
