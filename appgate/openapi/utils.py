@@ -121,11 +121,15 @@ def join(sep: str, xs: Iterable[Any]) -> str:
     return sep.join(map(str, xs))
 
 
-def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None) -> bool:
+def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None,
+            default: bool = False) -> bool:
     """
-    Predicate that return true if entity has any tag in the set tags
+    Predicate that return true if entity has any tag in the set tags.
+    When tags is not defined return default.
     """
-    return tags is not None and any(map(lambda t: t in (entity.tags or frozenset()), tags))
+    if tags is None:
+        return default
+    return any(map(lambda t: t in (entity.tags or frozenset()), tags))
 
 
 def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None) -> bool:
@@ -134,7 +138,7 @@ def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = Non
     An entity is member of the target set if target is not defined at all or if it has
     any tag that belongs to the set of target_tags
     """
-    return target_tags is None or has_tag(entity, target_tags)
+    return has_tag(entity, target_tags, default=True)
 
 
 def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:

@@ -368,7 +368,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags,)
+                                       ctx.builtin_tags, ctx.target_tags)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)
