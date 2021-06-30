@@ -242,8 +242,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         for entity, client in entity_clients.items():
             entities = await client.get()
             if entities is not None:
-                entities_set[entity] = EntitiesSet(
-                    exclude_appgate_entities(entities, ctx.target_tags, ctx.exclude_tags))
+                entities_set[entity] = EntitiesSet(set([EntityWrapper(e) for e in entities]))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
