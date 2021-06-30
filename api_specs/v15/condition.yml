@@ -255,7 +255,7 @@ definitions:
                 message:
                   type: string
                   description: Message to be shown to the user. Required for all remedy method.
-                  example: This resoure requires you to enter your password again
+                  example: This resource requires you to enter your password again
                 claimSuffix:
                   type: string
                   description: >-

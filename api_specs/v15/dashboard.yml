@@ -276,13 +276,13 @@ stats-appliances:
                                 description: Number of outbound packets dropped for the whole uptime.
                                 example: 120
                               rxSpeed:
-                                type: number
+                                type: string
                                 description: >-
                                   The speed of the inbound network activity on the busiest NIC.
                                   The average is taken for the last 10 seconds.
                                 example: 5.77 Kbps
                               txSpeed:
-                                type: number
+                                type: string
                                 description: >-
                                   The speed of the outbound network activity on the busiest NIC.
                                   The average is taken for the last 10 seconds.

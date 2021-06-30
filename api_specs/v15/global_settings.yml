@@ -101,7 +101,7 @@ definitions:
         example: Authorized use only.
       messageOfTheDay:
         type: string
-        description: The configured message will be displayed after a successful loging.
+        description: The configured message will be displayed after a successful login.
         example: Welcome to Appgate SDP.
       backupApiEnabled:
         type: boolean
@@ -115,6 +115,7 @@ definitions:
       fips:
         type: boolean
         description: FIPS 140-2 Compliant Tunneling.
+        deprecated: true
         example: false
       geoIpUpdates:
         type: boolean

@@ -597,7 +597,9 @@ definitions:
             description: >-
               Makes the Appliance to connect to Controller/LogServer/LogForwarders using their clientInterface.httpsPort instead of peerInterface.httpsPort.
               The Appliance uses SPA to connect.
+              This field is deprecated as of 5.4. It will always be enabled when the support for peerInterface is removed.
             default: true
+            deprecated: true
           clientInterface:
             type: object
             description: The details of the Client connection interface.
@@ -626,12 +628,15 @@ definitions:
                 type: string
                 description: Override SPA mode for this appliance.
                 enum:
-                  - Disabled
                   - TCP
                   - 'UDP-TCP'
           peerInterface:
             type: object
-            description: The details of peer connection interface. Used by other appliances and administrative UI.
+            description: >-
+              The details of peer connection interface. Used by other appliances and administrative UI.
+              This interface is deprecated as of 5.4. All connections will be handled by clientInterface and adminInterface in the future.
+              The hostname field is used as identifier and will take over the hostname field in the root of Appliance when this interface is removed.
+            deprecated: true
             required:
               - hostname
             properties:
@@ -647,7 +652,9 @@ definitions:
                 $ref: '#/definitions/AllowSources'
           adminInterface:
             type: object
-            description: The details of the admin connection interface. If null, admin interface will be accessible via peerInterface.
+            description: >-
+              The details of the admin connection interface. If null, admin interface will be accessible via peerInterface.
+              When peerInterface is removed, this field will be required on Controllers and LogServers.
             required:
               - hostname
               - httpsCiphers
@@ -1129,7 +1136,7 @@ definitions:
                       description: >-
                         Use SNAT for outgoing traffic from the Express Connector,
                         endpoints will see traffic as coming from the Connector itself
-                      default: false
+                      default: true
                     dnatToResource:
                       type: boolean
                       description: Apply destination NAT to traffic from tunnel into a resource
@@ -1345,7 +1352,7 @@ definitions:
         type: string
         format: byte
         writeOnly: true
-        description: Contens of the P12 file.
+        description: Contents of the P12 file in Base64 format.
       password:
         type: string
         writeOnly: true
