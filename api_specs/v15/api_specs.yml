@@ -9,7 +9,7 @@ info:
     # About
       This specification documents the REST API calls for the Appgate SDP Controller.
 
-      Please refer to the Integration chapter in the manual or contact Appgate support with any questions about
+      Please refer to the REST API chapter in the manual or contact Appgate support with any questions about
       this functionality.
     # Getting Started
       Requirements for API scripting:

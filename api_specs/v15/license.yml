@@ -240,6 +240,10 @@ definitions:
             format: uuid
             description: Unique ID for the license.
             example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+          version:
+            type: number
+            description: License version. There can be only one v1 License in the system, while v2 Liceneses can be added as extra.
+            example: 2
           type:
             type: number
             description: 'Type of the license. 1: production, 2: installation, 3: test, 4: built-in, 5: aws built-in'
