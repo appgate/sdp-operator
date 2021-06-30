@@ -41,7 +41,7 @@ def test_filter_appgate_entities():
                name='policy1',
                expression='expression-1',
                tags=frozenset({'tag1', 'tag4', 'tag5'}))
-        ]))
+    ]))
 
     r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
@@ -415,6 +415,32 @@ def test_compare_policies_builtin_tags():
                                                          expression='expression-6'))}
     assert plan.modify.entities == set()
 
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+
+    assert plan.create.entities == {
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6'))
+    }
+
 
 def test_compare_policies_builtin_tags2():
     "Test that builting tags "
@@ -590,12 +616,12 @@ def test_normalize_policies_2():
         ])),
     })
     entitlements = EntitiesSet({
-            EntityWrapper(entitlement(id='e1', name='entitlement1')),
-            EntityWrapper(entitlement(id='e2', name='entitlement2')),
-            EntityWrapper(entitlement(id='e3', name='entitlement3')),
-            EntityWrapper(entitlement(id='e4', name='entitlement4')),
-            EntityWrapper(entitlement(id='e5', name='entitlement5')),
-        })
+        EntityWrapper(entitlement(id='e1', name='entitlement1')),
+        EntityWrapper(entitlement(id='e2', name='entitlement2')),
+        EntityWrapper(entitlement(id='e3', name='entitlement3')),
+        EntityWrapper(entitlement(id='e4', name='entitlement4')),
+        EntityWrapper(entitlement(id='e5', name='entitlement5')),
+    })
     policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
     assert conflicts is None
     assert policies_set.entities == {
@@ -846,7 +872,7 @@ def test_dependencies_4():
     }
     assert appgate_state.entities_set['EntityDep4'].entities == {
         EntityWrapper(EntityDep4(id='d41', name='dep41', deps1=frozenset({'d11', 'd12'}),
-                   dep2='d21')),
+                                 dep2='d21')),
         EntityWrapper(EntityDep4(id='d42', name='dep42', deps1=frozenset({'d11', 'd13'}),
                                  dep2='d22')),
         EntityWrapper(EntityDep4(id='d43', name='dep43', deps1=frozenset({'d12', 'd13'}),
@@ -902,7 +928,7 @@ def test_dependencies_4():
 
 def test_compare_plan_entity_bytes():
     EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
-                                                reload=True).entities['EntityTest3Appgate'].cls
+                                                 reload=True).entities['EntityTest3Appgate'].cls
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     # fieldThree is readOnly :: size of fieldOne
