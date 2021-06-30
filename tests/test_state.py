@@ -393,6 +393,10 @@ def test_compare_policies_builtin_tags():
                              name='policy5',
                              tags=frozenset({'tag5'}),
                              expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6')),
         EntityWrapper(Policy(id='id2',
                              name='policy2',
                              expression='expression-2-copy')),
@@ -405,10 +409,10 @@ def test_compare_policies_builtin_tags():
                                                          tags=frozenset({'tag2'}),
                                                          name='policy3',
                                                          expression='expression-3'))}
-    assert plan.create.entities == {EntityWrapper(Policy(id='id5',
-                                                         name='policy5',
-                                                         tags=frozenset({'tag5'}),
-                                                         expression='expression-5'))}
+    assert plan.create.entities == {EntityWrapper(Policy(id='id6',
+                                                         name='policy6',
+                                                         tags=frozenset({'tag2'}),
+                                                         expression='expression-6'))}
     assert plan.modify.entities == set()
 
 

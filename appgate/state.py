@@ -427,14 +427,15 @@ def compare_entities(current: EntitiesSet,
     shared_names = current_names.intersection(expected_names)
 
     def _to_delete_filter(e: EntityWrapper) -> bool:
-        return e.name not in expected_names and not has_tag(e, builtin_tags)\
+        return e.name not in expected_names and not has_tag(e, builtin_tags) \
                and is_target(e, target_tags)
 
     def _to_create_filter(e: EntityWrapper) -> bool:
-        return e.name not in current_names and e.name not in shared_names
+        return e.name not in current_names and e.name not in shared_names \
+               and is_target(e, target_tags)
 
     def _to_modify_filter(e: EntityWrapper) -> bool:
-        return e.name in shared_names and e not in current_entities\
+        return e.name in shared_names and e not in current_entities \
                and is_target(e, target_tags)
 
     # Compute the set of entities to delete
