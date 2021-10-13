@@ -18,6 +18,8 @@ The appgate operator supports the following API versions:
 
  - v12 (Appgate version 5.1)
  - v13 (Appgate version 5.2)
+ - v14 (Appgate version 5.3)
+ - v15 (Appgate version 5.4)
 
 The entities supported by the operator are:
 
