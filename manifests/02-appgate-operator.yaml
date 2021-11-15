@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: appgate-operator
-          image: atuindev/appgate-operator:latest
+          image: ghcr.io/appgate/sdp-operator:v14
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: appgate-test-1
@@ -31,46 +31,46 @@ spec:
             - name: APPGATE_OPERATOR_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-host
             - name: APPGATE_OPERATOR_TIMEOUT
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-timeout
             - name: APPGATE_OPERATOR_DRY_RUN
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-dry-run
             - name: APPGATE_OPERATOR_CLEANUP
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-cleanup
             - name: APPGATE_OPERATOR_TWO_WAY_SYNC
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-two-way-sync
             - name: APPGATE_OPERATOR_SSL_NO_VERIFY
               valueFrom:
                 configMapKeyRef:
-                  name: appgate-operator-conf
+                  name: appgate-sdp-configmap
                   key: appgate-operator-ssl-no-verify
             # Uncomment if you have a self signed certificate in yout appgate collective
             #- name: APPGATE_OPERATOR_CACERT
             #  valueFrom:
             #    configMapKeyRef:
-            #      name: appgate-operator-conf
+            #      name: appgate-sdp-configmap
             #      key: appgate-operator-cacert
             # Uncomment if you want to use a FERNET key to decrypt secrets
             #- name: APPGATE_OPERATOR_FERNET_KEY
             #  valueFrom:
             #    configMapKeyRef:
-            #      name: appgate-operator-conf
+            #      name: appgate-sdp-configmap
             #      key: appgate-operator-fernet-key
-         
+
       # Only needed if we use a private registry
       # imagePullSecrets:
       #  - name: appgate-registry
