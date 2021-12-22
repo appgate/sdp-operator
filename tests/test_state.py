@@ -294,14 +294,19 @@ def test_compare_policies_builtin_tags():
                              name='policy3',
                              expression='expression-3'))
     })
+    # Test that policies with tag builtin are not deleted.
+    # target set is None
     expected_policies = EntitiesSet()
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
-    # Policies with tag builtin are not deleted
     assert {p.name for p in plan.delete.entities} == {'policy2', 'policy3'}
     assert {p.id for p in plan.delete.entities} == {'id2', 'id3'}
     assert plan.create.entities == set()
     assert plan.modify.entities == set()
 
+    # Test that policies with tag builtin are not deleted
+    # Test that policies are modified:
+    #  - builtin ones are modified because target set is not specified
+    #  - all entities match target set if the target set is None
     expected_policies = EntitiesSet({
         EntityWrapper(Policy(id='id1',
                              name='policy1',
@@ -316,13 +321,9 @@ def test_compare_policies_builtin_tags():
                              expression='expression-3-copy')),
     })
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
-    # Policies with tag builtin are not deleted
     assert {p.name for p in plan.delete.entities} == set()
     assert {p.id for p in plan.delete.entities} == set()
     assert plan.create.entities == set()
-    # Policies modified:
-    #  - builtin ones are modified because target set is not specified
-    #  - all entities match target set if this is set is None
     assert plan.modify.entities == {
         EntityWrapper(Policy(id='id1',
                              name='policy1',
@@ -337,18 +338,13 @@ def test_compare_policies_builtin_tags():
                              expression='expression-3-copy')),
     }
 
-    ###
-    # Test with target tags
-    ###
+    # Test that only policies in target set are modified:
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
                             frozenset({'tag1', 'tag2'}))
     # Policies with tag builtin are not deleted
     assert {p.name for p in plan.delete.entities} == set()
     assert {p.id for p in plan.delete.entities} == set()
     assert plan.create.entities == set()
-    # Policies modified:
-    #  - builtin ones are NOT modified because target set IS specified
-    #  - all entities with tags in the target set
     assert plan.modify.entities == {
         EntityWrapper(Policy(id='id1',
                              name='policy1',
@@ -360,20 +356,26 @@ def test_compare_policies_builtin_tags():
                              expression='expression-3-copy')),
     }
 
+    # Test that only policies in target set are modified or deleted
+    # Policies modified:
+    #  - builtin ones that are not member of the target set
+    #    are NOT modified because target set IS specified
+    #  - all entities with tags in the target set
     expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             name='policy1',
+                             tags=frozenset({'builtin'}),
+                             expression='expression-0-copy')),
         EntityWrapper(Policy(id='id1',
                              name='policy1',
                              tags=frozenset({'builtin', 'tag1'}),
                              expression='expression-1-copy')),
     })
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
-                            frozenset({'tag1'}))
+                            frozenset({'tag1', 'tag2'}))
     # Policies with tag builtin are not deleted
-    assert plan.delete.entities == set()
+    assert {p.id for p in plan.delete.entities} == {'id3'}
     assert plan.create.entities == set()
-    # Policies modified:
-    #  - builtin ones are NOT modified because target set IS specified
-    #  - all entities with tags in the target set
     assert plan.modify.entities == {
         EntityWrapper(Policy(id='id1',
                              name='policy1',
@@ -381,6 +383,8 @@ def test_compare_policies_builtin_tags():
                              expression='expression-1-copy')),
     }
 
+    # Test now with an empy target set, there are no policies matching the set
+    # Nothing is modified, created or deleted.
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
                             frozenset())
     # Policies with tag builtin are not deleted
@@ -388,6 +392,8 @@ def test_compare_policies_builtin_tags():
     assert plan.create.entities == set()
     assert plan.modify.entities == set()
 
+    # Test that policy with id5 and id2 are not created because they are
+    # not in the target set.
     expected_policies = EntitiesSet({
         EntityWrapper(Policy(id='id5',
                              name='policy5',
@@ -415,6 +421,7 @@ def test_compare_policies_builtin_tags():
                                                          expression='expression-6'))}
     assert plan.modify.entities == set()
 
+    # One more test with no target group
     expected_policies = EntitiesSet({
         EntityWrapper(Policy(id='id5',
                              name='policy5',
@@ -429,7 +436,6 @@ def test_compare_policies_builtin_tags():
                              expression='expression-2-copy')),
     })
     plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
-
     assert plan.create.entities == {
         EntityWrapper(Policy(id='id5',
                              name='policy5',
@@ -440,10 +446,24 @@ def test_compare_policies_builtin_tags():
                              tags=frozenset({'tag2'}),
                              expression='expression-6'))
     }
+    assert plan.delete.entities == {
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    }
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    }
 
 
-def test_compare_policies_builtin_tags2():
-    "Test that builting tags "
+def test_compare_policies_builtin_tags_deleted():
+    """
+    Test that builtin tags are never deleted,
+    even if the tag is the target set
+    """
     current_policies = EntitiesSet({
         EntityWrapper(Policy(id='id0',
                              tags=frozenset({'builtin'}),
@@ -462,11 +482,11 @@ def test_compare_policies_builtin_tags2():
                              expression='expression-3'))
     })
     expected_policies = EntitiesSet()
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'builtin', 'tag1', 'tag2'}))
 
     # Policies with tag builtin are not deleted
-    assert {p.name for p in plan.delete.entities} == {'policy2', 'policy3'}
-    assert {p.id for p in plan.delete.entities} == {'id2', 'id3'}
+    assert {p.id for p in plan.delete.entities} == {'id3'}
     assert plan.create.entities == set()
     assert plan.modify.entities == set()
 
