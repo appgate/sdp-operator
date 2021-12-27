@@ -141,9 +141,32 @@ def generate_api_spec(spec_directory: Optional[Path] = None,
                        k8s_get_secret=k8s_get_secret)
 
 
-def generate_api_spec_clients(api_spec: APISpec, appgate_client: AppgateClient) -> Dict[str, EntityClient]:
+
+MAGIC_ENTITIES = {
+    'Site': [
+        # Use '6f6fa9d9-17b2-4157-9f68-e97662acccdf' to collect logs
+        # from all the appliances
+        '6f6fa9d9-17b2-4157-9f68-e97662acccdf',
+        # Use '6263435b-c9f6-4b7f-99f8-37e2e6b006a9' to collect logs
+        # from appliances without a site.
+        '6263435b-c9f6-4b7f-99f8-37e2e6b006a9'
+    ]
+}
+
+
+def generate_api_spec_clients(api_spec: APISpec,
+                              appgate_client: AppgateClient) -> Dict[str, EntityClient]:
+    def _entity_client(e_name: str, e: GeneratedEntity) -> EntityClient:
+        magic_entities = None
+        if e_name in MAGIC_ENTITIES:
+            magic_entities = [e.cls(name=magic_instance, id=magic_instance,
+                                    tags=frozenset('builtin'))
+             for magic_instance in MAGIC_ENTITIES[e_name]]
+        return appgate_client.entity_client(e.cls, e.api_path, singleton=e.singleton,
+                                            magic_entities=magic_entities)
+
     return {
-        n: appgate_client.entity_client(e.cls, e.api_path, singleton=e.singleton)
+        n: _entity_client(n, e)
         for n, e in api_spec.entities.items()
         if e.api_path
     }
