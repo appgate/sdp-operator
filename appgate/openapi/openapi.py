@@ -7,7 +7,7 @@ from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
 from appgate.openapi.types import APISpec, OpenApiParserException, SPEC_ENTITIES, K8S_APPGATE_DOMAIN, \
-    K8S_APPGATE_VERSION
+    K8S_APPGATE_VERSION, GeneratedEntity
 
 __all__ = [
     'parse_files',

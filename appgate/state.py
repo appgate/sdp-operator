@@ -3,12 +3,11 @@ import itertools
 import json
 import re
 import sys
-from copy import deepcopy
 import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet, Iterator, Union
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet, Iterator
 
 import yaml
 from attr import attrib, attrs, evolve
@@ -29,74 +28,12 @@ __all__ = [
     'appgate_plan_apply',
     'entities_conflict_summary',
     'appgate_plan_apply',
-    'resolve_entity',
-    'resolve_entities',
+    'resolve_field_entity',
+    'resolve_field_entities',
     'resolve_appgate_state',
     'compare_entities',
     'compute_diff',
 ]
-
-from appgate.types import EntityWrapper
-
-
-class EntitiesSet:
-    def __init__(self, entities: Optional[Set[EntityWrapper]] = None,
-                 entities_by_name: Optional[Dict[str, EntityWrapper]] = None,
-                 entities_by_id: Optional[Dict[str, EntityWrapper]] = None) -> None:
-        self.entities: Set[EntityWrapper] = entities or set()
-        if entities_by_name:
-            self.entities_by_name = entities_by_name
-        else:
-            self.entities_by_name = {}
-            for e in self.entities:
-                if is_entity_t(e):
-                    self.entities_by_name[e.name] = e
-        if entities_by_id:
-            self.entities_by_id = entities_by_id
-        else:
-            self.entities_by_id = {}
-            for e in self.entities:
-                if is_entity_t(e):
-                    self.entities_by_id[e.id] = e
-
-    def __str__(self) -> str:
-        return str(self.entities)
-
-    def __copy__(self) -> 'EntitiesSet':
-        return EntitiesSet(entities=deepcopy(self.entities),
-                           entities_by_name=deepcopy(self.entities_by_name),
-                           entities_by_id=deepcopy(self.entities_by_id))
-
-    def entities_with_tags(self, tags: FrozenSet[str]) -> 'EntitiesSet':
-        return EntitiesSet(entities={e for e in self.entities if has_tag(e, tags)})
-
-    def add(self, entity: EntityWrapper) -> None:
-        if entity.name in self.entities_by_name:
-            # Entity is already registered, so this is in the best case a modification
-            return self.modify(entity)
-        self.entities.add(entity)
-        # Register it in the maps of ids and names
-        self.entities_by_name[entity.name] = entity
-        self.entities_by_id[entity.id] = entity
-
-    def delete(self, entity: EntityWrapper) -> None:
-        if entity in self.entities:
-            self.entities.remove(entity)
-        if entity.name in self.entities_by_name:
-            registered_id = self.entities_by_name[entity.name].id
-            del self.entities_by_name[entity.name]
-            del self.entities_by_id[registered_id]
-        if entity.id in self.entities_by_id:
-            del self.entities_by_id[entity.id]
-
-    def modify(self, entity: EntityWrapper) -> None:
-        if entity.name not in self.entities_by_name:
-            # Not yet in the system, register it with its own id
-            return self.add(entity)
-        # All the entities expect the one being modified
-        self.entities = {e for e in self.entities if e.name != entity.name}
-        # Replace always the id with the one registered in the system
-        self.entities.add(entity.with_id(id=self.entities_by_name[entity.name].id))
 
 
 def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,

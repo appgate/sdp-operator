@@ -1,9 +1,11 @@
 import datetime
+from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List
+from typing import Dict, Any, FrozenSet, Optional, List, Set
 from attr import attrib, attrs, evolve
 
-from appgate.openapi.types import Entity_T
+from appgate.openapi.types import Entity_T, APISpec
+from appgate.openapi.utils import is_entity_t
 
 
 __all__ = [
@@ -11,9 +13,19 @@ __all__ = [
     'EventObject',
     'AppgateEvent',
     'EntityWrapper',
+    'has_tag',
+    'is_target',
+    'EntitiesSet',
     'LatestEntityGeneration',
     'OperatorArguments',
+    'Context',
+    'BUILTIN_TAGS',
+    'EntityFieldDependency',
+    'MissingFieldDependencies',
 ]
+
+
+BUILTIN_TAGS = frozenset({'builtin'})
 
 
 @attrs(slots=True, frozen=True)
@@ -123,7 +135,108 @@ class EntityWrapper:
         return self.value.__repr__()
 
 
+def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None) -> bool:
+    """
+    Predicate that return true if entity has any tag in the set tags
+    """
+    return tags is not None and any(map(lambda t: t in (entity.tags or frozenset()), tags))
+
+
+def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None) -> bool:
+    """
+    Predicate that return true if entity is member of the target set.
+    An entity is member of the target set if target is not defined at all or if it has
+    any tag that belongs to the set of target_tags
+    """
+    return target_tags is None or has_tag(entity, target_tags)
+
+
+class EntitiesSet:
+    def __init__(self, entities: Optional[Set[EntityWrapper]] = None,
+                 entities_by_name: Optional[Dict[str, EntityWrapper]] = None,
+                 entities_by_id: Optional[Dict[str, EntityWrapper]] = None) -> None:
+        self.entities: Set[EntityWrapper] = entities or set()
+        if entities_by_name:
+            self.entities_by_name = entities_by_name
+        else:
+            self.entities_by_name = {}
+            for e in self.entities:
+                if is_entity_t(e):
+                    self.entities_by_name[e.name] = e
+        if entities_by_id:
+            self.entities_by_id = entities_by_id
+        else:
+            self.entities_by_id = {}
+            for e in self.entities:
+                if is_entity_t(e):
+                    self.entities_by_id[e.id] = e
+
+    def __str__(self) -> str:
+        return str(self.entities)
+
+    def __copy__(self) -> 'EntitiesSet':
+        return EntitiesSet(entities=deepcopy(self.entities),
+                           entities_by_name=deepcopy(self.entities_by_name),
+                           entities_by_id=deepcopy(self.entities_by_id))
+
+    def entities_with_tags(self, tags: FrozenSet[str]) -> 'EntitiesSet':
+        return EntitiesSet(entities={e for e in self.entities if has_tag(e, tags)})
+
+    def add(self, entity: EntityWrapper) -> None:
+        if entity.name in self.entities_by_name:
+            # Entity is already registered, so this is in the best case a modification
+            return self.modify(entity)
+        self.entities.add(entity)
+        # Register it in the maps of ids and names
+        self.entities_by_name[entity.name] = entity
+        self.entities_by_id[entity.id] = entity
+
+    def delete(self, entity: EntityWrapper) -> None:
+        if entity in self.entities:
+            self.entities.remove(entity)
+        if entity.name in self.entities_by_name:
+            registered_id = self.entities_by_name[entity.name].id
+            del self.entities_by_name[entity.name]
+            del self.entities_by_id[registered_id]
+        if entity.id in self.entities_by_id:
+            del self.entities_by_id[entity.id]
+
+    def modify(self, entity: EntityWrapper) -> None:
+        if entity.name not in self.entities_by_name:
+            # Not yet in the system, register it with its own id
+            return self.add(entity)
+        # All the entities expect the one being modified
+        self.entities = {e for e in self.entities if e.name != entity.name}
+        # Replace always the id with the one registered in the system
+        self.entities.add(entity.with_id(id=self.entities_by_name[entity.name].id))
+
+
 @attrs(slots=True, frozen=True)
 class LatestEntityGeneration:
     generation: int = attrib(default=0)
     modified: datetime.datetime = attrib(default=datetime.datetime.now().astimezone())
+
+
+@attrs()
+class Context:
+    namespace: str = attrib()
+    user: str = attrib()
+    password: str = attrib()
+    provider: str = attrib()
+    controller: str = attrib()
+    two_way_sync: bool = attrib()
+    timeout: int = attrib()
+    dry_run_mode: bool = attrib()
+    cleanup_mode: bool = attrib()
+    api_spec: APISpec = attrib()
+    metadata_configmap: str = attrib()
+    # target tags if specified tells which entities do we want to work on
+    target_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    # builtin tags are the entities that we consider builtin
+    builtin_tags: FrozenSet[str] = attrib(default=BUILTIN_TAGS)
+    # exclude tags if specified tells which entities do we want to exclude
+    exclude_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    no_verify: bool = attrib(default=True)
+    cafile: Optional[Path] = attrib(default=None)
+    device_id: Optional[str] = attrib(default=None)
+

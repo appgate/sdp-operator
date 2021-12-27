@@ -17,9 +17,9 @@ from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
     AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
     ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
-    is_object, is_ref, is_array, BUILTIN_TAGS
+    is_object, is_ref, is_array
 from appgate.secrets import PasswordAttribMaker
-
+from appgate.types import BUILTIN_TAGS
 
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
