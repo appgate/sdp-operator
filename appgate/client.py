@@ -315,7 +315,7 @@ class AppgateClient:
         return self._token is not None
 
     def entity_client(self, entity: type, api_path: str, singleton: bool,
-                      magic_entities: Optional[List[type]]) -> EntityClient:
+                      magic_entities: Optional[List[Entity_T]]) -> EntityClient:
         dumper = APPGATE_DUMPER
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
                             singleton=singleton,
