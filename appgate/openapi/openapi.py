@@ -158,6 +158,8 @@ def generate_api_spec_clients(api_spec: APISpec,
                               appgate_client: AppgateClient) -> Dict[str, EntityClient]:
     def _entity_client(e_name: str, e: GeneratedEntity) -> EntityClient:
         magic_entities = None
+        # We filter the None's in the caller anyway
+        assert e.api_path is not None
         if e_name in MAGIC_ENTITIES:
             magic_entities = [e.cls(name=magic_instance, id=magic_instance,
                                     tags=frozenset('builtin'))
