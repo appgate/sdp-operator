@@ -240,3 +240,17 @@ class Context:
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
 
+
+@attrs(slots=True, frozen=True)
+class EntityFieldDependency:
+    entity_name: str = attrib()
+    field_path: str = attrib()
+    entity_dependencies: EntitiesSet = attrib(factory=EntitiesSet)
+
+
+@attrs(slots=True, frozen=True)
+class MissingFieldDependencies:
+    parent_name: str = attrib()
+    parent_type: str = attrib()
+    field_path: str = attrib()
+    dependencies: FrozenSet[str] = attrib(factory=frozenset)

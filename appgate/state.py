@@ -17,8 +17,11 @@ from appgate.client import EntityClient, K8SConfigMapClient, entity_unique_id
 from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import Entity_T, APISpec, PYTHON_TYPES, K8S_APPGATE_DOMAIN, K8S_APPGATE_VERSION, \
-    APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD
-from appgate.openapi.utils import is_entity_t, has_name, has_tag
+    APPGATE_METADATA_ATTRIB_NAME, APPGATE_METADATA_PASSWORD_FIELDS_FIELD, AppgateException
+from appgate.types import EntityWrapper, EntitiesSet, EntityFieldDependency, \
+    MissingFieldDependencies, has_tag
+from appgate.openapi.utils import has_name
+
 
 __all__ = [
     'AppgateState',
@@ -316,20 +319,19 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
     return AppgatePlan(entities_plan=entities_plan)
 
 
-def entities_conflict_summary(conflicts: Dict[str, Tuple[str, Dict[str, FrozenSet[Iterable]]]],
+def entities_conflict_summary(conflicts: Dict[str, List[MissingFieldDependencies]],
                               namespace: str) -> None:
-    def concat_errors(error: Union[str, Iterable]) -> str:
-        if isinstance(error, str):
-            return error
+    def concat_errors(errors: Iterable) -> str:
         return f'[{",".join(errors)}]'
 
-    for k, field_values in conflicts.items():
-        for field, errors in field_values[1].items():
-            p1 = "they are" if len(errors) > 1 else "it is"
-            error_str = ','.join(map(concat_errors, errors))
+    for entity_name, missing_field_deps in conflicts.items():
+        for missing_field_dep in missing_field_deps:
+            p1 = "they are" if len(missing_field_dep.dependencies) > 1 else "it is"
+            missing_deps_str = ','.join(map(concat_errors, missing_field_dep.dependencies))
             log.error('[appgate-operator/%s] Entity: %s [%s] references %s (field %s), but %s not defined '
-                      'in the system.', namespace, k, field_values[0],
-                      error_str, field, p1)
+                      'in the system.', namespace, missing_field_dep.parent_name,
+                      missing_field_dep.parent_type, missing_deps_str,
+                      missing_field_dep.field_path, p1)
 
 
 def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
@@ -421,13 +423,13 @@ def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
     raise Exception(f'Field {path[0]} not found in {entity}')
 
 
-def resolve_entity(entity: Entity_T,
-                   field: str,
-                   names: Dict[str, EntityWrapper],
-                   ids: Dict[str, EntityWrapper],
-                   missing_dependencies: Dict[str, Tuple[str, Dict[str, FrozenSet[str]]]],
-                   reverse: bool = False,
-                   parent_dependency: Optional[Entity_T] = None) -> Optional[EntityWrapper]:
+def resolve_field_entity(entity: Entity_T,
+                         field: str,
+                         parent_dependency: Entity_T,
+                         names: Dict[str, EntityWrapper],
+                         ids: Dict[str, EntityWrapper],
+                         missing_dependencies: Dict[str, List[MissingFieldDependencies]],
+                         reverse: bool = False) -> Optional[EntityWrapper]:
     new_dependencies = set()
     missing_dependencies_set = set()
     log.debug(f'Getting field %s in entity %s', field, entity.__class__.__name__)
@@ -437,15 +439,15 @@ def resolve_entity(entity: Entity_T,
     is_iterable = isinstance(dependencies, frozenset)
     if not is_iterable:
         dependencies = frozenset({dependencies})
+    # Iterate over all the items in the field
     for dependency in dependencies:
         if type(dependency) not in PYTHON_TYPES and rest_fields:
             log.debug('dependency %s and rest_fields %s', dependency.__class__.__name__,
                       rest_fields)
-            res = resolve_entity(dependency, rest_fields, names, ids,
-                                 missing_dependencies, reverse,
-                                 parent_dependency=parent_dependency)
+            res = resolve_field_entity(dependency, rest_fields, parent_dependency,
+                                       names, ids,missing_dependencies, reverse)
             if res:
-                break
+                continue
         elif dependency in ids:
             # dependency is an id
             log.debug('Dependency is an id %s', dependency)
@@ -453,49 +455,69 @@ def resolve_entity(entity: Entity_T,
                 new_dependencies.add(ids[dependency].name)
             else:
                 new_dependencies.add(dependency)
-            break
+            continue
         elif dependency in names and names[dependency].id:
             # dependency is a name
             if reverse:
                 new_dependencies.add(dependency)
             else:
                 new_dependencies.add(names[dependency].id)
-            break
+            continue
         else:
             log.error("Missing dependency %s in entity %s [%s]", dependency,
                       parent_dependency.name, field)
             missing_dependencies_set.add(dependency)
     if missing_dependencies_set:
         if parent_dependency.name not in missing_dependencies:
-            missing_dependencies[parent_dependency.name] = (
-                str(parent_dependency.__class__.__qualname__), {}
-            )
-        missing_dependencies[parent_dependency.name][1][field] = frozenset(missing_dependencies_set)
+            missing_dependencies[parent_dependency.name] = []
+        missing_dependencies[parent_dependency.name].append(
+            MissingFieldDependencies(
+                field_path=field,
+                parent_name=parent_dependency.name,
+                parent_type=parent_dependency.__class__.__qualname__,
+                dependencies=frozenset(missing_dependencies_set)
+            ))
     if new_dependencies:
-        return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
-
+        if not is_iterable:
+            return EntityWrapper(evolve_rec(entity, field.split('.'), list(new_dependencies)[0]))
+        else:
+            return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
     return None
 
+#Dict[str, List[EntitiesSet]]
+def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDependency],
+                           reverse: bool = False) -> Tuple[EntitiesSet,
+                                                           Optional[Dict[str, List[MissingFieldDependencies]]]]:
+    """
+    resolve entity dependencies for entities in the EntitiesSet e1.
+    Dependencies is a list of EntityFieldDependency.
 
-def resolve_entities(e1: EntitiesSet, dependencies: Dict[str, List[EntitiesSet]],
-                     reverse: bool = False) -> Tuple[EntitiesSet,
-                                                     Optional[Dict[str,
-                                                                   Tuple[str, Dict[str, FrozenSet[str]]]]]]:
+    """
     to_remove = set()
     to_add = set()
-    missing_entities: Dict[str, Tuple[str, Dict[str, FrozenSet[str]]]] = {}
+    missing_entities: Dict[str, List[MissingFieldDependencies]] = {}
     e1_set = e1.entities.copy()
+    field_path = None
+    names = {}
+    ids = {}
+    for dep in dependencies:
+        if field_path is not None and field_path != dep.field_path:
+            raise AppgateException(
+                'Fatal error, found different fields when resolving entities')
+        else:
+            field_path = dep.field_path
+        names.update(dep.entity_dependencies.entities_by_name)
+        ids.update(dep.entity_dependencies.entities_by_id)
+
+    # Not found field_path, so nothing to resolve
+    if not field_path:
+        return EntitiesSet(e1_set), None
+
     for e in e1_set:
         new_e = None
-        for field, dependencies_entities in dependencies.items():
-            names = {}
-            for dep in dependencies_entities:
-                names.update(dep.entities_by_name)
-            ids = {}
-            for dep in dependencies_entities:
-                names.update(dep.entities_by_id)
-            new_e = resolve_entity((new_e or e).value, field, names, ids, missing_entities,
-                                   reverse, (new_e or e).value)
+        new_e = resolve_field_entity(
+            (new_e or e).value, field_path, (new_e or e).value, names,ids,
+            missing_entities, reverse)
         if new_e:
             to_remove.add(e)
             to_add.add(new_e)
@@ -508,31 +530,45 @@ def resolve_entities(e1: EntitiesSet, dependencies: Dict[str, List[EntitiesSet]]
 
 def resolve_appgate_state(appgate_state: AppgateState,
                           api_spec: APISpec,
-                          reverse: bool = False) -> Dict[str,
-                                                         Tuple[str, Dict[str, FrozenSet[str]]]]:
+                          reverse: bool = False) -> Dict[str, List[MissingFieldDependencies]]:
     entities = api_spec.entities
     entities_sorted = api_spec.entities_sorted
-    total_conflicts = {}
+    total_conflicts: Dict[str, List[MissingFieldDependencies]] = {}
     log.info('[appgate-state] Validating expected state entities')
     log.info('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
-    for entity_name in ['Condition']: #entities_sorted:
-        for entity_dependency in entities[entity_name].dependencies:
+    # Iterate over all known entities in the API
+    for entity_name in entities_sorted:
+        if entity_name not in appgate_state.entities_set:
+            # We don't have entities of this type so try the next entity.
+            continue
+        # Each generated entity can have several field that describe dependencies
+        # to another entities. Iterate over each field describing a dependency.
+        for field_dependency in entities[entity_name].dependencies:
             log.debug('[appgate-state] Checking dependencies %s for %s.%s',
-                      entity_dependency.dependencies, entity_name,
-                      entity_dependency.field_path)
-            deps_tuple: Dict[str, List[EntitiesSet]] = {}
-            if entity_name not in appgate_state.entities_set:
-                continue
-            e1 = appgate_state.entities_set.get(entity_name, EntitiesSet())
-            for d in entity_dependency.dependencies:
-                if not entity_dependency.field_path in deps_tuple:
-                    deps_tuple[entity_dependency.field_path] = []
-                deps_tuple[entity_dependency.field_path].append(
-                    appgate_state.entities_set.get(d, EntitiesSet())
+                      field_dependency.dependencies, entity_name,
+                      field_dependency.field_path)
+            dependencies: List[EntityFieldDependency] = []
+            # Finally, each field can reference 1 or more entities.
+            # For example, we could have a field `myId` that could contain
+            # references for EntityA or EntityB
+            for d in field_dependency.dependencies:
+                dependencies.append(
+                    EntityFieldDependency(
+                        entity_name=entity_name,
+                        field_path=field_dependency.field_path,
+                        entity_dependencies=appgate_state.entities_set.get(d, EntitiesSet())
+                    )
                 )
-            new_e1, conflicts = resolve_entities(e1, deps_tuple, reverse)
+            e1 = appgate_state.entities_set.get(entity_name, EntitiesSet())
+            new_e1, conflicts = resolve_field_entities(e1, dependencies, reverse)
+            # Merge new conflicts
             if conflicts:
-                total_conflicts.update(conflicts)
+                for e, ds in conflicts.items():
+                    if e in total_conflicts:
+                        total_conflicts[e] = total_conflicts[e] + ds
+                    else:
+                        total_conflicts[e] = ds
+
             appgate_state.entities_set[entity_name] = new_e1
     return total_conflicts
 
