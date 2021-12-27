@@ -79,7 +79,7 @@ authentication:
     description: |-
       API Scripts are recommended to use the Login call instead of separate Authentication & Authorization calls.
 
-      First step for logging in is sending the credentials and retreiving partial AuthToken.
+      First step for logging in is sending the credentials and retrieving partial AuthToken.
       If the response has the "needTwoFactorAuth:true", then either API user must be extempt from Admin MFA or two-step
       MFA process must be completed before Authorization.
     tags:
@@ -217,7 +217,7 @@ authentication-otp:
       - Login
     responses:
       '200':
-        description: MFA was successfull. The AuthToken now has the MFA flag and ready for Authorization step.
+        description: MFA was successful. The AuthToken now has the MFA flag and ready for Authorization step.
         content:
           application/json:
             schema:
@@ -263,7 +263,7 @@ authorization:
       - Login
     responses:
       '200':
-        description: Authorization was successfull. The AuthToken is ready for any subsequent API call.
+        description: Authorization was successful. The AuthToken is ready for any subsequent API call.
         content:
           application/json:
             schema:
@@ -292,7 +292,7 @@ logout:
       - Login
     responses:
       '204':
-        description: Logout was successfull. The tokens are revoked immediately.
+        description: Logout was successful. The tokens are revoked immediately.
       '401':
         $ref: './common.yml#/responses/TokenError'
       '500':

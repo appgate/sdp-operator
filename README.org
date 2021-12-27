@@ -18,6 +18,8 @@ The appgate operator supports the following API versions:
 
  - v12 (Appgate version 5.1)
  - v13 (Appgate version 5.2)
+ - v14 (Appgate version 5.3)
+ - v15 (Appgate version 5.4)
 
 The entities supported by the operator are:
 
@@ -69,7 +71,7 @@ uuids in the configuration. Entities referencing other entities (entitlements
 reference conditions for instance) do it by name also, the operator resolves
 those names into real uuids before doing the queries.
 
-*** Errors 
+*** Errors
 There are different sources of errors.
 
 Some entities reference another ones like `entitlements` using `conditions`. If
@@ -96,7 +98,7 @@ will remove all the entities that are not part of the set of builtin tags (see
 We have an appgate system with a condition but we dont have any condition
 defined in kubernetes.
 
-#+BEGIN_EXAMPLE 
+#+BEGIN_EXAMPLE
   2020-07-17 17:14:38,940 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
   2020-07-17 17:14:38,942 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
   2020-07-17 17:14:38,943 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
@@ -123,7 +125,7 @@ the condition is kept there and not managed by the operator.
 ***** Example 2
 Same example when cleanup is on.
 
-#+BEGIN_EXAMPLE 
+#+BEGIN_EXAMPLE
   2020-07-17 17:20:12,999 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
   2020-07-17 17:20:13,001 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
   2020-07-17 17:20:13,002 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
@@ -310,7 +312,7 @@ Optional environment variables that the operator uses:
    set of entities we want to filter out explicitly from being
    selected. Entities with tags in this set will not be retrieved to compute the
    working plan.
-      
+
 *** Configuration when runinng the operator locally
 In the case we run it locally for testing we only need to export those
 environment variables before launching the process.
@@ -327,7 +329,7 @@ The rest of environment variables are taken from a ConfigMap k8s entry (see
 To test it follow these steps:
 
  - Create or get the =appgate-operator= image we want to use
- 
+
  - Create a k8s cluster (and get the credentials)
 
  - Create some aliases
@@ -358,7 +360,7 @@ add it into the k8s cluster:
  - Create the configuration/secrets
 We will create now the configuration needed to run the operator against our
 appgate environment. We need to edit the files and set the values needed for our
-environment. We will save 
+environment. We will save
 #+BEGIN_SRC shell
   k create -f manifests/01-config.yaml
   k create -f manifests/01-secrets.yaml
@@ -433,7 +435,7 @@ This process is well explained in the argo web but let's summarized it:
 
   # Login into argocd
   argocd login $ARGOCD_IP
-  
+
   # Change password, current password is in $ARGOCD_PWD
   argocd account update-password
 #+END_SRC
@@ -455,7 +457,7 @@ In this step we need to do basically the same we did when we configured the appg
   kubectl create -f 00-appgate-test-crd-${API_VER}.yaml
   k create -f manifests/01-role.yaml
 #+END_SRC
-  
+
 We need now to prepare the secrets in the namespace to be there ready for when
 the deployment is done. If you have an automated way of dealing with secrets you
 can omit this step.
@@ -480,7 +482,7 @@ steps to make it available in gocd:
 
 1. Create a new deployment key in the github's project.
 2. Add the private part of the key in argocd (see argocd documentation).
-   
+
 *** Register the application in argocd
 Now that we have everything ready we can create our new application in argocd.
 
@@ -532,7 +534,7 @@ If we prefer we can see the logs from the k8s cluster using `kubectl`:
 
 We can also see the current config and current secrets:
 #+BEGIN_SRC shell
-  k get config appgate-operator-conf -o yaml
+  k get config appgate-sdp-configmap -o yaml
   k get secret appgate-operator-secrets -o yaml
 #+END_SRC
 
@@ -575,7 +577,7 @@ At this point if you look into the configuration using kubectl you will see that
 the value has changed:
 
 #+BEGIN_SRC shell
-  k get configmap appgate-operator-conf -o json|jq '.data["appgate-operator-dry-run"]'
+  k get configmap appgate-sdp-configmap -o json|jq '.data["appgate-operator-dry-run"]'
 #+END_SRC
 
 Now we can just delete the pod again and a new one (using the new config) will

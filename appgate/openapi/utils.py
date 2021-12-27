@@ -1,5 +1,4 @@
-import os
-from typing import Any, List, Dict, FrozenSet, Optional, Iterable
+from typing import Any, List, Dict, Iterable
 
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AttributesDict, PYTHON_TYPES
@@ -12,25 +11,12 @@ __all__ = [
     'is_compound',
     'has_id',
     'has_default',
-    'has_tag',
-    'is_target',
     'has_name',
     'get_field',
     'get_passwords',
     'join',
     'make_explicit_references',
-    'APPGATE_TARGET_TAGS_ENV',
-    'APPGATE_EXCLUDE_TAGS_ENV',
-    'APPGATE_BUILTIN_TAGS_ENV',
-    'BUILTIN_TAGS',
 ]
-
-from appgate.types import EntityWrapper
-
-APPGATE_EXCLUDE_TAGS_ENV = 'APPGATE_OPERATOR_EXCLUDE_TAGS'
-APPGATE_TARGET_TAGS_ENV = 'APPGATE_OPERATOR_TARGET_TAGS'
-APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
-BUILTIN_TAGS = frozenset({'builtin'})
 
 
 def is_compound(entry: Any) -> bool:
@@ -119,26 +105,6 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
 
 def join(sep: str, xs: Iterable[Any]) -> str:
     return sep.join(map(str, xs))
-
-
-def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None,
-            default: bool = False) -> bool:
-    """
-    Predicate that return true if entity has any tag in the set tags.
-    When tags is not defined return default.
-    """
-    if tags is None:
-        return default
-    return any(map(lambda t: t in (entity.tags or frozenset()), tags))
-
-
-def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None) -> bool:
-    """
-    Predicate that return true if entity is member of the target set.
-    An entity is member of the target set if target is not defined at all or if it has
-    any tag that belongs to the set of target_tags
-    """
-    return has_tag(entity, target_tags, default=True)
 
 
 def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:

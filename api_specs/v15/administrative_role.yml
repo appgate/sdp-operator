@@ -232,13 +232,17 @@ definitions:
           - LocalUser
           - Policy
           - Site
-          - DeviceScript
+          - DeviceClaimScript
           - EntitlementScript
           - RingfenceRule
           - ApplianceCustomization
+          - TrustedCertificate
+          - UserClaimScript
           - OtpSeed
+          - Fido2Device
           - TokenRecord
           - Blacklist
+          - License
           - UserLicense
           - RegisteredDevice
           - AllocatedIp

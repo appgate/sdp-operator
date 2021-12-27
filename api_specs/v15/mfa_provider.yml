@@ -1,4 +1,4 @@
-mfa-providers:
+
   get:
     summary: List all MFA Providers.
     description: List all MFA Providers visible to current user.
@@ -185,10 +185,11 @@ definitions:
         properties:
           type:
             type: string
-            description: The type of the MFA Provider. "DefaultTimeBased" is built-in, a new one cannot be created.
+            description: The type of the MFA Provider. "DefaultTimeBased" and "Fido2" are built-in, new ones cannot be created.
             enum:
               - Radius
               - DefaultTimeBased
+              - Fido2
           hostnames:
             type: array
             description: Hostnames/IP addresses to connect.

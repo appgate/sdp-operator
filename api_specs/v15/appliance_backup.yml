@@ -19,7 +19,7 @@ appliances-backup:
                 id:
                   type: string
                   format: uuid
-                  description: Appliance Backup ID to  be used as path parameter {backupId} to follow the progess.
+                  description: Appliance Backup ID to  be used as path parameter {backupId} to follow the progress.
                   example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
       '400':
         $ref: './common.yml#/responses/JsonError'
@@ -43,9 +43,6 @@ appliances-backup:
               audit:
                 type: boolean
                 description: Whether the Appliance Backup should include the audit logs or not.
-              opt:
-                type: boolean
-                description: Whether the Appliance Backup should include the persistent /opt directory or not.
 appliances-backup-id-status:
   get:
     summary: Get the status of a Appliance Backup.

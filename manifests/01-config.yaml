@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: appgate-operator-conf
+  name: appgate-sdp-configmap
 data:
   appgate-operator-host: "https://ec2-3-82-220-231.compute-1.amazonaws.com:444"
   appgate-operator-timeout: "30"
@@ -15,7 +15,7 @@ data:
   # VALUE is a base64 ca certificate in one line. Output from the command:
   # `cat cacert | base64 -w0`
   #appgate-operator-cacert "VALUE"
-  
+
   # Uncomment this if you want to use a FERNET key to decrypt secrets
   # appgate-operator-fernet-key "FERNET_KEY_VALUE"
 

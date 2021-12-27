@@ -27,6 +27,26 @@ def test_load_entities_v12():
                 assert isinstance(APPGATE_LOADER.load(d['spec'], None, e), e)
 
 
+def test_loader_0():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+    EntityDep5 = entities['EntityDep5'].cls
+    EntityDep5_Obj1 = entities['EntityDep5_Obj1'].cls
+    EntityDep5_Obj1_Obj2 = entities['EntityDep5_Obj1_Obj2'].cls
+    data = {
+        'id': 'id5',
+        'name': 'dep51',
+        'obj1': {
+            'obj2': {
+                'dep1': 'dep11'
+            }
+        }
+    }
+    e = APPGATE_LOADER.load(data, None, EntityDep5)
+    assert e == EntityDep5(id='id5', name='dep51',
+                           obj1=EntityDep5_Obj1(
+                               obj2=EntityDep5_Obj1_Obj2(dep1='dep11')))
+
+
 def test_loader_1():
     EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True).entities['EntityTest1'].cls
     entity_1 = {
