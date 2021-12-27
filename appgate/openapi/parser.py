@@ -13,7 +13,7 @@ from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
-    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
+    GeneratedEntityFieldDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
     AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
     ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
@@ -70,16 +70,16 @@ class InstanceMaker:
         return {k: v for k, v in self.attributes.items() if v.is_password}
 
     @property
-    def dependencies(self) -> Set[EntityDependency]:
-        dependencies: Set[EntityDependency] = set()
+    def dependencies(self) -> Set[GeneratedEntityFieldDependency]:
+        dependencies: Set[GeneratedEntityFieldDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
             dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
             if dependency and isinstance(dependency, list):
-                dependencies.add(EntityDependency(field_path=attrib_name,
-                                                  dependencies=frozenset(dependency)))
+                dependencies.add(GeneratedEntityFieldDependency(field_path=attrib_name,
+                                                                dependencies=frozenset(dependency)))
             elif dependency:
-                dependencies.add(EntityDependency(field_path=attrib_name,
-                                                  dependencies=frozenset({dependency})))
+                dependencies.add(GeneratedEntityFieldDependency(field_path=attrib_name,
+                                                                dependencies=frozenset({dependency})))
         return dependencies
 
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
