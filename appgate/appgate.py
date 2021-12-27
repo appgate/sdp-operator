@@ -52,7 +52,7 @@ def get_crds() -> CustomObjectsApi:
 def exclude_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
                              exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
     """
-    Filter out entities according to target_tags and exclude_rags
+    Filter out entities according to target_tags and exclude_tags
     Returns the entities that are member of target_tags (all entities if None)
     but not member of exclude_tags
     """
@@ -90,7 +90,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    exclude_appgate_entities(entities, ctx.target_tags, ctx.exclude_tags))
+                    exclude_appgate_entities(entities, None, ctx.exclude_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
