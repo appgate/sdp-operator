@@ -29,12 +29,17 @@ __all__ = [
     'start_entity_loop',
     'log',
     'exclude_appgate_entities',
+    'is_debug',
 ]
 
 
 crds: Optional[CustomObjectsApi] = None
 log = logging.getLogger('appgate-operator')
 log.setLevel(logging.INFO)
+
+
+def is_debug() -> bool:
+    return log.level <= logging.DEBUG
 
 
 def get_crds() -> CustomObjectsApi:
