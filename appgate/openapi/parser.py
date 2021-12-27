@@ -74,10 +74,12 @@ class InstanceMaker:
         dependencies: Set[EntityDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
             dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
-            if dependency:
+            if dependency and isinstance(dependency, list):
+                dependencies.add(EntityDependency(field_path=attrib_name,
+                                                  dependencies=frozenset(dependency)))
+            elif dependency:
                 dependencies.add(EntityDependency(field_path=attrib_name,
                                                   dependencies=frozenset({dependency})))
-
         return dependencies
 
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
@@ -183,7 +185,7 @@ class ParserContext:
         return self.entity_name_by_path.get(entity_path)
 
     def register_entity(self, entity_name: str, entity: GeneratedEntity) -> GeneratedEntity:
-        log.info(f'Registering new class {entity_name}')
+        log.debug(f'Registering new class {entity_name}')
         if entity_name in self.entities:
             log.warning(f'Entity %s already registered, ignoring it', entity_name)
         else:
@@ -196,7 +198,7 @@ class ParserContext:
             log.debug('Using cached namespace %s', path)
             return self.data[path.name]
         with path.open('r') as f:
-            log.info('Loading namespace %s from disk', path)
+            log.debug('Loading namespace %s from disk', path)
             self.data[path.name] = yaml.safe_load(f.read())
         return self.data[path.name]
 
@@ -213,11 +215,11 @@ class Parser:
         if not path:
             # Resolve in current namespace
             # Resolve in current namespace
-            log.info('Resolving reference %s in current namespace: %s',
+            log.debug('Resolving reference %s in current namespace: %s',
                      join('.', new_keys), self.namespace)
             resolved_ref = self.get_keys(new_keys)
         else:
-            log.info('Resolving reference %s in %s namespace', join('.', new_keys), path)
+            log.debug('Resolving reference %s in %s namespace', join('.', new_keys), path)
             resolved_ref = Parser(self.parser_context, namespace=path).get_keys(new_keys)
         if not resolved_ref:
             raise OpenApiParserException(f'Unable to resolve reference {reference}')

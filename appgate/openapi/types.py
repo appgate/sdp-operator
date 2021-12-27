@@ -169,8 +169,13 @@ def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[EntityD
             _d = get_dependencies(base_type, updated_field_path)
             deps.update(_d)
         elif UUID_REFERENCE_FIELD in mt:
-            deps.add(EntityDependency(field_path=updated_field_path,
-                                      dependencies=frozenset([mt.get(UUID_REFERENCE_FIELD)])))
+            ds = mt.get(UUID_REFERENCE_FIELD)
+            if isinstance(ds, list):
+                deps.add(EntityDependency(field_path=updated_field_path,
+                                          dependencies=frozenset(ds)))
+            else:
+                deps.add(EntityDependency(field_path=updated_field_path,
+                                          dependencies=frozenset([ds])))
     return deps
 
 

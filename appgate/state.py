@@ -8,7 +8,7 @@ import datetime
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet, Iterator
+from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, FrozenSet, Iterator, Union
 
 import yaml
 from attr import attrib, attrs, evolve
@@ -379,13 +379,20 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
     return AppgatePlan(entities_plan=entities_plan)
 
 
-def entities_conflict_summary(conflicts: Dict[str, Dict[str, FrozenSet[str]]],
+def entities_conflict_summary(conflicts: Dict[str, Tuple[str, Dict[str, FrozenSet[Iterable]]]],
                               namespace: str) -> None:
+    def concat_errors(error: Union[str, Iterable]) -> str:
+        if isinstance(error, str):
+            return error
+        return f'[{",".join(errors)}]'
+
     for k, field_values in conflicts.items():
-        for field, errors in field_values.items():
+        for field, errors in field_values[1].items():
             p1 = "they are" if len(errors) > 1 else "it is"
-            log.error('[appgate-operator/%s] Entity: %s references: [%s] (field %s), but %s not defined '
-                      'in the system.', namespace, k, ', '.join(errors), field, p1)
+            error_str = ','.join(map(concat_errors, errors))
+            log.error('[appgate-operator/%s] Entity: %s [%s] references %s (field %s), but %s not defined '
+                      'in the system.', namespace, k, field_values[0],
+                      error_str, field, p1)
 
 
 def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
@@ -481,8 +488,9 @@ def resolve_entity(entity: Entity_T,
                    field: str,
                    names: Dict[str, EntityWrapper],
                    ids: Dict[str, EntityWrapper],
-                   missing_dependencies: Dict[str, Dict[str, FrozenSet[str]]],
-                   reverse: bool = False) -> Optional[EntityWrapper]:
+                   missing_dependencies: Dict[str, Tuple[str, Dict[str, FrozenSet[str]]]],
+                   reverse: bool = False,
+                   parent_dependency: Optional[Entity_T] = None) -> Optional[EntityWrapper]:
     new_dependencies = set()
     missing_dependencies_set = set()
     log.debug(f'Getting field %s in entity %s', field, entity.__class__.__name__)
@@ -494,48 +502,63 @@ def resolve_entity(entity: Entity_T,
         dependencies = frozenset({dependencies})
     for dependency in dependencies:
         if type(dependency) not in PYTHON_TYPES and rest_fields:
-            log.debug('dependency %s and rest_fields %s', dependency, rest_fields)
-            resolve_entity(dependency, rest_fields, names, ids, missing_dependencies, reverse)
+            log.debug('dependency %s and rest_fields %s', dependency.__class__.__name__,
+                      rest_fields)
+            res = resolve_entity(dependency, rest_fields, names, ids,
+                                 missing_dependencies, reverse,
+                                 parent_dependency=parent_dependency)
+            if res:
+                break
         elif dependency in ids:
             # dependency is an id
+            log.debug('Dependency is an id %s', dependency)
             if reverse:
                 new_dependencies.add(ids[dependency].name)
             else:
                 new_dependencies.add(dependency)
+            break
         elif dependency in names and names[dependency].id:
             # dependency is a name
             if reverse:
                 new_dependencies.add(dependency)
             else:
                 new_dependencies.add(names[dependency].id)
+            break
         else:
+            log.error("Missing dependency %s in entity %s [%s]", dependency,
+                      parent_dependency.name, field)
             missing_dependencies_set.add(dependency)
     if missing_dependencies_set:
-        if entity.name not in missing_dependencies:
-            missing_dependencies[entity.name] = {}
-        missing_dependencies[entity.name][field] = frozenset(missing_dependencies_set)
+        if parent_dependency.name not in missing_dependencies:
+            missing_dependencies[parent_dependency.name] = (
+                str(parent_dependency.__class__.__qualname__), {}
+            )
+        missing_dependencies[parent_dependency.name][1][field] = frozenset(missing_dependencies_set)
     if new_dependencies:
-        if is_iterable:
-            return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
-        else:
-            return EntityWrapper(evolve_rec(entity, field.split('.'), list(new_dependencies)[0]))
+        return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
+
     return None
 
 
-def resolve_entities(e1: EntitiesSet, dependencies: List[Tuple[EntitiesSet, str]],
+def resolve_entities(e1: EntitiesSet, dependencies: Dict[str, List[EntitiesSet]],
                      reverse: bool = False) -> Tuple[EntitiesSet,
                                                      Optional[Dict[str,
-                                                                   Dict[str, FrozenSet[str]]]]]:
+                                                                   Tuple[str, Dict[str, FrozenSet[str]]]]]]:
     to_remove = set()
     to_add = set()
-    missing_entities: Dict[str, Dict[str, FrozenSet[str]]] = {}
+    missing_entities: Dict[str, Tuple[str, Dict[str, FrozenSet[str]]]] = {}
     e1_set = e1.entities.copy()
     for e in e1_set:
         new_e = None
-        for dependency_entities, field in dependencies:
-            names = dependency_entities.entities_by_name
-            ids = dependency_entities.entities_by_id
-            new_e = resolve_entity((new_e or e).value, field, names, ids, missing_entities, reverse)
+        for field, dependencies_entities in dependencies.items():
+            names = {}
+            for dep in dependencies_entities:
+                names.update(dep.entities_by_name)
+            ids = {}
+            for dep in dependencies_entities:
+                names.update(dep.entities_by_id)
+            new_e = resolve_entity((new_e or e).value, field, names, ids, missing_entities,
+                                   reverse, (new_e or e).value)
         if new_e:
             to_remove.add(e)
             to_add.add(new_e)
@@ -549,22 +572,27 @@ def resolve_entities(e1: EntitiesSet, dependencies: List[Tuple[EntitiesSet, str]
 def resolve_appgate_state(appgate_state: AppgateState,
                           api_spec: APISpec,
                           reverse: bool = False) -> Dict[str,
-                                                         Dict[str, FrozenSet[str]]]:
+                                                         Tuple[str, Dict[str, FrozenSet[str]]]]:
     entities = api_spec.entities
     entities_sorted = api_spec.entities_sorted
     total_conflicts = {}
     log.info('[appgate-state] Validating expected state entities')
-    log.debug('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
-    for entity_name in entities_sorted:
+    log.info('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
+    for entity_name in ['Condition']: #entities_sorted:
         for entity_dependency in entities[entity_name].dependencies:
             log.debug('[appgate-state] Checking dependencies %s for %s.%s',
                       entity_dependency.dependencies, entity_name,
                       entity_dependency.field_path)
-            deps_tuple = []
-            e1 = appgate_state.entities_set[entity_name]
+            deps_tuple: Dict[str, List[EntitiesSet]] = {}
+            if entity_name not in appgate_state.entities_set:
+                continue
+            e1 = appgate_state.entities_set.get(entity_name, EntitiesSet())
             for d in entity_dependency.dependencies:
-                deps_tuple.append((appgate_state.entities_set[d],
-                                   entity_dependency.field_path,))
+                if not entity_dependency.field_path in deps_tuple:
+                    deps_tuple[entity_dependency.field_path] = []
+                deps_tuple[entity_dependency.field_path].append(
+                    appgate_state.entities_set.get(d, EntitiesSet())
+                )
             new_e1, conflicts = resolve_entities(e1, deps_tuple, reverse)
             if conflicts:
                 total_conflicts.update(conflicts)
