@@ -36,6 +36,8 @@ paths:
     $ref: '#/entity-dep-6'
   /entity-cert:
     $ref: '#/entity-cert'
+  /entity-dep-nested:
+    $ref: '#/entity-dep-nested'
     
 entity-test1:
   get:
@@ -246,6 +248,21 @@ entity-cert:
         application/json:
           schema:
             $ref: '#/definitions/EntityCert'
+
+entity-dep-nested:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDepNested7'
 
 definitions:
   EntityTestList:
@@ -522,3 +539,22 @@ definitions:
       created:
         type: string
         format: 'date-time'
+  EntityDepNested7:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      deps:
+        type: object
+        properties:
+          field1:
+            type: string
+          field2:
+            type: string
+            format: uuid
+            x-uuid-ref:
+              - EntityDep2
+              - EntityDep1

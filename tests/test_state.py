@@ -1,9 +1,11 @@
+import pytest
+
 from appgate.appgate import exclude_appgate_entities
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
-from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
+from appgate.state import compare_entities, EntitiesSet, resolve_field_entities, AppgateState, resolve_appgate_state, \
     compute_diff
-from appgate.types import EntityWrapper
-from appgate.openapi.utils import BUILTIN_TAGS
+from appgate.types import EntityWrapper, BUILTIN_TAGS, EntityFieldDependency, MissingFieldDependencies
+from appgate.openapi.types import AppgateException
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
     join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD, _k8s_get_secret
@@ -41,7 +43,7 @@ def test_filter_appgate_entities():
                name='policy1',
                expression='expression-1',
                tags=frozenset({'tag1', 'tag4', 'tag5'}))
-        ]))
+    ]))
 
     r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
@@ -273,7 +275,13 @@ def test_compare_policies_4():
 def test_normalize_entitlements_0():
     entitlements = EntitiesSet()
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == set()
     assert conflicts is None
 
@@ -292,15 +300,29 @@ def test_normalize_entitlements_1():
         ])),
     })
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == entitlements.entities
     assert conflicts == {
-        'entitlement-1': {
-            'conditions': frozenset({'condition1', 'condition2', 'condition3'})
-        },
-        'entitlement-2': {
-            'conditions': frozenset({'condition1', 'condition2', 'condition3'})
-        },
+        'entitlement-1': [
+            MissingFieldDependencies(
+                parent_name='entitlement-1',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition1', 'condition2', 'condition3'})
+            )],
+        'entitlement-2': [
+            MissingFieldDependencies(
+                parent_name='entitlement-2',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition1', 'condition2', 'condition3'})
+            )]
     }
 
 
@@ -324,7 +346,13 @@ def test_normalize_entitlements_2():
         EntityWrapper(condition(id='c4', name='condition4')),
         EntityWrapper(condition(id='c5', name='condition5')),
     })
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == {
         EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'c1',
@@ -360,18 +388,35 @@ def test_normalize_entitlements_3():
         EntityWrapper(condition(name='condition4')),
         EntityWrapper(condition(name='condition5')),
     })
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert conflicts == {
-        'entitlement-2': {
-            'conditions': frozenset({'condition4', 'condition5'}),
-        }
+        'entitlement-2': [
+            MissingFieldDependencies(
+                parent_name='entitlement-2',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition4', 'condition5'})
+            )
+        ]
     }
 
 
 def test_normalize_policies_0():
     policies = EntitiesSet()
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert policies_set.entities == set()
     assert conflicts is None
 
@@ -390,14 +435,30 @@ def test_normalize_policies_1():
         ])),
     })
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts == {
-        'policy-1': {
-            'entitlements': frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
-        },
-        'policy-2': {
-            'entitlements': frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
-        }
+        'policy-1': [
+            MissingFieldDependencies(
+                parent_name='policy-1',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
+            )
+        ],
+        'policy-2': [
+            MissingFieldDependencies(
+                parent_name='policy-2',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
+            )
+        ]
     }
 
 
@@ -415,13 +476,19 @@ def test_normalize_policies_2():
         ])),
     })
     entitlements = EntitiesSet({
-            EntityWrapper(entitlement(id='e1', name='entitlement1')),
-            EntityWrapper(entitlement(id='e2', name='entitlement2')),
-            EntityWrapper(entitlement(id='e3', name='entitlement3')),
-            EntityWrapper(entitlement(id='e4', name='entitlement4')),
-            EntityWrapper(entitlement(id='e5', name='entitlement5')),
-        })
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+        EntityWrapper(entitlement(id='e1', name='entitlement1')),
+        EntityWrapper(entitlement(id='e2', name='entitlement2')),
+        EntityWrapper(entitlement(id='e3', name='entitlement3')),
+        EntityWrapper(entitlement(id='e4', name='entitlement4')),
+        EntityWrapper(entitlement(id='e5', name='entitlement5')),
+    })
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts is None
     assert policies_set.entities == {
         EntityWrapper(policy(name='policy-1', entitlements=[
@@ -456,11 +523,22 @@ def test_normalize_policies_3():
         EntityWrapper(entitlement(id='id3', name='entitlement3')),
         EntityWrapper(entitlement(name='entitlement5'))
     })
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts == {
-        'policy-2': {
-            'entitlements': frozenset({'entitlement4', 'entitlement5'})
-        }
+        'policy-2': [
+            MissingFieldDependencies(
+                parent_name='policy-2',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement4', 'entitlement5'})
+            )
+        ]
     }
 
 
@@ -481,8 +559,14 @@ def test_dependencies_1():
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'})))
     })
 
-    # No conflits
-    deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
+    # No conflicts
+    deps3_resolved, conflicts = resolve_field_entities(
+        deps3,
+        [EntityFieldDependency(
+            entity_name='EntityDep3',
+            field_path='deps1',
+            entity_dependencies=deps1
+        )])
     assert conflicts is None
     assert deps3_resolved.entities == {
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'})))
@@ -492,11 +576,22 @@ def test_dependencies_1():
     deps3 = EntitiesSet({
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'})))
     })
-    deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
+    deps3_resolved, conflicts = resolve_field_entities(
+        deps3,
+        [EntityFieldDependency(
+            entity_name='EntityDep3',
+            field_path='deps1',
+            entity_dependencies=deps1
+        )])
     assert conflicts == {
-        'dep31': {
-            'deps1': frozenset({'dep14'})
-        }
+        'dep31':[
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep3',
+                field_path='deps1',
+                dependencies=frozenset({'dep14'})
+            )
+        ]
     }
 
 
@@ -505,6 +600,7 @@ def test_dependencies_2():
     Two dependencies
     EntityDep4 has an array field (deps1) with deps from EntityDep1
     EntityDep4 has a string field (dep2) with deps from EntityDep2
+    resolve_field_entities can not resolve 2 different field paths
     """
     api = load_test_open_api_spec()
     EntityDep1 = api.entities['EntityDep1'].cls
@@ -526,27 +622,23 @@ def test_dependencies_2():
         EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}),
                                  dep2='dep23'))
     })
-    deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
-                                                         (deps2, 'dep2')])
-    assert conflicts is None
-    assert deps3_resolved.entities == {
-        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}),
-                                 dep2='d23'))
-    }
-
-    # conflicts in field deps1
-    deps4 = EntitiesSet({
-        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'}),
-                                 dep2='dep33'))
-    })
-    deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
-                                                         (deps2, 'dep2')])
-    assert conflicts == {
-        'dep31': {
-            'deps1': frozenset({'dep14'}),
-            'dep2': frozenset({'dep33'})
-        }
-    }
+    with pytest.raises(AppgateException) as excinfo:
+        _1, _2 = resolve_field_entities(
+            deps4,
+            [
+                EntityFieldDependency(
+                entity_name='EntityDep3',
+                field_path='deps1',
+                entity_dependencies=deps1
+            ),
+                EntityFieldDependency(
+                    entity_name='EntityDep3',
+                    field_path='dep2',
+                    entity_dependencies=deps2
+                )
+            ])
+    assert "Fatal error, found different fields when resolving entities" \
+           in str(excinfo.value)
 
 
 def test_dependencies_3():
@@ -565,7 +657,7 @@ def test_dependencies_3():
         EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     data = {
-        'id': 'd51',
+        'id': 'id5',
         'name': 'dep51',
         'obj1': {
             'obj2': {
@@ -574,12 +666,20 @@ def test_dependencies_3():
         }
     }
     deps5 = EntitiesSet({
-        EntityWrapper(K8S_LOADER.load(data, None, EntityDep5))
+        EntityWrapper(APPGATE_LOADER.load(data, None, EntityDep5))
     })
-    deps5_resolved, conflicts = resolve_entities(deps5, [(deps1, 'obj1.obj2.dep1')])
+    deps5_resolved, conflicts = resolve_field_entities(
+        deps5,
+        [
+            EntityFieldDependency(
+                entity_name='EntityDep5',
+                field_path='obj1.obj2.dep1',
+                entity_dependencies=deps1
+            )
+        ])
     assert conflicts is None
     assert deps5_resolved.entities == {
-        EntityWrapper(EntityDep5(id='d51', name='dep51',
+        EntityWrapper(EntityDep5(id='id5', name='dep51',
                                  obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1='d11'))))
     }
 
@@ -670,7 +770,7 @@ def test_dependencies_4():
     }
     assert appgate_state.entities_set['EntityDep4'].entities == {
         EntityWrapper(EntityDep4(id='d41', name='dep41', deps1=frozenset({'d11', 'd12'}),
-                   dep2='d21')),
+                                 dep2='d21')),
         EntityWrapper(EntityDep4(id='d42', name='dep42', deps1=frozenset({'d11', 'd13'}),
                                  dep2='d22')),
         EntityWrapper(EntityDep4(id='d43', name='dep43', deps1=frozenset({'d12', 'd13'}),
@@ -724,9 +824,121 @@ def test_dependencies_4():
     }
 
 
+def test_dependencies_5():
+    """
+    Test nested dependencies failing with Entity that has several x-uuid-ref fields
+    """
+    test_api_spec = load_test_open_api_spec(reload=True)
+    EntityDepNested7 = test_api_spec.entities['EntityDepNested7'].cls
+    EntityDepNested7_Deps = test_api_spec.entities['EntityDepNested7_Deps'].cls
+
+    deps7 = EntitiesSet({
+        EntityWrapper(EntityDepNested7(id='d71', name='d71',
+                                       deps=EntityDepNested7_Deps(
+                                           field1="test1",
+                                           field2="806c6306-226d-4900-86d3-88600ec73eb5"))),
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {
+        'd71': [
+            MissingFieldDependencies(
+                parent_name='d71',
+                parent_type='EntityDepNested7',
+                field_path='deps.field2',
+                dependencies=frozenset({'806c6306-226d-4900-86d3-88600ec73eb5'})
+            )]
+    }
+
+    # Either EntityDep2 or EntityDep1 should satisfy this dependency
+    EntityDep2 = test_api_spec.entities['EntityDep2'].cls
+    deps2 = EntitiesSet({
+        EntityWrapper(EntityDep2(id='806c6306-226d-4900-86d3-88600ec73eb5', name='d2'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+        'EntityDep2': deps2,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+    # Either EntityDep2 or EntityDep1 should satisfy this dependency
+    EntityDep1 = test_api_spec.entities['EntityDep1'].cls
+    deps1 = EntitiesSet({
+        EntityWrapper(EntityDep1(id='806c6306-226d-4900-86d3-88600ec73eb5', name='d2'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+        'EntityDep1': deps1,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+
+def test_dependencies_6():
+    """
+    Test nested dependencies failing.
+    """
+    test_api_spec = load_test_open_api_spec(reload=True)
+    EntityDep1 = test_api_spec.entities['EntityDep1'].cls
+    EntityDep2 = test_api_spec.entities['EntityDep2'].cls
+    EntityDep4 = test_api_spec.entities['EntityDep4'].cls
+    deps1 = EntitiesSet({
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
+    })
+    deps2 = EntitiesSet({
+        EntityWrapper(EntityDep2(id='d21', name='dep21')),
+        EntityWrapper(EntityDep2(id='d22', name='dep22')),
+        EntityWrapper(EntityDep2(id='d23', name='dep23')),
+    })
+    deps4 = EntitiesSet({
+        EntityWrapper(EntityDep4(id='d31', name='dep31',
+                                 deps1=frozenset({'dep11', 'dep12'}),
+                                 dep2='dep23'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDep1': deps1,
+        'EntityDep2': deps2,
+        'EntityDep4': deps4
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+    deps4 = EntitiesSet({
+        EntityWrapper(EntityDep4(id='d31', name='dep31',
+                                 deps1=frozenset({'dep14', 'dep12'}),
+                                 dep2='dep33'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDep1': deps1,
+        'EntityDep2': deps2,
+        'EntityDep4': deps4
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert sorted(list(conflicts.keys())) == ['dep31']
+    assert set(conflicts['dep31']) == {
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep4',
+                field_path='deps1',
+                dependencies=frozenset({'dep14'})
+            ),
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep4',
+                field_path='dep2',
+                dependencies=frozenset({'dep33'})
+            ),
+    }
+
+
 def test_compare_plan_entity_bytes():
     EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
-                                                reload=True).entities['EntityTest3Appgate'].cls
+                                                 reload=True).entities['EntityTest3Appgate'].cls
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     # fieldThree is readOnly :: size of fieldOne
