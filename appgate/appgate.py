@@ -21,7 +21,7 @@ from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOM
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
-    exclude_appgate_entities
+    exclude_appgate_entities, exclude_appgate_entity
 from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, is_target, has_tag
 
 __all__ = [
@@ -167,7 +167,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
-            {k: v.entities_with_tags(ctx.builtin_tags) for k, v in current_appgate_state.entities_set.items()})
+            {k: v.entities_with_tags(ctx.builtin_tags)
+             for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
     log.info('[appgate-operator/%s] Ready to get new events and compute a new plan',
@@ -179,12 +180,19 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
                      event.op, str(type(event.entity)), event.entity.name)
             expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
-            # Log all entities in expected state
-            log.info('[appgate-operator/%s] Expected entities:', namespace)
+            # Log all expected entities
+            any_expected = False
             for entity_type, xs in expected_appgate_state.entities_set.items():
-                for entity_name, e in xs.entities_by_name.items():
+                expected_entities = {n: e for n, e in xs.entities_by_name.items()
+                                     if exclude_appgate_entity(e, ctx.target_tags, ctx.exclude_tags)}
+                for entity_name, e in expected_entities.items():
+                    if not any_expected:
+                        log.info('[appgate-operator/%s] Expected entities:', namespace)
+                        any_expected = True
                     log.info('[appgate-operator/%s] %s: %s: %s', namespace, entity_type, entity_name,
                              e.id)
+            if not any_expected:
+                log.warning('[appgate-operator/%s] Not expected any entity', namespace)
 
             # Resolve entities now, in order
             # this will be the Topological sort

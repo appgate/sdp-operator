@@ -37,7 +37,13 @@ __all__ = [
     'compare_entities',
     'compute_diff',
     'exclude_appgate_entities',
+    'exclude_appgate_entity',
 ]
+
+
+def exclude_appgate_entity(entity: EntityWrapper,  target_tags: Optional[FrozenSet[str]],
+                           exclude_tags: Optional[FrozenSet[str]]) -> bool:
+    return is_target(entity, target_tags) and not has_tag(entity, exclude_tags)
 
 
 def exclude_appgate_entities(entities: Iterable[EntityWrapper], target_tags: Optional[FrozenSet[str]],
@@ -47,8 +53,8 @@ def exclude_appgate_entities(entities: Iterable[EntityWrapper], target_tags: Opt
     Returns the entities that are member of target_tags (all entities if None)
     but not member of exclude_tags
     """
-    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
-                     entities))
+    return set(filter(lambda e: exclude_appgate_entity(e, target_tags=target_tags, exclude_tags=exclude_tags),
+                      entities))
 
 
 def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,
@@ -361,13 +367,10 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
 
 def entities_conflict_summary(conflicts: Dict[str, List[MissingFieldDependencies]],
                               namespace: str) -> None:
-    def concat_errors(errors: Iterable) -> str:
-        return f'[{",".join(errors)}]'
-
     for entity_name, missing_field_deps in conflicts.items():
         for missing_field_dep in missing_field_deps:
             p1 = "they are" if len(missing_field_dep.dependencies) > 1 else "it is"
-            missing_deps_str = ','.join(map(concat_errors, missing_field_dep.dependencies))
+            missing_deps_str = ','.join(missing_field_dep.dependencies)
             log.error('[appgate-operator/%s] Entity: %s [%s] references %s (field %s), but %s not defined '
                       'in the system.', namespace, missing_field_dep.parent_name,
                       missing_field_dep.parent_type, missing_deps_str,
@@ -545,14 +548,15 @@ def resolve_field_entity(entity: Entity_T,
                 parent_type=parent_dependency.__class__.__qualname__,
                 dependencies=frozenset(missing_dependencies_set)
             ))
-    if new_dependencies:
+    # Only return resolved dependencies if all of them were resolved!
+    if new_dependencies and len(new_dependencies) == len(dependencies):
         if not is_iterable:
             return EntityWrapper(evolve_rec(entity, field.split('.'), list(new_dependencies)[0]))
         else:
             return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
     return None
 
-#Dict[str, List[EntitiesSet]]
+
 def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDependency],
                            reverse: bool = False) -> Tuple[EntitiesSet,
                                                            Optional[Dict[str, List[MissingFieldDependencies]]]]:
