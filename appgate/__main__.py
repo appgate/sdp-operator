@@ -30,6 +30,7 @@ from appgate.openapi.types import AppgateException
 from appgate.secrets import k8s_get_secret
 
 
+APPGATE_LOG_LEVEL = 'APPGATE_OPERATOR_LOG_LEVEL'
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
 PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
@@ -344,7 +345,7 @@ def main() -> None:
     api_info.set_defaults(cmd='api-info')
 
     args = parser.parse_args()
-    set_level(log_level=args.log_level.lower())
+    set_level(log_level=os.getenv(APPGATE_LOG_LEVEL) or args.log_level.lower())
     try:
         if args.cmd == 'run':
             if args.cafile and not Path(args.cafile).exists():
