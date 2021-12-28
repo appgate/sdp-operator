@@ -142,7 +142,8 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
-        namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV)\
+                    or list_kube_config_contexts()[1]['context'].get('namespace')
 
     if not namespace:
         raise AppgateException('Unable to discover namespace, please provide it.')
@@ -159,7 +160,8 @@ def init_kubernetes(args: OperatorArguments) -> Context:
 async def run_k8s(args: OperatorArguments) -> None:
     ctx = init_kubernetes(args)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
+    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace,
+                                              name=ctx.metadata_configmap)
     await k8s_configmap_client.init()
 
     if ctx.device_id is None:
