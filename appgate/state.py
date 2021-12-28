@@ -279,10 +279,11 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
     for e in plan.not_to_create.entities:
-        log.warning('[appgate-operator/%s] !+ %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.debug('[appgate-operator/%s] !+ %s %s [%s]', namespace, e.value.__class__.__name__,
+                  e.name, e.id)
 
     for e in plan.modify.entities:
-        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.info('[appgate-operator/%s] * %s %s [%s]', namespace, e.value.__class__.__name__, e.name, e.id)
         diff = plan.modifications_diff.get(e.name)
         if diff:
             log.info('[appgate-operator/%s]    DIFF for %s:', namespace, e.name)
@@ -298,10 +299,12 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
     for e in plan.not_to_modify.entities:
-        log.warning('[appgate-operator/%s] !* %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.debug('[appgate-operator/%s] !* %s %s [%s]', namespace, e.value.__class__.__name__,
+                  e.name, e.id)
 
     for e in plan.delete.entities:
-        log.info('[appgate-operator/%s] - %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.info('[appgate-operator/%s] - %s %s [%s]', namespace, e.value.__class__.__name__,
+                 e.name, e.id)
         if entity_client:
             try:
                 await entity_client.delete(e.id)
@@ -310,10 +313,12 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
     for e in plan.not_to_delete.entities:
-        log.warning('[appgate-operator/%s] !- %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.debug('[appgate-operator/%s] !- %s %s [%s]', namespace, e.value.__class__.__name__,
+                  e.name, e.id)
 
     for e in plan.share.entities:
-        log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, type(e.value), e.name, e.id)
+        log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, e.value.__class__.__name__,
+                  e.name, e.id)
 
     has_errors = len(errors) > 0
     return Plan(create=plan.create,
@@ -472,7 +477,7 @@ def entity_t_attribute_names(entity: Entity_T) -> Iterable[str]:
 def get_field(entity: Entity_T, paths: List[str]) -> Tuple[Optional[Any], Optional[str]]:
     f: Any = entity
     for i, p in enumerate(paths):
-        log.debug('Getting field %s in %s', p, list(entity_t_attribute_names(f)))
+        log.trace('Getting field %s in %s', p, list(entity_t_attribute_names(f)))
         if isinstance(f, frozenset):
             return f, '.'.join(paths[i:])
         f = getattr(f, p, None)
@@ -502,33 +507,41 @@ def resolve_field_entity(entity: Entity_T,
                          ids: Dict[str, EntityWrapper],
                          missing_dependencies: Dict[str, List[MissingFieldDependencies]],
                          reverse: bool = False) -> Optional[EntityWrapper]:
+    ident_level = 4
     new_dependencies = set()
     missing_dependencies_set = set()
-    log.debug(f'Getting field %s in entity %s', field, entity.__class__.__name__)
+    log.info(f'[appgate-state] %s getting field %s in entity %s',
+              ' ' * (ident_level + 2), field, entity.__class__.__name__)
     dependencies, rest_fields = get_field(entity, field.split('.'))
     if dependencies is None:
         raise Exception(f'Object {entity} has not field {field}.')
     is_iterable = isinstance(dependencies, frozenset)
     if not is_iterable:
         dependencies = frozenset({dependencies})
+    if dependencies and not rest_fields:
+        log.debug('[appgate-state] %s dependencies: %s', ' ' * ident_level,
+                  ','.join(dependencies))
     # Iterate over all the items in the field
     for dependency in dependencies:
         if type(dependency) not in PYTHON_TYPES and rest_fields:
-            log.debug('dependency %s and rest_fields %s', dependency.__class__.__name__,
-                      rest_fields)
+            log.trace('[appgate-state] %s dependency %s and rest_fields %s',
+                      ' ' * ident_level, dependency.__class__.__name__, rest_fields)
             res = resolve_field_entity(dependency, rest_fields, parent_dependency,
                                        names, ids,missing_dependencies, reverse)
             if res:
                 continue
         elif dependency in ids:
             # dependency is an id
-            log.debug('Dependency is an id %s', dependency)
+            log.debug('[appgate-state] %s found id %s',
+                      ' ' * ident_level, dependency)
             if reverse:
                 new_dependencies.add(ids[dependency].name)
             else:
                 new_dependencies.add(dependency)
             continue
         elif dependency in names and names[dependency].id:
+            log.debug('[appgate-state] %s found name %s',
+                      ' ' * ident_level, dependency)
             # dependency is a name
             if reverse:
                 new_dependencies.add(dependency)
@@ -536,8 +549,8 @@ def resolve_field_entity(entity: Entity_T,
                 new_dependencies.add(names[dependency].id)
             continue
         else:
-            log.error("Missing dependency %s in entity %s [%s]", dependency,
-                      parent_dependency.name, field)
+            log.error("[appgate-state] %s MISSING %s",
+                      ' ' * ident_level, dependency)
             missing_dependencies_set.add(dependency)
     if missing_dependencies_set:
         if parent_dependency.name not in missing_dependencies:
@@ -566,6 +579,7 @@ def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDepend
     Dependencies is a list of EntityFieldDependency.
 
     """
+    indent_level = 2
     to_remove = set()
     to_add = set()
     missing_entities: Dict[str, List[MissingFieldDependencies]] = {}
@@ -585,8 +599,13 @@ def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDepend
     # Not found field_path, so nothing to resolve
     if not field_path:
         return EntitiesSet(e1_set), None
-
+    if is_debug():
+        for k, v in names.items():
+            log.debug('[appgate-state] %s + available %s [%s | %s]',
+                      ' ' * indent_level, v.value.__class__.__name__, k, v.id)
     for e in e1_set:
+        log.debug('[appgate-state] %s - check %s [%s | %s]',
+                  ' ' * indent_level, e.value.__class__.__name__, e.name, e.id)
         new_e = None
         new_e = resolve_field_entity(
             (new_e or e).value, field_path, (new_e or e).value, names,ids,
@@ -617,9 +636,9 @@ def resolve_appgate_state(appgate_state: AppgateState,
         # Each generated entity can have several field that describe dependencies
         # to another entities. Iterate over each field describing a dependency.
         for field_dependency in entities[entity_name].dependencies:
-            log.debug('[appgate-state] Checking dependencies %s for %s.%s',
-                      field_dependency.dependencies, entity_name,
-                      field_dependency.field_path)
+            log.debug('[appgate-state] Checking dependencies for %s.%s => %s',
+                      entity_name, field_dependency.field_path,
+                      ','.join(field_dependency.dependencies))
             dependencies: List[EntityFieldDependency] = []
             # Finally, each field can reference 1 or more entities.
             # For example, we could have a field `myId` that could contain

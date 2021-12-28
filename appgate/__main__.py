@@ -17,9 +17,9 @@ import yaml
 from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 
 from appgate.client import K8SConfigMapClient
-from appgate.logger import set_level
+from appgate.logger import set_level, is_debug
 from appgate.appgate import main_loop, get_current_appgate_state, \
-    start_entity_loop, log, is_debug
+    start_entity_loop, log
 from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state

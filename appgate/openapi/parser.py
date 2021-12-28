@@ -185,7 +185,7 @@ class ParserContext:
         return self.entity_name_by_path.get(entity_path)
 
     def register_entity(self, entity_name: str, entity: GeneratedEntity) -> GeneratedEntity:
-        log.debug(f'Registering new class {entity_name}')
+        log.trace(f'Registering new class {entity_name}')
         if entity_name in self.entities:
             log.warning(f'Entity %s already registered, ignoring it', entity_name)
         else:
@@ -195,10 +195,10 @@ class ParserContext:
     def load_namespace(self, namespace: str) -> Dict[str, Any]:
         path = self.spec_api_path / namespace
         if path.name in self.data:
-            log.debug('Using cached namespace %s', path)
+            log.trace('Using cached namespace %s', path)
             return self.data[path.name]
         with path.open('r') as f:
-            log.debug('Loading namespace %s from disk', path)
+            log.trace('Loading namespace %s from disk', path)
             self.data[path.name] = yaml.safe_load(f.read())
         return self.data[path.name]
 
@@ -215,11 +215,11 @@ class Parser:
         if not path:
             # Resolve in current namespace
             # Resolve in current namespace
-            log.debug('Resolving reference %s in current namespace: %s',
+            log.trace('Resolving reference %s in current namespace: %s',
                      join('.', new_keys), self.namespace)
             resolved_ref = self.get_keys(new_keys)
         else:
-            log.debug('Resolving reference %s in %s namespace', join('.', new_keys), path)
+            log.trace('Resolving reference %s in %s namespace', join('.', new_keys), path)
             resolved_ref = Parser(self.parser_context, namespace=path).get_keys(new_keys)
         if not resolved_ref:
             raise OpenApiParserException(f'Unable to resolve reference {reference}')
@@ -230,12 +230,11 @@ class Parser:
         data = self.data
         while True:
             try:
-                # TODO: This should be TRACE level or something
-                # log.debug('Trying %s in [%s]', join('.', keys),
-                #          join(', ', data.keys()))
+                log.trace('Trying %s in [%s]', join('.', keys),
+                          join(', ', data.keys()))
                 k = keys.pop(0)
             except IndexError:
-                log.debug('Keys not found %s', join('.', keys_cp))
+                log.trace('Keys not found %s', join('.', keys_cp))
                 return None
             # Is the key there?
             if k in data:
@@ -259,7 +258,7 @@ class Parser:
                     return make_explicit_references(value, self.namespace)
             else:
                 # key not found
-                log.debug('Key %s not found in [%s]', k, ', '.join(data.keys()))
+                log.trace('Key %s not found in [%s]', k, ', '.join(data.keys()))
                 return None
 
     def resolve_definition(self, definition: OpenApiDict) -> OpenApiDict:
@@ -310,7 +309,7 @@ class Parser:
                 api_path=None,
                 level=current_level + 1)
             generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
-            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
+            log.trace('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
             return SimpleAttribMaker(name=instance_maker_config.name,
                                      tpe=generated_entity.cls,
@@ -321,7 +320,7 @@ class Parser:
         elif not tpe:
             raise Exception('type field not found in %s', definition)
         elif tpe in TYPES_MAP:
-            log.debug('Creating new attribute %s.%s :: %s', entity_name, attrib_name,
+            log.trace('Creating new attribute %s.%s :: %s', entity_name, attrib_name,
                       TYPES_MAP[tpe])
             format = definition.get('format', None)
             if format == 'password':
@@ -372,12 +371,12 @@ class Parser:
                                          definition=attrib_maker_config.definition)
         elif is_array(definition):
             # Recursion here, we parse the items as a type
-            log.debug('Creating array type for entity %s and attribute %s', entity_name, attrib_name)
+            log.trace('Creating array type for entity %s and attribute %s', entity_name, attrib_name)
             new_attrib_maker_config = attrib_maker_config.from_key('items')
             if not new_attrib_maker_config:
                 raise OpenApiParserException('Unable to get items from array defintion.')
             attr_maker = self.make_type(new_attrib_maker_config)
-            log.debug('Creating new attribute %s.%s: FrozenSet[%s]', entity_name, attrib_name,
+            log.trace('Creating new attribute %s.%s: FrozenSet[%s]', entity_name, attrib_name,
                       attr_maker.tpe)
             return SimpleAttribMaker(name=attr_maker.name,
                                      tpe=FrozenSet[attr_maker.tpe],  # type: ignore
@@ -388,7 +387,7 @@ class Parser:
         elif is_object(definition):
             # Indirect recursion here.
             # Those classes are never registered
-            log.debug('Creating object type for entity %s and attribute %s', entity_name, attrib_name)
+            log.trace('Creating object type for entity %s and attribute %s', entity_name, attrib_name)
             current_level = attrib_maker_config.instance_maker_config.level
             instance_maker_config = InstanceMakerConfig(
                 name=attrib_name,
@@ -398,7 +397,7 @@ class Parser:
                 api_path=None,
                 level=current_level + 1)
             generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
-            log.debug('Created new attribute %s.%s of type %s', entity_name, attrib_name,
+            log.trace('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
             format = definition.get('format', None)
             if format == 'certificate' and 'x-certificate-source' in attrib_maker_config.definition:

@@ -262,7 +262,7 @@ class APISpec:
             for entity_name, entity in self.entities.items()
             if entity.api_path is not None
         }
-        log.debug('Entities to sort %s', entities_to_sort)
+        log.trace('Entities to sort %s', entities_to_sort)
         ts = TopologicalSorter(entities_to_sort)
         return list(ts.static_order())
 
