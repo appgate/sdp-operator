@@ -361,13 +361,10 @@ async def appgate_plan_apply(appgate_plan: AppgatePlan, namespace: str,
 
 def entities_conflict_summary(conflicts: Dict[str, List[MissingFieldDependencies]],
                               namespace: str) -> None:
-    def concat_errors(errors: Iterable) -> str:
-        return f'[{",".join(errors)}]'
-
     for entity_name, missing_field_deps in conflicts.items():
         for missing_field_dep in missing_field_deps:
             p1 = "they are" if len(missing_field_dep.dependencies) > 1 else "it is"
-            missing_deps_str = ','.join(map(concat_errors, missing_field_dep.dependencies))
+            missing_deps_str = ','.join(missing_field_dep.dependencies)
             log.error('[appgate-operator/%s] Entity: %s [%s] references %s (field %s), but %s not defined '
                       'in the system.', namespace, missing_field_dep.parent_name,
                       missing_field_dep.parent_type, missing_deps_str,
