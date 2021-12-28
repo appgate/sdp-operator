@@ -139,7 +139,11 @@ class EntityDumper:
 
 
 @attrs(frozen=True, slots=True)
-class EntityDependency:
+class GeneratedEntityFieldDependency:
+    """
+    Class to keep information about the dependency for a field in a GeneratedEntity.
+    A field with name field_path has dependencies on entities listed in dependencies.
+    """
     field_path: str = attrib()
     dependencies: FrozenSet[str] = attrib()
 
@@ -151,7 +155,7 @@ class EntityDependency:
         return self.field_path.split('.')[0]
 
 
-def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[EntityDependency]:
+def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[GeneratedEntityFieldDependency]:
     deps = set()
     attributes = getattr(cls, '__attrs_attrs__', [])
     for attribute in attributes:
@@ -169,8 +173,13 @@ def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[EntityD
             _d = get_dependencies(base_type, updated_field_path)
             deps.update(_d)
         elif UUID_REFERENCE_FIELD in mt:
-            deps.add(EntityDependency(field_path=updated_field_path,
-                                      dependencies=frozenset([mt.get(UUID_REFERENCE_FIELD)])))
+            ds = mt.get(UUID_REFERENCE_FIELD)
+            if isinstance(ds, list):
+                deps.add(GeneratedEntityFieldDependency(field_path=updated_field_path,
+                                                        dependencies=frozenset(ds)))
+            else:
+                deps.add(GeneratedEntityFieldDependency(field_path=updated_field_path,
+                                                        dependencies=frozenset([ds])))
     return deps
 
 
@@ -184,7 +193,7 @@ class GeneratedEntity:
     api_path: Optional[str] = attrib(default=None)
 
     @cached_property
-    def dependencies(self) -> Set[EntityDependency]:
+    def dependencies(self) -> Set[GeneratedEntityFieldDependency]:
         return get_dependencies(self.cls)
 
     @cached_property

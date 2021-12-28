@@ -26,12 +26,14 @@ class EntityClient:
     def __init__(self, path: str, appgate_client: 'AppgateClient',
                  singleton: bool,
                  load: Callable[[Dict[str, Any]], Entity_T],
-                 dump: Callable[[Entity_T], Dict[str, Any]]) -> None:
+                 dump: Callable[[Entity_T], Dict[str, Any]],
+                 magic_entities: Optional[List[Entity_T]] = None) -> None:
         self._client = appgate_client
         self.path = path
         self.load = load
         self.dump = dump
         self.singleton = singleton
+        self.magic_entities = magic_entities
 
     async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
@@ -40,10 +42,14 @@ class EntityClient:
                       self.path)
             return None
         # TODO: We should discover this from the api spec
+        entities = None
         if 'data' in data:
-            return [self.load(e) for e in data['data']]
+            entities = [self.load(e) for e in data['data']]
         else:
-            return [self.load(data)]
+            entities = [self.load(data)]
+        if self.magic_entities:
+            return entities + self.magic_entities
+        return entities
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info('[appgate-client/%s] POST %s [%s]', entity.__class__.__name__, entity.name,
@@ -308,9 +314,11 @@ class AppgateClient:
     def authenticated(self) -> bool:
         return self._token is not None
 
-    def entity_client(self, entity: type, api_path: str, singleton: bool) -> EntityClient:
+    def entity_client(self, entity: type, api_path: str, singleton: bool,
+                      magic_entities: Optional[List[Entity_T]]) -> EntityClient:
         dumper = APPGATE_DUMPER
         return EntityClient(appgate_client=self, path=f'/admin/{api_path}',
                             singleton=singleton,
                             load=lambda d: APPGATE_LOADER.load(d, None, entity),
-                            dump=lambda e: dumper.dump(e))
+                            dump=lambda e: dumper.dump(e),
+                            magic_entities=magic_entities)

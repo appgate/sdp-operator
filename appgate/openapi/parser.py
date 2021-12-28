@@ -13,13 +13,13 @@ from appgate.logger import log
 from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
-    EntityDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
+    GeneratedEntityFieldDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
     AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
     ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
-    is_object, is_ref, is_array, BUILTIN_TAGS
+    is_object, is_ref, is_array
 from appgate.secrets import PasswordAttribMaker
-
+from appgate.types import BUILTIN_TAGS
 
 TYPES_MAP: Dict[str, Type] = {
     'string': str,
@@ -70,14 +70,16 @@ class InstanceMaker:
         return {k: v for k, v in self.attributes.items() if v.is_password}
 
     @property
-    def dependencies(self) -> Set[EntityDependency]:
-        dependencies: Set[EntityDependency] = set()
+    def dependencies(self) -> Set[GeneratedEntityFieldDependency]:
+        dependencies: Set[GeneratedEntityFieldDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
             dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
-            if dependency:
-                dependencies.add(EntityDependency(field_path=attrib_name,
-                                                  dependencies=frozenset({dependency})))
-
+            if dependency and isinstance(dependency, list):
+                dependencies.add(GeneratedEntityFieldDependency(field_path=attrib_name,
+                                                                dependencies=frozenset(dependency)))
+            elif dependency:
+                dependencies.add(GeneratedEntityFieldDependency(field_path=attrib_name,
+                                                                dependencies=frozenset({dependency})))
         return dependencies
 
     def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
@@ -183,7 +185,7 @@ class ParserContext:
         return self.entity_name_by_path.get(entity_path)
 
     def register_entity(self, entity_name: str, entity: GeneratedEntity) -> GeneratedEntity:
-        log.info(f'Registering new class {entity_name}')
+        log.debug(f'Registering new class {entity_name}')
         if entity_name in self.entities:
             log.warning(f'Entity %s already registered, ignoring it', entity_name)
         else:
@@ -196,7 +198,7 @@ class ParserContext:
             log.debug('Using cached namespace %s', path)
             return self.data[path.name]
         with path.open('r') as f:
-            log.info('Loading namespace %s from disk', path)
+            log.debug('Loading namespace %s from disk', path)
             self.data[path.name] = yaml.safe_load(f.read())
         return self.data[path.name]
 
@@ -213,11 +215,11 @@ class Parser:
         if not path:
             # Resolve in current namespace
             # Resolve in current namespace
-            log.info('Resolving reference %s in current namespace: %s',
+            log.debug('Resolving reference %s in current namespace: %s',
                      join('.', new_keys), self.namespace)
             resolved_ref = self.get_keys(new_keys)
         else:
-            log.info('Resolving reference %s in %s namespace', join('.', new_keys), path)
+            log.debug('Resolving reference %s in %s namespace', join('.', new_keys), path)
             resolved_ref = Parser(self.parser_context, namespace=path).get_keys(new_keys)
         if not resolved_ref:
             raise OpenApiParserException(f'Unable to resolve reference {reference}')

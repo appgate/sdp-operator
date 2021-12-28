@@ -1,9 +1,10 @@
-from appgate.appgate import exclude_appgate_entities
+import pytest
+
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
-from appgate.state import compare_entities, EntitiesSet, resolve_entities, AppgateState, resolve_appgate_state, \
-    compute_diff
-from appgate.types import EntityWrapper
-from appgate.openapi.utils import BUILTIN_TAGS
+from appgate.state import compare_entities, EntitiesSet, resolve_field_entities, AppgateState, resolve_appgate_state, \
+    compute_diff, exclude_appgate_entities
+from appgate.types import EntityWrapper, BUILTIN_TAGS, EntityFieldDependency, MissingFieldDependencies
+from appgate.openapi.types import AppgateException
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import entitlement, condition, policy, Policy, load_test_open_api_spec, PEM_TEST, \
     join_string, SUBJECT, ISSUER, CERTIFICATE_FIELD, PUBKEY_FIELD, _k8s_get_secret
@@ -28,10 +29,12 @@ def test_filter_appgate_entities():
                expression='expression-3',
                tags=frozenset({'tag4', 'tag9', 'tag10'}))
     ]
-    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=None)
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=None, exclude_tags=None)
     assert frozenset(set(EntityWrapper(a) for a in entities)) == r1
 
-    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=None)
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=frozenset({'tag1'}), exclude_tags=None)
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id0',
                name='policy0',
@@ -41,16 +44,18 @@ def test_filter_appgate_entities():
                name='policy1',
                expression='expression-1',
                tags=frozenset({'tag1', 'tag4', 'tag5'}))
-        ]))
+    ]))
 
-    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag1'}), exclude_tags=frozenset({'tag2'}))
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=frozenset({'tag1'}), exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id1',
                name='policy1',
                expression='expression-1',
                tags=frozenset({'tag1', 'tag4', 'tag5'}))]))
 
-    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag2'}))
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=None, exclude_tags=frozenset({'tag2'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id1',
                name='policy1',
@@ -66,7 +71,8 @@ def test_filter_appgate_entities():
                tags=frozenset({'tag4', 'tag9', 'tag10'}))
     ]))
 
-    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag7'}))
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=None, exclude_tags=frozenset({'tag7'}))
     assert r1 == frozenset(set(EntityWrapper(a) for a in [
         Policy(id='id0',
                name='policy0',
@@ -81,10 +87,12 @@ def test_filter_appgate_entities():
                expression='expression-3',
                tags=frozenset({'tag4', 'tag9', 'tag10'}))]))
 
-    r1 = exclude_appgate_entities(entities, target_tags=None, exclude_tags=frozenset({'tag1', 'tag4', 'tag6', 'tag9'}))
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=None, exclude_tags=frozenset({'tag1', 'tag4', 'tag6', 'tag9'}))
     assert r1 == frozenset()
 
-    r1 = exclude_appgate_entities(entities, target_tags=frozenset({'tag11', 'tag12'}), exclude_tags=None)
+    r1 = exclude_appgate_entities([EntityWrapper(e) for e in entities],
+                                  target_tags=frozenset({'tag11', 'tag12'}), exclude_tags=None)
     assert r1 == frozenset()
 
 
@@ -101,7 +109,7 @@ def test_compare_policies_0():
                              expression='expression-3'))
     })
     expected_policies = EntitiesSet(set())
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
 
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1',
@@ -132,7 +140,7 @@ def test_compare_policies_1():
         EntityWrapper(Policy(name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.create.entities == {
         EntityWrapper(Policy(name='policy1',
                              expression='expression-1')),
@@ -168,7 +176,7 @@ def test_compare_policies_2():
                              name='policy3',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.modify.entities == set()
     assert plan.delete.entities == set()
     assert plan.create.entities == set()
@@ -211,7 +219,7 @@ def test_compare_policies_3():
                              name='policy4',
                              expression='expression-3'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id1', name='policy3', expression='expression-1'))
     }
@@ -251,7 +259,7 @@ def test_compare_policies_4():
         EntityWrapper(Policy(name='policy4',
                              expression='expression-4'))
     })
-    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS)
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
     assert plan.delete.entities == {
         EntityWrapper(Policy(id='id3', name='policy3', expression='expression-3'))
     }
@@ -270,10 +278,237 @@ def test_compare_policies_4():
     }
 
 
+def test_compare_policies_builtin_tags():
+    """
+    Test compare_plan with different options
+    """
+    ###
+    # Test when no target tags are specified
+    ###
+    current_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             tags=frozenset({'builtin'}),
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    })
+    # Test that policies with tag builtin are not deleted.
+    # target set is None
+    expected_policies = EntitiesSet()
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    assert {p.name for p in plan.delete.entities} == {'policy2', 'policy3'}
+    assert {p.id for p in plan.delete.entities} == {'id2', 'id3'}
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+    # Test that policies with tag builtin are not deleted
+    # Test that policies are modified:
+    #  - builtin ones are modified because target set is not specified
+    #  - all entities match target set if the target set is None
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    assert {p.name for p in plan.delete.entities} == set()
+    assert {p.id for p in plan.delete.entities} == set()
+    assert plan.create.entities == set()
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    }
+
+    # Test that only policies in target set are modified:
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag1', 'tag2'}))
+    # Policies with tag builtin are not deleted
+    assert {p.name for p in plan.delete.entities} == set()
+    assert {p.id for p in plan.delete.entities} == set()
+    assert plan.create.entities == set()
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3-copy')),
+    }
+
+    # Test that only policies in target set are modified or deleted
+    # Policies modified:
+    #  - builtin ones that are not member of the target set
+    #    are NOT modified because target set IS specified
+    #  - all entities with tags in the target set
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             name='policy1',
+                             tags=frozenset({'builtin'}),
+                             expression='expression-0-copy')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag1', 'tag2'}))
+    # Policies with tag builtin are not deleted
+    assert {p.id for p in plan.delete.entities} == {'id3'}
+    assert plan.create.entities == set()
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1-copy')),
+    }
+
+    # Test now with an empy target set, there are no policies matching the set
+    # Nothing is modified, created or deleted.
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset())
+    # Policies with tag builtin are not deleted
+    assert plan.delete.entities == set()
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+    # Test that policy with id5 and id2 are not created because they are
+    # not in the target set.
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'tag2'}))
+
+    # Policies with tag builtin are not deleted
+    assert plan.delete.entities == {EntityWrapper(Policy(id='id3',
+                                                         tags=frozenset({'tag2'}),
+                                                         name='policy3',
+                                                         expression='expression-3'))}
+    assert plan.create.entities == {EntityWrapper(Policy(id='id6',
+                                                         name='policy6',
+                                                         tags=frozenset({'tag2'}),
+                                                         expression='expression-6'))}
+    assert plan.modify.entities == set()
+
+    # One more test with no target group
+    expected_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    })
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    assert plan.create.entities == {
+        EntityWrapper(Policy(id='id5',
+                             name='policy5',
+                             tags=frozenset({'tag5'}),
+                             expression='expression-5')),
+        EntityWrapper(Policy(id='id6',
+                             name='policy6',
+                             tags=frozenset({'tag2'}),
+                             expression='expression-6'))
+    }
+    assert plan.delete.entities == {
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    }
+    assert plan.modify.entities == {
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2-copy')),
+    }
+
+
+def test_compare_policies_builtin_tags_deleted():
+    """
+    Test that builtin tags are never deleted,
+    even if the tag is the target set
+    """
+    current_policies = EntitiesSet({
+        EntityWrapper(Policy(id='id0',
+                             tags=frozenset({'builtin'}),
+                             name='policy0',
+                             expression='expression-0')),
+        EntityWrapper(Policy(id='id1',
+                             name='policy1',
+                             tags=frozenset({'builtin', 'tag1'}),
+                             expression='expression-1')),
+        EntityWrapper(Policy(id='id2',
+                             name='policy2',
+                             expression='expression-2')),
+        EntityWrapper(Policy(id='id3',
+                             tags=frozenset({'tag2'}),
+                             name='policy3',
+                             expression='expression-3'))
+    })
+    expected_policies = EntitiesSet()
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS,
+                            frozenset({'builtin', 'tag1', 'tag2'}))
+
+    # Policies with tag builtin are not deleted
+    assert {p.id for p in plan.delete.entities} == {'id3'}
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
+
 def test_normalize_entitlements_0():
     entitlements = EntitiesSet()
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == set()
     assert conflicts is None
 
@@ -292,15 +527,29 @@ def test_normalize_entitlements_1():
         ])),
     })
     conditions = EntitiesSet()
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == entitlements.entities
     assert conflicts == {
-        'entitlement-1': {
-            'conditions': frozenset({'condition1', 'condition2', 'condition3'})
-        },
-        'entitlement-2': {
-            'conditions': frozenset({'condition1', 'condition2', 'condition3'})
-        },
+        'entitlement-1': [
+            MissingFieldDependencies(
+                parent_name='entitlement-1',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition1', 'condition2', 'condition3'})
+            )],
+        'entitlement-2': [
+            MissingFieldDependencies(
+                parent_name='entitlement-2',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition1', 'condition2', 'condition3'})
+            )]
     }
 
 
@@ -324,7 +573,13 @@ def test_normalize_entitlements_2():
         EntityWrapper(condition(id='c4', name='condition4')),
         EntityWrapper(condition(id='c5', name='condition5')),
     })
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert entitlements_set.entities == {
         EntityWrapper(entitlement(name='entitlement-1', conditions=[
             'c1',
@@ -360,18 +615,35 @@ def test_normalize_entitlements_3():
         EntityWrapper(condition(name='condition4')),
         EntityWrapper(condition(name='condition5')),
     })
-    entitlements_set, conflicts = resolve_entities(entitlements, [(conditions, 'conditions')])
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [EntityFieldDependency(
+            entity_name='Conditions',
+            field_path='conditions',
+            entity_dependencies=conditions
+        )])
     assert conflicts == {
-        'entitlement-2': {
-            'conditions': frozenset({'condition4', 'condition5'}),
-        }
+        'entitlement-2': [
+            MissingFieldDependencies(
+                parent_name='entitlement-2',
+                parent_type='Entitlement',
+                field_path='conditions',
+                dependencies=frozenset({'condition4', 'condition5'})
+            )
+        ]
     }
 
 
 def test_normalize_policies_0():
     policies = EntitiesSet()
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert policies_set.entities == set()
     assert conflicts is None
 
@@ -390,14 +662,30 @@ def test_normalize_policies_1():
         ])),
     })
     entitlements = EntitiesSet()
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts == {
-        'policy-1': {
-            'entitlements': frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
-        },
-        'policy-2': {
-            'entitlements': frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
-        }
+        'policy-1': [
+            MissingFieldDependencies(
+                parent_name='policy-1',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
+            )
+        ],
+        'policy-2': [
+            MissingFieldDependencies(
+                parent_name='policy-2',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement1', 'entitlement2', 'entitlement3'})
+            )
+        ]
     }
 
 
@@ -415,13 +703,19 @@ def test_normalize_policies_2():
         ])),
     })
     entitlements = EntitiesSet({
-            EntityWrapper(entitlement(id='e1', name='entitlement1')),
-            EntityWrapper(entitlement(id='e2', name='entitlement2')),
-            EntityWrapper(entitlement(id='e3', name='entitlement3')),
-            EntityWrapper(entitlement(id='e4', name='entitlement4')),
-            EntityWrapper(entitlement(id='e5', name='entitlement5')),
-        })
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+        EntityWrapper(entitlement(id='e1', name='entitlement1')),
+        EntityWrapper(entitlement(id='e2', name='entitlement2')),
+        EntityWrapper(entitlement(id='e3', name='entitlement3')),
+        EntityWrapper(entitlement(id='e4', name='entitlement4')),
+        EntityWrapper(entitlement(id='e5', name='entitlement5')),
+    })
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts is None
     assert policies_set.entities == {
         EntityWrapper(policy(name='policy-1', entitlements=[
@@ -456,11 +750,22 @@ def test_normalize_policies_3():
         EntityWrapper(entitlement(id='id3', name='entitlement3')),
         EntityWrapper(entitlement(name='entitlement5'))
     })
-    policies_set, conflicts = resolve_entities(policies, [(entitlements, 'entitlements')])
+    policies_set, conflicts = resolve_field_entities(
+        policies,
+        [EntityFieldDependency(
+            entity_name='Entitlement',
+            field_path='entitlements',
+            entity_dependencies=entitlements
+        )])
     assert conflicts == {
-        'policy-2': {
-            'entitlements': frozenset({'entitlement4', 'entitlement5'})
-        }
+        'policy-2': [
+            MissingFieldDependencies(
+                parent_name='policy-2',
+                parent_type='Policy',
+                field_path='entitlements',
+                dependencies=frozenset({'entitlement4', 'entitlement5'})
+            )
+        ]
     }
 
 
@@ -481,8 +786,14 @@ def test_dependencies_1():
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'})))
     })
 
-    # No conflits
-    deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
+    # No conflicts
+    deps3_resolved, conflicts = resolve_field_entities(
+        deps3,
+        [EntityFieldDependency(
+            entity_name='EntityDep3',
+            field_path='deps1',
+            entity_dependencies=deps1
+        )])
     assert conflicts is None
     assert deps3_resolved.entities == {
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'})))
@@ -492,11 +803,22 @@ def test_dependencies_1():
     deps3 = EntitiesSet({
         EntityWrapper(EntityDep3(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'})))
     })
-    deps3_resolved, conflicts = resolve_entities(deps3, [(deps1, 'deps1')])
+    deps3_resolved, conflicts = resolve_field_entities(
+        deps3,
+        [EntityFieldDependency(
+            entity_name='EntityDep3',
+            field_path='deps1',
+            entity_dependencies=deps1
+        )])
     assert conflicts == {
-        'dep31': {
-            'deps1': frozenset({'dep14'})
-        }
+        'dep31':[
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep3',
+                field_path='deps1',
+                dependencies=frozenset({'dep14'})
+            )
+        ]
     }
 
 
@@ -505,6 +827,7 @@ def test_dependencies_2():
     Two dependencies
     EntityDep4 has an array field (deps1) with deps from EntityDep1
     EntityDep4 has a string field (dep2) with deps from EntityDep2
+    resolve_field_entities can not resolve 2 different field paths
     """
     api = load_test_open_api_spec()
     EntityDep1 = api.entities['EntityDep1'].cls
@@ -526,27 +849,23 @@ def test_dependencies_2():
         EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep11', 'dep12'}),
                                  dep2='dep23'))
     })
-    deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
-                                                         (deps2, 'dep2')])
-    assert conflicts is None
-    assert deps3_resolved.entities == {
-        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'d11', 'd12'}),
-                                 dep2='d23'))
-    }
-
-    # conflicts in field deps1
-    deps4 = EntitiesSet({
-        EntityWrapper(EntityDep4(id='d31', name='dep31', deps1=frozenset({'dep14', 'dep12'}),
-                                 dep2='dep33'))
-    })
-    deps3_resolved, conflicts = resolve_entities(deps4, [(deps1, 'deps1'),
-                                                         (deps2, 'dep2')])
-    assert conflicts == {
-        'dep31': {
-            'deps1': frozenset({'dep14'}),
-            'dep2': frozenset({'dep33'})
-        }
-    }
+    with pytest.raises(AppgateException) as excinfo:
+        _1, _2 = resolve_field_entities(
+            deps4,
+            [
+                EntityFieldDependency(
+                entity_name='EntityDep3',
+                field_path='deps1',
+                entity_dependencies=deps1
+            ),
+                EntityFieldDependency(
+                    entity_name='EntityDep3',
+                    field_path='dep2',
+                    entity_dependencies=deps2
+                )
+            ])
+    assert "Fatal error, found different fields when resolving entities" \
+           in str(excinfo.value)
 
 
 def test_dependencies_3():
@@ -565,7 +884,7 @@ def test_dependencies_3():
         EntityWrapper(EntityDep1(id='d13', name='dep13')),
     })
     data = {
-        'id': 'd51',
+        'id': 'id5',
         'name': 'dep51',
         'obj1': {
             'obj2': {
@@ -574,12 +893,20 @@ def test_dependencies_3():
         }
     }
     deps5 = EntitiesSet({
-        EntityWrapper(K8S_LOADER.load(data, None, EntityDep5))
+        EntityWrapper(APPGATE_LOADER.load(data, None, EntityDep5))
     })
-    deps5_resolved, conflicts = resolve_entities(deps5, [(deps1, 'obj1.obj2.dep1')])
+    deps5_resolved, conflicts = resolve_field_entities(
+        deps5,
+        [
+            EntityFieldDependency(
+                entity_name='EntityDep5',
+                field_path='obj1.obj2.dep1',
+                entity_dependencies=deps1
+            )
+        ])
     assert conflicts is None
     assert deps5_resolved.entities == {
-        EntityWrapper(EntityDep5(id='d51', name='dep51',
+        EntityWrapper(EntityDep5(id='id5', name='dep51',
                                  obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1='d11'))))
     }
 
@@ -653,6 +980,7 @@ def test_dependencies_4():
     })
     conflicts = resolve_appgate_state(appgate_state, test_api_spec)
     assert conflicts == {}
+    print(appgate_state.entities_set['EntityDep1'].entities)
     assert appgate_state.entities_set['EntityDep1'].entities == {
         EntityWrapper(EntityDep1(id='d11', name='dep11')),
         EntityWrapper(EntityDep1(id='d12', name='dep12')),
@@ -670,7 +998,7 @@ def test_dependencies_4():
     }
     assert appgate_state.entities_set['EntityDep4'].entities == {
         EntityWrapper(EntityDep4(id='d41', name='dep41', deps1=frozenset({'d11', 'd12'}),
-                   dep2='d21')),
+                                 dep2='d21')),
         EntityWrapper(EntityDep4(id='d42', name='dep42', deps1=frozenset({'d11', 'd13'}),
                                  dep2='d22')),
         EntityWrapper(EntityDep4(id='d43', name='dep43', deps1=frozenset({'d12', 'd13'}),
@@ -724,9 +1052,121 @@ def test_dependencies_4():
     }
 
 
+def test_dependencies_5():
+    """
+    Test nested dependencies failing with Entity that has several x-uuid-ref fields
+    """
+    test_api_spec = load_test_open_api_spec(reload=True)
+    EntityDepNested7 = test_api_spec.entities['EntityDepNested7'].cls
+    EntityDepNested7_Deps = test_api_spec.entities['EntityDepNested7_Deps'].cls
+
+    deps7 = EntitiesSet({
+        EntityWrapper(EntityDepNested7(id='d71', name='d71',
+                                       deps=EntityDepNested7_Deps(
+                                           field1="test1",
+                                           field2="806c6306-226d-4900-86d3-88600ec73eb5"))),
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {
+        'd71': [
+            MissingFieldDependencies(
+                parent_name='d71',
+                parent_type='EntityDepNested7',
+                field_path='deps.field2',
+                dependencies=frozenset({'806c6306-226d-4900-86d3-88600ec73eb5'})
+            )]
+    }
+
+    # Either EntityDep2 or EntityDep1 should satisfy this dependency
+    EntityDep2 = test_api_spec.entities['EntityDep2'].cls
+    deps2 = EntitiesSet({
+        EntityWrapper(EntityDep2(id='806c6306-226d-4900-86d3-88600ec73eb5', name='d2'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+        'EntityDep2': deps2,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+    # Either EntityDep2 or EntityDep1 should satisfy this dependency
+    EntityDep1 = test_api_spec.entities['EntityDep1'].cls
+    deps1 = EntitiesSet({
+        EntityWrapper(EntityDep1(id='806c6306-226d-4900-86d3-88600ec73eb5', name='d2'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDepNested7': deps7,
+        'EntityDep1': deps1,
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+
+def test_dependencies_6():
+    """
+    Test nested dependencies failing.
+    """
+    test_api_spec = load_test_open_api_spec(reload=True)
+    EntityDep1 = test_api_spec.entities['EntityDep1'].cls
+    EntityDep2 = test_api_spec.entities['EntityDep2'].cls
+    EntityDep4 = test_api_spec.entities['EntityDep4'].cls
+    deps1 = EntitiesSet({
+        EntityWrapper(EntityDep1(id='d11', name='dep11')),
+        EntityWrapper(EntityDep1(id='d12', name='dep12')),
+        EntityWrapper(EntityDep1(id='d13', name='dep13')),
+    })
+    deps2 = EntitiesSet({
+        EntityWrapper(EntityDep2(id='d21', name='dep21')),
+        EntityWrapper(EntityDep2(id='d22', name='dep22')),
+        EntityWrapper(EntityDep2(id='d23', name='dep23')),
+    })
+    deps4 = EntitiesSet({
+        EntityWrapper(EntityDep4(id='d31', name='dep31',
+                                 deps1=frozenset({'dep11', 'dep12'}),
+                                 dep2='dep23'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDep1': deps1,
+        'EntityDep2': deps2,
+        'EntityDep4': deps4
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert conflicts == {}
+
+    deps4 = EntitiesSet({
+        EntityWrapper(EntityDep4(id='d31', name='dep31',
+                                 deps1=frozenset({'dep14', 'dep12'}),
+                                 dep2='dep33'))
+    })
+    appgate_state = AppgateState(entities_set={
+        'EntityDep1': deps1,
+        'EntityDep2': deps2,
+        'EntityDep4': deps4
+    })
+    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    assert sorted(list(conflicts.keys())) == ['dep31']
+    assert set(conflicts['dep31']) == {
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep4',
+                field_path='deps1',
+                dependencies=frozenset({'dep14'})
+            ),
+            MissingFieldDependencies(
+                parent_name='dep31',
+                parent_type='EntityDep4',
+                field_path='dep2',
+                dependencies=frozenset({'dep33'})
+            ),
+    }
+
+
 def test_compare_plan_entity_bytes():
     EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
-                                                reload=True).entities['EntityTest3Appgate'].cls
+                                                 reload=True).entities['EntityTest3Appgate'].cls
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     # fieldThree is readOnly :: size of fieldOne
@@ -752,7 +1192,7 @@ def test_compare_plan_entity_bytes():
     entities_expected = EntitiesSet({
         EntityWrapper(K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate))
     })
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset()
     assert plan.modifications_diff == {}
 
@@ -769,7 +1209,7 @@ def test_compare_plan_entity_bytes():
     new_e = K8S_LOADER.load(e_data, e_metadata, EntityTest3Appgate)
 
     entities_expected = EntitiesSet({EntityWrapper(new_e)})
-    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS)
+    plan = compare_entities(entities_current, entities_expected, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'entity1': ['--- \n', '+++ \n', '@@ -2,4 +2,4 @@\n',
@@ -828,7 +1268,7 @@ def test_compare_plan_entity_pem():
     expected_entities = EntitiesSet({
         EntityWrapper(new_e)
     })
-    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS)
+    plan = compare_entities(current_entities, expected_entities, BUILTIN_TAGS, None)
     assert plan.modify.entities == frozenset({EntityWrapper(new_e)})
     assert plan.modifications_diff == {
         'c1': [

@@ -1,65 +1,36 @@
 import asyncio
-import base64
-import binascii
 import logging
-import os
 import sys
-import tempfile
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
-from pathlib import Path
-from typing import Optional, Type, Dict, Callable, Any, FrozenSet, Tuple, Iterable, List, Set
+from typing import Optional, Type, Dict, Callable, Any, FrozenSet, List, Set
 import threading
 
-from attr import attrib, attrs
 from kubernetes.client.rest import ApiException
 from typedload.exceptions import TypedloadTypeError
-from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
+from appgate.types import Context
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
 from appgate.openapi.types import AppgateException
-from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients, SPEC_DIR
-from appgate.openapi.types import APISpec, Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
+from appgate.openapi.openapi import generate_api_spec_clients
+from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
-from appgate.openapi.utils import is_target, APPGATE_TARGET_TAGS_ENV, BUILTIN_TAGS, APPGATE_EXCLUDE_TAGS_ENV, \
-    APPGATE_BUILTIN_TAGS_ENV, has_tag
-from appgate.secrets import k8s_get_secret
-
 from appgate.state import AppgateState, create_appgate_plan, \
-    appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, OperatorArguments
+    appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
+    exclude_appgate_entities
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, is_target, has_tag
 
 __all__ = [
-    'init_kubernetes',
     'main_loop',
-    'get_context',
     'get_current_appgate_state',
     'start_entity_loop',
-    'Context',
     'log',
-    'exclude_appgate_entities',
+    'is_debug',
 ]
-
-
-USER_ENV = 'APPGATE_OPERATOR_USER'
-PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
-PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
-DEVICE_ID_ENV = 'APPGATE_OPERATOR_DEVICE_ID'
-TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
-HOST_ENV = 'APPGATE_OPERATOR_HOST'
-DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
-CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
-NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
-TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
-SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
-APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
-APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
-APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
-APPGATE_SSL_CACERT = 'APPGATE_OPERATOR_CACERT'
 
 
 crds: Optional[CustomObjectsApi] = None
@@ -67,150 +38,15 @@ log = logging.getLogger('appgate-operator')
 log.setLevel(logging.INFO)
 
 
+def is_debug() -> bool:
+    return log.level <= logging.DEBUG
+
+
 def get_crds() -> CustomObjectsApi:
     global crds
     if not crds:
         crds = CustomObjectsApi()
     return crds
-
-
-@attrs()
-class Context:
-    namespace: str = attrib()
-    user: str = attrib()
-    password: str = attrib()
-    provider: str = attrib()
-    controller: str = attrib()
-    two_way_sync: bool = attrib()
-    timeout: int = attrib()
-    dry_run_mode: bool = attrib()
-    cleanup_mode: bool = attrib()
-    api_spec: APISpec = attrib()
-    metadata_configmap: str = attrib()
-    # target tags if specified tells which entities do we want to work on
-    target_tags: Optional[FrozenSet[str]] = attrib(default=None)
-    # builtin tags are the entities that we consider builtin
-    builtin_tags: FrozenSet[str] = attrib(default=BUILTIN_TAGS)
-    # exclude tags if specified tells which entities do we want to exclude
-    exclude_tags: Optional[FrozenSet[str]] = attrib(default=None)
-    no_verify: bool = attrib(default=True)
-    cafile: Optional[Path] = attrib(default=None)
-    device_id: Optional[str] = attrib(default=None)
-
-
-def save_cert(cert: str) -> Path:
-    cert_path = Path(tempfile.mktemp())
-    with cert_path.open('w') as f:
-        if cert.startswith('-----BEGIN CERTIFICATE-----'):
-            f.write(cert)
-        else:
-            bytes_decoded: bytes = base64.b64decode(cert)
-            f.write(bytes_decoded.decode())
-    return cert_path
-
-
-def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
-    tags: List[Optional[FrozenSet[str]]] = []
-    for i, (tags_arg, tags_env) in enumerate([(args.target_tags, APPGATE_TARGET_TAGS_ENV),
-                                              (args.exclude_tags, APPGATE_EXCLUDE_TAGS_ENV),
-                                              (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV)]):
-        xs = frozenset(tags_arg) if tags_arg else frozenset()
-        ys = filter(None, os.getenv(tags_env, '').split(','))
-        ts = None
-        if xs or ys:
-            ts = xs.union(ys)
-        tags.append(ts)
-    return tags
-
-
-def get_context(args: OperatorArguments,
-                k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> Context:
-    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
-    if not namespace:
-        raise AppgateException('Namespace must be defined in order to run the appgate-operator')
-    user = os.getenv(USER_ENV) or args.user
-    password = os.getenv(PASSWORD_ENV) or args.password
-    provider = os.getenv(PROVIDER_ENV) or args.provider
-    device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
-    controller = os.getenv(HOST_ENV) or args.host
-    timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
-    dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
-    cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
-    spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
-    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, '0') == '1' or args.no_verify
-    appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
-    appgate_cacert_path = None
-    verify = not no_verify
-    if verify and appgate_cacert:
-        try:
-            appgate_cacert_path = save_cert(appgate_cacert)
-        except (binascii.Error, binascii.Incomplete) as e:
-            raise AppgateException(f'[get-context] Unable to decode the cerificate provided: {e}')
-        log.debug(f'[get_context] Saving certificate in {appgate_cacert_path}')
-    elif verify and args.cafile:
-        appgate_cacert_path = args.cafile
-    secrets_key = os.getenv(APPGATE_SECRETS_KEY)
-    target_tags, exclude_tags, builtin_tags = get_tags(args)
-    metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
-
-    if not user or not password or not controller:
-        missing_envs = ','.join([x[0]
-                                 for x in [(USER_ENV, user),
-                                           (PASSWORD_ENV, password),
-                                           (HOST_ENV, controller)]
-                                 if x[1] is None])
-        raise AppgateException(f'Unable to create appgate-controller context, missing: {missing_envs}')
-    api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
-                                 secrets_key=secrets_key,
-                                 k8s_get_secret=k8s_get_secret)
-    return Context(namespace=namespace, user=user, password=password,
-                   provider=provider,
-                   device_id=device_id,
-                   controller=controller, timeout=int(timeout),
-                   dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1',
-                   two_way_sync=two_way_sync == '1',
-                   api_spec=api_spec,
-                   no_verify=no_verify,
-                   target_tags=target_tags if target_tags else None,
-                   builtin_tags=builtin_tags if builtin_tags else BUILTIN_TAGS,
-                   exclude_tags=exclude_tags if exclude_tags else None,
-                   metadata_configmap=metadata_configmap,
-                   cafile=appgate_cacert_path)
-
-
-def init_kubernetes(args: OperatorArguments) -> Context:
-    if 'KUBERNETES_PORT' in os.environ:
-        load_incluster_config()
-        # TODO: Discover it somehow
-        # https://github.com/kubernetes-client/python/issues/363
-        namespace = args.namespace or os.getenv(NAMESPACE_ENV)
-    else:
-        load_kube_config()
-        namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
-
-    if not namespace:
-        raise AppgateException('Unable to discover namespace, please provide it.')
-    ns: str = namespace  # lambda thinks it's an Optional
-    return get_context(
-        args=args,
-        k8s_get_secret=lambda secret, key: k8s_get_secret(
-            namespace=ns,
-            key=key,
-            secret=secret
-        ))
-
-
-def exclude_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
-                             exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
-    """
-    Filter out entities according to target_tags and exclude_rags
-    Returns the entities that are member of target_tags (all entities if None)
-    but not member of exclude_tags
-    """
-    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
-                      [EntityWrapper(e) for e in entities]))
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
@@ -243,7 +79,9 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    exclude_appgate_entities(entities, ctx.target_tags, ctx.exclude_tags))
+                    exclude_appgate_entities(
+                        [EntityWrapper(e) for e in entities],
+                        None, ctx.exclude_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
@@ -369,7 +207,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags,)
+                                       ctx.builtin_tags, ctx.target_tags)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)

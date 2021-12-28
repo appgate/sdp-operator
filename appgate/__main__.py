@@ -1,26 +1,157 @@
 import asyncio
+import binascii
 import itertools
 import sys
-import uuid
+import os
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Callable, FrozenSet, Iterable
 import datetime
 import time
+import tempfile
+import base64
+
 
 import yaml
+from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 
 from appgate.client import K8SConfigMapClient
-from appgate.openapi.types import AppgateException
 from appgate.logger import set_level
-from appgate.appgate import init_kubernetes, main_loop, get_context, get_current_appgate_state, \
-    Context, start_entity_loop, log
-from appgate.openapi.openapi import generate_api_spec, entity_names, generate_crd
+from appgate.appgate import main_loop, get_current_appgate_state, \
+    start_entity_loop, log, is_debug
+from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
-from appgate.types import AppgateEvent, OperatorArguments
+from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS
 from appgate.attrs import K8S_LOADER
+from appgate.openapi.openapi import generate_api_spec
+from appgate.openapi.types import AppgateException
+from appgate.secrets import k8s_get_secret
+
+
+USER_ENV = 'APPGATE_OPERATOR_USER'
+PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
+PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
+DEVICE_ID_ENV = 'APPGATE_OPERATOR_DEVICE_ID'
+TIMEOUT_ENV = 'APPGATE_OPERATOR_TIMEOUT'
+HOST_ENV = 'APPGATE_OPERATOR_HOST'
+DRY_RUN_ENV = 'APPGATE_OPERATOR_DRY_RUN'
+CLEANUP_ENV = 'APPGATE_OPERATOR_CLEANUP'
+NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
+TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
+SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
+APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
+APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
+APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
+APPGATE_SSL_CACERT = 'APPGATE_OPERATOR_CACERT'
+APPGATE_EXCLUDE_TAGS_ENV = 'APPGATE_OPERATOR_EXCLUDE_TAGS'
+APPGATE_TARGET_TAGS_ENV = 'APPGATE_OPERATOR_TARGET_TAGS'
+APPGATE_BUILTIN_TAGS_ENV = 'APPGATE_OPERATOR_BUILTIN_TAGS'
+
+
+def save_cert(cert: str) -> Path:
+    cert_path = Path(tempfile.mktemp())
+    with cert_path.open('w') as f:
+        if cert.startswith('-----BEGIN CERTIFICATE-----'):
+            f.write(cert)
+        else:
+            bytes_decoded: bytes = base64.b64decode(cert)
+            f.write(bytes_decoded.decode())
+    return cert_path
+
+
+def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
+    tags: List[Optional[FrozenSet[str]]] = []
+    for i, (tags_arg, tags_env) in enumerate([(args.target_tags, APPGATE_TARGET_TAGS_ENV),
+                                              (args.exclude_tags, APPGATE_EXCLUDE_TAGS_ENV),
+                                              (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV)]):
+        xs = frozenset(tags_arg) if tags_arg else frozenset()
+        ys = filter(None, os.getenv(tags_env, '').split(','))
+        ts = None
+        if xs or ys:
+            ts = xs.union(ys)
+        tags.append(ts)
+    return tags
+
+
+def get_context(args: OperatorArguments,
+                k8s_get_secret: Optional[Callable[[str, str], str]] = None) -> Context:
+    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    if not namespace:
+        raise AppgateException('Namespace must be defined in order to run the appgate-operator')
+    user = os.getenv(USER_ENV) or args.user
+    password = os.getenv(PASSWORD_ENV) or args.password
+    provider = os.getenv(PROVIDER_ENV) or args.provider
+    device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
+    controller = os.getenv(HOST_ENV) or args.host
+    timeout = os.getenv(TIMEOUT_ENV) or args.timeout
+    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
+    dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
+    cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
+    spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
+    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, '0') == '1' or args.no_verify
+    appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
+    appgate_cacert_path = None
+    verify = not no_verify
+    if verify and appgate_cacert:
+        try:
+            appgate_cacert_path = save_cert(appgate_cacert)
+        except (binascii.Error, binascii.Incomplete) as e:
+            raise AppgateException(f'[get-context] Unable to decode the cerificate provided: {e}')
+        log.debug(f'[get_context] Saving certificate in {appgate_cacert_path}')
+    elif verify and args.cafile:
+        appgate_cacert_path = args.cafile
+    secrets_key = os.getenv(APPGATE_SECRETS_KEY)
+    target_tags, exclude_tags, builtin_tags = get_tags(args)
+    metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
+
+    if not user or not password or not controller:
+        missing_envs = ','.join([x[0]
+                                 for x in [(USER_ENV, user),
+                                           (PASSWORD_ENV, password),
+                                           (HOST_ENV, controller)]
+                                 if x[1] is None])
+        raise AppgateException(f'Unable to create appgate-controller context, missing: {missing_envs}')
+    api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
+                                 secrets_key=secrets_key,
+                                 k8s_get_secret=k8s_get_secret)
+    return Context(namespace=namespace, user=user, password=password,
+                   provider=provider,
+                   device_id=device_id,
+                   controller=controller, timeout=int(timeout),
+                   dry_run_mode=dry_run_mode == '1',
+                   cleanup_mode=cleanup_mode == '1',
+                   two_way_sync=two_way_sync == '1',
+                   api_spec=api_spec,
+                   no_verify=no_verify,
+                   target_tags=target_tags if target_tags else None,
+                   builtin_tags=builtin_tags if builtin_tags else BUILTIN_TAGS,
+                   exclude_tags=exclude_tags if exclude_tags else None,
+                   metadata_configmap=metadata_configmap,
+                   cafile=appgate_cacert_path)
+
+
+def init_kubernetes(args: OperatorArguments) -> Context:
+    if 'KUBERNETES_PORT' in os.environ:
+        load_incluster_config()
+        # TODO: Discover it somehow
+        # https://github.com/kubernetes-client/python/issues/363
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    else:
+        load_kube_config()
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
+
+    if not namespace:
+        raise AppgateException('Unable to discover namespace, please provide it.')
+    ns: str = namespace  # lambda thinks it's an Optional
+    return get_context(
+        args=args,
+        k8s_get_secret=lambda secret, key: k8s_get_secret(
+            namespace=ns,
+            key=key,
+            secret=secret
+        ))
 
 
 async def run_k8s(args: OperatorArguments) -> None:
@@ -58,6 +189,11 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
                         stdout: bool = False) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
+    if is_debug():
+        for entity_name, entity_set in current_appgate_state.entities_set.items():
+            for e in entity_set.entities:
+                log.debug(f'Got entitiy %s: %s [%s]', e.name, e.id,
+                          entity_name)
     total_conflicts = resolve_appgate_state(appgate_state=current_appgate_state,
                                             reverse=True,
                                             api_spec=ctx.api_spec)
@@ -66,7 +202,10 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
         entities_conflict_summary(conflicts=total_conflicts,
                                   namespace=ctx.namespace)
     else:
-        current_appgate_state.dump(output_dir=output_dir, stdout=stdout)
+        current_appgate_state.dump(
+            output_dir=output_dir, stdout=stdout, target_tags=ctx.target_tags,
+            exclude_tags=ctx.exclude_tags
+        )
 
 
 def main_dump_entities(args: OperatorArguments,  stdout: bool = False,
