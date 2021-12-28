@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, List, Callable, Union
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
+from kubernetes.client.exceptions import ApiException
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
@@ -114,13 +115,17 @@ class K8SConfigMapClient:
     async def init(self) -> None:
         log.info('[k8s-configmap-client/%s/%s] Initializing config-map %s', self.name, self.namespace,
                  self.name)
-        configmap = await asyncio.to_thread(  # type: ignore
-            self._v1.read_namespaced_config_map,
-            name=self.name,
-            namespace=self.namespace
-        )
-        self._configmap_mt = configmap.metadata
-        self._data = configmap.data or {}
+        try:
+            configmap = await asyncio.to_thread(  # type: ignore
+                self._v1.read_namespaced_config_map,
+                name=self.name,
+                namespace=self.namespace
+            )
+            self._configmap_mt = configmap.metadata
+            self._data = configmap.data or {}
+        except ApiException as e:
+            raise AppgateException(f'Error initializing configmap: {e.body}')
+
 
     @staticmethod
     def _entry_key(key: str) -> str:

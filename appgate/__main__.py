@@ -184,7 +184,10 @@ async def run_k8s(args: OperatorArguments) -> None:
 
 
 def main_run(args: OperatorArguments) -> None:
-    asyncio.run(run_k8s(args))
+    try:
+        asyncio.run(run_k8s(args))
+    except AppgateException as e:
+        log.error('[appgate-operator] Fatal error: %s', e)
 
 
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
