@@ -542,14 +542,15 @@ def resolve_field_entity(entity: Entity_T,
                 parent_type=parent_dependency.__class__.__qualname__,
                 dependencies=frozenset(missing_dependencies_set)
             ))
-    if new_dependencies:
+    # Only return resolved dependencies if all of them were resolved!
+    if new_dependencies and len(new_dependencies) == len(dependencies):
         if not is_iterable:
             return EntityWrapper(evolve_rec(entity, field.split('.'), list(new_dependencies)[0]))
         else:
             return EntityWrapper(evolve_rec(entity, field.split('.'), frozenset(new_dependencies)))
     return None
 
-#Dict[str, List[EntitiesSet]]
+
 def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDependency],
                            reverse: bool = False) -> Tuple[EntitiesSet,
                                                            Optional[Dict[str, List[MissingFieldDependencies]]]]:
