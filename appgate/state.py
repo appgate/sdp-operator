@@ -12,6 +12,7 @@ from typing import Set, Dict, Optional, Tuple, Literal, Any, Iterable, List, Fro
 import yaml
 from attr import attrib, attrs, evolve
 
+from appgate.logger import is_debug
 from appgate.attrs import K8S_DUMPER, DIFF_DUMPER, dump_datetime
 from appgate.client import EntityClient, K8SConfigMapClient, entity_unique_id
 from appgate.logger import log
