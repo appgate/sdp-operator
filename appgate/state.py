@@ -36,7 +36,19 @@ __all__ = [
     'resolve_appgate_state',
     'compare_entities',
     'compute_diff',
+    'exclude_appgate_entities',
 ]
+
+
+def exclude_appgate_entities(entities: Iterable[EntityWrapper], target_tags: Optional[FrozenSet[str]],
+                             exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
+    """
+    Filter out entities according to target_tags and exclude_tags
+    Returns the entities that are member of target_tags (all entities if None)
+    but not member of exclude_tags
+    """
+    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
+                     entities))
 
 
 def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,
@@ -83,10 +95,14 @@ def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
 
 def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
                   entity_type: str) -> Optional[List[str]]:
+    """
+    Dump entities into a yaml file or stdout.
+    """
     entity_passwords = None
     if not entities:
-        log.warning(f'No entities of type: {entity_type} found')
+        log.debug(f'No entities of type %s found', entity_type)
         return None
+    log.info(f'Dumping entities of type %s', entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
         dumped_entity = dump_entity(e, entity_type)
@@ -110,6 +126,10 @@ def dump_entities(entities: Iterable[EntityWrapper], dump_file: Optional[Path],
 
 @attrs()
 class AppgateState:
+    """
+    Class to maintain the state of the Appgate system in memory.
+    The state is stored in a dictionary that maps: EntityType -> EntitiesSet
+    """
     entities_set: Dict[str, EntitiesSet] = attrib()
 
     def with_entity(self, entity: EntityWrapper, op: str,
@@ -142,25 +162,33 @@ class AppgateState:
                 new_entities_set[k] = v
         return AppgateState(new_entities_set)
 
-    def dump(self, output_dir: Optional[Path] = None, stdout: bool = False) -> None:
+    def dump(self, output_dir: Optional[Path] = None, stdout: bool = False,
+             target_tags: Optional[FrozenSet[str]] = None,
+             exclude_tags: Optional[FrozenSet[str]] = None) -> None:
         dump_dir = None
         if not stdout:
             output_dir_format = f'{str(datetime.date.today())}_{time.strftime("%H-%M")}-entities'
             dump_dir = output_dir or Path(output_dir_format)
             dump_dir.mkdir(exist_ok=True)
         password_fields = {}
-        for (i, (k, v)) in enumerate(self.entities_set.items()):
+        for (i, (k, v)) in enumerate( self.entities_set.items()):
             if stdout and i > 0:
                 print('---\n')
             p = dump_dir / f'{k.lower()}.yaml' if dump_dir else None
-            entity_password_fields = dump_entities(self.entities_set[k].entities, p, k)
+            entities_to_dump = exclude_appgate_entities(
+                entities=self.entities_set[k].entities,
+                target_tags=target_tags,
+                exclude_tags=exclude_tags
+            )
+            entity_password_fields = dump_entities(entities_to_dump, p, k)
             if entity_password_fields:
                 password_fields[k] = entity_password_fields
-        print('Passwords found in entities:')
-        for entity_name, pwd_fields in password_fields.items():
-            print(f'+ Entity: {entity_name}')
-            for password_field in pwd_fields:
-                print(f'  - {password_field}')
+        if len(password_fields) > 0:
+            print('Passwords found in entities:')
+            for entity_name, pwd_fields in password_fields.items():
+                print(f'+ Entity: {entity_name}')
+                for password_field in pwd_fields:
+                    print(f'  - {password_field}')
 
 
 def entity_sync_generation(entity_wrapper: EntityWrapper) -> EntityWrapper:

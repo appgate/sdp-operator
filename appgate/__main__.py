@@ -202,7 +202,10 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
         entities_conflict_summary(conflicts=total_conflicts,
                                   namespace=ctx.namespace)
     else:
-        current_appgate_state.dump(output_dir=output_dir, stdout=stdout)
+        current_appgate_state.dump(
+            output_dir=output_dir, stdout=stdout, target_tags=ctx.target_tags,
+            exclude_tags=ctx.exclude_tags
+        )
 
 
 def main_dump_entities(args: OperatorArguments,  stdout: bool = False,

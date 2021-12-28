@@ -20,7 +20,8 @@ from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOMAIN, \
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.state import AppgateState, create_appgate_plan, \
-    appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state
+    appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
+    exclude_appgate_entities
 from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, is_target, has_tag
 
 __all__ = [
@@ -28,7 +29,6 @@ __all__ = [
     'get_current_appgate_state',
     'start_entity_loop',
     'log',
-    'exclude_appgate_entities',
     'is_debug',
 ]
 
@@ -47,17 +47,6 @@ def get_crds() -> CustomObjectsApi:
     if not crds:
         crds = CustomObjectsApi()
     return crds
-
-
-def exclude_appgate_entities(entities: List[Entity_T], target_tags: Optional[FrozenSet[str]],
-                             exclude_tags: Optional[FrozenSet[str]]) -> Set[EntityWrapper]:
-    """
-    Filter out entities according to target_tags and exclude_tags
-    Returns the entities that are member of target_tags (all entities if None)
-    but not member of exclude_tags
-    """
-    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
-                      [EntityWrapper(e) for e in entities]))
 
 
 async def get_current_appgate_state(ctx: Context) -> AppgateState:
@@ -90,7 +79,9 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    exclude_appgate_entities(entities, None, ctx.exclude_tags))
+                    exclude_appgate_entities(
+                        [EntityWrapper(e) for e in entities],
+                        None, ctx.exclude_tags))
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
