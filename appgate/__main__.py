@@ -43,7 +43,7 @@ NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
-APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
+APPGATE_MT_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
 APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
 APPGATE_SSL_CACERT = 'APPGATE_OPERATOR_CACERT'
 APPGATE_EXCLUDE_TAGS_ENV = 'APPGATE_OPERATOR_EXCLUDE_TAGS'
@@ -105,7 +105,8 @@ def get_context(args: OperatorArguments,
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags, exclude_tags, builtin_tags = get_tags(args)
-    metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
+    metadata_configmap = args.metadata_configmap  or os.getenv(APPGATE_MT_CONFIGMAP_ENV) \
+                         or f'{namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
