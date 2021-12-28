@@ -21,7 +21,7 @@ from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOM
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
-    exclude_appgate_entities
+    exclude_appgate_entities, exclude_appgate_entity
 from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, is_target, has_tag
 
 __all__ = [

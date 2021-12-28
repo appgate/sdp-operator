@@ -37,7 +37,13 @@ __all__ = [
     'compare_entities',
     'compute_diff',
     'exclude_appgate_entities',
+    'exclude_appgate_entity',
 ]
+
+
+def exclude_appgate_entity(entity: EntityWrapper,  target_tags: Optional[FrozenSet[str]],
+                           exclude_tags: Optional[FrozenSet[str]]) -> bool:
+    return is_target(entity, target_tags) and not has_tag(entity, exclude_tags)
 
 
 def exclude_appgate_entities(entities: Iterable[EntityWrapper], target_tags: Optional[FrozenSet[str]],
@@ -47,8 +53,8 @@ def exclude_appgate_entities(entities: Iterable[EntityWrapper], target_tags: Opt
     Returns the entities that are member of target_tags (all entities if None)
     but not member of exclude_tags
     """
-    return set(filter(lambda e: is_target(e, target_tags) and not has_tag(e, exclude_tags),
-                     entities))
+    return set(filter(lambda e: exclude_appgate_entity(e, target_tags=target_tags, exclude_tags=exclude_tags),
+                      entities))
 
 
 def entities_op(entity_set: EntitiesSet, entity: EntityWrapper,
