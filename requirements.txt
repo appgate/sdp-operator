@@ -1,5 +1,5 @@
-aiohttp==3.7.4.post0
-async-timeout==3.0.1
+aiohttp==3.8.1
+async-timeout==4.0.2
 attrs==20.3.0
 cachetools==4.2.2
 certifi==2020.12.5
