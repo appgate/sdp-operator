@@ -22,24 +22,20 @@ from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOM
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
     exclude_appgate_entities, exclude_appgate_entity
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject, is_target, has_tag
+from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
+
 
 __all__ = [
     'main_loop',
     'get_current_appgate_state',
     'start_entity_loop',
     'log',
-    'is_debug',
 ]
 
 
 crds: Optional[CustomObjectsApi] = None
 log = logging.getLogger('appgate-operator')
 log.setLevel(logging.INFO)
-
-
-def is_debug() -> bool:
-    return log.level <= logging.DEBUG
 
 
 def get_crds() -> CustomObjectsApi:
@@ -175,6 +171,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
              namespace)
     while True:
         try:
+            log.info('[appgate-operator/%s] Waiting for event', namespace)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
                      event.op, str(type(event.entity)), event.entity.name)

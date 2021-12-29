@@ -17,9 +17,9 @@ import yaml
 from kubernetes.config import load_kube_config, list_kube_config_contexts, load_incluster_config
 
 from appgate.client import K8SConfigMapClient
-from appgate.logger import set_level
+from appgate.logger import set_level, is_debug
 from appgate.appgate import main_loop, get_current_appgate_state, \
-    start_entity_loop, log, is_debug
+    start_entity_loop, log
 from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
 from appgate.openapi.utils import join
 from appgate.state import entities_conflict_summary, resolve_appgate_state
@@ -30,6 +30,7 @@ from appgate.openapi.types import AppgateException
 from appgate.secrets import k8s_get_secret
 
 
+APPGATE_LOG_LEVEL = 'APPGATE_OPERATOR_LOG_LEVEL'
 USER_ENV = 'APPGATE_OPERATOR_USER'
 PASSWORD_ENV = 'APPGATE_OPERATOR_PASSWORD'
 PROVIDER_ENV = 'APPGATE_OPERATOR_PROVIDER'
@@ -42,7 +43,7 @@ NAMESPACE_ENV = 'APPGATE_OPERATOR_NAMESPACE'
 TWO_WAY_SYNC_ENV = 'APPGATE_OPERATOR_TWO_WAY_SYNC'
 SPEC_DIR_ENV = 'APPGATE_OPERATOR_SPEC_DIRECTORY'
 APPGATE_SECRETS_KEY = 'APPGATE_OPERATOR_FERNET_KEY'
-APPGATE_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
+APPGATE_MT_CONFIGMAP_ENV = 'APPGATE_OPERATOR_CONFIG_MAP'
 APPGATE_SSL_NO_VERIFY = 'APPGATE_OPERATOR_SSL_NO_VERIFY'
 APPGATE_SSL_CACERT = 'APPGATE_OPERATOR_CACERT'
 APPGATE_EXCLUDE_TAGS_ENV = 'APPGATE_OPERATOR_EXCLUDE_TAGS'
@@ -104,7 +105,8 @@ def get_context(args: OperatorArguments,
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags, exclude_tags, builtin_tags = get_tags(args)
-    metadata_configmap = args.metadata_configmap or f'{namespace}-configmap'
+    metadata_configmap = args.metadata_configmap  or os.getenv(APPGATE_MT_CONFIGMAP_ENV) \
+                         or f'{namespace}-configmap'
 
     if not user or not password or not controller:
         missing_envs = ','.join([x[0]
@@ -121,7 +123,7 @@ def get_context(args: OperatorArguments,
                    device_id=device_id,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1',
+                   cleanup_mode=cleanup_mode == '0',
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
                    no_verify=no_verify,
@@ -140,7 +142,8 @@ def init_kubernetes(args: OperatorArguments) -> Context:
         namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
-        namespace = args.namespace or os.getenv(NAMESPACE_ENV) or list_kube_config_contexts()[1]['context'].get('namespace')
+        namespace = args.namespace or os.getenv(NAMESPACE_ENV)\
+                    or list_kube_config_contexts()[1]['context'].get('namespace')
 
     if not namespace:
         raise AppgateException('Unable to discover namespace, please provide it.')
@@ -157,7 +160,8 @@ def init_kubernetes(args: OperatorArguments) -> Context:
 async def run_k8s(args: OperatorArguments) -> None:
     ctx = init_kubernetes(args)
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
+    k8s_configmap_client = K8SConfigMapClient(namespace=ctx.namespace,
+                                              name=ctx.metadata_configmap)
     await k8s_configmap_client.init()
 
     if ctx.device_id is None:
@@ -183,7 +187,10 @@ async def run_k8s(args: OperatorArguments) -> None:
 
 
 def main_run(args: OperatorArguments) -> None:
-    asyncio.run(run_k8s(args))
+    try:
+        asyncio.run(run_k8s(args))
+    except AppgateException as e:
+        log.error('[appgate-operator] Fatal error: %s', e)
 
 
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
@@ -344,7 +351,7 @@ def main() -> None:
     api_info.set_defaults(cmd='api-info')
 
     args = parser.parse_args()
-    set_level(log_level=args.log_level.lower())
+    set_level(log_level=os.getenv(APPGATE_LOG_LEVEL) or args.log_level.lower())
     try:
         if args.cmd == 'run':
             if args.cafile and not Path(args.cafile).exists():

@@ -87,7 +87,7 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
         path, ref = definition['$ref'].split('#', maxsplit=2)
         if not path:
             explicit_reference = f'{namespace}#{ref}'
-            log.debug('Making reference to %s explicit as %s', ref, explicit_reference)
+            log.trace('Making reference to %s explicit as %s', ref, explicit_reference)
             return {'$ref': explicit_reference}
         else:
             return definition
@@ -96,7 +96,7 @@ def make_explicit_references(definition: Dict[str, Any], namespace: str) -> Dict
             path, ref = v['$ref'].split('#', maxsplit=2)
             if not path:
                 explicit_reference = f'{namespace}#{ref}'
-                log.debug('Making reference to %s explicit as %s', ref, explicit_reference)
+                log.trace('Making reference to %s explicit as %s', ref, explicit_reference)
                 definition[k] = {'$ref': explicit_reference}
         else:
             definition[k] = make_explicit_references(v, namespace)
