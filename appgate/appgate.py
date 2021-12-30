@@ -171,7 +171,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
-            {k: v.entities_with_tags(ctx.builtin_tags)
+            {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
              for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
@@ -215,12 +215,13 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             if ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
                 current_appgate_state = await get_current_appgate_state(ctx=ctx)
+                total_appgate_state = deepcopy(current_appgate_state)
 
             # Create a plan
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags, ctx.target_tags)
+                                       ctx.builtin_tags, ctx.target_tags, ctx.exclude_tags)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)

@@ -408,15 +408,17 @@ def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
 def compare_entities(current: EntitiesSet,
                      expected: EntitiesSet,
                      builtin_tags: FrozenSet[str],
-                     target_tags: Optional[FrozenSet[str]]) -> Plan:
+                     target_tags: Optional[FrozenSet[str]],
+                     excluded_tags: Optional[FrozenSet[str]]) -> Plan:
     current_entities = current.entities
     current_names = {e.name for e in current_entities}
     expected_entities = expected.entities
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
 
+    ignore_tags = builtin_tags.union(excluded_tags or frozenset())
     def _to_delete_filter(e: EntityWrapper) -> bool:
-        return e.name not in expected_names and not has_tag(e, builtin_tags) \
+        return e.name not in expected_names and not has_tag(e, ignore_tags) \
                and is_target(e, target_tags)
 
     def _to_create_filter(e: EntityWrapper) -> bool:
