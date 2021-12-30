@@ -622,7 +622,8 @@ def resolve_field_entities(e1: EntitiesSet, dependencies: List[EntityFieldDepend
     return EntitiesSet(e1_set), None
 
 
-def resolve_appgate_state(appgate_state: AppgateState,
+def resolve_appgate_state(expected_state: AppgateState,
+                          total_appgate_state: AppgateState,
                           api_spec: APISpec,
                           reverse: bool = False) -> Dict[str, List[MissingFieldDependencies]]:
     entities = api_spec.entities
@@ -632,7 +633,7 @@ def resolve_appgate_state(appgate_state: AppgateState,
     log.info('[appgate-state] Resolving dependencies in order: %s', entities_sorted)
     # Iterate over all known entities in the API
     for entity_name in entities_sorted:
-        if entity_name not in appgate_state.entities_set:
+        if entity_name not in expected_state.entities_set:
             # We don't have entities of this type so try the next entity.
             continue
         # Each generated entity can have several field that describe dependencies
@@ -650,10 +651,10 @@ def resolve_appgate_state(appgate_state: AppgateState,
                     EntityFieldDependency(
                         entity_name=entity_name,
                         field_path=field_dependency.field_path,
-                        entity_dependencies=appgate_state.entities_set.get(d, EntitiesSet())
+                        entity_dependencies=total_appgate_state.entities_set.get(d, EntitiesSet())
                     )
                 )
-            e1 = appgate_state.entities_set.get(entity_name, EntitiesSet())
+            e1 = expected_state.entities_set.get(entity_name, EntitiesSet())
             new_e1, conflicts = resolve_field_entities(e1, dependencies, reverse)
             # Merge new conflicts
             if conflicts:
@@ -663,18 +664,19 @@ def resolve_appgate_state(appgate_state: AppgateState,
                     else:
                         total_conflicts[e] = ds
 
-            appgate_state.entities_set[entity_name] = new_e1
+            expected_state.entities_set[entity_name] = new_e1
     return total_conflicts
 
 
 def create_appgate_plan(current_state: AppgateState,
                         expected_state: AppgateState,
                         builtin_tags: FrozenSet[str],
-                        target_tags: Optional[FrozenSet[str]]) -> AppgatePlan:
+                        target_tags: Optional[FrozenSet[str]],
+                        excluded_tags: Optional[FrozenSet[str]]) -> AppgatePlan:
     """
     Creates a new AppgatePlan to apply
     """
     entities_plan = {k: compare_entities(current_state.entities_set[k], v, builtin_tags,
-                                         target_tags)
+                                         target_tags, excluded_tags)
                      for k, v in expected_state.entities_set.items()}
     return AppgatePlan(entities_plan=entities_plan)

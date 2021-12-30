@@ -201,7 +201,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
 
             # Resolve entities now, in order
             # this will be the Topological sort
-            total_conflicts = resolve_appgate_state(appgate_state=expected_appgate_state,
+            total_conflicts = resolve_appgate_state(expected_state=expected_appgate_state,
+                                                    total_appgate_state=total_appgate_state,
                                                     reverse=False,
                                                     api_spec=ctx.api_spec)
             if total_conflicts:
