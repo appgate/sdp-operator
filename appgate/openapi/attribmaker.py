@@ -20,21 +20,31 @@ class SimpleAttribMaker:
 
     @property
     def metadata(self) -> Dict[str, Any]:
+        """
+        Return the metadata for this attribute
+        """
         return self.definition.get('metadata', {})
 
     @property
     def is_password(self) -> bool:
+        """
+        Predicate to check if attrs is a password
+        """
         return False
 
     @property
     def has_default(self) -> bool:
         """
-        Checks if attrs as a default field value
+        Predicate to check if attrs as a default field value
         """
         return self.factory is not None or self.default is not None
 
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
                instance_maker_config: InstanceMakerConfig) -> AttributesDict:
+        """
+        Return the dictionary of values for this attribute. This will be used later
+        to create entity classes.
+        """
         required = self.name in required_fields
         nullable = self.definition.get("nullable", False)
         definition = self.definition
