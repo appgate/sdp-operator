@@ -36,6 +36,7 @@ class SimpleAttribMaker:
     def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
                instance_maker_config: InstanceMakerConfig) -> AttributesDict:
         required = self.name in required_fields
+        nullable = self.definition.get("nullable", False)
         definition = self.definition
         read_only = definition.get('readOnly', False)
         format = definition.get('format')
@@ -69,7 +70,7 @@ class SimpleAttribMaker:
             attribs['eq'] = False
 
         # Set type
-        if not required or read_only or write_only:
+        if (not required and nullable) or read_only or write_only:
             attribs['type'] = Optional[self.tpe]
             attribs['metadata']['type'] = str(Optional[self.tpe])
         elif required and (read_only or write_only):
@@ -84,8 +85,9 @@ class SimpleAttribMaker:
         elif self.factory and not (read_only or write_only):
             attribs['factory'] = self.factory
         elif not required or read_only or write_only:
-            attribs['default'] = definition.get('default',
-                                                None if (read_only or write_only) else self.default)
+            attribs['default'] = definition.get(
+                'default', None if (read_only or write_only) else self.default
+            )
         attribs['repr'] = self.repr
         return attribs
 

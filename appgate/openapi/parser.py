@@ -410,11 +410,15 @@ class Parser:
                                                 source_field=attrib_maker_config.definition['x-certificate-source'],
                                                 loader=K8S_LOADER.load)
             else:
+                # if nullable is specified then the type should be Optional
+                _factory = generated_entity.cls
+                if definition.get('nullable'):
+                    _factory = None
                 return SimpleAttribMaker(name=instance_maker_config.name,
                                          tpe=generated_entity.cls,
                                          base_tpe=generated_entity.cls,
                                          default=None,
-                                         factory=None,
+                                         factory=_factory,
                                          definition=instance_maker_config.definition)
         raise Exception(f'Unknown type for attribute {entity_name}.{attrib_name}: {definition}')
 

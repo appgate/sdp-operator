@@ -130,6 +130,86 @@ def test_loader_3():
                             appgate_metadata=AppgateMetadata(uuid='333-333-333-333-333'))
 
 
+def test_loader_4():
+    """
+    Test load nested fields with sane default values.
+    These fields are not Optional, they just implement a default factory method
+    """
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityDepNested7 = api_spec.entities['EntityDepNested7'].cls
+    EntityDepNested7_Deps = api_spec.entities['EntityDepNested7_Deps'].cls
+    EntityDepNested7_Actions = api_spec.entities['EntityDepNested7_Actions'].cls
+    EntityDepNested7_Actions_Monitor = api_spec.entities['EntityDepNested7_Actions_Monitor'].cls
+
+    entity_7 = {
+        'name': 'n1',
+        'deps': {
+            'field1': 'f1',
+            'field2': 'f2'
+        },
+        'actions': [
+            {
+                'subtype': 'tcp_up',
+                'action': 'allow',
+                'hosts': ['h1', 'h2'],
+                'ports': ['666'],
+            }
+        ]
+    }
+
+    e = K8S_LOADER.load(entity_7, None, EntityDepNested7)
+    assert e == EntityDepNested7(name='n1',
+                                 deps=EntityDepNested7_Deps(
+                                     field1='f1', field2='f2'
+                                 ),
+                                 actions=frozenset({
+                                     EntityDepNested7_Actions(
+                                         subtype='tcp_up',
+                                         action='allow',
+                                         hosts=frozenset({'h1', 'h2'}),
+                                         ports=frozenset({'666'}),
+                                         monitor=EntityDepNested7_Actions_Monitor())
+                                 }))
+
+
+def test_loader_5():
+    """
+    Test load nested fields with sane default values.
+    These fields are not Optional, they just implement a default factory method
+    """
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityDepNestedNullable = api_spec.entities['EntityDepNestedNullable'].cls
+    EntityDepNestedNullable_Actions = api_spec.entities['EntityDepNestedNullable_Actions'].cls
+    EntityDepNestedNullable_Actions_Monitor = api_spec.entities['EntityDepNestedNullable_Actions_Monitor'].cls
+
+    entity_nullable = {
+        'name': 'n1',
+        'deps': {
+            'field1': 'f1',
+            'field2': 'f2'
+        },
+        'actions': [
+            {
+                'subtype': 'tcp_up',
+                'action': 'allow',
+                'hosts': ['h1', 'h2'],
+                'ports': ['666'],
+            }
+        ]
+    }
+
+    e = K8S_LOADER.load(entity_nullable, None, EntityDepNestedNullable)
+    assert e == EntityDepNestedNullable(name='n1',
+                                        actions=frozenset({
+                                            EntityDepNestedNullable_Actions(
+                                                subtype='tcp_up',
+                                                action='allow',
+                                                hosts=frozenset({'h1', 'h2'}),
+                                                ports=frozenset({'666'}),
+                                                monitor=None)
+                                        }))
+
+
 def test_dumper_1():
     EntityTest1 = load_test_open_api_spec(secrets_key=None,
                                           reload=True).entities['EntityTest1'].cls

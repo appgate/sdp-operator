@@ -38,6 +38,8 @@ paths:
     $ref: '#/entity-cert'
   /entity-dep-nested:
     $ref: '#/entity-dep-nested'
+  /entity-dep-nested-nullable:
+    $ref: '#/entity-dep-nested-nullable'
     
 entity-test1:
   get:
@@ -263,6 +265,21 @@ entity-dep-nested:
         application/json:
           schema:
             $ref: '#/definitions/EntityDepNested7'
+
+entity-dep-nested-nullable:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDepNestedNullable'
 
 definitions:
   EntityTestList:
@@ -558,3 +575,130 @@ definitions:
             x-uuid-ref:
               - EntityDep2
               - EntityDep1
+      actions:
+        type: array
+        items:
+          type: object
+          required:
+            - subtype
+            - action
+            - hosts
+          properties:
+            subtype:
+              type: string
+              enum:
+                - icmp_up
+                - icmp_down
+                - icmpv6_up
+                - icmpv6_down
+                - udp_up
+                - udp_down
+                - tcp_up
+                - tcp_down
+                - ah_up
+                - ah_down
+                - esp_up
+                - esp_down
+                - gre_up
+                - gre_down
+                - http_up
+            action:
+              type: string
+              enum:
+                - allow
+                - block
+                - alert
+            hosts:
+              type: array
+              items:
+                type: string
+              example:
+                - 10.0.0.1
+                - 10.0.0.0/24
+                - hostname.company.com
+                - 'dns://hostname.company.com'
+                - 'aws://security-group:accounting'
+            ports:
+              type: array
+              items:
+                type: string
+              example:
+                - 80
+                - 1024-65535
+            monitor:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  default: false
+                timeout:
+                  type: integer
+                  default: 30
+  EntityDepNestedNullable:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      actions:
+        type: array
+        items:
+          type: object
+          required:
+            - subtype
+            - action
+            - hosts
+          properties:
+            subtype:
+              type: string
+              enum:
+                - icmp_up
+                - icmp_down
+                - icmpv6_up
+                - icmpv6_down
+                - udp_up
+                - udp_down
+                - tcp_up
+                - tcp_down
+                - ah_up
+                - ah_down
+                - esp_up
+                - esp_down
+                - gre_up
+                - gre_down
+                - http_up
+            action:
+              type: string
+              enum:
+                - allow
+                - block
+                - alert
+            hosts:
+              type: array
+              items:
+                type: string
+              example:
+                - 10.0.0.1
+                - 10.0.0.0/24
+                - hostname.company.com
+                - 'dns://hostname.company.com'
+                - 'aws://security-group:accounting'
+            ports:
+              type: array
+              items:
+                type: string
+              example:
+                - 80
+                - 1024-65535
+            monitor:
+              type: object
+              nullable: true
+              properties:
+                enabled:
+                  type: boolean
+                  default: false
+                timeout:
+                  type: integer
+                  default: 30
