@@ -104,6 +104,8 @@ class EntityClassGenerator:
                                                 instance_maker_config)),
                 filter(lambda kv: not isinstance(kv[1], DeprecatedAttribMaker),
                        self.attributes.items())))
+        log.trace('Creating new instance %s with values %s [required fields: %s]', self.name, values,
+                  instance_maker_config.definition.get('required', {}))
         # Add custom entity loaders if needed
         k8s_custom_entity_loaders = []
         appgate_custom_entity_loaders = []
