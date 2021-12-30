@@ -692,7 +692,7 @@ definitions:
               example:
                 - 80
                 - 1024-65535
-            monitor:
+            monitor_nullable:
               type: object
               nullable: true
               properties:

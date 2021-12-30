@@ -422,9 +422,10 @@ class Parser:
                                                 source_field=attrib_maker_config.definition['x-certificate-source'],
                                                 loader=K8S_LOADER.load)
             else:
-                # if nullable is specified then the type should be Optional
-                _factory = generated_entity.cls
-                if definition.get('nullable'):
+                # if the object is not nullable and it does not have any required argument
+                # create a factory for it.
+                _factory: Optional[type] = generated_entity.cls
+                if definition.get('nullable') or definition.get('required'):
                     _factory = None
                 return AttribMaker(name=instance_maker_config.name,
                                    tpe=generated_entity.cls,

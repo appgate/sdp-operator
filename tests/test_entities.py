@@ -180,7 +180,6 @@ def test_loader_5():
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
     EntityDepNestedNullable = api_spec.entities['EntityDepNestedNullable'].cls
     EntityDepNestedNullable_Actions = api_spec.entities['EntityDepNestedNullable_Actions'].cls
-    EntityDepNestedNullable_Actions_Monitor = api_spec.entities['EntityDepNestedNullable_Actions_Monitor'].cls
 
     entity_nullable = {
         'name': 'n1',
@@ -206,7 +205,7 @@ def test_loader_5():
                                                 action='allow',
                                                 hosts=frozenset({'h1', 'h2'}),
                                                 ports=frozenset({'666'}),
-                                                monitor=None)
+                                                monitor_nullable=None)
                                         }))
 
 
