@@ -408,7 +408,7 @@ def compare_entities(current: EntitiesSet,
                      expected: EntitiesSet,
                      builtin_tags: FrozenSet[str],
                      target_tags: Optional[FrozenSet[str]],
-                     excluded_tags: Optional[FrozenSet[str]]) -> Plan:
+                     excluded_tags: Optional[FrozenSet[str]]=None) -> Plan:
     current_entities = current.entities
     current_names = {e.name for e in current_entities}
     expected_entities = expected.entities
