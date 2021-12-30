@@ -182,7 +182,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             log.info('[appgate-operator/%s] Waiting for event', namespace)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
-                     event.op, str(type(event.entity)), event.entity.name)
+                     event.op, event.entity.__class__.__qualname__, event.entity.name)
             expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
             # Log all expected entities
