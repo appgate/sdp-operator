@@ -154,13 +154,21 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     log.info('[appgate-operator/%s] Main loop started:', namespace)
     log.info('[appgate-operator/%s]   + namespace: %s', namespace, namespace)
     log.info('[appgate-operator/%s]   + host: %s', namespace, ctx.controller)
+    log.info('[appgate-operator/%s]   + log-level: %s', namespace, log.level)
     log.info('[appgate-operator/%s]   + timeout: %s', namespace, ctx.timeout)
     log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
     log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
+    log.info('[appgate-operator/%s]   + builtin tags: %s', namespace,
+             ','.join(ctx.builtin_tags))
+    log.info('[appgate-operator/%s]   + target tags: %s', namespace,
+             ','.join(ctx.target_tags) if ctx.target_tags else 'None')
+    log.info('[appgate-operator/%s]   + exclude tags: %s', namespace,
+             ','.join(ctx.exclude_tags) if ctx.exclude_tags else 'None')
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
+    total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
             {k: v.entities_with_tags(ctx.builtin_tags)
