@@ -332,7 +332,6 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 errors=errors if has_errors else None)
 
 
-# Policies have entitlements that have conditions, so conditions always first.
 @attrs
 class AppgatePlan:
     entities_plan: Dict[str, Plan] = attrib()
@@ -512,7 +511,7 @@ def resolve_field_entity(entity: Entity_T,
     ident_level = 4
     new_dependencies = set()
     missing_dependencies_set = set()
-    log.info(f'[appgate-state] %s getting field %s in entity %s',
+    log.trace(f'[appgate-state] %s getting field %s in entity %s',
               ' ' * (ident_level + 2), field, entity.__class__.__name__)
     dependencies, rest_fields = get_field(entity, field.split('.'))
     if dependencies is None:
@@ -551,8 +550,9 @@ def resolve_field_entity(entity: Entity_T,
                 new_dependencies.add(names[dependency].id)
             continue
         else:
-            log.error("[appgate-state] %s MISSING %s",
-                      ' ' * ident_level, dependency)
+            if is_debug():
+                log.error("[appgate-state] %s MISSING %s",
+                          ' ' * ident_level, dependency)
             missing_dependencies_set.add(dependency)
     if missing_dependencies_set:
         if parent_dependency.name not in missing_dependencies:
