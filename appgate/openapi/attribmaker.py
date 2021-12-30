@@ -2,12 +2,14 @@ from uuid import uuid4
 from typing import Optional, Dict, Any, List
 
 from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
-    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, InstanceMakerConfig, UUID_REFERENCE_FIELD, K8S_LOADERS_FIELD_NAME
-
+    IGNORED_EQ_ATTRIBUTES, OpenApiParserException, EntityClassGeneratorConfig, UUID_REFERENCE_FIELD
 write_only_formats = {'PEM', 'password'}
 
 
-class SimpleAttribMaker:
+class AttribMaker:
+    """
+    This class represents how to create a basic attribute in a final EntityClassGenerated.
+    """
     def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict, repr: bool = True) -> None:
         self.base_tpe = base_tpe
@@ -39,8 +41,8 @@ class SimpleAttribMaker:
         """
         return self.factory is not None or self.default is not None
 
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: InstanceMakerConfig) -> AttributesDict:
+    def values(self, attributes: Dict[str, 'AttribMaker'], required_fields: List[str],
+               instance_maker_config: EntityClassGeneratorConfig) -> AttributesDict:
         """
         Return the dictionary of values for this attribute. This will be used later
         to create entity classes.
@@ -102,13 +104,13 @@ class SimpleAttribMaker:
         return attribs
 
 
-class DeprecatedAttribMaker(SimpleAttribMaker):
+class DeprecatedAttribMaker(AttribMaker):
     pass
 
 
-class DefaultAttribMaker(SimpleAttribMaker):
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: InstanceMakerConfig) -> AttributesDict:
+class DefaultAttribMaker(AttribMaker):
+    def values(self, attributes: Dict[str, 'AttribMaker'], required_fields: List[str],
+               instance_maker_config: EntityClassGeneratorConfig) -> AttributesDict:
         vs = {
             'type': Optional[self.tpe],
             'eq': False,

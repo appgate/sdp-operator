@@ -10,10 +10,10 @@ from appgate.attrs import K8S_LOADER
 from appgate.bytes import size_attrib_maker, checksum_attrib_maker, certificate_attrib_maker
 from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
 from appgate.logger import log
-from appgate.openapi.attribmaker import SimpleAttribMaker, create_default_attrib, \
+from appgate.openapi.attribmaker import AttribMaker, create_default_attrib, \
     DeprecatedAttribMaker, UUID_REFERENCE_FIELD, DefaultAttribMaker
 from appgate.openapi.types import OpenApiDict, OpenApiParserException, \
-    GeneratedEntityFieldDependency, GeneratedEntity, AttributesDict, AttribType, InstanceMakerConfig, \
+    GeneratedEntityFieldDependency, GeneratedEntity, AttributesDict, AttribType, EntityClassGeneratorConfig, \
     AttribMakerConfig, AppgateMetadata, K8S_LOADERS_FIELD_NAME, APPGATE_LOADERS_FIELD_NAME, \
     ENTITY_METADATA_ATTRIB_NAME, APPGATE_METADATA_ATTRIB_NAME
 from appgate.openapi.utils import has_default, join, make_explicit_references, is_compound, \
@@ -37,9 +37,9 @@ def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> 
     return appgate_metadata.uuid or current_id
 
 
-class IdAttribMaker(SimpleAttribMaker):
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+class IdAttribMaker(AttribMaker):
+    def values(self, attributes: Dict[str, 'AttribMaker'], required_fields: List[str],
+               instance_maker_config: 'EntityClassGeneratorConfig') -> AttributesDict:
         values = super().values(attributes, required_fields, instance_maker_config)
         if 'metadata' not in values:
             values['metadata'] = {}
@@ -52,21 +52,24 @@ class IdAttribMaker(SimpleAttribMaker):
         return values
 
 
-class InstanceMaker:
-    def __init__(self, name: str, attributes: Dict[str, SimpleAttribMaker]) -> None:
+class EntityClassGenerator:
+    """
+    Class used to generate Entity classes dynamically
+    """
+    def __init__(self, name: str, attributes: Dict[str, AttribMaker]) -> None:
         self.name = name
         self.attributes = attributes
 
     @property
-    def attributes_with_default(self) -> Dict[str, SimpleAttribMaker]:
+    def attributes_with_default(self) -> Dict[str, AttribMaker]:
         return {k: v for k, v in self.attributes.items() if v.has_default}
 
     @property
-    def attributes_without_default(self) -> Dict[str, SimpleAttribMaker]:
+    def attributes_without_default(self) -> Dict[str, AttribMaker]:
         return {k: v for k, v in self.attributes.items() if not v.has_default}
 
     @property
-    def password_attributes(self) -> Dict[str, SimpleAttribMaker]:
+    def password_attributes(self) -> Dict[str, AttribMaker]:
         return {k: v for k, v in self.attributes.items() if v.is_password}
 
     @property
@@ -82,7 +85,10 @@ class InstanceMaker:
                                                                 dependencies=frozenset({dependency})))
         return dependencies
 
-    def make_instance(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
+    def generate(self, instance_maker_config: EntityClassGeneratorConfig) -> GeneratedEntity:
+        """
+        Generate a new Entity class (GeneratedEntity) from the instance_maker_config.
+        """
         # Add attributes if needed after instance level
         if 'name' not in self.attributes and instance_maker_config.singleton:
             self.attributes['name'] = create_default_attrib('name', self.name)
@@ -293,7 +299,11 @@ class Parser:
         new_definition['description'] = '.'.join(descriptions)
         return new_definition
 
-    def make_type(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
+    def make_attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> AttribMaker:
+        """
+        Parse an entity in yaml and recursively generate a AttribMaker.
+        An AttribMaker represents how to build a specific attribute in an entity class.
+        """
         definition = attrib_maker_config.definition
         entity_name = attrib_maker_config.instance_maker_config.entity_name
         attrib_name = attrib_maker_config.name
@@ -301,22 +311,22 @@ class Parser:
         current_level = attrib_maker_config.instance_maker_config.level
         if is_compound(definition):
             definition = self.parse_all_of(definition['allOf'])
-            instance_maker_config = InstanceMakerConfig(
+            instance_maker_config = EntityClassGeneratorConfig(
                 name=attrib_name,
                 entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=None,
                 level=current_level + 1)
-            generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
+            generated_entity = self.register_entity(entity_class_generator_config=instance_maker_config)
             log.trace('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
-            return SimpleAttribMaker(name=instance_maker_config.name,
-                                     tpe=generated_entity.cls,
-                                     base_tpe=generated_entity.cls,
-                                     default=None,
-                                     factory=None,
-                                     definition=attrib_maker_config.definition)
+            return AttribMaker(name=instance_maker_config.name,
+                               tpe=generated_entity.cls,
+                               base_tpe=generated_entity.cls,
+                               default=None,
+                               factory=None,
+                               definition=attrib_maker_config.definition)
         elif not tpe:
             raise Exception('type field not found in %s', definition)
         elif tpe in TYPES_MAP:
@@ -333,12 +343,12 @@ class Parser:
                                            secrets_cipher=self.parser_context.secrets_cipher,
                                            k8s_get_client=self.parser_context.k8s_get_secret)
             elif format == 'date-time':
-                return SimpleAttribMaker(name=attrib_name,
-                                         tpe=datetime.datetime,
-                                         base_tpe=datetime.datetime,
-                                         default=None,
-                                         factory=None,
-                                         definition=attrib_maker_config.definition)
+                return AttribMaker(name=attrib_name,
+                                   tpe=datetime.datetime,
+                                   base_tpe=datetime.datetime,
+                                   default=None,
+                                   factory=None,
+                                   definition=attrib_maker_config.definition)
             elif format == 'checksum' and 'x-checksum-source' in attrib_maker_config.definition:
                 return checksum_attrib_maker(name=attrib_name,
                                              tpe=TYPES_MAP[tpe],
@@ -363,40 +373,40 @@ class Parser:
                                      factory=None,
                                      definition=attrib_maker_config.definition)
             else:
-                return SimpleAttribMaker(name=attrib_name,
-                                         tpe=TYPES_MAP[tpe],
-                                         base_tpe=TYPES_MAP[tpe],
-                                         default=DEFAULT_MAP.get(tpe) if format != 'uuid' else None,
-                                         factory=None,
-                                         definition=attrib_maker_config.definition)
+                return AttribMaker(name=attrib_name,
+                                   tpe=TYPES_MAP[tpe],
+                                   base_tpe=TYPES_MAP[tpe],
+                                   default=DEFAULT_MAP.get(tpe) if format != 'uuid' else None,
+                                   factory=None,
+                                   definition=attrib_maker_config.definition)
         elif is_array(definition):
             # Recursion here, we parse the items as a type
             log.trace('Creating array type for entity %s and attribute %s', entity_name, attrib_name)
             new_attrib_maker_config = attrib_maker_config.from_key('items')
             if not new_attrib_maker_config:
                 raise OpenApiParserException('Unable to get items from array defintion.')
-            attr_maker = self.make_type(new_attrib_maker_config)
+            attr_maker = self.make_attrib_maker(new_attrib_maker_config)
             log.trace('Creating new attribute %s.%s: FrozenSet[%s]', entity_name, attrib_name,
                       attr_maker.tpe)
-            return SimpleAttribMaker(name=attr_maker.name,
-                                     tpe=FrozenSet[attr_maker.tpe],  # type: ignore
-                                     base_tpe=attr_maker.base_tpe,
-                                     default=None,
-                                     factory=frozenset,
-                                     definition=new_attrib_maker_config.definition)
+            return AttribMaker(name=attr_maker.name,
+                               tpe=FrozenSet[attr_maker.tpe],  # type: ignore
+                               base_tpe=attr_maker.base_tpe,
+                               default=None,
+                               factory=frozenset,
+                               definition=new_attrib_maker_config.definition)
         elif is_object(definition):
             # Indirect recursion here.
             # Those classes are never registered
             log.trace('Creating object type for entity %s and attribute %s', entity_name, attrib_name)
             current_level = attrib_maker_config.instance_maker_config.level
-            instance_maker_config = InstanceMakerConfig(
+            instance_maker_config = EntityClassGeneratorConfig(
                 name=attrib_name,
                 entity_name=f'{entity_name}_{attrib_name.capitalize()}',
                 definition=definition,
                 singleton=attrib_maker_config.instance_maker_config.singleton,
                 api_path=None,
                 level=current_level + 1)
-            generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
+            generated_entity = self.register_entity(entity_class_generator_config=instance_maker_config)
             log.trace('Created new attribute %s.%s of type %s', entity_name, attrib_name,
                       generated_entity.cls)
             format = definition.get('format', None)
@@ -414,21 +424,21 @@ class Parser:
                 _factory = generated_entity.cls
                 if definition.get('nullable'):
                     _factory = None
-                return SimpleAttribMaker(name=instance_maker_config.name,
-                                         tpe=generated_entity.cls,
-                                         base_tpe=generated_entity.cls,
-                                         default=None,
-                                         factory=_factory,
-                                         definition=instance_maker_config.definition)
+                return AttribMaker(name=instance_maker_config.name,
+                                   tpe=generated_entity.cls,
+                                   base_tpe=generated_entity.cls,
+                                   default=None,
+                                   factory=_factory,
+                                   definition=instance_maker_config.definition)
         raise Exception(f'Unknown type for attribute {entity_name}.{attrib_name}: {definition}')
 
-    def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> SimpleAttribMaker:
+    def attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> AttribMaker:
         """
         Returns an attribs dictionary used later to call attrs.attrib
         """
         definition = attrib_maker_config.definition
         deprecated = definition.get('deprecated', False)
-        attrib = self.make_type(attrib_maker_config)
+        attrib = self.make_attrib_maker(attrib_maker_config)
         if deprecated:
             return DeprecatedAttribMaker(
                 name=attrib.name,
@@ -439,18 +449,18 @@ class Parser:
                 base_tpe=attrib.base_tpe)
         return attrib
 
-    def instance_maker(self, instance_maker_config: InstanceMakerConfig) -> InstanceMaker:
-        return InstanceMaker(
-            name=instance_maker_config.entity_name,
+    def entity_class_generator(self, entity_class_generator_config: EntityClassGeneratorConfig) -> EntityClassGenerator:
+        return EntityClassGenerator(
+            name=entity_class_generator_config.entity_name,
             attributes={
-                nn: self.attrib_maker(instance_maker_config.attrib_maker_config(n))
-                for n, nn in instance_maker_config.properties_names
+                nn: self.attrib_maker(entity_class_generator_config.attrib_maker_config(n))
+                for n, nn in entity_class_generator_config.properties_names
             })
 
-    def register_entity(self, instance_maker_config: InstanceMakerConfig) -> GeneratedEntity:
-        instance_maker = self.instance_maker(instance_maker_config)
-        generated_entity = instance_maker.make_instance(instance_maker_config)
-        self.parser_context.register_entity(entity_name=instance_maker.name,
+    def register_entity(self, entity_class_generator_config: EntityClassGeneratorConfig) -> GeneratedEntity:
+        entity_class_generator = self.entity_class_generator(entity_class_generator_config)
+        generated_entity = entity_class_generator.generate(entity_class_generator_config)
+        self.parser_context.register_entity(entity_name=entity_class_generator.name,
                                             entity=generated_entity)
         return generated_entity
 
@@ -477,11 +487,11 @@ class Parser:
             log.error('Definition %s yet not supported', definition)
             return None
         api_path = self.parser_context.get_entity_path(entity_name)
-        instance_maker_config = InstanceMakerConfig(name=entity_name,
-                                                    entity_name=entity_name,
-                                                    definition=definition_to_use,
-                                                    singleton=singleton,
-                                                    api_path=api_path,
-                                                    level=0)
-        generated_entity = self.register_entity(instance_maker_config=instance_maker_config)
+        instance_maker_config = EntityClassGeneratorConfig(name=entity_name,
+                                                           entity_name=entity_name,
+                                                           definition=definition_to_use,
+                                                           singleton=singleton,
+                                                           api_path=api_path,
+                                                           level=0)
+        generated_entity = self.register_entity(entity_class_generator_config=instance_maker_config)
         return generated_entity

@@ -8,8 +8,8 @@ from cryptography.fernet import Fernet
 from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
-from appgate.openapi.attribmaker import SimpleAttribMaker
-from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, InstanceMakerConfig, \
+from appgate.openapi.attribmaker import AttribMaker
+from appgate.openapi.types import AttribType, OpenApiDict, AttributesDict, EntityClassGeneratorConfig, \
     K8S_LOADERS_FIELD_NAME, Entity_T, APPGATE_LOADERS_FIELD_NAME
 from appgate.openapi.utils import get_passwords
 
@@ -142,7 +142,7 @@ def appgate_secret_load(value: OpenApiDict, secrets_cipher: Optional[Fernet],
     return appgate_secret.decrypt()
 
 
-class PasswordAttribMaker(SimpleAttribMaker):
+class PasswordAttribMaker(AttribMaker):
     def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
                  secrets_cipher: Optional[Fernet],
@@ -151,8 +151,8 @@ class PasswordAttribMaker(SimpleAttribMaker):
         self.secrets_cipher = secrets_cipher
         self.k8s_get_client = k8s_get_client
 
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+    def values(self, attributes: Dict[str, 'AttribMaker'], required_fields: List[str],
+               instance_maker_config: 'EntityClassGeneratorConfig') -> AttributesDict:
         # Compare passwords if compare_secrets was enabled
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = False
