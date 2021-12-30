@@ -209,7 +209,7 @@ class EntitiesContext:
 
 @attrs()
 class AttribMakerConfig:
-    instance_maker_config: 'InstanceMakerConfig' = attrib()
+    instance_maker_config: 'EntityClassGeneratorConfig' = attrib()
     name: str = attrib()
     definition: OpenApiDict = attrib()
 
@@ -224,7 +224,11 @@ class AttribMakerConfig:
 
 
 @attrs()
-class InstanceMakerConfig:
+class EntityClassGeneratorConfig:
+    """
+    Class used to store information of the EntityClass to create.
+    This class is used when a new Entity class is generated.
+    """
     name: str = attrib()
     entity_name: str = attrib()
     definition: OpenApiDict = attrib()

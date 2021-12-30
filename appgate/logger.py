@@ -28,9 +28,12 @@ class Logger:
         self.debug = self._log.debug
         self.warning = self._log.warning
         self.error = self._log.error
-        self.level = self._log.level
         self.getEffectiveLevel = self._log.getEffectiveLevel
         self.setLevel = self._log.setLevel
+
+    @property
+    def level(self) -> int:
+        return self._log.level
 
     def trace(self, message, *args, **kws) -> None:
         if self._log.isEnabledFor(TRACE_LEVEL):

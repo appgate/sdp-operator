@@ -35,6 +35,7 @@ TestSpec = {
     '/entity-dep-6': 'EntityDep6',
     '/entity-cert': 'EntityCert',
     '/entity-dep-nested': 'EntityDepNested7',
+    '/entity-dep-nested-nullable': 'EntityDepNestedNullable'
 }
 PEM_TEST = '''-----BEGIN CERTIFICATE-----
 MIICEjCCAXsCAg36MA0GCSqGSIb3DQEBBQUAMIGbMQswCQYDVQQGEwJKUDEOMAwG

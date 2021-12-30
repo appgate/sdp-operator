@@ -10,9 +10,9 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.x509 import load_pem_x509_certificate
 
 from appgate.customloaders import CustomFieldsEntityLoader
-from appgate.openapi.attribmaker import SimpleAttribMaker
+from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import OpenApiDict, AttribType, AttributesDict, \
-    K8S_LOADERS_FIELD_NAME, InstanceMakerConfig, Entity_T, LoaderFunc
+    K8S_LOADERS_FIELD_NAME, EntityClassGeneratorConfig, Entity_T, LoaderFunc
 
 __all__ = [
     'checksum_attrib_maker',
@@ -71,7 +71,7 @@ def size_bytes(value: Any, data: str) -> int:
     return len(bytes_decoded)
 
 
-class BytesFieldAttribMaker(SimpleAttribMaker):
+class BytesFieldAttribMaker(AttribMaker):
     def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType],
                  factory: Optional[type], definition: OpenApiDict,
                  source_field: str,
@@ -80,8 +80,8 @@ class BytesFieldAttribMaker(SimpleAttribMaker):
         self.source_field = source_field
         self.loader = loader
 
-    def values(self, attributes: Dict[str, 'SimpleAttribMaker'], required_fields: List[str],
-               instance_maker_config: 'InstanceMakerConfig') -> AttributesDict:
+    def values(self, attributes: Dict[str, 'AttribMaker'], required_fields: List[str],
+               instance_maker_config: 'EntityClassGeneratorConfig') -> AttributesDict:
         values = super().values(attributes, required_fields, instance_maker_config)
         values['eq'] = True
         if 'metadata' not in values:
