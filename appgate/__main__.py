@@ -118,12 +118,18 @@ def get_context(args: OperatorArguments,
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
+
+    # When running in partial updates mode (target_tags defined) run also in cleanup mode
+    if target_tags and not cleanup_mode:
+        log.warning('[get_context] Activating cleanup mode since the operator is doing partial updates.')
+        cleanup_mode = True
+
     return Context(namespace=namespace, user=user, password=password,
                    provider=provider,
                    device_id=device_id,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1',
+                   cleanup_mode=cleanup_mode,
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
                    no_verify=no_verify,
