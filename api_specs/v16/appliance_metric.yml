@@ -1,0 +1,62 @@
+appliances-metrics:
+  get:
+    summary: Get all the Prometheus metrics for an Appliance.
+    description: >-
+      Get all the Prometheus metrics for the given Appliance.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v16+text** as it returns plain text instead of JSON.
+    tags:
+      - Appliance Metrics
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Appliance Metrics.
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: Appliance metrics.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+appliances-metrics-id:
+  get:
+    summary: Get a specific Prometheus metric for an Appliance.
+    description: >-
+      Get a specific Prometheus metrics for the given Appliance.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v16+text** as it returns plain text instead of JSON.
+    tags:
+      - Appliance Metrics
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+      - name: name
+        in: path
+        description: Metric name
+        schema:
+          type: string
+          example: vpn_total_sessions
+        required: true
+    responses:
+      '200':
+        description: Single Appliance metric.
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: Appliance metric.
+              example: vpn_total_sessions 0.0
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'

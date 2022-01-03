@@ -1,0 +1,160 @@
+global-settings:
+  get:
+    summary: View various Global Settings.
+    description: View various Global Settings.
+    tags:
+      - Global Settings
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Global Settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/GlobalSettings'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  delete:
+    summary: Reset all Global Settings to the default values.
+    description: Reset all Global Settings to the default values.
+    tags:
+      - Global Settings
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Global Settings were reset successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update all Global Settings.
+    description: Update all Global Settings.
+    tags:
+      - Global Settings
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Global Settings were updated successfully.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/GlobalSettings'
+      description: Global settings.
+      required: true
+
+definitions:
+  GlobalSettings:
+    type: object
+    required:
+      - claimsTokenExpiration
+      - entitlementTokenExpiration
+      - administrationTokenExpiration
+      - vpnCertificateExpiration
+      - auditLogPersistenceMode
+    properties:
+      claimsTokenExpiration:
+        type: number
+        description: Number of minutes the Claims Token is valid both for administrators and clients.
+        example: 1440
+      entitlementTokenExpiration:
+        type: number
+        description: Number of minutes the Entitlement Token is valid for clients.
+        example: 180
+      administrationTokenExpiration:
+        type: number
+        description: Number of minutes the administration Token is valid for administrators.
+        example: 720
+      vpnCertificateExpiration:
+        type: number
+        description: Number of minutes the VPN certificates is valid for clients.
+        example: 525600
+      spaMode:
+        type: string
+        description: SPA mode.
+        enum:
+          - TCP
+          - 'UDP-TCP'
+      loginBannerMessage:
+        type: string
+        description: The configured message will be displayed on the login UI.
+        example: Authorized use only.
+      messageOfTheDay:
+        type: string
+        description: The configured message will be displayed after a successful login.
+        example: Welcome to Appgate SDP.
+      backupApiEnabled:
+        type: boolean
+        description: Whether the backup API is enabled or not.
+      backupPassphrase:
+        format: password
+        type: string
+        writeOnly: true
+        description: The passphrase to encrypt Appliance Backups when backup API is used.
+        example: 'tSW3!QBv(rj{UuLY'
+      fips:
+        type: boolean
+        description: FIPS 140-2 Compliant Tunneling.
+        deprecated: true
+        example: false
+      geoIpUpdates:
+        type: boolean
+        description: Whether the automatic GeoIp updates are enabled or not.
+        example: false
+      auditLogPersistenceMode:
+        type: string
+        description: Audit Log persistence mode.
+        enum:
+          - Default
+          - Guaranteed
+          - Performance
+      appDiscoveryDomains:
+        type: array
+        description: Domains to monitor for for App Discovery feature.
+        items:
+          type: string
+          example: company.com
+      # Not fully implemented yet
+      #      dnsRedirectionHosts:
+      #        type: array
+      #        description: Redirection hosts to use in DNS Rules.
+      #        items:
+      #          type: object
+      #          required:
+      #            - host
+      #          properties:
+      #            id:
+      #              type: string
+      #              format: uuid
+      #              description: ID for the host.
+      #              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      #            host:
+      #              type: string
+      #              description: Host to redirect.
+      #              example: dns-redirect.company.com
+      collectiveId:
+        type: string
+        format: uuid
+        readOnly: true
+        description: A randomly generated ID during first installation to identify the Collective.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc

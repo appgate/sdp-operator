@@ -1,0 +1,474 @@
+certificate-authority-ca:
+  get:
+    summary: Get the current CA Certificate.
+    description: Get the current CA Certificate.
+    tags:
+      - CA
+    responses:
+      '200':
+        description: CA certificate details with the certificate encoded in DER format.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/CaConfig'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+certificate-authority-ca-pem:
+  get:
+    summary: Get the current CA Certificate in PEM format.
+    description: Get the current CA Certificate in PEM format.
+    tags:
+      - CA
+    responses:
+      '200':
+        description: CA certificate details with the certificate encoded in PEM format.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/CaConfig'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+issued-certificates:
+  get:
+    summary: Get the list of issued certificates by CA.
+    description: Get the list of issued certificates by CA.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: List of issued certificates.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/IssuedCertificateList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+issued-certificates-revoked:
+  put:
+    summary: Revoke an issued certificate.
+    description: Revoke an issued certificate.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - name: certificateId
+        in: path
+        description: ID of the issued certificate.
+        schema:
+          type: string
+          format: uuid
+          example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+        required: true
+    responses:
+      '200':
+        description: Updated issued certificate.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/IssuedCertificate'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      description: Revocation details.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+                description: X509 certificate revocation reason. See RFC 5280.
+                enum:
+                  - unspecified
+                  - keyCompromise
+                  - cACompromise
+                  - affiliationChanged
+                  - superseded
+                  - cessationOfOperation
+                  - certificateHold
+                  - privilegeWithdrawn
+              notes:
+                type: string
+                description: Free-text notes for revocation reason.
+                example: Private key potentially compromised.
+download-crl:
+  get:
+    summary: Download CRL file.
+    description: Generate and download CRL file for revoked certificates. Valid for a day.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: CRL file.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: byte
+                  description: CRL file in base64 format.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+download-next-crl:
+  get:
+    summary: Download CRL file for next CA.
+    description: >-
+      Generate and download an empty CRL file signed by the next CA.
+      The file needs to be available at the CRL server at the time of CA switch. Valid for 1 year.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: CRL file.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: byte
+                  description: CRL file in base64 format.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+certificate-authority-ca-next:
+  get:
+    summary: Get the next CA Certificate.
+    description: Get the next CA Certificate which will be migrated.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Next CA Certificate details with the certificate encoded in PEM format.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/CaConfig'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  delete:
+    summary: Delete the next CA certificate.
+    description: Delete the next CA certificate in order to be able to generate a new one.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: The next CA certificate was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+certificate-authority-ca-next-generate:
+  post:
+    summary: Generate next CA Certificate.
+    description: Generate a new self-signed next CA certificate for migration.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Generated CA certificate details with the certificate encoded in PEM format.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/CaConfig'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      description: CA parameters.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              subject:
+                type: string
+                description: X509 subject name for the CA certificate.
+                default: 'CN=Appgate SDP CA'
+              validityYears:
+                type: number
+                description: How long the new CA certificate will be valid.
+                default: 10
+certificate-authority-ca-next-upload:
+  post:
+    summary: Upload your own CA Certificate.
+    description: Upload your own next CA certificate and private key for migration. The certificate attributes will be validated to match the expected attributes.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Uploaded CA certificate details with the certificate encoded in PEM format.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/CaConfig'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/UploadCa'
+      required: true
+certificate-authority-ca-next-switch:
+  post:
+    summary: Switch to the next CA certificate.
+    description: >-
+      Switch to the next CA certificate.
+      Note that this is a highly disruptive action. Read the manual before proceeding.
+    tags:
+      - CA
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: >-
+          The migration to the next CA certificate was successful.
+          Note that this action may trigger a restart of the Controller before returning a response.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '412':
+        description: One or more Appliances have failed the healthcheck for CA switch.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: './common.yml#/definitions/Error'
+                - type: object
+                  properties:
+                    failedAppliances:
+                      type: object
+                      description: A dictionary of Appliance name and failure reason.
+                      additionalProperties: true
+                      example:
+                        aws1: Next certificate is not available yet. Try again later.
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      description: CA switch parameters.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              force:
+                type: boolean
+                description: Force the CA switch without making sure all Appliances are ready.
+                default: false
+
+definitions:
+  CertificateDetails:
+    type: object
+    description: X509 certificate details.
+    format: certificate
+    x-certificate-source: pem
+    readOnly: true
+    properties:
+      version:
+        type: number
+        description: X.509 certificate version.
+        example: 3
+      serial:
+        type: string
+        description: X.509 certificate serial number.
+        example: 1542962969512
+      issuer:
+        type: string
+        description: The issuer name of the certificate.
+        example: CN=Appgate SDP CA
+      subject:
+        type: string
+        description: The subject name of the certificate.
+        example: CN=Appgate SDP CA
+      validFrom:
+        type: string
+        format: 'date-time'
+        description: Since when the certificate is valid from.
+      validTo:
+        type: string
+        format: 'date-time'
+        description: Until when the certificate is valid.
+      fingerprint:
+        type: string
+        description: SHA256 fingerprint of the certificate.
+        example: d30247cee99a056c5ecdc409549165886d02925f9c64b681dff3d2ecf653355f
+      certificate:
+        type: string
+        format: byte
+        description: Base64 encoded binary of the certificate. Either DER or PEM formatted depending on the request.
+      subjectPublicKey:
+        type: string
+        format: byte
+        description: Base64 encoded public key of the certificate.
+  CaConfig:
+    allOf:
+      - $ref: '#/definitions/CertificateDetails'
+      - type: object
+        description: CA details.
+        properties:
+          nameConstraintsPermitted:
+            type: array
+            description: Name constraints extension details for permitted hostnames or IPs.
+            items:
+              type: string
+              example: appgate.company.com
+          nameConstraintsExcluded:
+            type: array
+            description: Name constraints extension details for excluded hostnames or IPs.
+            items:
+              type: string
+              example: company.com
+          crlUrl:
+            type: string
+            description: The URL where the CRL is hosted.
+            example: 'https://authority.company.com/appgate.crl'
+  UploadCa:
+    allOf:
+      - $ref: './common.yml#/definitions/P12'
+      - type: object
+        description: Upload P12 file for root CA.
+        properties:
+          crlUrl:
+            type: string
+            description: The URL where the CRL will be hosted.
+            example: 'https://authority.company.com/appgate.crl'
+  IssuedCertificateList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of issued certificates.
+        properties:
+          data:
+            type: array
+            description: List of issued certificates.
+            items:
+              $ref: '#/definitions/IssuedCertificate'
+  IssuedCertificate:
+    type: object
+    description: Issued Certificate by Appgate CA.
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: Random ID assigned to the certificate.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      type:
+        type: string
+        description: Type of the certificate.
+        enum:
+          - Client
+          - Appliance
+      subject:
+        type: string
+        description: The subject name of the certificate.
+        example: CN=Appgate SDP CA
+      issuer:
+        type: string
+        description: The issuer name of the certificate.
+        example: CN=Appgate SDP CA
+      serial:
+        type: string
+        description: X.509 certificate serial number.
+        example: 1542962969512
+      fingerprintSha256:
+        type: string
+        description: SHA256 fingerprint of the certificate.
+        example: d30247cee99a056c5ecdc409549165886d02925f9c64b681dff3d2ecf653355f
+      validFrom:
+        type: string
+        format: 'date-time'
+        description: Since when the certificate is valid from.
+      validTo:
+        type: string
+        format: 'date-time'
+        description: Until when the certificate is valid.
+      pem:
+        type: string
+        description: PEM formatted public certificate.
+      issueTime:
+        type: string
+        format: 'date-time'
+        description: When the Controller issued the certificate.
+      revoked:
+        type: boolean
+        description: Whether the certificate is revoked or not.
+        default: false
+      revocationReason:
+        type: number
+        description: X509 certificate revocation reason. See RFC 5280.
+        enum:
+          - unspecified
+          - keyCompromise
+          - cACompromise
+          - affiliationChanged
+          - superseded
+          - cessationOfOperation
+          - certificateHold
+          - privilegeWithdrawn
+      revocationTime:
+        type: string
+        format: 'date-time'
+        description: The revocation time of the certificate.
+      revocationNotes:
+        type: string
+        description: Free-text notes for revocation reason.
+        example: Private key potentially compromised.

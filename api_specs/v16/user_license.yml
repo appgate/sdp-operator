@@ -1,0 +1,58 @@
+license-users:
+  get:
+    summary: List all User Licenses.
+    description: List all User Licenses.
+    tags:
+      - Licensed Users
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of User Licenses.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/UserLicenseList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+definitions:
+  UserLicenseList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of User Licenses.
+        properties:
+          data:
+            type: array
+            description: List of User Licenses.
+            items:
+              $ref: '#/definitions/UserLicense'
+  UserLicense:
+    allOf:
+      - $ref: './common.yml#/definitions/User'
+      - type: object
+        properties:
+          type:
+            type: string
+            description: Type of User License.
+            enum:
+              - Normal
+              - Portal
+          created:
+            type: string
+            format: date-time
+            description: Creation date.
+          lastSeenAt:
+            type: string
+            format: date-time
+            description: The time when the user last signed in.

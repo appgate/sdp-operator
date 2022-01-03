@@ -1,0 +1,76 @@
+on-boarded-devices:
+  get:
+    summary: List all On-Boarded Devices.
+    description: List all On-Boarded Devices.
+    tags:
+      - On-boarded Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of On-Boarded Devices.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/OnBoardedDeviceList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+on-boarded-devices-distinguished-name:
+  delete:
+    summary: Remove an On-Boarded Device for the given Distinguished Name.
+    description: Remove an On-Boarded Device for the given Distinguished Name. The device will need to on-board again.
+    tags:
+      - On-boarded Devices
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/distinguishedName'
+    responses:
+      '204':
+        description: On-Boarded Device was removed successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+definitions:
+  OnBoardedDeviceList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of On-Boarded Devices.
+        properties:
+          data:
+            type: array
+            description: List of On-Boarded Devices.
+            items:
+              $ref: '#/definitions/OnBoardedDevice'
+  OnBoardedDevice:
+    allOf:
+      - $ref: './common.yml#/definitions/DeviceAndUser'
+      - type: object
+        properties:
+          hostname:
+            type: string
+            description: Hostname of the Device at the time of On-Boarding, sent by the Device.
+            example: user.ad.company.com
+          onBoardedAt:
+            type: string
+            format: date-time
+            description: On-boarding time.
+          lastSeenAt:
+            type: string
+            format: date-time
+            description: The time when the device last signed in. 'null' if it has signed in last on a Controller that was older than 5.4 at the time.

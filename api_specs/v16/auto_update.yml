@@ -1,0 +1,91 @@
+auto-update-settings:
+  get:
+    summary: View Client Auto-Update settings.
+    description: View Client Auto-Update settings.
+    tags:
+      - Client Auto-Update
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Client Auto-Update settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/AutoUpdateSettings'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update Client Auto-Update settings.
+    description: Update Client Auto-Update settings.
+    tags:
+      - Client Auto-Update
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: Client Auto-Update settings were updated successfully.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/AutoUpdateSettings'
+      description: Client Auto-Update settings.
+
+definitions:
+  AutoUpdateSettings:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        description: Whether the Client Auto-Update is enabled or not.
+      criteriaScript:
+        type: string
+        format: uuid
+        description: >-
+          The Criteria Script to evaluate the Client claims during authorization in order to decide whether the
+          Client Auto-Update will be applied or not.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      windows:
+        $ref: '#/definitions/Client'
+      macOS:
+        $ref: '#/definitions/Client'
+      ubuntu:
+        $ref: '#/definitions/Client'
+      fedora:
+        $ref: '#/definitions/Client'
+      redHat8:
+        $ref: '#/definitions/Client'
+      redHat7:
+        allOf:
+          - $ref: '#/definitions/Client'
+          - deprecated: true
+  Client:
+    type: object
+    description: Client Auto-Update settings for the specified platform.
+    properties:
+      url:
+        type: string
+        description: A publicly acceessible URL for Clients to download the installer from.
+        example: 'https://sdpdownloads.appgate.com/Appgate-SDP-4.1/clients/Appgate-SDP-4.1.3-Installer.exe'
+      version:
+        type: string
+        description: >-
+          The version string to compare the Client version.
+          If the Client version is lower than the setting (and the Criteria Script returns true), Client will receive
+          the update notification with the URL setting.
+        example: 4.1.3

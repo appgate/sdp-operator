@@ -1,0 +1,499 @@
+sites:
+  get:
+    summary: List all Sites.
+    description: List all Sites visible to current user.
+    tags:
+      - Sites
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of Sites.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/SiteList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new Site.
+    description: Create a new Site.
+    tags:
+      - Sites
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Created Site.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Site'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '402':
+        $ref: './common.yml#/responses/PaymentError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/Site'
+sites-id:
+  get:
+    summary: Get a specific Site.
+    description: Get a specific Site.
+    tags:
+      - Sites
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Single Site.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Site'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing Site.
+    description: Update an existing Site.
+    tags:
+      - Sites
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Updated Site.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Site'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/Site'
+  delete:
+    summary: Delete a specific Site.
+    description: Delete a specific Site.
+    tags:
+      - Sites
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: Site was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+requestBodies:
+  Site:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/Site'
+    description: Site object.
+    required: true
+
+definitions:
+  SiteList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of Sites.
+        properties:
+          data:
+            type: array
+            description: List of Sites.
+            items:
+              $ref: '#/definitions/Site'
+  Site:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents a Site.
+        properties:
+          shortName:
+            type: string
+            description: A short 4 letter name for the Site to be displayed on the Client.
+            example: AZU1
+          description:
+            type: string
+            description: Description of the Site to be displayed on the Client.
+            example: Gives access to Azure endpoints.
+          networkSubnets:
+            type: array
+            description: >-
+              Network subnets in CIDR format to define the Site's boundaries.
+              They are added as routes by the Client.
+            items:
+              type: string
+              example: 10.0.0.0/16
+          ipPoolMappings:
+            type: array
+            description: >-
+              List of IP Pool mappings for this specific Site.
+              When IPs are allocated this Site, they will be mapped to a new one using this setting.
+            items:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: uuid
+                  x-uuid-ref: IpPool
+                  description: >-
+                    IP Pool ID to map from.
+                    If a user is authorizing with this IP Pool via Identity Provider assignment and has access to this
+                    Site, mapping will occur for that user.
+                  example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+                to:
+                  type: string
+                  format: uuid
+                  x-uuid-ref: IpPool
+                  description: IP Pool ID to map to.
+                  example: 8c07bc67-5711-42dd-b702-c2d6c45419f8
+          defaultGateway:
+            type: object
+            description: Default Gateway configuration.
+            properties:
+              enabledV4:
+                type: boolean
+                description: When enabled, the Client uses this Site as the Default Default for all IPV4 traffic.
+                default: false
+              enabledV6:
+                type: boolean
+                description: When enabled, the Client uses this Site as the Default Default for all IPv6 traffic.
+                default: false
+              excludedSubnets:
+                type: array
+                description: >-
+                  Network subnets to exclude when Default Gateway is enabled.
+                  The traffic for these subnets will not go through the Gateway in this Site.
+                items:
+                  type: string
+                  example: 10.0.10.0/24
+          entitlementBasedRouting:
+            type: boolean
+            description: >-
+              When enabled, the routes are sent to the Client by the Gateways according to the user's Entitlements
+              "networkSubnets" should be left be empty if it's enabled.
+            default: false
+          vpn:
+            type: object
+            description: VPN configuration for this Site.
+            properties:
+              stateSharing:
+                type: boolean
+                description: Configuration for keeping track of states.
+                default: false
+              snat:
+                type: boolean
+                description: Source NAT.
+                default: false
+              tls:
+                type: object
+                description: VPN over TLS protocol configuration.
+                properties:
+                  enabled:
+                    type: boolean
+                    default: true
+              dtls:
+                type: object
+                description: VPN over DTLS protocol configuration.
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+              routeVia:
+                type: object
+                description: Override routing for tunnel traffic.
+                properties:
+                  ipv4:
+                    type: string
+                    description: IPv4 address for routing tunnel traffic.
+                    example: 10.0.0.2
+                  ipv6:
+                    type: string
+                    description: IPv6 address for routing tunnel traffic.
+                    example: '2001:db8:0:0:0:ff00:42:8329'
+              urlAccessEnabled:
+                type: boolean
+                description: Whether to enable URL Access feature or not.
+              urlAccessP12s:
+                type: array
+                description: P12 files for proxying traffic for URL Access feature.
+                items:
+                  allOf:
+                    - $ref: 'appliance.yml#/definitions/P12'
+                    - type: object
+                      properties:
+                        verifyUpstream:
+                          type: boolean
+                          description: Gateway will verify upstream certificate of the endpoints.
+                          default: true
+              ipAccessLogIntervalSeconds:
+                type: number
+                description: Frequency configuration for generating IP Access audit logs for a connection.
+                default: 120
+          nameResolution:
+            type: object
+            description: Settings for asset name resolution.
+            properties:
+              useHostsFile:
+                type: boolean
+                description: Name resolution to use Appliance's /etc/hosts file.
+                default: false
+              dnsResolvers:
+                type: array
+                description: Resolver to resolve hostnames using DNS servers.
+                items:
+                  type: object
+                  required:
+                    - name
+                    - servers
+                  properties:
+                    name:
+                      type: string
+                      description: Identifier name. Has no functional effect.
+                      example: DNS Resolver 1
+                    updateInterval:
+                      type: integer
+                      description: How often will the resolver poll the server. In seconds.
+                      default: 60
+                    servers:
+                      type: array
+                      description: DNS Server addresses that will be used to resolve hostnames within the Site.
+                      items:
+                        type: string
+                        example: 10.0.0.2
+                    searchDomains:
+                      type: array
+                      description: DNS search domains that will be used to resolve hostnames within the Site.
+                      deprecated: true
+                      items:
+                        type: string
+                        example: company.com
+                    matchDomains:
+                      type: array
+                      description: The DNS resolver will only attempt to resolve names matching the match domains. If match domains are not specified the DNS resolver will attempt to resolve all hostnames.
+                      items:
+                        type: string
+                        example: company.com
+              awsResolvers:
+                type: array
+                description: Resolvers to resolve Amazon machines by querying Amazon Web Services.
+                items:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: Identifier name. Has no functional effect.
+                      example: AWS Resolver 1
+                    updateInterval:
+                      type: integer
+                      description: How often will the resolver poll the server. In seconds.
+                      default: 60
+                    vpcs:
+                      type: array
+                      description: VPC IDs to resolve names.
+                      items:
+                        type: string
+                    vpcAutoDiscovery:
+                      type: boolean
+                      description: Use VPC auto discovery.
+                    regions:
+                      type: array
+                      description: Amazon regions.
+                      items:
+                        type: string
+                        example: eu-west-2
+                    useIAMRole:
+                      type: boolean
+                      description: Uses the built-in IAM role in AWS instances to authenticate against the API.
+                    accessKeyId:
+                      type: string
+                      description: ID of the access key.
+                    secretAccessKey:
+                      type: string
+                      description: Secret access key for accessKeyId.
+                      writeOnly: true
+                    httpsProxy:
+                      type: string
+                      description: >-
+                        Proxy address to use while communicating with AWS.
+                        format: username:password@ip/hostname:port
+                    resolveWithMasterCredentials:
+                      type: boolean
+                      description: Use master credentials to resolve names in addition to any assumed roles.
+                    assumedRoles:
+                      type: array
+                      description: Roles to be assumed to perform AWS name resolution.
+                      items:
+                        type: object
+                        properties:
+                          accountId:
+                            type: string
+                            description: AWS account ID.
+                          roleName:
+                            type: string
+                            description: AWS role name
+                          externalId:
+                            type: string
+                            description: AWS role external id.
+                          regions:
+                            type: array
+                            description: AWS regions.
+                            items:
+                              type: string
+              azureResolvers:
+                type: array
+                description: Resolvers to resolve Azure machines by querying Azure App Service.
+                items:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: Identifier name. Has no functional effect.
+                    updateInterval:
+                      type: integer
+                      description: How often will the resolver poll the server. In seconds.
+                      default: 60
+                    useManagedIdentities:
+                      type: boolean
+                      description: Uses the built-in Managed Identities in Azure instances to authenticate against the API.
+                      default: false
+                    subscriptionId:
+                      type: string
+                      description: Azure subscription id, visible with the azure cli command `azure account show`.
+                    tenantId:
+                      type: string
+                      description: Azure tenant id, visible with the azure cli command `azure account show`.
+                    clientId:
+                      type: string
+                      description: >-
+                        Azure client id, also called app id. Visible for a given application using the azure cli command
+                        `azure ad app show`.
+                    secret:
+                      type: string
+                      description: >-
+                        Azure client secret. For Azure AD Apps this is done by
+                        creating a key for the app.
+                      writeOnly: true
+              esxResolvers:
+                type: array
+                description: Resolvers to resolve VMware vSphere machines by querying the vCenter.
+                items:
+                  type: object
+                  required:
+                    - name
+                    - hostname
+                    - username
+                  properties:
+                    name:
+                      type: string
+                      description: Identifier name. Has no functional effect.
+                    updateInterval:
+                      type: integer
+                      description: How often will the resolver poll the server. In seconds.
+                      default: 60
+                    hostname:
+                      type: string
+                      description: Hostname of the vCenter.
+                    username:
+                      type: string
+                      description: Username with admin access to the vCenter.
+                    password:
+                      type: string
+                      description: Password for the username.
+                      writeOnly: true
+              gcpResolvers:
+                type: array
+                description: Resolvers to resolve GCP machine by querying Google web services.
+                items:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: Identifier name. Has no functional effect.
+                    updateInterval:
+                      type: integer
+                      description: How often will the resolver poll the server. In seconds.
+                      default: 60
+                    projectFilter:
+                      type: string
+                      description: GCP project filter.
+                    instanceFilter:
+                      type: string
+                      description: GCP instance filter.
+              dnsForwarding:
+                type: object
+                description: Enable DNS Forwarding feature.
+                required:
+                  - dnsServers
+                  - allowDestinations
+                properties:
+                  siteIpv4:
+                    type: string
+                    description: DNS Forwarder Site IPv4 address.
+                    example: 100.110.0.0
+                  siteIpv6:
+                    type: string
+                    description: DNS Forwarder Site IPv6 address.
+                    example: '2001:db8:0:0:0:ff00:42:8329'
+                  dnsServers:
+                    type: array
+                    description: DNS Servers to use for resolving endpoints.
+                    items:
+                      type: string
+                    example:
+                      - '172.17.18.19'
+                      - '192.100.111.31'
+                  allowDestinations:
+                    $ref: './appliance.yml#/definitions/AllowResources'

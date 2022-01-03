@@ -1,4 +1,3 @@
-
 [[https://github.com/appgate/sdp-operator/actions/workflows/docker.yml][https://github.com/appgate/sdp-operator/actions/workflows/docker.yml/badge.svg?branch=master&event=push]]
 * appgate-operator
 
@@ -20,6 +19,7 @@ The appgate operator supports the following API versions:
  - v13 (Appgate version 5.2)
  - v14 (Appgate version 5.3)
  - v15 (Appgate version 5.4)
+ - v16 (Appgate version 5.5)
 
 The entities supported by the operator are:
 
@@ -219,6 +219,9 @@ version. For example:
 
  - appgate-operator:v12
  - appgate-operator:v13
+ - appgate-operator:v14
+ - appgate-operator:v15
+ - appgate-operator:v16
 
 Each image uses that specific API version by default but contains the specs for
 all the API versions supported.
@@ -236,9 +239,9 @@ don't have yet the builder image or if we have changed any dependency):
 To push the images into a registry just run:
 
 #+BEGIN_SRC shell
-  for tag in v12 v13; do
+  for tag in v12 v13 v14 v15 v16; do
       docker tag appgate-operator:${tag} user/appgate-operator:${tag} && \
-	  docker push user/appgate-operator:${tag}
+      docker push user/appgate-operator:${tag}
   done
 #+END_SRC
 
@@ -417,14 +420,14 @@ This process is well explained in the argo web but let's summarized it:
 #+BEGIN_SRC shell
   # Create a role binding allowing to user to do stuff
   kubectl create clusterrolebinding cluster-admin-binding \
-	  --clusterrole=cluster-admin --user="$(gcloud config get-value account)"
+      --clusterrole=cluster-admin --user="$(gcloud config get-value account)"
 
   # Create a new namespace to deploy the argocd stuff
   kubectl create namespace argocd
 
   # Install argocd in our cluster
   kubectl apply -n argocd \
-	  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
   # Optional. Open the web ui to the exterior.
   kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
@@ -792,5 +795,3 @@ loaded (because API incompatibilities):
    - Entitlement::simple-setup-ent-ping: OK.
    - Entitlement::simple-setup-ent-http: OK.
 #+end_example
-
-
