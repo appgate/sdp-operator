@@ -67,7 +67,7 @@ def parse_files(spec_entities: Dict[str, str],
     if not api_version_str:
         raise OpenApiParserException('Unable to find Appgate API version')
     try:
-        api_version = api_version_str.split(' ')[2]
+        api_version = api_version_str.split(' ')[2].split('.')[0]
     except IndexError:
         raise OpenApiParserException('Unable to find Appgate API version')
     return APISpec(entities=parser_context.entities,
