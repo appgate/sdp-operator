@@ -278,9 +278,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                     generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_create.entities:
-        log.debug('[appgate-operator/%s] !+ %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_create.entities:
+            log.debug('[appgate-operator/%s] !+ %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.modify.entities:
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, e.value.__class__.__name__, e.name, e.id)
@@ -298,9 +299,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                     generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_modify.entities:
-        log.debug('[appgate-operator/%s] !* %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_modify.entities:
+            log.debug('[appgate-operator/%s] !* %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.delete.entities:
         log.info('[appgate-operator/%s] - %s %s [%s]', namespace, e.value.__class__.__name__,
@@ -312,9 +314,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 await k8s_configmap_client.delete_entity_generation(entity_unique_id(e.value.__class__.__name__, name))
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_delete.entities:
-        log.debug('[appgate-operator/%s] !- %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_delete.entities:
+            log.debug('[appgate-operator/%s] !- %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.share.entities:
         log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, e.value.__class__.__name__,
@@ -409,24 +412,21 @@ def compare_entities(current: EntitiesSet,
                      builtin_tags: FrozenSet[str],
                      target_tags: Optional[FrozenSet[str]],
                      excluded_tags: Optional[FrozenSet[str]]=None) -> Plan:
-    current_entities = current.entities
+    current_entities = {e for e in current.entities if is_target(e, target_tags)}
     current_names = {e.name for e in current_entities}
-    expected_entities = expected.entities
+    expected_entities = {e for e in expected.entities if is_target(e, target_tags)}
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
 
     ignore_tags = builtin_tags.union(excluded_tags or frozenset())
     def _to_delete_filter(e: EntityWrapper) -> bool:
-        return e.name not in expected_names and not has_tag(e, ignore_tags) \
-               and is_target(e, target_tags)
-
+        return e.name not in expected_names and not has_tag(e, ignore_tags)
     def _to_create_filter(e: EntityWrapper) -> bool:
-        return e.name not in current_names and e.name not in shared_names \
-               and is_target(e, target_tags)
-
+        return e.name not in current_names and e.name not in shared_names
     def _to_modify_filter(e: EntityWrapper) -> bool:
-        return e.name in shared_names and e not in current_entities \
-               and is_target(e, target_tags)
+        return e.name in shared_names and e not in current_entities
+    def _to_share_filter(e: EntityWrapper) -> bool:
+        return e.name in shared_names and e in current_entities
 
     # Compute the set of entities to delete
     #  - Don't delete builtin entities
@@ -458,8 +458,7 @@ def compare_entities(current: EntitiesSet,
         diff = compute_diff(current_entity, e)
         if diff:
             modifications_diff[e.name] = diff
-    to_share = EntitiesSet(set(filter(
-        lambda e: e.name in shared_names and e in current_entities, expected_entities)))
+    to_share = EntitiesSet(set(filter(_to_share_filter, expected_entities)))
 
     return Plan(delete=to_delete,
                 not_to_delete=not_to_delete,

@@ -21,7 +21,7 @@ from appgate.openapi.types import Entity_T, K8S_APPGATE_VERSION, K8S_APPGATE_DOM
     APPGATE_METADATA_LATEST_GENERATION_FIELD, APPGATE_METADATA_MODIFICATION_FIELD
 from appgate.state import AppgateState, create_appgate_plan, \
     appgate_plan_apply, EntitiesSet, entities_conflict_summary, resolve_appgate_state, \
-    exclude_appgate_entities, exclude_appgate_entity
+    exclude_appgate_entity
 from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
 
 
@@ -75,9 +75,8 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             entities = await client.get()
             if entities is not None:
                 entities_set[entity] = EntitiesSet(
-                    exclude_appgate_entities(
-                        [EntityWrapper(e) for e in entities],
-                        None, ctx.exclude_tags))
+                    {EntityWrapper(e) for e in entities}
+                )
         if len(entities_set) < len(entity_clients):
             log.error('[appgate-operator/%s] Unable to get entities from controller',
                       ctx.namespace)
@@ -170,8 +169,15 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
+        tags_in_cleanup = ctx.builtin_tags.\
+            union(ctx.exclude_tags or frozenset()).\
+            union(ctx.target_tags or frozenset())
         expected_appgate_state = AppgateState(
-            {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
+            {k: v.entities_with_tags(tags_in_cleanup.union(ctx.exclude_tags or frozenset()))
+             for k, v in current_appgate_state.entities_set.items()})
+    elif ctx.target_tags:
+        expected_appgate_state = AppgateState(
+            {k: v.entities_with_tags(ctx.target_tags)
              for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)

@@ -22,7 +22,7 @@ from appgate.appgate import main_loop, get_current_appgate_state, \
     start_entity_loop, log
 from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
 from appgate.openapi.utils import join
-from appgate.state import entities_conflict_summary, resolve_appgate_state
+from appgate.state import entities_conflict_summary, resolve_appgate_state, AppgateState
 from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -87,9 +87,9 @@ def get_context(args: OperatorArguments,
     device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
-    dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
-    cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
+    two_way_sync = (os.getenv(TWO_WAY_SYNC_ENV) or ('0' if args.no_two_way_sync else '1')) == '1'
+    dry_run_mode = (os.getenv(DRY_RUN_ENV) or ('0' if args.no_dry_run else '1')) == '1'
+    cleanup_mode = (os.getenv(CLEANUP_ENV) or ('0' if args.no_cleanup else '1')) == '1'
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, '0') == '1' or args.no_verify
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
@@ -118,13 +118,14 @@ def get_context(args: OperatorArguments,
     api_spec = generate_api_spec(spec_directory=Path(spec_directory) if spec_directory else None,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
+
     return Context(namespace=namespace, user=user, password=password,
                    provider=provider,
                    device_id=device_id,
                    controller=controller, timeout=int(timeout),
-                   dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '1',
-                   two_way_sync=two_way_sync == '1',
+                   dry_run_mode=dry_run_mode,
+                   cleanup_mode=cleanup_mode,
+                   two_way_sync=two_way_sync,
                    api_spec=api_spec,
                    no_verify=no_verify,
                    target_tags=target_tags if target_tags else None,
@@ -196,12 +197,15 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
                         stdout: bool = False) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
+    expected_appgate_state = AppgateState(
+        {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
+         for k, v in current_appgate_state.entities_set.items()})
     if is_debug():
         for entity_name, entity_set in current_appgate_state.entities_set.items():
             for e in entity_set.entities:
                 log.debug(f'Got entitiy %s: %s [%s]', e.name, e.id,
                           entity_name)
-    total_conflicts = resolve_appgate_state(expected_state=current_appgate_state,
+    total_conflicts = resolve_appgate_state(expected_state=expected_appgate_state,
                                             total_appgate_state=current_appgate_state,
                                             reverse=True,
                                             api_spec=ctx.api_spec)
@@ -303,15 +307,18 @@ def main() -> None:
     run = subparsers.add_parser('run')
     run.set_defaults(cmd='run')
     run.add_argument('--namespace', help='Specify namespace', default=None)
-    run.add_argument('--dry-run', help='Run in dry-run mode', default=False, action='store_true')
+    run.add_argument('--no-dry-run', help='Disabel run in dry-run mode',
+                     default=False, action='store_true')
     run.add_argument('--host', help='Controller host to connect', default=None)
     run.add_argument('--user', help='Username used for authentication', default=None)
     run.add_argument('--password', help='Password used for authentication', default=None)
-    run.add_argument('--cleanup', help='Delete entities not defined in expected state', default=True)
+    run.add_argument('--no-cleanup', help='Disable delete entities not defined in expected state',
+                     default=False, action='store_true')
     run.add_argument('--mt-config-map', help='Name for the configmap used for metadata',
                      default=None)
-    run.add_argument('--two-way-sync', help='Always update current state with latest appgate'
-                                            ' state before applying a plan', default=True)
+    run.add_argument('--no-two-way-sync', help='Disabel always update current state with latest appgate'
+                                               ' state before applying a plan',
+                     default=False, action='store_true')
     run.add_argument('-t', '--tags', action='append',
                      help='Tags to filter entities. Only entities with any of those tags will be dumped',
                      default=[])
@@ -360,9 +367,9 @@ def main() -> None:
                 sys.exit(1)
             main_run(OperatorArguments(
                 namespace=args.namespace, spec_directory=args.spec_directory,
-                dry_run=args.dry_run, user=args.user, password=args.password,
-                host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
-                cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
+                no_dry_run=args.no_dry_run, user=args.user, password=args.password,
+                host=args.host, no_two_way_sync=args.no_two_way_sync, target_tags=args.tags,
+                no_cleanup=args.no_cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
                 no_verify=args.no_verify, cafile=Path(args.cafile) if args.cafile else None))
         elif args.cmd == 'dump-entities':
             if args.cafile and not Path(args.cafile).exists():

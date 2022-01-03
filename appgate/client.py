@@ -278,8 +278,6 @@ class AppgateClient:
                     error_data = await resp.text()
                     log.error('[aggpate-client] %s :: %s: %s', url, resp.status,
                               error_data)
-                    if data:
-                        log.error('[appgate-client] payload :: %s', data)
                     raise AppgateException(f'Error: [{method} {url} {resp.status}] {error_data}')
         except InvalidURL:
             log.error('[appgate-client] Error preforming query: %s', url)
