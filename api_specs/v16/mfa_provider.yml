@@ -1,0 +1,258 @@
+mfa-providers:
+  get:
+    summary: List all MFA Providers.
+    description: List all MFA Providers visible to current user.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/query'
+      - $ref: './common.yml#/parameters/range'
+      - $ref: './common.yml#/parameters/orderBy'
+      - $ref: './common.yml#/parameters/descending'
+      - $ref: './common.yml#/parameters/filterBy'
+    responses:
+      '200':
+        description: List of MFA Providers.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/MfaProviderList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Create a new MFA Provider.
+    description: Create a new MFA Provider.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        $ref: '#/responses/MfaProvider'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/MfaProvider'
+mfa-providers-id:
+  get:
+    summary: Get a specific MFA Provider.
+    description: Get a specific MFA Provider.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        $ref: '#/responses/MfaProvider'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  put:
+    summary: Update an existing MFA Provider.
+    description: Update an existing MFA Provider.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        $ref: '#/responses/MfaProvider'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      $ref: '#/requestBodies/MfaProvider'
+  delete:
+    summary: Delete a specific MFA Provider.
+    description: Delete a specific MFA Provider.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '204':
+        description: MFA Provider was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+mfa-providers-test:
+  post:
+    summary: Test a MFA Provider connection.
+    description: Test connection for the given MFA Provider JSON.
+    tags:
+      - MFA Providers
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '200':
+        description: Test result.
+        content:
+          application/json:
+            schema:
+              properties:
+                success:
+                  type: boolean
+                  description: Whether the connection succeeded or not.
+                  example: false
+                error:
+                  type: boolean
+                  description: The error text if the connection fails.
+                  example: Connection timed out.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+    requestBody:
+      $ref: '#/requestBodies/MfaProvider'
+
+responses:
+  MfaProvider:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/MfaProvider'
+    description: MFA Provider object.
+
+requestBodies:
+  MfaProvider:
+    content:
+      application/json:
+        schema:
+          $ref: '#/definitions/MfaProvider'
+    description: MFA Provider object.
+    required: true
+
+definitions:
+  MfaProviderList:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of MFA Providers.
+        properties:
+          data:
+            type: array
+            description: List of MFA Providers.
+            items:
+              $ref: '#/definitions/MfaProvider'
+  MfaProvider:
+    allOf:
+      - $ref: './common.yml#/definitions/BaseEntity'
+      - type: object
+        description: Represents a MFA Provider.
+        required:
+          - type
+        properties:
+          type:
+            type: string
+            description: The type of the MFA Provider. "DefaultTimeBased" and "Fido2" are built-in, new ones cannot be created.
+            enum:
+              - Radius
+              - DefaultTimeBased
+              - Fido2
+          hostnames:
+            type: array
+            description: Hostnames/IP addresses to connect.
+            items:
+              type: string
+              example: mfa.company.com
+          port:
+            type: number
+            description: Port to connect.
+            example: 1812
+          inputType:
+            type: string
+            description: >
+              The input type used in the client to enter the MFA code. 
+               * "Masked" - The input is masked the same way as a password field.
+               * "Numeric" - The input is marked as a numeric input.
+               * "Text" - The input is handled as a regular plain text field.
+            example: Number
+            enum:
+              - Masked
+              - Numeric
+              - Text
+            default: Masked
+          sharedSecret:
+            type: string
+            writeOnly: true
+            description: Radius shared secret to authenticate to the server.
+          authenticationProtocol:
+            type: string
+            description: Radius protocol to use while authenticating users.
+            enum:
+              - PAP
+              - CHAP
+            default: CHAP
+          timeout:
+            type: number
+            description: Timeout in seconds before giving up on response.
+            default: 6
+          mode:
+            type: string
+            description: >
+              Defines the multi-factor authentication flow for RADIUS.
+               * "OneFactor" - The input from the user is sent as password and the response is used for result.
+               * "Challenge" - Before prompting the user, Controller sends a challenge request to the RADIUS server
+               using "challengeSharedSecret" or the user password. Data from the response is used with user input to
+               send the second RADIUS authentication request.
+               * "Push" - "challengeSharedSecret" or the user password is sent to RADIUS which triggers an external
+               authentication flow. When the external authentication flow returns success, the MFA attempt is
+               authenticated.
+            enum:
+              - OneFactor
+              - Challenge
+              - Push
+            default: Challenge
+          useUserPassword:
+            type: boolean
+            description: ->
+              If enabled, the Client will send the cached password instead of using
+              challengeSharedSecret" to initiate the multi-factor authentication.
+          challengeSharedSecret:
+            type: string
+            writeOnly: true
+            format: password
+            description: ->
+              Password sent to RADIUS to initiate multi-factor authentication. Required if "useUserPassword" is not
+              enabled.

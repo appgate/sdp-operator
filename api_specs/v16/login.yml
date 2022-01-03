@@ -1,0 +1,383 @@
+login:
+  post:
+    summary: Simplified Login
+    description: >-
+      First step for any API call is retrieving AuthToken using Login API. All other calls require the AuthToken.
+      Client is advised to **securely store** the AuthToken and reuse until it expires.
+      Multi-Factor Authentication is not supported by Login call, API user must be exempt from Admin MFA requirement.
+      It is important to restrict API user's permissions strictly as-needed basis and restrict IP access to API port to
+      trusted networks.
+    tags:
+      - Login
+    responses:
+      '200':
+        description: Login Response.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/LoginResponse'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: '#/responses/AuthenticationError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/LoginRequest'
+      description: Login Credentials.
+      required: true
+identity-provider-names:
+  get:
+    summary: Get the list of identity providers available for admin login.
+    description: Get the list of identity providers available for admin login.
+    tags:
+      - Login
+    responses:
+      '200':
+        description: Login Response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  description: The list of the identity providers.
+                  items:
+                    type: object
+                    description: Details of an identity provider required for logging in.
+                    properties:
+                      name:
+                        type: string
+                        description: Name of the identity provider.
+                        example: local
+                      type:
+                        type: string
+                        description: The type of the identity provider.
+                        enum:
+                          - Credentials
+                          - Saml
+                          - Certificate
+                      redirectUrl:
+                        type: string
+                        description: The SAML login URL.
+                        example: "https://saml.company.com/appgate-admin?SAMLRequest=base64Request"
+                      certificatePriorities:
+                        type: array
+                        description: The prioritization of which client certificate to use.
+                        items:
+                          type: object # won't get into it as it's irrelevant.
+                bannerMessage:
+                  type: string
+                  description: Configured banner message to display before login.
+                  example: Authorized use only.
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+authentication:
+  post:
+    summary: Authenticate. For internal use.
+    description: |-
+      API Scripts are recommended to use the Login call instead of separate Authentication & Authorization calls.
+
+      First step for logging in is sending the credentials and retrieving partial AuthToken.
+      If the response has the "needTwoFactorAuth:true", then either API user must be extempt from Admin MFA or two-step
+      MFA process must be completed before Authorization.
+    tags:
+      - Login
+    responses:
+      '200':
+        description: Login Response.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/LoginResponse'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: '#/responses/AuthenticationError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/LoginRequest'
+      description: Login Credentials.
+      required: true
+authentication-otp-initialize:
+  post:
+    summary: Initialize the MFA. For internal use.
+    description: >-
+      This API starts the Multi-Factor Authentication process.
+      It requires the partial AuthToken from Authentication call.
+      The Controller will initiate the flow and return details required to continue MFA.
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    tags:
+      - Login
+    responses:
+      '200':
+        description: MFA initialization response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  description: |-
+                    The type of the Multi-Factor Authentication.
+                    * 'AlreadySeeded': The MFA provider is the built-in Time-based OTP provider and the user has already
+                    a seed in the system. OTP is required on the next step.
+                    * 'Secret': The MFA provider is the built-in Time-based OTP provider and this is the first time the
+                    user is doing an MFA. It includes details about the seed. OTP is required on the next step.
+                    * 'Challenge': The MFA provider is a RADIUS provider. It might include a challenge that needs to be
+                    sent back. OTP is required on the next step.
+                    * 'Push': The MFA provider is a RADIUS provider but the authentication is done externally, such as a
+                     mobile app that prompts. Send a dummy OTP right away to trigger the external authentication.
+                  enum:
+                    - AlreadySeeded
+                    - Secret
+                    - Challenge
+                    - Push
+                secret:
+                  type: string
+                  description: >-
+                    The seed for the built-in Time-based OTP provider. Used when configuring TOTP apps manually.
+                    Only available in Secret type.
+                  example: 6XOEKS6WZASFPA5A
+                otpAuthUrl:
+                  type: string
+                  description: >-
+                    A URL for triggering TOTP apps directly and configuring an entry automatically.
+                    Only available in Secret type.
+                  example: 'otpauth://totp/admin@local@appgate.company.com?secret=6XOEKS6WZASFPA5A&issuer=Appgate%20SDP'
+                barcode:
+                  type: string
+                  format: byte
+                  description: The barcode image in jpg format. Base64 encoded. Only available in Secret type.
+                responseMessage:
+                  type: string
+                  description: A message from the RADIUS MFA provider. Only available in Challenge type.
+                  example: Please enter enter 1234 to your token.
+                state:
+                  type: string
+                  format: byte
+                  description: >-
+                    State send by the RADIUS MFA provider as challenge.
+                    It needs to be sent back during MFA authentication.
+                    Only available in Challenge type.
+                timeout:
+                  type: number
+                  description: >-
+                    How long the Controller wait for RADIUS response.
+                    Especially useful for external authentication mechanism.
+                    Clients waiting shorter than this timeout will fail with a wrong error.
+                    Only available in Challenge and Push type.
+                  example: 10
+                sendPassword:
+                  type: boolean
+                  description: >-
+                    Whether the RADIUS MFA provider expecting the user password for authentication.
+                    If true, the user password needs to be sent as otp instead of a dummy value.
+                    Only available in Push type.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              userPassword:
+                type: string
+                description: >-
+                  Some MFA configurations require user password in order to authenticate the user along with the
+                  multi-factor. Otherwise not required.
+                example: 'tSW3!QBv(rj{UuLY'
+      description: Optional MFA initialization details.
+authentication-otp:
+  post:
+    summary: Finalize the MFA. For internal use.
+    description: >-
+      This API starts the Multi-Factor Authentication process.
+      It requires the partial AuthToken from Authentication call.
+      The fields required depends on the initialization.
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    tags:
+      - Login
+    responses:
+      '200':
+        description: MFA was successful. The AuthToken now has the MFA flag and ready for Authorization step.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/LoginResponse'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: '#/responses/AuthenticationError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - otp
+            properties:
+              otp:
+                type: string
+                description: >-
+                  Depending on the type of the MFA flow, this could be an OTP generated from a device, user password or
+                  some dummy value.
+                example: 521856
+              state:
+                type: string
+                format: byte
+                description: The state value if it was received during initialization.
+      description: MFA credentials.
+      required: true
+authorization:
+  get:
+    summary: Authorize. For internal use.
+    description: >-
+      API Scripts are recommended to use the Login call instead of separate Authentication & Authorization calls.
+
+      Last step for logging in is sending the partial AuthToken for authorization and retrieving the AuthToken.
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    tags:
+      - Login
+    responses:
+      '200':
+        description: Authorization was successful. The AuthToken is ready for any subsequent API call.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/LoginResponse'
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: '#/responses/AuthenticationError'
+      '403':
+        description: No administration rights.
+        content:
+          application/json:
+            schema:
+              $ref: './common.yml#/definitions/Error'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+logout:
+  post:
+    summary: Logout
+    description: The tokens for this session will be revoked
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    tags:
+      - Login
+    responses:
+      '204':
+        description: Logout was successful. The tokens are revoked immediately.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+responses:
+  AuthenticationError:
+    description: Login Failed.
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: './common.yml#/definitions/Error'
+            - type: object
+              properties:
+                reason:
+                  type: string
+                  description: The authentication failure reason.
+                  example: Invalid username or password.
+
+definitions:
+  LoginRequest:
+    type: object
+    required:
+      - providerName
+      - deviceId
+    properties:
+      providerName:
+        type: string
+        description: Display name of the Identity Provider name.
+        example: ldap
+      username:
+        type: string
+        description: Username. Required if a credentials based Identity Provider is used.
+        example: user
+      password:
+        type: string
+        description: Password. Required if a credentials based Identity Provider is used.
+        example: 'tSW3!QBv(rj{UuLY'
+      deviceId:
+        type: string
+        format: uuid
+        description: >-
+          UUID to distinguish the Client device making the request.
+          It is supposed to be same for every login request from the same server.
+        example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      samlResponse:
+        type: string
+        description: SAMLResponse received from SAML provider. Required if a SAML based Identity Provider is used.
+  LoginResponse:
+    type: object
+    properties:
+      user:
+        type: object
+        description: Information about logged in user, such as username and email address, if exists.
+        properties:
+          name:
+            type: string
+            description: Username.
+            example: admin
+          needTwoFactorAuth:
+            type: boolean
+            description: If true, it is not possible to complete login process without providing MFA.
+            example: false
+          canAccessAuditLogs:
+            type: boolean
+            description: Whether there is a LogServer deployed and the user has privileges to access to it.
+          privileges:
+            type: array
+            description: The privileges the user has.
+            items:
+              $ref: './administrative_role.yml#/definitions/AdministrativePrivilege'
+      token:
+        type: string
+        description: The AuthToken required for subsequent API calls.
+      expires:
+        type: string
+        format: date-time
+        description: Token expiration time.
+      messageOfTheDay:
+        type: string
+        description: Message of the day configured by an admin.
+        example: Welcome to Appgate SDP.

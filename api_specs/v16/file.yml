@@ -1,0 +1,215 @@
+files:
+  get:
+    summary: List all Files.
+    description: List all Files uploaded to the current Controller and their details.
+    tags:
+      - Appliance Upgrade
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/checksum'
+    responses:
+      '200':
+        description: List of Files and their statuses.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/FileList'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  post:
+    summary: Make Controller download a File from a given URL.
+    description: >-
+      Make the current Controller download a File from a given URL.
+      Note that the File is downloaded and stored only on the current Controller, not synced between Controllers.
+    tags:
+      - Appliance Upgrade
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '202':
+        description: >-
+          The request is accepted and the download has started.
+          The status of the File can be followed via 'GET files/{filename}' call after this.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - url
+              - filename
+            properties:
+              url:
+                type: string
+                description: The URL for Controller to download the File from.
+                example: 'https://s3.eu-central-1.amazonaws.com/appgate/appgate-appliance.img.zip'
+              filename:
+                type: string
+                description: The filename to save the File as.
+                example: 'appgate-appliance.img.zip'
+  put:
+    summary: Upload a File directly to the Controller.
+    description: >-
+      Upload a File directly to the current Controller.
+      Note that the File is stored only on the current Controller, not synced between Controllers.
+    tags:
+      - Appliance Upgrade
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+    responses:
+      '204':
+        description: The File was uploaded successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '409':
+        $ref: './common.yml#/responses/ConflictError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: The File to upload. "filename"w must be included in in Content-Disposition.
+files-filename:
+  get:
+    summary: Get the status of a File.
+    description: Get the status of a File uploaded to the current Controller.
+    tags:
+      - Appliance Upgrade
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/filename'
+      - $ref: '#/parameters/checksum'
+    responses:
+      '200':
+        description: Get the status and details of a File.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/File'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: '#/responses/FilenameError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+  delete:
+    summary: Delete a File.
+    description: Delete a File from the current Controller.
+    tags:
+      - Appliance Upgrade
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: '#/parameters/filename'
+      - $ref: '#/parameters/checksum'
+    responses:
+      '204':
+        description: The File was deleted successfully.
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '404':
+        $ref: './common.yml#/responses/NotFoundError'
+      '422':
+        $ref: '#/responses/FilenameError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+
+parameters:
+  filename:
+    name: filename
+    in: path
+    description: The filename as it's uploaded to the Controller.
+    schema:
+      type: string
+      example: 'appgate-upgrade.img.zip'
+    required: true
+  checksum:
+    name: checksum
+    in: query
+    description: >-
+      Whether to calculate checksum of the File(s) and include in the response.
+      If true, response take may long depending on the File sizes.
+    schema:
+      type: boolean
+      default: false
+
+responses:
+  FilenameError:
+    description: Invalid filename.
+    content:
+      application/json:
+        schema:
+          $ref: './common.yml#/definitions/Error'
+
+definitions:
+  FileList:
+    type: object
+    description: Represents a list of Files and their details.
+    properties:
+      data:
+        type: array
+        description: List of Files.
+        items:
+          $ref: '#/definitions/File'
+  File:
+    type: object
+    description: File details and status.
+    properties:
+      name:
+        type: string
+        description: Filename.
+        example: 'appgate-upgrade.img.zip'
+      status:
+        type: string
+        description: Status of the File.
+        enum:
+          - InProgress
+          - Ready
+          - Failed
+      failureReason:
+        type: string
+        description: The reason of failure.
+        example: 401 Unauthorized
+      checksum:
+        type: string
+        description: SHA256 checksum of the File.
+        example: 61b14187e9371cecce814f15cf1d85fbd389b5ed5081952397cb8d265f13a190
+      creationTime:
+        type: string
+        format: 'date-time'
+        description: The creation time of the File.
+      lastModifiedTime:
+        type: string
+        format: 'date-time'
+        description: The last modified time of the File.
