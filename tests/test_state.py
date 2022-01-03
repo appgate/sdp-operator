@@ -978,7 +978,7 @@ def test_dependencies_4():
         'EntityDep5': EntitiesSet(),
         'EntityDep6': deps6,
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
     print(appgate_state.entities_set['EntityDep1'].entities)
     assert appgate_state.entities_set['EntityDep1'].entities == {
@@ -1040,7 +1040,7 @@ def test_dependencies_4():
         'EntityDep5': EntitiesSet(),
         'EntityDep6': deps6,
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
     assert appgate_state.entities_set['EntityDep6'].entities == {
         EntityWrapper(EntityDep6(name='dep61',
@@ -1069,7 +1069,7 @@ def test_dependencies_5():
     appgate_state = AppgateState(entities_set={
         'EntityDepNested7': deps7,
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {
         'd71': [
             MissingFieldDependencies(
@@ -1089,7 +1089,7 @@ def test_dependencies_5():
         'EntityDepNested7': deps7,
         'EntityDep2': deps2,
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
 
     # Either EntityDep2 or EntityDep1 should satisfy this dependency
@@ -1101,7 +1101,7 @@ def test_dependencies_5():
         'EntityDepNested7': deps7,
         'EntityDep1': deps1,
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
 
 
@@ -1133,7 +1133,7 @@ def test_dependencies_6():
         'EntityDep2': deps2,
         'EntityDep4': deps4
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
 
     deps4 = EntitiesSet({
@@ -1146,7 +1146,7 @@ def test_dependencies_6():
         'EntityDep2': deps2,
         'EntityDep4': deps4
     })
-    conflicts = resolve_appgate_state(appgate_state, test_api_spec)
+    conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert sorted(list(conflicts.keys())) == ['dep31']
     assert set(conflicts['dep31']) == {
             MissingFieldDependencies(

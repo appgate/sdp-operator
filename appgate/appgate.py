@@ -154,16 +154,24 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     log.info('[appgate-operator/%s] Main loop started:', namespace)
     log.info('[appgate-operator/%s]   + namespace: %s', namespace, namespace)
     log.info('[appgate-operator/%s]   + host: %s', namespace, ctx.controller)
+    log.info('[appgate-operator/%s]   + log-level: %s', namespace, log.level)
     log.info('[appgate-operator/%s]   + timeout: %s', namespace, ctx.timeout)
     log.info('[appgate-operator/%s]   + dry-run: %s', namespace, ctx.dry_run_mode)
     log.info('[appgate-operator/%s]   + cleanup: %s', namespace, ctx.cleanup_mode)
     log.info('[appgate-operator/%s]   + two-way-sync: %s', namespace, ctx.two_way_sync)
+    log.info('[appgate-operator/%s]   + builtin tags: %s', namespace,
+             ','.join(ctx.builtin_tags))
+    log.info('[appgate-operator/%s]   + target tags: %s', namespace,
+             ','.join(ctx.target_tags) if ctx.target_tags else 'None')
+    log.info('[appgate-operator/%s]   + exclude tags: %s', namespace,
+             ','.join(ctx.exclude_tags) if ctx.exclude_tags else 'None')
     log.info('[appgate-operator/%s] Getting current state from controller',
              namespace)
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
+    total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
         expected_appgate_state = AppgateState(
-            {k: v.entities_with_tags(ctx.builtin_tags)
+            {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
              for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
@@ -174,7 +182,7 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             log.info('[appgate-operator/%s] Waiting for event', namespace)
             event: AppgateEvent = await asyncio.wait_for(queue.get(), timeout=ctx.timeout)
             log.info('[appgate-operator/%s}] Event op: %s %s with name %s', namespace,
-                     event.op, str(type(event.entity)), event.entity.name)
+                     event.op, event.entity.__class__.__qualname__, event.entity.name)
             expected_appgate_state.with_entity(EntityWrapper(event.entity), event.op, current_appgate_state)
         except asyncio.exceptions.TimeoutError:
             # Log all expected entities
@@ -193,7 +201,8 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
 
             # Resolve entities now, in order
             # this will be the Topological sort
-            total_conflicts = resolve_appgate_state(appgate_state=expected_appgate_state,
+            total_conflicts = resolve_appgate_state(expected_state=expected_appgate_state,
+                                                    total_appgate_state=total_appgate_state,
                                                     reverse=False,
                                                     api_spec=ctx.api_spec)
             if total_conflicts:
@@ -207,12 +216,13 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
             if ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
                 current_appgate_state = await get_current_appgate_state(ctx=ctx)
+                total_appgate_state = deepcopy(current_appgate_state)
 
             # Create a plan
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
             plan = create_appgate_plan(current_appgate_state, expected_appgate_state,
-                                       ctx.builtin_tags, ctx.target_tags)
+                                       ctx.builtin_tags, ctx.target_tags, ctx.exclude_tags)
             if plan.needs_apply:
                 log.info('[appgate-operator/%s] No more events for a while, creating a plan',
                          namespace)

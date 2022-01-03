@@ -123,7 +123,7 @@ def get_context(args: OperatorArguments,
                    device_id=device_id,
                    controller=controller, timeout=int(timeout),
                    dry_run_mode=dry_run_mode == '1',
-                   cleanup_mode=cleanup_mode == '0',
+                   cleanup_mode=cleanup_mode == '1',
                    two_way_sync=two_way_sync == '1',
                    api_spec=api_spec,
                    no_verify=no_verify,
@@ -201,7 +201,8 @@ async def dump_entities(ctx: Context, output_dir: Optional[Path],
             for e in entity_set.entities:
                 log.debug(f'Got entitiy %s: %s [%s]', e.name, e.id,
                           entity_name)
-    total_conflicts = resolve_appgate_state(appgate_state=current_appgate_state,
+    total_conflicts = resolve_appgate_state(expected_state=current_appgate_state,
+                                            total_appgate_state=current_appgate_state,
                                             reverse=True,
                                             api_spec=ctx.api_spec)
     if total_conflicts:
