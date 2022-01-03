@@ -119,11 +119,6 @@ def get_context(args: OperatorArguments,
                                  secrets_key=secrets_key,
                                  k8s_get_secret=k8s_get_secret)
 
-    # When running in partial updates mode (target_tags defined) run also in cleanup mode
-    if target_tags and not cleanup_mode:
-        log.warning('[get_context] Activating cleanup mode since the operator is doing partial updates.')
-        cleanup_mode = True
-
     return Context(namespace=namespace, user=user, password=password,
                    provider=provider,
                    device_id=device_id,
