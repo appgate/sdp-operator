@@ -412,24 +412,21 @@ def compare_entities(current: EntitiesSet,
                      builtin_tags: FrozenSet[str],
                      target_tags: Optional[FrozenSet[str]],
                      excluded_tags: Optional[FrozenSet[str]]=None) -> Plan:
-    current_entities = current.entities
+    current_entities = {e for e in current.entities if is_target(e, target_tags)}
     current_names = {e.name for e in current_entities}
-    expected_entities = expected.entities
+    expected_entities = {e for e in expected.entities if is_target(e, target_tags)}
     expected_names = {e.name for e in expected_entities}
     shared_names = current_names.intersection(expected_names)
 
     ignore_tags = builtin_tags.union(excluded_tags or frozenset())
     def _to_delete_filter(e: EntityWrapper) -> bool:
-        return e.name not in expected_names and not has_tag(e, ignore_tags) \
-               and is_target(e, target_tags)
-
+        return e.name not in expected_names and not has_tag(e, ignore_tags)
     def _to_create_filter(e: EntityWrapper) -> bool:
-        return e.name not in current_names and e.name not in shared_names \
-               and is_target(e, target_tags)
-
+        return e.name not in current_names and e.name not in shared_names
     def _to_modify_filter(e: EntityWrapper) -> bool:
-        return e.name in shared_names and e not in current_entities \
-               and is_target(e, target_tags)
+        return e.name in shared_names and e not in current_entities
+    def _to_share_filter(e: EntityWrapper) -> bool:
+        return e.name in shared_names and e in current_entities
 
     # Compute the set of entities to delete
     #  - Don't delete builtin entities
@@ -461,8 +458,7 @@ def compare_entities(current: EntitiesSet,
         diff = compute_diff(current_entity, e)
         if diff:
             modifications_diff[e.name] = diff
-    to_share = EntitiesSet(set(filter(
-        lambda e: e.name in shared_names and e in current_entities, expected_entities)))
+    to_share = EntitiesSet(set(filter(_to_share_filter, expected_entities)))
 
     return Plan(delete=to_delete,
                 not_to_delete=not_to_delete,
