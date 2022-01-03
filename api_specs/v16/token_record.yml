@@ -49,7 +49,11 @@ token-records-revoked-by-dn:
             - Administration
     responses:
       '200':
-        description: Tokens were revoked successfully. Returns the list of revoked Tokens.
+        description: Tokens were revoked successfully. Returns the list of revoked tokens.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/TokenRevocationResponse'
       '400':
         $ref: './common.yml#/responses/JsonError'
       '401':
@@ -86,6 +90,10 @@ token-records-revoked-by-type:
     responses:
       '200':
         description: Tokens were revoked successfully. Returns the list of revoked tokens.
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/TokenRevocationResponse'
       '400':
         $ref: './common.yml#/responses/JsonError'
       '401':
@@ -174,7 +182,7 @@ definitions:
             example: user.ad.company.com
   TokenRevocationRequest:
     type: object
-    description: Details for token revocation.
+    description: Details for token revocation request.
     properties:
       revocationReason:
         type: string
@@ -198,3 +206,78 @@ definitions:
           Only used when revoking all Tokens. Specific distinguished names can be defined to renew tokens in bulk for a specific list of devices.
         items:
           type: string
+  TokenRevocationResponse:
+    allOf:
+      - $ref: './common.yml#/definitions/ResultList'
+      - type: object
+        description: Represents a list of TokenRevocation.
+        properties:
+          data:
+            type: array
+            description: List of TokenRevocation.
+            items:
+              $ref: '#/definitions/TokenRevocation'
+  TokenRevocation:
+    type: object
+    description: Response for token revocation response.
+    properties:
+      tokenId:
+        type: string
+        format: uuid
+        description: The ID assigned to the token.
+        example: 09ef254d-cb96-418a-82a7-9555c96d1a80
+      tokenType:
+        type: string
+        enum:
+          - administration
+          - adminclaims
+          - entitlement
+          - claims
+        description: The type of the token that was revoked.
+      distinguishedName:
+        type: string
+        description: 'The Distinguished name of a user&device combination. Format: "CN=,CN=,OU="'
+        example: CN=4c07bc6757ea42ddb702c2d6c45419fc,CN=user,OU=ldap
+      issued:
+        type: string
+        format: date-time
+        description: The issue time of the token.
+        example: 2021-12-22T17:35:16.000775Z
+      expires:
+        type: string
+        format: date-time
+        description: The expiration time of the token.
+        example: 2021-12-22T17:35:16.000775Z
+      revoked:
+        type: boolean
+        description: Whether or not the token was revoked.
+      siteId:
+        type: string
+        description: The site ID of the token.
+        format: uuid
+        example: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+      siteName:
+        type: string
+        description: The name of the Site for this Entitlement. For convenience only.
+        example: Default Site
+      revocationTime:
+        type: string
+        format: date-time
+        description: The revocation time of the certificate.
+        example: 2021-12-22T17:40:30.904434Z
+      deviceId:
+        type: string
+        format: uuid
+        description: The device ID to assign to this Client. It will be used to generate device distinguished name.
+        example: 12699e27-b584-464a-81ee-5b4784b6d425
+      username:
+        type: string
+        description: The username, same as the one in the Distinguished Name.
+        example: user
+      providerName:
+        type: string
+        description: The provider name of the user, same as the one in the user Distinguished Name.
+        example: ldap
+      controllerHostname:
+        type: string
+        description: The hostname of the controller associated with this token.

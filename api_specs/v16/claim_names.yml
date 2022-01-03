@@ -14,15 +14,7 @@ claim-names:
         content:
           application/json:
             schema:
-              properties:
-                user:
-                  $ref: '#/definitions/ClaimNames'
-                device:
-                  $ref: '#/definitions/ClaimNames'
-                system:
-                  $ref: '#/definitions/ClaimNames'
-                onDemand:
-                  $ref: '#/definitions/ClaimNames'
+              $ref: '#/definitions/ClaimNamesList'
       '401':
         $ref: './common.yml#/responses/TokenError'
       '403':
@@ -30,7 +22,22 @@ claim-names:
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
 
+
+
 definitions:
+  ClaimNamesList:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/ClaimNames'
+      device:
+        $ref: '#/definitions/ClaimNames'
+      system:
+        $ref: '#/definitions/ClaimNames'
+      onDemand:
+        $ref: '#/definitions/ClaimNames'
+
+
   ClaimNames:
     type: array
     items:

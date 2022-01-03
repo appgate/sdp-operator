@@ -31,6 +31,8 @@ appliances-backup:
         $ref: './common.yml#/responses/NotFoundError'
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
+      '503':
+        $ref: './common.yml#/responses/ServiceUnavailableError'
     requestBody:
       description: Appliance Backup parameters.
       content:
@@ -43,6 +45,9 @@ appliances-backup:
               audit:
                 type: boolean
                 description: Whether the Appliance Backup should include the audit logs or not.
+              notifyUrl:
+                type: string
+                description: URL to send a POST request to notify about the completion of the backup, that it can now be downloaded and deleted.
 appliances-backup-id-status:
   get:
     summary: Get the status of a Appliance Backup.

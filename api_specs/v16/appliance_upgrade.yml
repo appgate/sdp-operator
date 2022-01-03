@@ -239,27 +239,35 @@ appliances-maintenance:
 
 requestBodies:
   ApplianceUpgrade:
+    required: true
     content:
       application/json:
         schema:
+          $ref: '#/definitions/ApplianceUpgrade'
           type: object
-          required:
-            - imageUrl
-          properties:
-            imageUrl:
-              type: string
-              description: |-
-                The URL for the Appliance the download the Upgrade image from.
-                The URL may be a public HTTP URL or it could be a file uploaded to the Controller.
-                See "files" APIs for uploading to Controller.
-                In order to use a Controller based file, set this field to
-                "controller://\<controller-peer-hostname:port\>/{filename}".
-                The Appliance will authenticate itself to the Controller and download the file.
-              example: 'https://s3.eu-central-1.amazonaws.com/appgate/appgate-appliance.img.zip'
-    description: Appliance Upgrade request.
-    required: true
 
 definitions:
+  ApplianceUpgrade:
+    type: object
+    required:
+      - imageUrl
+    description: Appliance Upgrade request.
+    properties:
+      devKeyring:
+        type: boolean
+        example: false
+        description: Disclaimer of Warranty - internal use only. This is not a supported property. Use the development keyring to verify the upgrade image.
+      imageUrl:
+        type: string
+        description: |-
+          The URL for the Appliance the download the Upgrade image from.
+          The URL may be a public HTTP URL or it could be a file uploaded to the Controller.
+          See "files" APIs for uploading to Controller.
+          In order to use a Controller based file, set this field to
+          "controller://\<controller-peer-hostname:port\>/{filename}".
+          The Appliance will authenticate itself to the Controller and download the file.
+        example: 'https://s3.eu-central-1.amazonaws.com/appgate/appgate-appliance.img.zip'
+
   ApplianceUpgradeInternal:
     type: object
     description: Internal Upgrade initiation details.

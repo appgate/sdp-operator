@@ -255,6 +255,7 @@ definitions:
           - File
           - FailedAuthentication
           - AutoUpdate
+          - ClientConnection
       scope:
         type: object
         description: >-

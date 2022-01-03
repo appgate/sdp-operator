@@ -226,16 +226,19 @@ definitions:
             default: 30
           total:
             type: integer
+            format: int64
             readOnly: true
             description: The total size of the IP Pool.
             example: 254
           currentlyUsed:
             type: integer
+            format: int64
             readOnly: true
             description: Number of IPs in the pool are currently in use by device&users.
             example: 16
           reserved:
             type: integer
+            format: int64
             readOnly: true
             description: >-
               Number of IPs in the pool are not currently in use but reserved for device&users according to the

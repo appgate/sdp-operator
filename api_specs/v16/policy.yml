@@ -173,9 +173,10 @@ definitions:
             enum:
               - Access
               - Device
+              - Dns
               - Admin
-              - Combined
-            default: Combined
+              - Mixed
+            default: Mixed
           entitlements:
             type: array
             description: List of Entitlement IDs in this Policy.
@@ -204,20 +205,20 @@ definitions:
             items:
               type: string
               example: developer
-# Not fully implemented yet
-#          dnsRules:
-#            type: array
-#            description: List of DNS Rule IDs in this Policy.
-#            items:
-#              type: string
-#              format: uuid
-#              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
-#          dnsRuleLinks:
-#            type: array
-#            description: List of DNS Rule tags in this Policy.
-#            items:
-#              type: string
-#              example: developer
+          # Not fully implemented yet
+          #          dnsRules:
+          #            type: array
+          #            description: List of DNS Rule IDs in this Policy.
+          #            items:
+          #              type: string
+          #              format: uuid
+          #              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+          #          dnsRuleLinks:
+          #            type: array
+          #            description: List of DNS Rule tags in this Policy.
+          #            items:
+          #              type: string
+          #              example: developer
           tamperProofing:
             type: boolean
             description: >-
@@ -262,6 +263,26 @@ definitions:
               dnsSuffix:
                 type: string
                 description: Client checks if the DNS suffix has been configured on the OS to decide whether it's on a trusted network or not.
+          dnsSettings:
+            type: array
+            description: List of domain names with DNS server IPs that the Client should be using.
+            items:
+              type: object
+              description: A domain name and a list of DNS servers.
+              required:
+                - domain
+                - servers
+              properties:
+                domain:
+                  type: string
+                  description: The domain for which the DNS servers should be used by the client.
+                  example: Default
+                servers:
+                  type: array
+                  items:
+                    type: string
+                    description: The DNS servers to use for the domain.
+                    example: 192.168.1.22
           clientSettings:
             type: object
             description: Settings that admins can apply to the Client.
@@ -274,29 +295,29 @@ definitions:
                 type: string
                 description: Show or hide Entitlement List on Client UI.
                 enum:
-                   - Show
-                   - Hide
+                  - Show
+                  - Hide
               attentionLevel:
                 type: string
                 enum:
-                   - Show
-                   - Low
-                   - Medium
-                   - High
+                  - Show
+                  - Low
+                  - Medium
+                  - High
                 description: Set the Attention Level automatically on Client and hide the option. "Show" will leave option to the user.
               autoStart:
                 type: string
                 enum:
-                   - Show
-                   - Enabled
-                   - Disabled
+                  - Show
+                  - Enabled
+                  - Disabled
                 description: Set the Autostart setting automatically on Client and hide the option. "Show" will leave option to the user.
               addRemoveProfiles:
                 type: string
                 description: Allow adding and removing profiles on Client.
                 enum:
-                   - Show
-                   - Hide
+                  - Show
+                  - Hide
               keepMeSignedIn:
                 type: string
                 enum:
@@ -307,9 +328,9 @@ definitions:
               samlAutoSignIn:
                 type: string
                 enum:
-                   - Show
-                   - Enabled
-                   - Disabled
+                  - Show
+                  - Enabled
+                  - Disabled
                 description: Set the "SAML/Certificate auto sign-in" setting automatically on Client and hide the option. "Show" will leave option the user.
               quit:
                 type: string
@@ -327,8 +348,8 @@ definitions:
                 type: string
                 description: Show or hide "Suspend" feature on Client UI.
                 enum:
-                   - Show
-                   - Hide
+                  - Show
+                  - Hide
           administrativeRoles:
             type: array
             description: List of Administrative Role IDs in this Policy.

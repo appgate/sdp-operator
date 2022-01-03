@@ -395,9 +395,6 @@ definitions:
                   type: object
                   required:
                     - name
-                    - subscriptionId
-                    - tenantId
-                    - clientId
                   properties:
                     name:
                       type: string
@@ -406,6 +403,10 @@ definitions:
                       type: integer
                       description: How often will the resolver poll the server. In seconds.
                       default: 60
+                    useManagedIdentities:
+                      type: boolean
+                      description: Uses the built-in Managed Identities in Azure instances to authenticate against the API.
+                      default: false
                     subscriptionId:
                       type: string
                       description: Azure subscription id, visible with the azure cli command `azure account show`.
@@ -471,3 +472,28 @@ definitions:
                     instanceFilter:
                       type: string
                       description: GCP instance filter.
+              dnsForwarding:
+                type: object
+                description: Enable DNS Forwarding feature.
+                required:
+                  - dnsServers
+                  - allowDestinations
+                properties:
+                  siteIpv4:
+                    type: string
+                    description: DNS Forwarder Site IPv4 address.
+                    example: 100.110.0.0
+                  siteIpv6:
+                    type: string
+                    description: DNS Forwarder Site IPv6 address.
+                    example: '2001:db8:0:0:0:ff00:42:8329'
+                  dnsServers:
+                    type: array
+                    description: DNS Servers to use for resolving endpoints.
+                    items:
+                      type: string
+                    example:
+                      - '172.17.18.19'
+                      - '192.100.111.31'
+                  allowDestinations:
+                    $ref: './appliance.yml#/definitions/AllowResources'

@@ -68,6 +68,8 @@ definitions:
         $ref: '#/definitions/Client'
       fedora:
         $ref: '#/definitions/Client'
+      redHat8:
+        $ref: '#/definitions/Client'
       redHat7:
         allOf:
           - $ref: '#/definitions/Client'

@@ -20,6 +20,8 @@ login:
         $ref: './common.yml#/responses/JsonError'
       '401':
         $ref: '#/responses/AuthenticationError'
+      '406':
+        $ref: '#/responses/NotAcceptableError'
       '422':
         $ref: './common.yml#/responses/ValidationError'
       '500':
@@ -317,6 +319,25 @@ responses:
                   type: string
                   description: The authentication failure reason.
                   example: Invalid username or password.
+  NotAcceptableError:
+    description: Invalid Accept header.
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id:
+              type: string
+              description: N/A
+            message:
+              type: string
+              description: Human readable error details.
+            minSupportedVersion:
+              type: integer
+              description: Minimum supported version.
+            maxSupportedVersion:
+              type: integer
+              description: Maximum supported version.
 
 definitions:
   LoginRequest:

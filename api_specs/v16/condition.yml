@@ -268,7 +268,7 @@ definitions:
                   x-uuid-ref:
                     - MfaProvider
                     - IdentityProvider
-                  description: MFA Provider Id. Required for OtpAuthentication remedy method.
+                  description: MFA Provider Id or Identity Provider Id. Required for some remedy method.
                   example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   TestRequest:
     type: object

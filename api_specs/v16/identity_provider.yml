@@ -270,6 +270,10 @@ definitions:
             type: boolean
             description: Whether the provider will be listed in the Admin UI or not.
             default: false
+          deviceLimitPerUser:
+            type: integer
+            description: The device limit per user. The existing on-boarded devices will still be able to sign in even if the limit is exceeded.
+            default: 100
           onBoarding2FA:
             type: object
             description: On-boarding two-factor authentication settings. Leave it empty keep it disabled.
@@ -285,10 +289,6 @@ definitions:
                 type: string
                 description: On-boarding MFA message to be displayed on the Client UI during the second-factor authentication.
                 example: Please use your multi factor authentication device to on-board.
-              deviceLimitPerUser:
-                type: integer
-                description: The device limit per user. The existing on-boarded devices will still be able to sign in even if the limit is exceeded.
-                default: 100
               claimSuffix:
                 type: string
                 description: Upon successful on-boarding, the claim will be added as if MFA remedy action is fulfilled.
@@ -296,6 +296,13 @@ definitions:
               alwaysRequired:
                 type: boolean
                 description: If enabled, MFA will be required on every authentication.
+              deviceLimitPerUser:
+                type: integer
+                description: >-
+                  The device limit per user. The existing on-boarded devices will still be able to sign in even if the limit is exceeded.
+                  Deprecated. Use root level field instead.
+                deprecated: true
+                writeOnly: true
           inactivityTimeoutMinutes:
             type: integer
             description: (Desktop) clients will sign out automatically after the user has been inactive on the device for the configured duration. Set it to 0 to disable.

@@ -147,7 +147,7 @@ appliances-export:
             schema:
               type: object
               description: The JSON seed used for activation of the appliance.
-              properties: {}
+              properties: { }
       '400':
         $ref: './common.yml#/responses/JsonError'
       '401':
@@ -161,7 +161,7 @@ appliances-export:
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
-      $ref: '#/requestBodies/SshConfig'
+      $ref: '#/requestBodies/ExportSeedConfig'
 appliances-export-iso:
   post:
     summary: Export ISO seed for an inactive Appliance.
@@ -179,7 +179,7 @@ appliances-export-iso:
         content:
           application/json:
             schema:
-              $ref: '#/definitions/ApplianceSeed'
+              $ref: '#/definitions/ApplianceSeedISO'
       '400':
         $ref: './common.yml#/responses/JsonError'
       '401':
@@ -193,7 +193,7 @@ appliances-export-iso:
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
-      $ref: '#/requestBodies/SshConfig'
+      $ref: '#/requestBodies/ExportSeedConfig'
 appliances-renew-certificate:
   post:
     summary: Renew certificate of an active Appliance.
@@ -242,7 +242,11 @@ appliances-admin-interface-p12:
       '500':
         $ref: './common.yml#/responses/UnexpectedError'
     requestBody:
-      $ref: './common.yml#/requestBodies/P12'
+      content:
+        application/json:
+          schema:
+            $ref: './common.yml#/definitions/P12'
+      required: true
 appliances-deactivate:
   post:
     summary: Deactivate an active Appliance.
@@ -327,8 +331,6 @@ appliances-test-resolver-name:
         $ref: './common.yml#/responses/TokenError'
       '403':
         $ref: './common.yml#/responses/PermissionError'
-      '409':
-        $ref: './common.yml#/responses/ConflictError'
       '422':
         $ref: './common.yml#/responses/ValidationError'
       '500':
@@ -343,6 +345,94 @@ appliances-test-resolver-name:
                 type: string
                 description: The resource name to test on the Gateway.
                 example: "aws://tag:Application=Software Defined Perimeter"
+appliances-ping-command:
+  post:
+    summary: Runs ICMP ping command on an Appliance.
+    description: >-
+      Runs ICMP ping command on an Appliance.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v16+text** as it returns plain text instead of JSON.
+    tags:
+      - Appliances
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Command ran successfully.
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: The ping result.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      description: Ping parameters
+      content:
+        application/json:
+          schema:
+            required:
+              - destination
+            properties:
+              destination:
+                type: string
+                description: The destination to ping.
+                example: 8.8.8.8
+              interface:
+                type: string
+                description: The network interface to use for pinging.
+                example: eth0
+appliances-tcpdump-command:
+  post:
+    summary: Runs tcpdump command on an Appliance.
+    description: >-
+      Runs tcpdump command on an Appliance.
+      This API call must be made with **Accept** header of **application/vnd.appgate.peer-v16+text** as it returns plain text instead of JSON.
+    tags:
+      - Appliances
+    parameters:
+      - $ref: './common.yml#/parameters/authorization'
+      - $ref: './common.yml#/parameters/id'
+    responses:
+      '200':
+        description: Command ran successfully.
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: The tcpdump result.
+      '400':
+        $ref: './common.yml#/responses/JsonError'
+      '401':
+        $ref: './common.yml#/responses/TokenError'
+      '403':
+        $ref: './common.yml#/responses/PermissionError'
+      '422':
+        $ref: './common.yml#/responses/ValidationError'
+      '500':
+        $ref: './common.yml#/responses/UnexpectedError'
+    requestBody:
+      description: Tcpdump parameters
+      content:
+        application/json:
+          schema:
+            properties:
+              expression:
+                type: string
+                description: The expression to filter tcpdump.
+                example: udp
+              interface:
+                type: string
+                description: The network interface to tcpdump on.
+                example: eth0
 appliances-switch-partition:
   post:
     summary: Switch partition on the Appliance, regardless of the upgrade status.
@@ -397,7 +487,7 @@ appliances-name-resolution-status:
                       partials:
                         - dns://all.GW-ELB-2001535196.eu-central-1.elb.amazonaws.com
                         - dns://all.purple-lb-1785267452.eu-central-1.elb.amazonaws.com
-                      errors: []
+                      errors: [ ]
                   additionalProperties:
                     type: object
                     description: Resolution result.
@@ -469,17 +559,21 @@ parameters:
   latestVersion:
     name: latestVersion
     in: query
+    deprecated: true
     description: >-
-      When a Controller creates an appliance object it is saved with the current API version. This API version will be used when the seed for that appliance is generated. 
-      If the appliance version is now newer than this, the correct API version must be used for the seed. 
+      When a Controller creates an appliance object it is saved with the current API version. This API version will be used when the seed for that appliance is generated.
+      If the appliance version is now newer than this, the correct API version must be used for the seed.
       Use latestVersion to override the default API version. The latest API version is shown at the top of this API specification.
+      Deprecated since the seed is version agnostic as of 5.5.
     schema:
       type: boolean
   version:
     name: version
     in: query
+    deprecated: true
     description: >-
       Can be used to set a specific version to the Appliance prior to exporting the seed.
+      Deprecated since the seed is version agnostic as of 5.5.
     schema:
       type: number
 
@@ -491,28 +585,167 @@ requestBodies:
           $ref: '#/definitions/Appliance'
     description: Appliance object.
     required: true
-  SshConfig:
+  ExportSeedConfig:
     content:
       application/json:
         schema:
-          type: object
-          description: SSH configuration details. Fill one of the fields to configure the SSH server on the appliance.
-          properties:
-            provideCloudSSHKey:
-              type: boolean
-              description: Tells appliance to use the key generated by AWS or Azure.
-            sshKey:
-              type: string
-              description: SSH public key to allow.
-              example: 'ssh-rsa ....'
-            password:
-              type: string
-              description: Appliance's CZ user password.
-              example: 'tSW3!QBv(rj{UuLY'
-    description: SSH configuration during seeding.
+          $ref: '#/definitions/SSHConfig'
+    description: Export seed config object.
     required: true
 
 definitions:
+  portal12:
+    allOf:
+      - $ref: '#/definitions/P12'
+      - type: object
+        properties:
+          verifyUpstream:
+            type: boolean
+            description: Portal will verify upstream certificate of the endpoints.
+            default: true
+  Elasticsearch:
+    allOf:
+      - $ref: '#/definitions/AwsBase'
+      - type: object
+        description: Elasticsearch endpoint configuration on AWS.
+        required:
+          - url
+        properties:
+          url:
+            type: string
+            description: The URL of the elasticsearch server.
+            example: 'https://aws.com/elasticsearch/instance/asdaxllkmda64'
+          retentionDays:
+            type: integer
+            description: Optional field to enable log retention on the configured AWS elasticsearch. Defines how many days the audit logs will be kept.
+            example: 30
+          compatibilityMode:
+            type: integer
+            description: Which version of Elasticsearch that logs are forwarded to.
+            default: 6
+          authentication:
+            type: object
+            description: Optional authentication settings used when sending logs to an elasticsearch instance.
+            required:
+              - type
+              - token
+            properties:
+              type:
+                type: string
+                description: The type of authentication to use.
+                enum:
+                  - Basic
+                  - ServiceAccounts
+                  - TokenService
+                  - ApiKeyService
+              token:
+                type: string
+                description: The token to be used for authentication.
+                writeOnly: true
+                example: 'user:password'
+  SSHConfig:
+    type: object
+    description: SSH configuration during seeding.
+    properties:
+      provideCloudSSHKey:
+        type: boolean
+        description: Tells appliance to use the key generated by AWS or Azure.
+      sshKey:
+        type: string
+        description: SSH public key to allow.
+        example: 'ssh-rsa ....'
+      password:
+        type: string
+        description: Appliance's CZ user password.
+        example: 'tSW3!QBv(rj{UuLY'
+      allowCustomization:
+        type: boolean
+        description: Whether the Appliance should allow customizations or not.
+        default: true
+      validityDays:
+        type: number
+        description: How many days the seed should be valid for.
+        default: 1
+  Portal:
+    type: object
+    description: Portal settings.
+    properties:
+      enabled:
+        type: boolean
+        description: Whether the Portal is enabled on this appliance or not.
+        default: false
+      httpsP12:
+        $ref: '#/definitions/P12'
+      httpRedirect:
+        type: boolean
+        description: "Automatic 80->443 redirection for Portal."
+        default: true
+      proxyPorts:
+        type: array
+        description: Ports that can be proxied via Portal.
+        items:
+          type: integer
+        default:
+          - 443
+      proxyP12s:
+        type: array
+        description: P12 files for proxying traffic to HTTPS endpoints.
+        items:
+          $ref: '#/definitions/portal12'
+      profiles:
+        type: array
+        description: Names of the profiles in this Collective to use in the Portal.
+        items:
+          type: string
+          example: Portal Users
+      externalProfiles:
+        type: array
+        description: Profiles from other Collectives to use in the Portal.
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Identifier to track the object on update since all the other fields are write-only. A random one will be assigned if left empty.
+            url:
+              type: string
+              writeOnly: true
+              description: Appgate URL from Client Connections.
+              example: appgate://appgate.company.com/eyJjYUZpbmdlcnByaW50IjoiMmM4ZTBiNTM5YTM4NjRkYmVkYzhiOWRkMTcwYzM0NGFhMjZjZTVhNjA4MmY3YTI0YzRkZTU4ZGQ3NWRjNWZhMCIsImlkZW50aXR5UHJvdmlkZXJOYW1lIjoibG9jYWwifQ==
+            hostname:
+              type: string
+              readOnly: true
+              description: Hostname parsed from the given URL.
+              example: appgate.company.com
+            profileName:
+              type: string
+              readOnly: true
+              description: Profile name parsed from the given URL.
+              example: Portal Users
+      signInCustomization:
+        type: object
+        description: Visual customizations to make on the Portal sign-in page.
+        properties:
+          backgroundColor:
+            type: string
+            description: Changes the background color on the sign-in page. In hexadecimal format.
+            example: "#123456"
+          backgroundImage:
+            type: string
+            format: byte
+            description: Changes the background image on the sign-in page. Must be in PNG, JPEG or GIF format.
+          logo:
+            type: string
+            format: byte
+            description: Changes the logo on the sign-in page. Must be in PNG, JPEG or GIF format.
+          text:
+            type: string
+            description: Adds a text to the sign-in page.
+          textColor:
+            type: string
+            description: Changes the text color on the sign-in page. In hexadecimal format.
+            example: "#123456"
   ApplianceList:
     allOf:
       - $ref: './common.yml#/definitions/ResultList'
@@ -863,10 +1096,14 @@ definitions:
                         - SHA256
                         - SHA512
                         - RMD160
+                    keyNo:
+                      type: integer
+                      description: Identifier number for the key.
                     key:
                       format: password
                       type: string
                       description: Key to use for secure NTP communication.
+                      writeOnly: true
           sshServer:
             type: object
             description: SSH server configuration.
@@ -1006,20 +1243,7 @@ definitions:
                 default: false
               elasticsearch:
                 allOf:
-                  - $ref: '#/definitions/AwsBase'
-                  - type: object
-                    description: Elasticsearch endpoint configuration on AWS.
-                    required:
-                      - url
-                    properties:
-                      url:
-                        type: string
-                        description: The URL of the elasticsearch server.
-                        example: 'https://aws.com/elasticsearch/instance/asdaxllkmda64'
-                      retentionDays:
-                        type: integer
-                        description: Optional field to enable log retention on the configured AWS elasticsearch. Defines how many days the audit logs will be kept.
-                        example: 30
+                  - $ref: '#/definitions/Elasticsearch'
               tcpClients:
                 type: array
                 description: TCP endpoints to connect and send the audit logs with the given format.
@@ -1070,22 +1294,7 @@ definitions:
                       description: The device ID to assign to this Client. It will be used to generate device distinguished name.
                       example: 12699e27-b584-464a-81ee-5b4784b6d425
                     allowResources:
-                      type: array
-                      description: A list of subnets to allow access via Client.
-                      items:
-                        type: object
-                        required:
-                          - address
-                          - netmask
-                        properties:
-                          address:
-                            type: string
-                            description: IP address
-                            example: '0.0.0.0'
-                          netmask:
-                            type: integer
-                            description: netmask
-                            example: 32
+                      $ref: '#/definitions/AllowResources'
                     snatToResources:
                       type: boolean
                       description: Use Source NAT for the resources.
@@ -1132,69 +1341,7 @@ definitions:
                       description: Use this connector client as a default gw for local resources
                       default: false
           portal:
-            type: object
-            description: Portal settings.
-            properties:
-              enabled:
-                type: boolean
-                description: Whether the Portal is enabled on this appliance or not.
-                default: false
-              httpsP12:
-                $ref: '#/definitions/P12'
-              httpRedirect:
-                type: boolean
-                description: "Automatic 80->443 redirection for Portal."
-                default: true
-              proxyPorts:
-                type: array
-                description: Ports that can be proxied via Portal.
-                items:
-                  type: integer
-                default:
-                  - 443
-              proxyP12s:
-                type: array
-                description: P12 files for proxying traffic to HTTPS endpoints.
-                items:
-                  allOf:
-                    - $ref: '#/definitions/P12'
-                    - type: object
-                      properties:
-                        verifyUpstream:
-                          type: boolean
-                          description: Portal will verify upstream certificate of the endpoints.
-                          default: true
-              profiles:
-                type: array
-                description: Names of the profiles in this Collective to use in the Portal.
-                items:
-                  type: string
-                  example: Portal Users
-              externalProfiles:
-                type: array
-                description: Profiles from other Collectives to use in the Portal.
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uuid
-                      description: Identifier to track the object on update since all the other fields are write-only. A random one will be assigned if left empty.
-                    url:
-                      type: string
-                      writeOnly: true
-                      description: Appgate URL from Client Connections.
-                      example: appgate://appgate.company.com/eyJjYUZpbmdlcnByaW50IjoiMmM4ZTBiNTM5YTM4NjRkYmVkYzhiOWRkMTcwYzM0NGFhMjZjZTVhNjA4MmY3YTI0YzRkZTU4ZGQ3NWRjNWZhMCIsImlkZW50aXR5UHJvdmlkZXJOYW1lIjoibG9jYWwifQ==
-                    hostname:
-                      type: string
-                      readOnly: true
-                      description: Hostname parsed from the given URL.
-                      example: appgate.company.com
-                    profileName:
-                      type: string
-                      readOnly: true
-                      description: Profile name parsed from the given URL.
-                      example: Portal Users
+            $ref: '#/definitions/Portal'
           rsyslogDestinations:
             type: array
             description: Rsyslog destination settings to forward appliance logs.
@@ -1248,6 +1395,23 @@ definitions:
           type: string
           description: NIC name to accept connections on.
           example: 'eth0'
+  AllowResources:
+    type: array
+    description: A list of subnets to allow access.
+    items:
+      type: object
+      required:
+        - address
+        - netmask
+      properties:
+        address:
+          type: string
+          description: IP address
+          example: '0.0.0.0'
+        netmask:
+          type: integer
+          description: netmask
+          example: 32
   AwsBase:
     type: object
     properties:
@@ -1329,7 +1493,7 @@ definitions:
         type: string
         description: JMESPath expression to filter audit logs to forward.
         example: "event_type=='authentication_succeeded'"
-  ApplianceSeed:
+  ApplianceSeedISO:
     type: object
     description: The ISO file blob in JSON.
     properties:

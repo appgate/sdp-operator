@@ -4,7 +4,7 @@ tags:
   - name: Controller
 info:
   title: Appgate SDP Controller REST API
-  version: API version 16
+  version: API version 16.3
   description: |-
     # About
       This specification documents the REST API calls for the Appgate SDP Controller.
@@ -101,7 +101,7 @@ x-tagGroups:
       - Conditions
       - Entitlements
       - Ringfence Rules
-#      - DNS Rules
+  #      - DNS Rules
   - name: System
     tags:
       - Appliance Change
@@ -136,7 +136,7 @@ x-tagGroups:
       - Client Auto-Update
       - CA
       - License
-#      - DNS Classifications
+  #      - DNS Classifications
   - name: Utilities
     tags:
       - Appliance Upgrade
@@ -224,6 +224,10 @@ paths:
     $ref: './appliance.yml#/appliances-test-resolver-name'
   /appliances/{id}/name-resolution-status:
     $ref: './appliance.yml#/appliances-name-resolution-status'
+  /appliances/{id}/command/ping:
+    $ref: './appliance.yml#/appliances-ping-command'
+  /appliances/{id}/command/tcpdump:
+    $ref: './appliance.yml#/appliances-tcpdump-command'
   /sites:
     $ref: './site.yml#/sites'
   /sites/{id}:
@@ -330,6 +334,14 @@ paths:
     $ref: './ca.yml#/certificate-authority-ca'
   /certificate-authority/ca/pem:
     $ref: './ca.yml#/certificate-authority-ca-pem'
+  /certificate-authority/issued-certificates:
+    $ref: './ca.yml#/issued-certificates'
+  /certificate-authority/issued-certificates/revoked/{certificateId}:
+    $ref: './ca.yml#/issued-certificates-revoked'
+  /certificate-authority/crl:
+    $ref: './ca.yml#/download-crl'
+  /certificate-authority/crl/next:
+    $ref: './ca.yml#/download-next-crl'
   /certificate-authority/ca/next:
     $ref: './ca.yml#/certificate-authority-ca-next'
   /certificate-authority/ca/next/generate:

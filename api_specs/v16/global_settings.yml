@@ -134,24 +134,24 @@ definitions:
         items:
           type: string
           example: company.com
-# Not fully implemented yet
-#      dnsRedirectionHosts:
-#        type: array
-#        description: Redirection hosts to use in DNS Rules.
-#        items:
-#          type: object
-#          required:
-#            - host
-#          properties:
-#            id:
-#              type: string
-#              format: uuid
-#              description: ID for the host.
-#              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
-#            host:
-#              type: string
-#              description: Host to redirect.
-#              example: dns-redirect.company.com
+      # Not fully implemented yet
+      #      dnsRedirectionHosts:
+      #        type: array
+      #        description: Redirection hosts to use in DNS Rules.
+      #        items:
+      #          type: object
+      #          required:
+      #            - host
+      #          properties:
+      #            id:
+      #              type: string
+      #              format: uuid
+      #              description: ID for the host.
+      #              example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
+      #            host:
+      #              type: string
+      #              description: Host to redirect.
+      #              example: dns-redirect.company.com
       collectiveId:
         type: string
         format: uuid
