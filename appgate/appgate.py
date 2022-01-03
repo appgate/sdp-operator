@@ -169,8 +169,15 @@ async def main_loop(queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigM
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
+        tags_in_cleanup = ctx.builtin_tags.\
+            union(ctx.exclude_tags or frozenset()).\
+            union(ctx.target_tags or frozenset())
         expected_appgate_state = AppgateState(
-            {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
+            {k: v.entities_with_tags(tags_in_cleanup.union(ctx.exclude_tags or frozenset()))
+             for k, v in current_appgate_state.entities_set.items()})
+    elif ctx.target_tags:
+        expected_appgate_state = AppgateState(
+            {k: v.entities_with_tags(ctx.target_tags)
              for k, v in current_appgate_state.entities_set.items()})
     else:
         expected_appgate_state = deepcopy(current_appgate_state)
