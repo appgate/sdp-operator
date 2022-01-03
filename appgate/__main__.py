@@ -22,7 +22,7 @@ from appgate.appgate import main_loop, get_current_appgate_state, \
     start_entity_loop, log
 from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
 from appgate.openapi.utils import join
-from appgate.state import entities_conflict_summary, resolve_appgate_state
+from appgate.state import entities_conflict_summary, resolve_appgate_state, AppgateState
 from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -202,12 +202,15 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(ctx: Context, output_dir: Optional[Path],
                         stdout: bool = False) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
+    expected_appgate_state = AppgateState(
+        {k: v.entities_with_tags(ctx.builtin_tags.union(ctx.exclude_tags or frozenset()))
+         for k, v in current_appgate_state.entities_set.items()})
     if is_debug():
         for entity_name, entity_set in current_appgate_state.entities_set.items():
             for e in entity_set.entities:
                 log.debug(f'Got entitiy %s: %s [%s]', e.name, e.id,
                           entity_name)
-    total_conflicts = resolve_appgate_state(expected_state=current_appgate_state,
+    total_conflicts = resolve_appgate_state(expected_state=expected_appgate_state,
                                             total_appgate_state=current_appgate_state,
                                             reverse=True,
                                             api_spec=ctx.api_spec)
