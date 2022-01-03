@@ -278,9 +278,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                     generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_create.entities:
-        log.debug('[appgate-operator/%s] !+ %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_create.entities:
+            log.debug('[appgate-operator/%s] !+ %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.modify.entities:
         log.info('[appgate-operator/%s] * %s %s [%s]', namespace, e.value.__class__.__name__, e.name, e.id)
@@ -298,9 +299,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                     generation=e.value.appgate_metadata.current_generation)
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_modify.entities:
-        log.debug('[appgate-operator/%s] !* %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_modify.entities:
+            log.debug('[appgate-operator/%s] !* %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.delete.entities:
         log.info('[appgate-operator/%s] - %s %s [%s]', namespace, e.value.__class__.__name__,
@@ -312,9 +314,10 @@ async def plan_apply(plan: Plan, namespace: str, k8s_configmap_client: K8SConfig
                 await k8s_configmap_client.delete_entity_generation(entity_unique_id(e.value.__class__.__name__, name))
             except Exception as err:
                 errors.add(f'{e.name} [{e.id}]: {str(err)}')
-    for e in plan.not_to_delete.entities:
-        log.debug('[appgate-operator/%s] !- %s %s [%s]', namespace, e.value.__class__.__name__,
-                  e.name, e.id)
+    if is_debug():
+        for e in plan.not_to_delete.entities:
+            log.debug('[appgate-operator/%s] !- %s %s [%s]', namespace, e.value.__class__.__name__,
+                      e.name, e.id)
 
     for e in plan.share.entities:
         log.debug('[appgate-operator/%s] = %s %s [%s]', namespace, e.value.__class__.__name__,
