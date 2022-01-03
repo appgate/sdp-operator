@@ -87,9 +87,9 @@ def get_context(args: OperatorArguments,
     device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-    two_way_sync = os.getenv(TWO_WAY_SYNC_ENV) or ('1' if args.two_way_sync else '0')
-    dry_run_mode = os.getenv(DRY_RUN_ENV) or ('1' if args.dry_run else '0')
-    cleanup_mode = os.getenv(CLEANUP_ENV) or ('1' if args.cleanup else '0')
+    two_way_sync = (os.getenv(TWO_WAY_SYNC_ENV) or ('0' if args.no_two_way_sync else '1')) == '1'
+    dry_run_mode = (os.getenv(DRY_RUN_ENV) or ('0' if args.no_dry_run else '1')) == '1'
+    cleanup_mode = (os.getenv(CLEANUP_ENV) or ('0' if args.no_cleanup else '1')) == '1'
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, '0') == '1' or args.no_verify
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
@@ -128,9 +128,9 @@ def get_context(args: OperatorArguments,
                    provider=provider,
                    device_id=device_id,
                    controller=controller, timeout=int(timeout),
-                   dry_run_mode=dry_run_mode == '1',
+                   dry_run_mode=dry_run_mode,
                    cleanup_mode=cleanup_mode,
-                   two_way_sync=two_way_sync == '1',
+                   two_way_sync=two_way_sync,
                    api_spec=api_spec,
                    no_verify=no_verify,
                    target_tags=target_tags if target_tags else None,
@@ -309,15 +309,18 @@ def main() -> None:
     run = subparsers.add_parser('run')
     run.set_defaults(cmd='run')
     run.add_argument('--namespace', help='Specify namespace', default=None)
-    run.add_argument('--dry-run', help='Run in dry-run mode', default=False, action='store_true')
+    run.add_argument('--no-dry-run', help='Disabel run in dry-run mode',
+                     default=False, action='store_true')
     run.add_argument('--host', help='Controller host to connect', default=None)
     run.add_argument('--user', help='Username used for authentication', default=None)
     run.add_argument('--password', help='Password used for authentication', default=None)
-    run.add_argument('--cleanup', help='Delete entities not defined in expected state', default=True)
+    run.add_argument('--no-cleanup', help='Disable delete entities not defined in expected state',
+                     default=False, action='store_true')
     run.add_argument('--mt-config-map', help='Name for the configmap used for metadata',
                      default=None)
-    run.add_argument('--two-way-sync', help='Always update current state with latest appgate'
-                                            ' state before applying a plan', default=True)
+    run.add_argument('--no-two-way-sync', help='Disabel always update current state with latest appgate'
+                                               ' state before applying a plan',
+                     default=False, action='store_true')
     run.add_argument('-t', '--tags', action='append',
                      help='Tags to filter entities. Only entities with any of those tags will be dumped',
                      default=[])
@@ -366,9 +369,9 @@ def main() -> None:
                 sys.exit(1)
             main_run(OperatorArguments(
                 namespace=args.namespace, spec_directory=args.spec_directory,
-                dry_run=args.dry_run, user=args.user, password=args.password,
-                host=args.host, two_way_sync=args.two_way_sync, target_tags=args.tags,
-                cleanup=args.cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
+                no_dry_run=args.no_dry_run, user=args.user, password=args.password,
+                host=args.host, no_two_way_sync=args.no_two_way_sync, target_tags=args.tags,
+                no_cleanup=args.no_cleanup, timeout=args.timeout, metadata_configmap=args.mt_config_map,
                 no_verify=args.no_verify, cafile=Path(args.cafile) if args.cafile else None))
         elif args.cmd == 'dump-entities':
             if args.cafile and not Path(args.cafile).exists():
