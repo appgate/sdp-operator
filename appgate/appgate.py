@@ -136,10 +136,10 @@ def run_entity_loop(
             else:
                 name = event.spec["name"]
             if event:
+                assert data["type"] in ("ADDED", "DELETED", "MODIFIED")
                 ev = K8SEvent(data["type"], event)
                 try:
-                    # names are not unique between entities so we need to come up with a unique name
-                    # now
+                    # names are not unique between entities, so we need to come up with a unique name now
                     mt = ev.object.metadata
                     latest_entity_generation = (
                         k8s_configmap_client.read_entity_generation(

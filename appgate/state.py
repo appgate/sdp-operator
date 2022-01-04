@@ -186,7 +186,7 @@ class AppgateState:
     entities_set: Dict[str, EntitiesSet] = attrib()
 
     def with_entity(
-        self, entity: EntityWrapper, op: str, current_appgate_state: "AppgateState"
+        self, entity: EntityWrapper, op: Literal["ADDED", "DELETED", "MODIFIED"], current_appgate_state: "AppgateState"
     ) -> None:
         """
         Get the entity with op and register in the current state
@@ -198,8 +198,7 @@ class AppgateState:
         if not entities or not current_entities:
             log.error("[appgate-operator] Unknown entity type: %s", type(entity))
             return
-        # TODO: Fix linter here!
-        entities_op(entities, entity, op, current_entities)  # type: ignore
+        entities_op(entities, entity, op, current_entities)
 
     def sync_generations(self) -> "AppgateState":
         return AppgateState(
