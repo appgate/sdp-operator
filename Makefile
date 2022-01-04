@@ -26,6 +26,14 @@ docker-images: docker-all $(SPEC_VERSIONS)
 clean-cache:
 	find appgate -name "__pycache__" -print | xargs rm -r $1
 
+.PHONY: freeze
+freeze:
+	rm -rf freezer
+	${PYTHON3} -m venv freezer
+	./freezer/bin/pip install -r requirements.in
+	./freezer/bin/pip freeze > requirements.txt
+	rm -rf freezer
+
 $(SPEC_VERSIONS): clean-cache
 	$(eval SPEC_VERSION := $(subst api_specs/,,$@))
 	@echo "Building image for API version $(SPEC_VERSION)"
