@@ -2,4 +2,8 @@ aiohttp>=3.8.1
 attrs>=20.3.0
 cryptography>=36.0.1
 kubernetes>=12.0.1
+# kubernetes depends on requests,
+# we need to force an optional requests feature to work around some log spam, see:
+# https://github.com/psf/requests/issues/5871
+requests[use_chardet_on_py3]
 typedload==2.7
