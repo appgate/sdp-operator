@@ -568,7 +568,9 @@ def test_certificate_pem_load():
         },
     }
     e0 = APPGATE_LOADER.load(e0_data, None, EntityCert)
-    assert e0.fieldOne == """\
+    assert (
+        e0.fieldOne
+        == """\
 -----BEGIN CERTIFICATE-----
 MIICEjCCAXsCAg36MA0GCSqGSIb3DQEBBQUAMIGbMQswCQYDVQQGEwJKUDEOMAwG
 A1UECBMFVG9reW8xEDAOBgNVBAcTB0NodW8ta3UxETAPBgNVBAoTCEZyYW5rNERE
@@ -583,6 +585,7 @@ AQABMA0GCSqGSIb3DQEBBQUAA4GBABS2TLuBeTPmcaTaUW/LCB2NYOy8GMdzR1mx
 2VguKv4SWjRFoRkIfIlHX0qVviMhSlNy2ioFLy7JcPZb+v3ftDGywUqcBiVDoea0
 Hn+GmxZA
 -----END CERTIFICATE-----"""
+    )
     assert e0.fieldTwo == cert
 
     e1_data = {
