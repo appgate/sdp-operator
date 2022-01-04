@@ -2,20 +2,22 @@ import logging
 
 
 __all__ = [
-    'set_level',
-    'is_debug',
+    "set_level",
+    "is_debug",
 ]
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 TRACE_LEVEL = logging.DEBUG - 5
 log_levels = {
-    'critical': logging.CRITICAL,
-    'error': logging.ERROR,
-    'warning': logging.WARNING,
-    'info': logging.INFO,
-    'debug': logging.DEBUG,
-    'trace': TRACE_LEVEL
+    "critical": logging.CRITICAL,
+    "error": logging.ERROR,
+    "warning": logging.WARNING,
+    "info": logging.INFO,
+    "debug": logging.DEBUG,
+    "trace": TRACE_LEVEL,
 }
 
 logging.addLevelName(TRACE_LEVEL, "TRACE")
@@ -23,7 +25,7 @@ logging.addLevelName(TRACE_LEVEL, "TRACE")
 
 class Logger:
     def __init__(self, log: logging.Logger) -> None:
-        self._log: logging. Logger = log
+        self._log: logging.Logger = log
         self.info = self._log.info
         self.debug = self._log.debug
         self.warning = self._log.warning
@@ -40,17 +42,17 @@ class Logger:
             self._log._log(TRACE_LEVEL, message, args, **kws)
 
 
-log = Logger(logging.getLogger('appgate-operator'))
+log = Logger(logging.getLogger("appgate-operator"))
 
 
-def set_level(log_level: str = 'debug', logger=log) -> None:
+def set_level(log_level: str = "debug", logger=log) -> None:
     if log_level in log_levels:
         level = log_levels[log_level]
         if level != logger.getEffectiveLevel():
             logger.setLevel(level)
-            log.info('[logger] Set log level to %s', log_level)
+            log.info("[logger] Set log level to %s", log_level)
     else:
-        log.error('[logger] Invalid log level %s', log_level)
+        log.error("[logger] Invalid log level %s", log_level)
 
 
 def is_debug() -> bool:
