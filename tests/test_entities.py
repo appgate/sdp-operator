@@ -610,9 +610,10 @@ Hn+GmxZA
         certificate=join_string(CERTIFICATE_FIELD),
         subjectPublicKey=join_string(PUBKEY_FIELD),
     )
-    e2 = EntityCert(fieldOne=None, fieldTwo=cert2)
+    e2 = EntityCert(fieldOne="foobar", fieldTwo=cert2)
     assert e1 != e2
 
     e2_dumped = DIFF_DUMPER.dump(e2)
     # Just check that it's dumped properly
+    assert e2_dumped["fieldOne"] == "foobar"
     assert e2_dumped["fieldTwo"]["validFrom"] == "2017-03-06T16:50:58.516Z"
