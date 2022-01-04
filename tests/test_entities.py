@@ -6,128 +6,161 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from appgate.attrs import APPGATE_LOADER, K8S_LOADER, K8S_DUMPER, APPGATE_DUMPER, DIFF_DUMPER
+from appgate.attrs import (
+    APPGATE_LOADER,
+    K8S_LOADER,
+    K8S_DUMPER,
+    APPGATE_DUMPER,
+    DIFF_DUMPER,
+)
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
 from appgate.openapi.types import AppgateMetadata
-from tests.utils import load_test_open_api_spec, CERTIFICATE_FIELD, PUBKEY_FIELD, SUBJECT, ISSUER, PEM_TEST, \
-    join_string, FINGERPRINT
+from tests.utils import (
+    load_test_open_api_spec,
+    CERTIFICATE_FIELD,
+    PUBKEY_FIELD,
+    SUBJECT,
+    ISSUER,
+    PEM_TEST,
+    join_string,
+    FINGERPRINT,
+)
 
 
 def test_load_entities_v12():
     """
     Read all yaml files in v12 and try to load them according to the kind.
     """
-    open_api = generate_api_spec(Path(SPEC_DIR).parent / 'v12')
+    open_api = generate_api_spec(Path(SPEC_DIR).parent / "v12")
     entities = open_api.entities
-    for f in os.listdir('tests/resources/v12'):
-        with (Path('tests/resources/v12') / f).open('r') as f:
+    for f in os.listdir("tests/resources/v12"):
+        with (Path("tests/resources/v12") / f).open("r") as f:
             documents = list(yaml.safe_load_all(f))
             for d in documents:
-                e = entities[d['kind']].cls
-                assert isinstance(APPGATE_LOADER.load(d['spec'], None, e), e)
+                e = entities[d["kind"]].cls
+                assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
 
 
 def test_loader_0():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
-    EntityDep5 = entities['EntityDep5'].cls
-    EntityDep5_Obj1 = entities['EntityDep5_Obj1'].cls
-    EntityDep5_Obj1_Obj2 = entities['EntityDep5_Obj1_Obj2'].cls
-    data = {
-        'id': 'id5',
-        'name': 'dep51',
-        'obj1': {
-            'obj2': {
-                'dep1': 'dep11'
-            }
-        }
-    }
+    EntityDep5 = entities["EntityDep5"].cls
+    EntityDep5_Obj1 = entities["EntityDep5_Obj1"].cls
+    EntityDep5_Obj1_Obj2 = entities["EntityDep5_Obj1_Obj2"].cls
+    data = {"id": "id5", "name": "dep51", "obj1": {"obj2": {"dep1": "dep11"}}}
     e = APPGATE_LOADER.load(data, None, EntityDep5)
-    assert e == EntityDep5(id='id5', name='dep51',
-                           obj1=EntityDep5_Obj1(
-                               obj2=EntityDep5_Obj1_Obj2(dep1='dep11')))
+    assert e == EntityDep5(
+        id="id5",
+        name="dep51",
+        obj1=EntityDep5_Obj1(obj2=EntityDep5_Obj1_Obj2(dep1="dep11")),
+    )
 
 
 def test_loader_1():
-    EntityTest1 = load_test_open_api_spec(secrets_key=None, reload=True).entities['EntityTest1'].cls
+    EntityTest1 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest1"]
+        .cls
+    )
     entity_1 = {
-        'fieldOne': 'this is read only',
-        'fieldTwo': 'this is write only',
-        'fieldThree': 'this is deprecated',
-        'fieldFour': 'this is a field',
-        'from': 'this has a weird key name',
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+        "fieldFour": "this is a field",
+        "from": "this has a weird key name",
     }
     e = APPGATE_LOADER.load(entity_1, None, EntityTest1)
-    assert e == EntityTest1(fieldOne='this is read only', fieldTwo=None,
-                            fieldFour='this is a field', fromm='this has a weird key name')
-    assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field that changed')
-    assert e.fieldOne == 'this is read only'
+    assert e == EntityTest1(
+        fieldOne="this is read only",
+        fieldTwo=None,
+        fieldFour="this is a field",
+        fromm="this has a weird key name",
+    )
+    assert e != EntityTest1(
+        fieldOne=None,
+        fieldTwo="this is write only",
+        fieldFour="this is a field that changed",
+    )
+    assert e.fieldOne == "this is read only"
     assert e.fieldTwo is None
 
     e = K8S_LOADER.load(entity_1, None, EntityTest1)
-    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field',
-                            fromm='this has a weird key name')
-    assert e != EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field that changed',
-                            fromm='this has a weird key name')
+    assert e == EntityTest1(
+        fieldOne=None,
+        fieldTwo="this is write only",
+        fieldFour="this is a field",
+        fromm="this has a weird key name",
+    )
+    assert e != EntityTest1(
+        fieldOne=None,
+        fieldTwo="this is write only",
+        fieldFour="this is a field that changed",
+        fromm="this has a weird key name",
+    )
 
 
 def test_loader_2():
     """
     Test that id fields are created if missing
     """
-    EntityTestWithId = load_test_open_api_spec(secrets_key=None,
-                                               reload=True).entities['EntityTestWithId'].cls
-    appgate_metadata = {
-        'uuid': '666-666-666-666-666-777'
-    }
+    EntityTestWithId = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTestWithId"]
+        .cls
+    )
+    appgate_metadata = {"uuid": "666-666-666-666-666-777"}
     entity_1 = {
-        'fieldOne': 'this is read only',
-        'fieldTwo': 'this is write only',
-        'fieldThree': 'this is deprecated',
-        'fieldFour': 'this is a field',
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+        "fieldFour": "this is a field",
     }
 
-    with patch('appgate.openapi.attribmaker.uuid4') as uuid4:
-        uuid4.return_value = '111-111-111-111-111'
+    with patch("appgate.openapi.attribmaker.uuid4") as uuid4:
+        uuid4.return_value = "111-111-111-111-111"
         e = K8S_LOADER.load(entity_1, None, EntityTestWithId)
         # Normally we create a new uuid value for id if it's not present
-        assert e.id == '111-111-111-111-111'
+        assert e.id == "111-111-111-111-111"
         entity_2 = entity_1
-        entity_2['appgate_metadata'] = appgate_metadata
+        entity_2["appgate_metadata"] = appgate_metadata
         # If we have in metadata we use it
         e = K8S_LOADER.load(entity_2, None, EntityTestWithId)
-        assert e.id == '666-666-666-666-666-777'
+        assert e.id == "666-666-666-666-666-777"
 
 
 def test_loader_3():
     """
     Test load metadata
     """
-    EntityTest1 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest1'].cls
-    appgate_metadata = {
-        'uuid': '666-666-666-666-666-666'
-    }
+    EntityTest1 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest1"]
+        .cls
+    )
+    appgate_metadata = {"uuid": "666-666-666-666-666-666"}
     entity_1 = {
-        'fieldOne': 'this is read only',
-        'fieldTwo': 'this is write only',
-        'fieldThree': 'this is deprecated',
-        'fieldFour': 'this is a field',
-        'appgate_metadata': appgate_metadata
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+        "fieldFour": "this is a field",
+        "appgate_metadata": appgate_metadata,
     }
 
     e = K8S_LOADER.load(entity_1, None, EntityTest1)
     # We load instance metadata
-    assert e.appgate_metadata == AppgateMetadata(uuid='666-666-666-666-666-666')
-    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field',
-                            appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666-666'))
+    assert e.appgate_metadata == AppgateMetadata(uuid="666-666-666-666-666-666")
+    assert e == EntityTest1(
+        fieldOne=None,
+        fieldTwo="this is write only",
+        fieldFour="this is a field",
+        appgate_metadata=AppgateMetadata(uuid="666-666-666-666-666-666"),
+    )
     # isntance metadata is not compared
-    assert e == EntityTest1(fieldOne=None, fieldTwo='this is write only',
-                            fieldFour='this is a field',
-                            appgate_metadata=AppgateMetadata(uuid='333-333-333-333-333'))
+    assert e == EntityTest1(
+        fieldOne=None,
+        fieldTwo="this is write only",
+        fieldFour="this is a field",
+        appgate_metadata=AppgateMetadata(uuid="333-333-333-333-333"),
+    )
 
 
 def test_loader_4():
@@ -136,40 +169,42 @@ def test_loader_4():
     These fields are not Optional, they just implement a default factory method
     """
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
-    EntityDepNested7 = api_spec.entities['EntityDepNested7'].cls
-    EntityDepNested7_Deps = api_spec.entities['EntityDepNested7_Deps'].cls
-    EntityDepNested7_Actions = api_spec.entities['EntityDepNested7_Actions'].cls
-    EntityDepNested7_Actions_Monitor = api_spec.entities['EntityDepNested7_Actions_Monitor'].cls
+    EntityDepNested7 = api_spec.entities["EntityDepNested7"].cls
+    EntityDepNested7_Deps = api_spec.entities["EntityDepNested7_Deps"].cls
+    EntityDepNested7_Actions = api_spec.entities["EntityDepNested7_Actions"].cls
+    EntityDepNested7_Actions_Monitor = api_spec.entities[
+        "EntityDepNested7_Actions_Monitor"
+    ].cls
 
     entity_7 = {
-        'name': 'n1',
-        'deps': {
-            'field1': 'f1',
-            'field2': 'f2'
-        },
-        'actions': [
+        "name": "n1",
+        "deps": {"field1": "f1", "field2": "f2"},
+        "actions": [
             {
-                'subtype': 'tcp_up',
-                'action': 'allow',
-                'hosts': ['h1', 'h2'],
-                'ports': ['666'],
+                "subtype": "tcp_up",
+                "action": "allow",
+                "hosts": ["h1", "h2"],
+                "ports": ["666"],
             }
-        ]
+        ],
     }
 
     e = K8S_LOADER.load(entity_7, None, EntityDepNested7)
-    assert e == EntityDepNested7(name='n1',
-                                 deps=EntityDepNested7_Deps(
-                                     field1='f1', field2='f2'
-                                 ),
-                                 actions=frozenset({
-                                     EntityDepNested7_Actions(
-                                         subtype='tcp_up',
-                                         action='allow',
-                                         hosts=frozenset({'h1', 'h2'}),
-                                         ports=frozenset({'666'}),
-                                         monitor=EntityDepNested7_Actions_Monitor())
-                                 }))
+    assert e == EntityDepNested7(
+        name="n1",
+        deps=EntityDepNested7_Deps(field1="f1", field2="f2"),
+        actions=frozenset(
+            {
+                EntityDepNested7_Actions(
+                    subtype="tcp_up",
+                    action="allow",
+                    hosts=frozenset({"h1", "h2"}),
+                    ports=frozenset({"666"}),
+                    monitor=EntityDepNested7_Actions_Monitor(),
+                )
+            }
+        ),
+    )
 
 
 def test_loader_5():
@@ -178,53 +213,64 @@ def test_loader_5():
     These fields are not Optional, they just implement a default factory method
     """
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
-    EntityDepNestedNullable = api_spec.entities['EntityDepNestedNullable'].cls
-    EntityDepNestedNullable_Actions = api_spec.entities['EntityDepNestedNullable_Actions'].cls
+    EntityDepNestedNullable = api_spec.entities["EntityDepNestedNullable"].cls
+    EntityDepNestedNullable_Actions = api_spec.entities[
+        "EntityDepNestedNullable_Actions"
+    ].cls
 
     entity_nullable = {
-        'name': 'n1',
-        'deps': {
-            'field1': 'f1',
-            'field2': 'f2'
-        },
-        'actions': [
+        "name": "n1",
+        "deps": {"field1": "f1", "field2": "f2"},
+        "actions": [
             {
-                'subtype': 'tcp_up',
-                'action': 'allow',
-                'hosts': ['h1', 'h2'],
-                'ports': ['666'],
+                "subtype": "tcp_up",
+                "action": "allow",
+                "hosts": ["h1", "h2"],
+                "ports": ["666"],
             }
-        ]
+        ],
     }
 
     e = K8S_LOADER.load(entity_nullable, None, EntityDepNestedNullable)
-    assert e == EntityDepNestedNullable(name='n1',
-                                        actions=frozenset({
-                                            EntityDepNestedNullable_Actions(
-                                                subtype='tcp_up',
-                                                action='allow',
-                                                hosts=frozenset({'h1', 'h2'}),
-                                                ports=frozenset({'666'}),
-                                                monitor_nullable=None)
-                                        }))
+    assert e == EntityDepNestedNullable(
+        name="n1",
+        actions=frozenset(
+            {
+                EntityDepNestedNullable_Actions(
+                    subtype="tcp_up",
+                    action="allow",
+                    hosts=frozenset({"h1", "h2"}),
+                    ports=frozenset({"666"}),
+                    monitor_nullable=None,
+                )
+            }
+        ),
+    )
 
 
 def test_dumper_1():
-    EntityTest1 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest1'].cls
-    e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
-                     fieldFour='this is a field', fromm='this is a field with a weird name')
+    EntityTest1 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest1"]
+        .cls
+    )
+    e1 = EntityTest1(
+        fieldOne="this is read only",
+        fieldTwo="this is write only",
+        fieldFour="this is a field",
+        fromm="this is a field with a weird name",
+    )
     e1_data = {
-        'fieldTwo': 'this is write only',
-        'fieldFour': 'this is a field',
-        'from': 'this is a field with a weird name',
+        "fieldTwo": "this is write only",
+        "fieldFour": "this is a field",
+        "from": "this is a field with a weird name",
     }
     e = APPGATE_DUMPER.dump(e1)
     assert e == e1_data
     e1_data = {
-        'fieldTwo': 'this is write only',
-        'fieldFour': 'this is a field',
-        'from': 'this is a field with a weird name',
+        "fieldTwo": "this is write only",
+        "fieldFour": "this is a field",
+        "from": "this is a field with a weird name",
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e1_data
@@ -234,83 +280,97 @@ def test_dumper_2():
     """
     Test dumper with metadata
     """
-    EntityTest1 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest1'].cls
-    e1 = EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
-                     fieldFour='this is a field',
-                     appgate_metadata=AppgateMetadata(uuid='666-666-666-666-666'))
+    EntityTest1 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest1"]
+        .cls
+    )
+    e1 = EntityTest1(
+        fieldOne="this is read only",
+        fieldTwo="this is write only",
+        fieldFour="this is a field",
+        appgate_metadata=AppgateMetadata(uuid="666-666-666-666-666"),
+    )
     e1_data = {
-        'fieldTwo': 'this is write only',
-        'fieldFour': 'this is a field',
+        "fieldTwo": "this is write only",
+        "fieldFour": "this is a field",
     }
     e = APPGATE_DUMPER.dump(e1)
     assert e == e1_data
 
     e2_data = {
-        'fieldTwo': 'this is write only',
-        'fieldFour': 'this is a field',
-        'appgate_metadata': {
-            'uuid': '666-666-666-666-666'
-        }
+        "fieldTwo": "this is write only",
+        "fieldFour": "this is a field",
+        "appgate_metadata": {"uuid": "666-666-666-666-666"},
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e2_data
 
 
 def test_deprecated_entity():
-    EntityTest1 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest1'].cls
-    with pytest.raises(TypeError,
-                       match=f".*unexpected keyword argument 'fieldThree'"):
-        EntityTest1(fieldOne='this is read only', fieldTwo='this is write only',
-                    fieldThree='this is deprecated', fieldFour='this is a field')
+    EntityTest1 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest1"]
+        .cls
+    )
+    with pytest.raises(TypeError, match=f".*unexpected keyword argument 'fieldThree'"):
+        EntityTest1(
+            fieldOne="this is read only",
+            fieldTwo="this is write only",
+            fieldThree="this is deprecated",
+            fieldFour="this is a field",
+        )
 
 
 def test_write_only_attribute_load():
-    EntityTest2 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest2'].cls
+    EntityTest2 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest2"]
+        .cls
+    )
     e_data = {
-        'fieldOne': '1234567890',
-        'fieldTwo': 'this is write only',
-        'fieldThree': 'this is a field',
+        "fieldOne": "1234567890",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is a field",
     }
     e = APPGATE_LOADER.load(e_data, None, EntityTest2)
     # writeOnly fields are not loaded from Appgate
     assert e.fieldOne is None
     assert e.fieldTwo is None
-    assert e.fieldThree == 'this is a field'
+    assert e.fieldThree == "this is a field"
     # writeOnly fields are not compared by default
-    assert e == EntityTest2(fieldOne='1234567890',
-                            fieldTwo='this is write only',
-                            fieldThree='this is a field')
+    assert e == EntityTest2(
+        fieldOne="1234567890",
+        fieldTwo="this is write only",
+        fieldThree="this is a field",
+    )
 
     e = K8S_LOADER.load(e_data, None, EntityTest2)
     # writeOnly fields are loaded from K8S
-    assert e.fieldOne == '1234567890'
-    assert e.fieldTwo == 'this is write only'
-    assert e.fieldThree == 'this is a field'
+    assert e.fieldOne == "1234567890"
+    assert e.fieldTwo == "this is write only"
+    assert e.fieldThree == "this is a field"
     # writeOnly fields are not compared by default
-    assert e == EntityTest2(fieldOne=None,
-                            fieldTwo=None,
-                            fieldThree='this is a field')
-    assert e.appgate_metadata.passwords == {
-        'fieldOne': '1234567890'
-    }
-    assert e.appgate_metadata.password_fields == frozenset({'fieldOne'})
+    assert e == EntityTest2(fieldOne=None, fieldTwo=None, fieldThree="this is a field")
+    assert e.appgate_metadata.passwords == {"fieldOne": "1234567890"}
+    assert e.appgate_metadata.password_fields == frozenset({"fieldOne"})
 
 
 def test_appgate_metadata_secrets_dump_from_appgate():
-    EntityTest2 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest2'].cls
+    EntityTest2 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest2"]
+        .cls
+    )
     e1_data = {
-        'fieldThree': 'this is a field',
+        "fieldThree": "this is a field",
     }
     e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)
     e2_data = {
-        'fieldThree': 'this is a field',
-        'appgate_metadata': {
-            'passwordFields': ['fieldOne'],
-        }
+        "fieldThree": "this is a field",
+        "appgate_metadata": {
+            "passwordFields": ["fieldOne"],
+        },
     }
     d = K8S_DUMPER.dump(e1)
     assert d == e2_data
@@ -321,33 +381,32 @@ def test_read_only_write_only_eq():
     By default readOnly and writeOnly are never compared.
     But we should load the correct data from each side (K8S or APPGATE)
     """
-    EntityTest4 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest4'].cls
+    EntityTest4 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest4"]
+        .cls
+    )
     e_data = {
-        'fieldOne': 'writeOnly',
-        'fieldTwo': 'readOnly',
+        "fieldOne": "writeOnly",
+        "fieldTwo": "readOnly",
     }
     e = APPGATE_LOADER.load(e_data, None, EntityTest4)
-    assert e == EntityTest4(fieldOne=None,
-                            fieldTwo='readOnly')
+    assert e == EntityTest4(fieldOne=None, fieldTwo="readOnly")
     e = APPGATE_LOADER.load(e_data, None, EntityTest4)
-    assert e == EntityTest4(fieldOne=None,
-                            fieldTwo='----')
-    assert e.fieldTwo == 'readOnly'
+    assert e == EntityTest4(fieldOne=None, fieldTwo="----")
+    assert e.fieldTwo == "readOnly"
     assert e.fieldOne is None
 
     e = K8S_LOADER.load(e_data, None, EntityTest4)
-    assert e == EntityTest4(fieldOne='writeOnly',
-                            fieldTwo=None)
+    assert e == EntityTest4(fieldOne="writeOnly", fieldTwo=None)
 
     e = K8S_LOADER.load(e_data, None, EntityTest4)
-    assert e == EntityTest4(fieldOne='-----',
-                            fieldTwo=None)
-    assert e.fieldOne == 'writeOnly'
+    assert e == EntityTest4(fieldOne="-----", fieldTwo=None)
+    assert e.fieldOne == "writeOnly"
     assert e.fieldTwo is None
 
 
-BASE64_FILE = '''
+BASE64_FILE = """
 YXBpVmVyc2lvbjogYmV0YS5hcHBnYXRlLmNvbS92MQpraW5kOiBDb25kaXRpb24KbWV0YWRhdGE6
 CiAgbmFtZTogY29uZGl0aW9uLTIKc3BlYzoKICBleHByZXNzaW9uOiAnIHZhciByZXN1bHQgPSBm
 YWxzZTsgLypwYXNzd29yZCovIGlmIChjbGFpbXMudXNlci5oYXNQYXNzd29yZCgnJ2NvbmRpdGlv
@@ -376,20 +435,23 @@ YXNzd29yZCovIHJldHVybiByZXN1bHQ7ICcKICBpZDogZDQwODNkMTAtNzRkOC00OTc5LThhMGEt
 ZTE5M2Q1MmQ3OThjCiAgbmFtZTogY29uZGl0aW9uLTEKICByZW1lZHlNZXRob2RzOiBbXQogIHJl
 cGVhdFNjaGVkdWxlczoKICAtIDFoCiAgLSAnMTM6MzInCiAgdGFnczoKICAtIGFwaS1jcmVhdGVk
 CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
-'''
-BASE64_FILE_W0 = ''.join(BASE64_FILE.split('\n'))
-SHA256_FILE = '0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e'
+"""
+BASE64_FILE_W0 = "".join(BASE64_FILE.split("\n"))
+SHA256_FILE = "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"
 SIZE_FILE = 1563
 
 
 def test_bytes_load():
-    EntityTest3 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest3'].cls
+    EntityTest3 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest3"]
+        .cls
+    )
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     e_data = {
-        'fieldOne': BASE64_FILE_W0,
-        'fieldTwo': SHA256_FILE,
+        "fieldOne": BASE64_FILE_W0,
+        "fieldTwo": SHA256_FILE,
     }
     # writeOnly with format bytes is never read from APPGATE
     # readOnly associated as checksum to writeOnly bytes is always read from APPGATE
@@ -398,15 +460,13 @@ def test_bytes_load():
     assert e.fieldTwo == SHA256_FILE
     assert e == EntityTest3(fieldTwo=SHA256_FILE)
     # writeOnly bytes is never compared
-    assert e == EntityTest3(fieldOne='Some value',
-                            fieldTwo=SHA256_FILE)
+    assert e == EntityTest3(fieldOne="Some value", fieldTwo=SHA256_FILE)
     # readOnly associated to writeOnly bytes is compared
-    assert e != EntityTest3(fieldOne='Some value',
-                            fieldTwo='22222')
+    assert e != EntityTest3(fieldOne="Some value", fieldTwo="22222")
 
     e_data = {
-        'fieldOne': BASE64_FILE_W0,
-        'fieldTwo': None,
+        "fieldOne": BASE64_FILE_W0,
+        "fieldTwo": None,
     }
     e = K8S_LOADER.load(e_data, None, EntityTest3)
     # When reading from K8S the checksum field associated to bytes is computed
@@ -414,25 +474,23 @@ def test_bytes_load():
     assert e.fieldOne == BASE64_FILE_W0
     assert e.fieldTwo == SHA256_FILE
     # We never compare the bytes field itself, only the associated checksum field
-    assert e == EntityTest3(fieldOne=None,
-                            fieldTwo=SHA256_FILE,
-                            fieldThree=SIZE_FILE)
-    assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
-                            fieldTwo='1111111',
-                            fieldThree=SIZE_FILE)
-    assert e != EntityTest3(fieldOne=BASE64_FILE_W0,
-                            fieldTwo=SHA256_FILE,
-                            fieldThree=666)
+    assert e == EntityTest3(fieldOne=None, fieldTwo=SHA256_FILE, fieldThree=SIZE_FILE)
+    assert e != EntityTest3(
+        fieldOne=BASE64_FILE_W0, fieldTwo="1111111", fieldThree=SIZE_FILE
+    )
+    assert e != EntityTest3(
+        fieldOne=BASE64_FILE_W0, fieldTwo=SHA256_FILE, fieldThree=666
+    )
 
 
 def test_bytes_dump():
-    EntityTest3 = load_test_open_api_spec(secrets_key=None,
-                                          reload=True).entities['EntityTest3'].cls
-    e = EntityTest3(fieldOne=BASE64_FILE_W0,
-                    fieldTwo=SHA256_FILE)
-    e_data = {
-        'fieldOne': BASE64_FILE_W0
-    }
+    EntityTest3 = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest3"]
+        .cls
+    )
+    e = EntityTest3(fieldOne=BASE64_FILE_W0, fieldTwo=SHA256_FILE)
+    e_data = {"fieldOne": BASE64_FILE_W0}
     # We don't dump the checksum field associated to bytes to APPGATE
     assert APPGATE_DUMPER.dump(e) == e_data
     e = EntityTest3(fieldOne=BASE64_FILE_W0)
@@ -440,10 +498,9 @@ def test_bytes_dump():
     e = EntityTest3(fieldTwo=SHA256_FILE)
     assert APPGATE_DUMPER.dump(e) == {}
 
-    e = EntityTest3(fieldOne=BASE64_FILE_W0,
-                    fieldTwo=SHA256_FILE)
+    e = EntityTest3(fieldOne=BASE64_FILE_W0, fieldTwo=SHA256_FILE)
     e_data = {
-        'fieldOne': BASE64_FILE_W0,
+        "fieldOne": BASE64_FILE_W0,
     }
     # We don't dump the checksum field associated to bytes to K8S
     assert K8S_DUMPER.dump(e) == e_data
@@ -451,84 +508,97 @@ def test_bytes_dump():
 
 def test_bytes_diff_dump():
     # DIFF mode we should dump just the fields used for equality
-    EntityTest3Appgate = load_test_open_api_spec(secrets_key=None,
-                                                 reload=True).entities['EntityTest3Appgate'].cls
-    appgate_metadata = {
-        'uuid': '6a01c585-c192-475b-b86f-0e632ada6769'
-    }
+    EntityTest3Appgate = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTest3Appgate"]
+        .cls
+    )
+    appgate_metadata = {"uuid": "6a01c585-c192-475b-b86f-0e632ada6769"}
     e_data = {
-        'name': 'entity1',
-        'fieldOne': BASE64_FILE_W0,
-        'fieldTwo': None,
-        'fieldThree': None,
-        'appgate_metadata': appgate_metadata
+        "name": "entity1",
+        "fieldOne": BASE64_FILE_W0,
+        "fieldTwo": None,
+        "fieldThree": None,
+        "appgate_metadata": appgate_metadata,
     }
 
     e = K8S_LOADER.load(e_data, None, EntityTest3Appgate)
     assert DIFF_DUMPER.dump(e) == {
-        'name': 'entity1',
-        'fieldTwo': SHA256_FILE,
-        'fieldThree': SIZE_FILE,
+        "name": "entity1",
+        "fieldTwo": SHA256_FILE,
+        "fieldThree": SIZE_FILE,
     }
 
 
 def test_certificate_pem_load():
-    EntityCert = load_test_open_api_spec(secrets_key=None,
-                                         reload=True).entities['EntityCert'].cls
-    EntityCert_Fieldtwo = load_test_open_api_spec(secrets_key=None).entities['EntityCert_Fieldtwo'].cls
-    cert = EntityCert_Fieldtwo(version=1,
-                               serial='3578',
-                               issuer=join_string(ISSUER),
-                               subject=join_string(SUBJECT),
-                               validFrom=datetime.datetime(2012, 8, 22, 5, 26, 54, tzinfo=datetime.timezone.utc),
-                               validTo=datetime.datetime(2017, 8, 21, 5, 26, 54, tzinfo=datetime.timezone.utc),
-                               fingerprint=FINGERPRINT,
-                               certificate=join_string(CERTIFICATE_FIELD),
-                               subjectPublicKey=join_string(PUBKEY_FIELD))
+    EntityCert = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityCert"]
+        .cls
+    )
+    EntityCert_Fieldtwo = (
+        load_test_open_api_spec(secrets_key=None).entities["EntityCert_Fieldtwo"].cls
+    )
+    cert = EntityCert_Fieldtwo(
+        version=1,
+        serial="3578",
+        issuer=join_string(ISSUER),
+        subject=join_string(SUBJECT),
+        validFrom=datetime.datetime(
+            2012, 8, 22, 5, 26, 54, tzinfo=datetime.timezone.utc
+        ),
+        validTo=datetime.datetime(2017, 8, 21, 5, 26, 54, tzinfo=datetime.timezone.utc),
+        fingerprint=FINGERPRINT,
+        certificate=join_string(CERTIFICATE_FIELD),
+        subjectPublicKey=join_string(PUBKEY_FIELD),
+    )
 
     e0_data = {
-        'fieldOne': PEM_TEST,
-        'fieldTwo': {
-            'version': 1,
-            'serial': '3578',
-            'issuer': join_string(ISSUER),
-            'subject': join_string(SUBJECT),
-            'validFrom': '2012-08-22T05:26:54.000Z',
-            'validTo': '2017-08-21T05:26:54.000Z',
-            'fingerprint': FINGERPRINT,
-            'certificate': join_string(CERTIFICATE_FIELD),
-            'subjectPublicKey': join_string(PUBKEY_FIELD),
-        }
+        "fieldOne": PEM_TEST,
+        "fieldTwo": {
+            "version": 1,
+            "serial": "3578",
+            "issuer": join_string(ISSUER),
+            "subject": join_string(SUBJECT),
+            "validFrom": "2012-08-22T05:26:54.000Z",
+            "validTo": "2017-08-21T05:26:54.000Z",
+            "fingerprint": FINGERPRINT,
+            "certificate": join_string(CERTIFICATE_FIELD),
+            "subjectPublicKey": join_string(PUBKEY_FIELD),
+        },
     }
     e0 = APPGATE_LOADER.load(e0_data, None, EntityCert)
     assert e0.fieldOne is None
     assert e0.fieldTwo == cert
 
     e1_data = {
-        'fieldOne': PEM_TEST,
+        "fieldOne": PEM_TEST,
     }
 
     e1 = K8S_LOADER.load(e1_data, None, EntityCert)
     assert e1.fieldOne == PEM_TEST
     assert e1.fieldTwo == cert
-    assert e1 == EntityCert(fieldOne='Crap data that is ignored',
-                            fieldTwo=cert)
+    assert e1 == EntityCert(fieldOne="Crap data that is ignored", fieldTwo=cert)
     assert e1 == e0
 
-    cert2 = EntityCert_Fieldtwo(version=1,
-                                serial='3578',
-                                issuer=join_string(ISSUER),
-                                subject=join_string(SUBJECT),
-                                validFrom=datetime.datetime(2017, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
-                                validTo=datetime.datetime(2025, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc),
-                                fingerprint=FINGERPRINT,
-                                certificate=join_string(CERTIFICATE_FIELD),
-                                subjectPublicKey=join_string(PUBKEY_FIELD))
-    e2 = EntityCert(fieldOne=None,
-                    fieldTwo=cert2)
+    cert2 = EntityCert_Fieldtwo(
+        version=1,
+        serial="3578",
+        issuer=join_string(ISSUER),
+        subject=join_string(SUBJECT),
+        validFrom=datetime.datetime(
+            2017, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc
+        ),
+        validTo=datetime.datetime(
+            2025, 3, 6, 16, 50, 58, 516000, tzinfo=datetime.timezone.utc
+        ),
+        fingerprint=FINGERPRINT,
+        certificate=join_string(CERTIFICATE_FIELD),
+        subjectPublicKey=join_string(PUBKEY_FIELD),
+    )
+    e2 = EntityCert(fieldOne=None, fieldTwo=cert2)
     assert e1 != e2
 
     e2_dumped = DIFF_DUMPER.dump(e2)
     # Just check that it's dumped properly
-    assert e2_dumped['fieldTwo']['validFrom'] == '2017-03-06T16:50:58.516Z'
-
+    assert e2_dumped["fieldTwo"]["validFrom"] == "2017-03-06T16:50:58.516Z"
