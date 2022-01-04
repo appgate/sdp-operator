@@ -30,4 +30,4 @@ jobs:
         PYTHONPATH=. pytest tests
     - name: Check formatting with black
       run: |
-        black --check --diff appgate
+        black --check --diff appgate tests
