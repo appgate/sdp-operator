@@ -2,3 +2,5 @@ mypy==0.930
 mypy-extensions==0.4.3
 pytest==6.2.4
 black==21.12b0
+# type stubs
+types-PyYAML==6.0.1
