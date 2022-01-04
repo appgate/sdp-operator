@@ -186,7 +186,10 @@ class AppgateState:
     entities_set: Dict[str, EntitiesSet] = attrib()
 
     def with_entity(
-        self, entity: EntityWrapper, op: Literal["ADDED", "DELETED", "MODIFIED"], current_appgate_state: "AppgateState"
+        self,
+        entity: EntityWrapper,
+        op: Literal["ADDED", "DELETED", "MODIFIED"],
+        current_appgate_state: "AppgateState",
     ) -> None:
         """
         Get the entity with op and register in the current state
