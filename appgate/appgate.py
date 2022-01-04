@@ -208,7 +208,7 @@ async def start_entity_loop(
         )
         t.start()
 
-    await asyncio.to_thread(run, asyncio.get_event_loop())  # type: ignore
+    await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
 async def main_loop(

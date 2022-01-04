@@ -63,7 +63,7 @@ def _attrdump(d, value) -> Dict[str, Any]:
 
 def is_datetime_loader(type_: Type[Any]) -> bool:
     name = getattr(type_, "__name__", None)
-    return name and name == "datetime"
+    return name == "datetime"
 
 
 def is_datetime_dumper(value: Any) -> bool:
@@ -117,7 +117,7 @@ def get_dumper(platform_type: PlatformType):
 
         return r
 
-    dumper = datadumper.Dumper(**{})  # type: ignore
+    dumper = datadumper.Dumper(**{})
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
     return dumper
@@ -223,7 +223,7 @@ def get_loader(
         )
         return _namedtupleload_wrapper(orig_values, l, value, t)
 
-    loader = dataloader.Loader(**{})  # type: ignore
+    loader = dataloader.Loader(**{})
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
     loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
 
@@ -249,8 +249,8 @@ def get_loader(
             )
 
     if platform_type == PlatformType.K8S:
-        return load  # type: ignore
-    return lambda data, _, entity: load(data, None, entity)  # type: ignore
+        return load
+    return lambda data, _, entity: load(data, None, entity)
 
 
 K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))

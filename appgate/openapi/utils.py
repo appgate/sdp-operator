@@ -112,15 +112,16 @@ def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
     fields = []
     prefix = ".".join(names)
     for a in entity.__attrs_attrs__:
-        mt = getattr(a, "metadata", None)
-        if mt and mt.get("format") == "password":
+        assert hasattr(a, "name")
+        mt = getattr(a, "metadata", {})
+        if mt.get("format") == "password":
             if prefix:
-                fields.append(f"{prefix}.{a.name}")
+                fields.append(f"{prefix}.{a.name}")  # type: ignore[attr-defined]
             else:
-                fields.append(a.name)
+                fields.append(a.name)  # type: ignore[attr-defined]
         base_type = mt.get("base_type", None)
         if base_type and base_type not in PYTHON_TYPES:
-            fields.extend(_get_passwords(base_type, names + [a.name]))
+            fields.extend(_get_passwords(base_type, names + [a.name]))  # type: ignore[attr-defined]
     return fields
 
 

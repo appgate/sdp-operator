@@ -69,7 +69,7 @@ class EntityClient:
                 self.path,
             )
             return None
-        return self.load(data)  # type: ignore
+        return self.load(data)
 
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
@@ -84,7 +84,7 @@ class EntityClient:
         data = await self._client.put(path, body=self.dump(entity))
         if not data:
             return None
-        return self.load(data)  # type: ignore
+        return self.load(data)
 
     async def delete(self, id: str) -> bool:
         if not await self._client.delete(f"{self.path}/{id}"):
@@ -133,7 +133,7 @@ class K8SConfigMapClient:
             self.name,
         )
         try:
-            configmap = await asyncio.to_thread(  # type: ignore
+            configmap = await asyncio.to_thread(
                 self._v1.read_namespaced_config_map,
                 name=self.name,
                 namespace=self.namespace,
@@ -161,7 +161,7 @@ class K8SConfigMapClient:
                 key: value,
             },
         )
-        configmap = await asyncio.to_thread(  # type: ignore
+        configmap = await asyncio.to_thread(
             self._v1.patch_namespaced_config_map,
             name=self.name,
             namespace=self.namespace,
