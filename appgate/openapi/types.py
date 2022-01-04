@@ -2,8 +2,18 @@ import datetime
 import itertools
 import re
 from functools import cached_property
-from typing import Any, Dict, List, Optional, FrozenSet, Callable, Set, \
-    Union, Iterator, Tuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    FrozenSet,
+    Callable,
+    Set,
+    Union,
+    Iterator,
+    Tuple,
+)
 
 from graphlib import TopologicalSorter
 
@@ -12,48 +22,47 @@ from attr import attrib, attrs, Attribute, evolve
 from appgate.logger import log
 
 SPEC_ENTITIES = {
-    '/sites': 'Site',
-    '/ip-pools': 'IpPool',
-    '/local-users': 'LocalUser',
-    '/appliance-customizations': 'ApplianceCustomization',
-    '/admin-mfa-settings': 'AdminMfaSettings',
-    '/ringfence-rules': 'RingfenceRule',
-    '/mfa-providers': 'MfaProvider',
-    '/identity-providers': 'IdentityProvider',
-    '/administrative-roles': 'AdministrativeRole',
-    '/device-scripts': 'DeviceScript',
-    '/client-connections': 'ClientConnection',
-    '/global-settings': 'GlobalSettings',
-    '/appliances': 'Appliance',
-    '/criteria-scripts': 'CriteriaScripts',
-    '/entitlement-scripts': 'EntitlementScript',
-    '/policies': 'Policy',
-    '/conditions': 'Condition',
-    '/entitlements': 'Entitlement',
-    '/trusted-certificates': 'TrustedCertificate',
+    "/sites": "Site",
+    "/ip-pools": "IpPool",
+    "/local-users": "LocalUser",
+    "/appliance-customizations": "ApplianceCustomization",
+    "/admin-mfa-settings": "AdminMfaSettings",
+    "/ringfence-rules": "RingfenceRule",
+    "/mfa-providers": "MfaProvider",
+    "/identity-providers": "IdentityProvider",
+    "/administrative-roles": "AdministrativeRole",
+    "/device-scripts": "DeviceScript",
+    "/client-connections": "ClientConnection",
+    "/global-settings": "GlobalSettings",
+    "/appliances": "Appliance",
+    "/criteria-scripts": "CriteriaScripts",
+    "/entitlement-scripts": "EntitlementScript",
+    "/policies": "Policy",
+    "/conditions": "Condition",
+    "/entitlements": "Entitlement",
+    "/trusted-certificates": "TrustedCertificate",
 }
 
-K8S_APPGATE_DOMAIN = 'beta.appgate.com'
-K8S_APPGATE_VERSION = 'v1'
-ENTITY_METADATA_ATTRIB_NAME = '_entity_metadata'
-APPGATE_METADATA_ATTRIB_NAME = 'appgate_metadata'
-NAMES_REGEXP = re.compile(r'\w+(\.)\w+')
-IGNORED_EQ_ATTRIBUTES = {'updated', 'created', 'id'}
+K8S_APPGATE_DOMAIN = "beta.appgate.com"
+K8S_APPGATE_VERSION = "v1"
+ENTITY_METADATA_ATTRIB_NAME = "_entity_metadata"
+APPGATE_METADATA_ATTRIB_NAME = "appgate_metadata"
+NAMES_REGEXP = re.compile(r"\w+(\.)\w+")
+IGNORED_EQ_ATTRIBUTES = {"updated", "created", "id"}
 AttribType = Union[int, bool, str, Callable[[], FrozenSet]]
 OpenApiDict = Dict[str, Any]
 AttributesDict = Dict[str, Any]
 # Dictionary with the top level entities, those that are "exported"
-EntitiesDict = Dict[str, 'GeneratedEntity']
-APPGATE_LOADERS_FIELD_NAME = 'appgate_loader'
-K8S_LOADERS_FIELD_NAME = 'k8s_loader'
-PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list,
-                datetime.datetime)
-UUID_REFERENCE_FIELD = 'x-uuid-ref'
-APPGATE_METADATA_PASSWORD_FIELDS_FIELD = 'passwordFields'
-APPGATE_METADATA_GENERATION_FIELD = 'generation'
-APPGATE_METADATA_LATEST_GENERATION_FIELD = 'latestGeneration'
-APPGATE_METADATA_MODIFICATION_FIELD = 'modificationTimestamp'
-APPGATE_METADATA_CREATION_FIELD = 'creationTime'
+EntitiesDict = Dict[str, "GeneratedEntity"]
+APPGATE_LOADERS_FIELD_NAME = "appgate_loader"
+K8S_LOADERS_FIELD_NAME = "k8s_loader"
+PYTHON_TYPES = (str, bool, int, dict, tuple, frozenset, set, list, datetime.datetime)
+UUID_REFERENCE_FIELD = "x-uuid-ref"
+APPGATE_METADATA_PASSWORD_FIELDS_FIELD = "passwordFields"
+APPGATE_METADATA_GENERATION_FIELD = "generation"
+APPGATE_METADATA_LATEST_GENERATION_FIELD = "latestGeneration"
+APPGATE_METADATA_MODIFICATION_FIELD = "modificationTimestamp"
+APPGATE_METADATA_CREATION_FIELD = "creationTime"
 APPGATE_METADATE_FIELDS = {
     APPGATE_METADATA_CREATION_FIELD,
     APPGATE_METADATA_MODIFICATION_FIELD,
@@ -61,14 +70,14 @@ APPGATE_METADATE_FIELDS = {
     APPGATE_METADATA_LATEST_GENERATION_FIELD,
 }
 
-RESERVED_NAMES = {'from'}
+RESERVED_NAMES = {"from"}
 
 
 def normalize_attrib_name(name: str) -> str:
     if name in RESERVED_NAMES:
         name = name + name[-1]
     if NAMES_REGEXP.match(name):
-        return re.sub(r'\.', '_', name)
+        return re.sub(r"\.", "_", name)
     return name
 
 
@@ -83,34 +92,35 @@ class OpenApiParserException(Exception):
 
 @attrs(frozen=True, slots=True)
 class AppgateMetadata:
-    created: datetime.datetime = attrib(metadata={
-        'name': 'creationTimestamp'
-    }, default=datetime.datetime.now().astimezone())
-    modified: datetime.datetime = attrib(metadata={
-        'name': 'modificationTimestamp'
-    }, default=datetime.datetime.now().astimezone())
-    current_generation: int = attrib(default=1, metadata={
-        'name': 'generation'
-    })
-    latest_generation: int = attrib(default=1, metadata={
-        'name': 'latestGeneration'
-    })
-    api_version: str = attrib(metadata={
-        'name': 'apiVersion'
-    }, default=f'{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}')
+    created: datetime.datetime = attrib(
+        metadata={"name": "creationTimestamp"},
+        default=datetime.datetime.now().astimezone(),
+    )
+    modified: datetime.datetime = attrib(
+        metadata={"name": "modificationTimestamp"},
+        default=datetime.datetime.now().astimezone(),
+    )
+    current_generation: int = attrib(default=1, metadata={"name": "generation"})
+    latest_generation: int = attrib(default=1, metadata={"name": "latestGeneration"})
+    api_version: str = attrib(
+        metadata={"name": "apiVersion"},
+        default=f"{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}",
+    )
     uuid: Optional[str] = attrib(default=None)
     passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
-    password_fields: Optional[FrozenSet[str]] = attrib(default=None, metadata={
-        'name': 'passwordFields'
-    })
-    from_appgate: Optional[bool] = attrib(default=None, repr=False, metadata={
-        'name': 'fromAppgate'
-    })
+    password_fields: Optional[FrozenSet[str]] = attrib(
+        default=None, metadata={"name": "passwordFields"}
+    )
+    from_appgate: Optional[bool] = attrib(
+        default=None, repr=False, metadata={"name": "fromAppgate"}
+    )
 
-    def with_password_values(self, passwords: Dict[str, Union[str, Dict[str, str]]]) -> 'AppgateMetadata':
+    def with_password_values(
+        self, passwords: Dict[str, Union[str, Dict[str, str]]]
+    ) -> "AppgateMetadata":
         return evolve(self, passwords=passwords)
 
-    def with_password_fields(self, fields: List[str]) -> 'AppgateMetadata':
+    def with_password_fields(self, fields: List[str]) -> "AppgateMetadata":
         return evolve(self, password_fields=frozenset(fields))
 
 
@@ -128,6 +138,7 @@ class Entity_T:
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
 DumperFunc = Callable[[Entity_T], Dict[str, Any]]
 
+
 @attrs()
 class EntityLoader:
     load: LoaderFunc = attrib()
@@ -144,6 +155,7 @@ class GeneratedEntityFieldDependency:
     Class to keep information about the dependency for a field in a GeneratedEntity.
     A field with name field_path has dependencies on entities listed in dependencies.
     """
+
     field_path: str = attrib()
     dependencies: FrozenSet[str] = attrib()
 
@@ -152,34 +164,45 @@ class GeneratedEntityFieldDependency:
 
     @property
     def field(self) -> str:
-        return self.field_path.split('.')[0]
+        return self.field_path.split(".")[0]
 
 
-def get_dependencies(cls: type, field_path: Optional[str] = None) -> Set[GeneratedEntityFieldDependency]:
+def get_dependencies(
+    cls: type, field_path: Optional[str] = None
+) -> Set[GeneratedEntityFieldDependency]:
     deps = set()
-    attributes = getattr(cls, '__attrs_attrs__', [])
+    attributes = getattr(cls, "__attrs_attrs__", [])
     for attribute in attributes:
-        mt = getattr(attribute, 'metadata', None)
-        attribute_name = (mt or {}).get('name')
-        if attribute_name in {APPGATE_METADATA_ATTRIB_NAME, ENTITY_METADATA_ATTRIB_NAME}:
+        mt = getattr(attribute, "metadata", None)
+        attribute_name = (mt or {}).get("name")
+        if attribute_name in {
+            APPGATE_METADATA_ATTRIB_NAME,
+            ENTITY_METADATA_ATTRIB_NAME,
+        }:
             continue
         if not mt or not attribute_name:
             continue
         updated_field_path: str = attribute_name
         if field_path:
-            updated_field_path = f'{field_path}.{attribute_name}'
-        base_type = mt['base_type']
+            updated_field_path = f"{field_path}.{attribute_name}"
+        base_type = mt["base_type"]
         if base_type not in PYTHON_TYPES:
             _d = get_dependencies(base_type, updated_field_path)
             deps.update(_d)
         elif UUID_REFERENCE_FIELD in mt:
             ds = mt.get(UUID_REFERENCE_FIELD)
             if isinstance(ds, list):
-                deps.add(GeneratedEntityFieldDependency(field_path=updated_field_path,
-                                                        dependencies=frozenset(ds)))
+                deps.add(
+                    GeneratedEntityFieldDependency(
+                        field_path=updated_field_path, dependencies=frozenset(ds)
+                    )
+                )
             else:
-                deps.add(GeneratedEntityFieldDependency(field_path=updated_field_path,
-                                                        dependencies=frozenset([ds])))
+                deps.add(
+                    GeneratedEntityFieldDependency(
+                        field_path=updated_field_path, dependencies=frozenset([ds])
+                    )
+                )
     return deps
 
 
@@ -188,6 +211,7 @@ class GeneratedEntity:
     """
     Class to represent an already parsed entity
     """
+
     cls: type = attrib()
     singleton: bool = attrib()
     api_path: Optional[str] = attrib(default=None)
@@ -198,8 +222,11 @@ class GeneratedEntity:
 
     @cached_property
     def entity_dependencies(self) -> Set[str]:
-        return set(itertools.chain.from_iterable(map(lambda d: d.dependencies,
-                                                 get_dependencies(self.cls))))
+        return set(
+            itertools.chain.from_iterable(
+                map(lambda d: d.dependencies, get_dependencies(self.cls))
+            )
+        )
 
 
 class EntitiesContext:
@@ -209,17 +236,18 @@ class EntitiesContext:
 
 @attrs()
 class AttribMakerConfig:
-    instance_maker_config: 'EntityClassGeneratorConfig' = attrib()
+    instance_maker_config: "EntityClassGeneratorConfig" = attrib()
     name: str = attrib()
     definition: OpenApiDict = attrib()
 
-    def from_key(self, key: str) -> Optional['AttribMakerConfig']:
+    def from_key(self, key: str) -> Optional["AttribMakerConfig"]:
         definition = self.definition.get(key)
         if definition:
             return AttribMakerConfig(
                 definition=definition,
                 instance_maker_config=self.instance_maker_config,
-                name=self.name)
+                name=self.name,
+            )
         return None
 
 
@@ -229,6 +257,7 @@ class EntityClassGeneratorConfig:
     Class used to store information of the EntityClass to create.
     This class is used when a new Entity class is generated.
     """
+
     name: str = attrib()
     entity_name: str = attrib()
     definition: OpenApiDict = attrib()
@@ -238,19 +267,23 @@ class EntityClassGeneratorConfig:
 
     @property
     def properties_names(self) -> Iterator[Tuple[str, str]]:
-        return map(lambda n: (n, normalize_attrib_name(n)),
-                   self.definition.get('properties', {}).keys())
+        return map(
+            lambda n: (n, normalize_attrib_name(n)),
+            self.definition.get("properties", {}).keys(),
+        )
 
-    def attrib_maker_config(self, attribute: str) -> 'AttribMakerConfig':
-        properties = self.definition.get('properties', {})
+    def attrib_maker_config(self, attribute: str) -> "AttribMakerConfig":
+        properties = self.definition.get("properties", {})
         definition = properties.get(attribute)
         if not definition:
-            log.error('Unable to find attribute %s in %s', attribute, ', '.join(properties.keys()))
-            raise OpenApiParserException(f'Unable to find attribute %s')
+            log.error(
+                "Unable to find attribute %s in %s",
+                attribute,
+                ", ".join(properties.keys()),
+            )
+            raise OpenApiParserException(f"Unable to find attribute %s")
         return AttribMakerConfig(
-            instance_maker_config=self,
-            name=attribute,
-            definition=definition
+            instance_maker_config=self, name=attribute, definition=definition
         )
 
 
@@ -266,7 +299,7 @@ class APISpec:
             for entity_name, entity in self.entities.items()
             if entity.api_path is not None
         }
-        log.trace('Entities to sort %s', entities_to_sort)
+        log.trace("Entities to sort %s", entities_to_sort)
         ts = TopologicalSorter(entities_to_sort)
         return list(ts.static_order())
 
@@ -274,14 +307,21 @@ class APISpec:
     def api_entities(self) -> EntitiesDict:
         return {k: v for k, v in self.entities.items() if v.api_path is not None}
 
-    def loader(self, loader: EntityLoader, entity_type: type) -> Callable[[Dict[str, Any]], Entity_T]:
+    def loader(
+        self, loader: EntityLoader, entity_type: type
+    ) -> Callable[[Dict[str, Any]], Entity_T]:
         def _load(data: Dict[str, Any]) -> Entity_T:
             return loader.load(data, None, entity_type)
+
         return _load
 
-    def validate(self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader) -> Entity_T:
+    def validate(
+        self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader
+    ) -> Entity_T:
         entity_type = self.entities.get(entity_kind)
         if not entity_type:
-            raise AppgateException(f'[api-spec] Not type defined for entity kind {entity_kind}')
+            raise AppgateException(
+                f"[api-spec] Not type defined for entity kind {entity_kind}"
+            )
         load = self.loader(loader, entity_type.cls)
-        return load(data['spec'])
+        return load(data["spec"])

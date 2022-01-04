@@ -9,23 +9,23 @@ from appgate.openapi.utils import is_entity_t
 
 
 __all__ = [
-    'K8SEvent',
-    'EventObject',
-    'AppgateEvent',
-    'EntityWrapper',
-    'has_tag',
-    'is_target',
-    'EntitiesSet',
-    'LatestEntityGeneration',
-    'OperatorArguments',
-    'Context',
-    'BUILTIN_TAGS',
-    'EntityFieldDependency',
-    'MissingFieldDependencies',
+    "K8SEvent",
+    "EventObject",
+    "AppgateEvent",
+    "EntityWrapper",
+    "has_tag",
+    "is_target",
+    "EntitiesSet",
+    "LatestEntityGeneration",
+    "OperatorArguments",
+    "Context",
+    "BUILTIN_TAGS",
+    "EntityFieldDependency",
+    "MissingFieldDependencies",
 ]
 
 
-BUILTIN_TAGS = frozenset({'builtin'})
+BUILTIN_TAGS = frozenset({"builtin"})
 
 
 @attrs(slots=True, frozen=True)
@@ -36,9 +36,9 @@ class OperatorArguments:
     host: Optional[str] = attrib(default=None)
     user: Optional[str] = attrib(default=None)
     password: Optional[str] = attrib(default=None)
-    provider: str = attrib(default='local')
+    provider: str = attrib(default="local")
     no_two_way_sync: bool = attrib(default=False)
-    timeout: str = attrib(default='30')
+    timeout: str = attrib(default="30")
     no_cleanup: bool = attrib(default=False)
     target_tags: List[str] = attrib(factory=list)
     builtin_tags: List[str] = attrib(factory=list)
@@ -84,7 +84,7 @@ class EntityWrapper:
     def tags(self) -> FrozenSet[str]:
         return self.value.tags
 
-    def with_id(self, id: str) -> 'EntityWrapper':
+    def with_id(self, id: str) -> "EntityWrapper":
         return EntityWrapper(evolve(self.value, id=id))
 
     def changed_generation(self) -> bool:
@@ -96,7 +96,7 @@ class EntityWrapper:
     def updated(self, other: object) -> bool:
         assert isinstance(other, self.__class__)
         mt = self.value.appgate_metadata
-        if getattr(other.value, 'updated', None) is not None:
+        if getattr(other.value, "updated", None) is not None:
             return mt.modified > (other.value.updated + datetime.timedelta(seconds=2))
         return False
 
@@ -108,22 +108,28 @@ class EntityWrapper:
         return False
 
     def is_singleton(self) -> bool:
-        return self.value._entity_metadata.get('singleton', False)
+        return self.value._entity_metadata.get("singleton", False)
 
     def has_secrets(self) -> bool:
         # We have passwords use modified/created
         entity_mt = self.value._entity_metadata
-        return len(entity_mt.get('passwords', {})) > 0
+        return len(entity_mt.get("passwords", {})) > 0
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise Exception(f'Wrong other argument {other}')
+            raise Exception(f"Wrong other argument {other}")
         if not self.has_secrets():
             return self.value == other.value
-        if self.value.appgate_metadata.from_appgate and not other.value.appgate_metadata.from_appgate:
+        if (
+            self.value.appgate_metadata.from_appgate
+            and not other.value.appgate_metadata.from_appgate
+        ):
             if other.needs_update(self):
                 return False
-        elif not self.value.appgate_metadata.from_appgate and other.value.appgate_metadata.from_appgate:
+        elif (
+            not self.value.appgate_metadata.from_appgate
+            and other.value.appgate_metadata.from_appgate
+        ):
             if self.needs_update(other):
                 return False
         return self.value == other.value
@@ -139,10 +145,14 @@ def has_tag(entity: EntityWrapper, tags: Optional[FrozenSet[str]] = None) -> boo
     """
     Predicate that return true if entity has any tag in the set tags
     """
-    return tags is not None and any(map(lambda t: t in (entity.tags or frozenset()), tags))
+    return tags is not None and any(
+        map(lambda t: t in (entity.tags or frozenset()), tags)
+    )
 
 
-def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None) -> bool:
+def is_target(
+    entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = None
+) -> bool:
     """
     Predicate that return true if entity is member of the target set.
     An entity is member of the target set if target is not defined at all or if it has
@@ -152,9 +162,12 @@ def is_target(entity: EntityWrapper, target_tags: Optional[FrozenSet[str]] = Non
 
 
 class EntitiesSet:
-    def __init__(self, entities: Optional[Set[EntityWrapper]] = None,
-                 entities_by_name: Optional[Dict[str, EntityWrapper]] = None,
-                 entities_by_id: Optional[Dict[str, EntityWrapper]] = None) -> None:
+    def __init__(
+        self,
+        entities: Optional[Set[EntityWrapper]] = None,
+        entities_by_name: Optional[Dict[str, EntityWrapper]] = None,
+        entities_by_id: Optional[Dict[str, EntityWrapper]] = None,
+    ) -> None:
         self.entities: Set[EntityWrapper] = entities or set()
         if entities_by_name:
             self.entities_by_name = entities_by_name
@@ -174,12 +187,14 @@ class EntitiesSet:
     def __str__(self) -> str:
         return str(self.entities)
 
-    def __copy__(self) -> 'EntitiesSet':
-        return EntitiesSet(entities=deepcopy(self.entities),
-                           entities_by_name=deepcopy(self.entities_by_name),
-                           entities_by_id=deepcopy(self.entities_by_id))
+    def __copy__(self) -> "EntitiesSet":
+        return EntitiesSet(
+            entities=deepcopy(self.entities),
+            entities_by_name=deepcopy(self.entities_by_name),
+            entities_by_id=deepcopy(self.entities_by_id),
+        )
 
-    def entities_with_tags(self, tags: FrozenSet[str]) -> 'EntitiesSet':
+    def entities_with_tags(self, tags: FrozenSet[str]) -> "EntitiesSet":
         return EntitiesSet(entities={e for e in self.entities if has_tag(e, tags)})
 
     def add(self, entity: EntityWrapper) -> None:
