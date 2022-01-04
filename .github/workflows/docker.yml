@@ -1,29 +1,36 @@
+---
 name: Docker
 
 on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9-dev
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt -r requirements-build.txt
-    - name: Lint with mypy
-      run: |
-        MYPYPATH=mypy-stubs mypy appgate
-    - name: Test with pytest
-      run: |
-        PYTHONPATH=. pytest tests
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9-dev
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+      - name: Lint with mypy
+        run: |
+          MYPYPATH=mypy-stubs mypy appgate
+      - name: Test with pytest
+        run: |
+          PYTHONPATH=. pytest tests
+      - name: Check formatting with black
+        run: |
+          black --check --diff appgate tests
 
   v12:
     needs: build
@@ -94,7 +101,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/sdp-operator:v14
 
-   v15:
+  v15:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
