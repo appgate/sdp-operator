@@ -28,6 +28,7 @@ clean-cache:
 
 .PHONY: freeze
 freeze:
+	rm -rf freezer
 	${PYTHON3} -m venv freezer
 	./freezer/bin/pip install -r requirements.in
 	./freezer/bin/pip freeze > requirements.txt
