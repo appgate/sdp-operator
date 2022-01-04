@@ -28,83 +28,114 @@ jobs:
   v12:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: docker-images
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
-      - name: Build image
-        run:  docker build --build-arg SPEC_VERSION=v12 -f docker/Dockerfile . -t sdp-operator:v12
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ secrets.PACKAGES_USER }}
-          password: ${{ secrets.PACKAGES_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push image
-        run: |
-          docker tag sdp-operator:v12 ghcr.io/appgate/sdp-operator:v12
-          docker push ghcr.io/appgate/sdp-operator:v12
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            SPEC_VERSION=v12
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/sdp-operator:v12
 
   v13:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: docker-images
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
-      - name: Build image
-        run:  docker build --build-arg SPEC_VERSION=v13 -f docker/Dockerfile . -t sdp-operator:v13
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ secrets.PACKAGES_USER }}
-          password: ${{ secrets.PACKAGES_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push image
-        run: |
-          docker tag sdp-operator:v13 ghcr.io/appgate/sdp-operator:v13
-          docker push ghcr.io/appgate/sdp-operator:v13
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            SPEC_VERSION=v13
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/sdp-operator:v13
 
   v14:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: docker-images
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
-      - name: Build image
-        run:  docker build --build-arg SPEC_VERSION=v14 -f docker/Dockerfile . -t sdp-operator:v14
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ secrets.PACKAGES_USER }}
-          password: ${{ secrets.PACKAGES_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push image
-        run: |
-          docker tag sdp-operator:v14 ghcr.io/appgate/sdp-operator:v14
-          docker push ghcr.io/appgate/sdp-operator:v14
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            SPEC_VERSION=v14
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/sdp-operator:v14
 
-  v15:
+   v15:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: docker-images
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
-      - name: Build image
-        run:  docker build --build-arg SPEC_VERSION=v15 -f docker/Dockerfile . -t sdp-operator:v15
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ secrets.PACKAGES_USER }}
-          password: ${{ secrets.PACKAGES_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push image
-        run: |
-          docker tag sdp-operator:v15 ghcr.io/appgate/sdp-operator:v15
-          docker push ghcr.io/appgate/sdp-operator:v15
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            SPEC_VERSION=v15
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/sdp-operator:v15
+
+  v16:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            SPEC_VERSION=v16
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ghcr.io/${{ github.repository }}/sdp-operator:v16
