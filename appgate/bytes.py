@@ -44,7 +44,7 @@ def create_certificate_loader(
         NOTE: We need to increase version one since:
            Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
         """
-        cert = load_pem_x509_certificate(data.encode())  # type: ignore
+        cert = load_pem_x509_certificate(data.encode())
         valid_from = re.sub(
             r"\+\d\d:\d\d",
             "Z",

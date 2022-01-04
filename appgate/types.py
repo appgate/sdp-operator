@@ -1,7 +1,7 @@
 import datetime
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List, Set
+from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal
 from attr import attrib, attrs, evolve
 
 from appgate.openapi.types import Entity_T, APISpec
@@ -58,13 +58,13 @@ class EventObject:
 
 @attrs(slots=True, frozen=True)
 class K8SEvent:
-    type: str = attrib()
+    type: Literal["ADDED", "DELETED", "MODIFIED"] = attrib()
     object: EventObject = attrib()
 
 
 @attrs(slots=True, frozen=True)
 class AppgateEvent:
-    op: str = attrib()
+    op: Literal["ADDED", "DELETED", "MODIFIED"] = attrib()
     entity: Entity_T = attrib()
 
 

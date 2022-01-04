@@ -518,7 +518,7 @@ class Parser:
             )
             return AttribMaker(
                 name=attr_maker.name,
-                tpe=FrozenSet[attr_maker.tpe],  # type: ignore
+                tpe=FrozenSet[attr_maker.tpe],  # type: ignore[name-defined]
                 base_tpe=attr_maker.base_tpe,
                 default=None,
                 factory=frozenset,

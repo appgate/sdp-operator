@@ -9,6 +9,14 @@ all: lint test
 lint:
 	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate
 
+.PHONY: fmt
+fmt:
+	black appgate tests
+
+.PHONY: check-fmt
+check-fmt:
+	black --check --diff appgate tests
+
 test:
 	$(PYTHON3) -m pytest -p no:cacheprovider tests
 
