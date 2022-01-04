@@ -1,4 +1,4 @@
-[[https://github.com/appgate/sdp-operator/actions/workflows/docker.yml][https://github.com/appgate/sdp-operator/actions/workflows/docker.yml/badge.svg?branch=master&event=push]]
+[[https://github.com/appgate/sdp-operator/actions/workflows/docker.yml][https://github.com/appgate/sdp-operator/actions/workflows/docker.yml/badge.svg?branch=main&event=push]]
 * appgate-operator
 
 ** Description
