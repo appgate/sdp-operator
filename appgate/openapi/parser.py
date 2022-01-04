@@ -507,7 +507,7 @@ class Parser:
             new_attrib_maker_config = attrib_maker_config.from_key("items")
             if not new_attrib_maker_config:
                 raise OpenApiParserException(
-                    "Unable to get items from array defintion."
+                    "Unable to get items from array definition."
                 )
             attr_maker = self.make_attrib_maker(new_attrib_maker_config)
             log.trace(

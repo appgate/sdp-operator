@@ -11,7 +11,7 @@ from appgate.openapi.types import (
     UUID_REFERENCE_FIELD,
 )
 
-write_only_formats = {"PEM", "password"}
+write_only_formats = {"password"}
 
 
 class AttribMaker:
