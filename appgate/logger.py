@@ -7,9 +7,6 @@ __all__ = [
 ]
 
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
 TRACE_LEVEL = logging.DEBUG - 5
 log_levels = {
     "critical": logging.CRITICAL,
@@ -42,7 +39,14 @@ class Logger:
             self._log._log(TRACE_LEVEL, message, args, **kws)
 
 
-log = Logger(logging.getLogger("appgate-operator"))
+# Setup appgate-operator logger
+_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+_stream_handler = logging.StreamHandler()
+_stream_handler.setFormatter(_formatter)
+_stream_handler.setLevel(logging.INFO)
+_log = logging.getLogger("appgate-operator")
+_log.addHandler(_stream_handler)
+log = Logger(_log)
 
 
 def set_level(log_level: str = "debug", logger=log) -> None:
