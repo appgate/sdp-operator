@@ -1,6 +1,5 @@
 [[https://github.com/appgate/sdp-operator/actions/workflows/docker.yml][https://github.com/appgate/sdp-operator/actions/workflows/docker.yml/badge.svg?branch=main&event=push]]
 * appgate-operator
-
 ** Description
 This project implements a kubernetes operator to configure an appgate system.
 

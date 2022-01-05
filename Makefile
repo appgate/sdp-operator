@@ -1,10 +1,11 @@
 .PHONY: lint all
-SPEC_VERSIONS := $(wildcard api_specs/*)
 PYTHON3=python3.9
 
-.PHONY: $(SPEC_VERSIONS)
+all: api_specs lint test
 
-all: lint test
+api_specs:
+	@./bin/get-open-spec.sh
+	@./bin/unzip-open-spec.sh
 
 lint:
 	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate
@@ -29,8 +30,6 @@ docker-all: docker-build-image
 docker-shell: docker-build-image
 	docker run --rm -it -v ${PWD}:/build sdp-operator-builder bash
 
-docker-images: docker-all $(SPEC_VERSIONS)
-
 clean-cache:
 	find appgate -name "__pycache__" -print | xargs rm -r $1
 
@@ -42,9 +41,5 @@ freeze:
 	./freezer/bin/pip freeze > requirements.txt
 	rm -rf freezer
 
-$(SPEC_VERSIONS): clean-cache
-	$(eval SPEC_VERSION := $(subst api_specs/,,$@))
-	@echo "Building image for API version $(SPEC_VERSION)"
-	@docker build --build-arg SPEC_VERSION=$(SPEC_VERSION) -f docker/Dockerfile . -t sdp-operator:$(SPEC_VERSION)
-
 clean:
+	rm -rf api_specs
