@@ -10,3 +10,6 @@ for v in 12 13 14 15 16; do
     rm api_spec/v$v/README.md
     rm /tmp/openspec-$v.zip
 done
+
+echo "TEST"
+ls -la
