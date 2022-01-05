@@ -2,7 +2,6 @@
 
 set -ex
 
-VERSIONS="12 13 14 15 16"
 for v in 12 13 14 15 16; do
     rm -f /tmp/openspecs-$v.zip
     wget https://github.com/appgate/sdp-api-specification/archive/refs/heads/version-$v.zip \

@@ -2,7 +2,6 @@
 
 set -ex
 mkdir api_specs
-VERSIONS="12 13 14 15 16"
 for v in 12 13 14 15 16; do
     unzip /tmp/openspec-$v.zip -d api_specs
     mv api_specs/sdp-api-specification-version-$v api_specs/v$v
