@@ -238,14 +238,10 @@ async def main_loop(
     current_appgate_state = await get_current_appgate_state(ctx=ctx)
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
-        tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset()).union(
-            ctx.target_tags or frozenset()
-        )
+        tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
         expected_appgate_state = AppgateState(
             {
-                k: v.entities_with_tags(
-                    tags_in_cleanup.union(ctx.exclude_tags or frozenset())
-                )
+                k: v.entities_with_tags(tags_in_cleanup)
                 for k, v in current_appgate_state.entities_set.items()
             }
         )
