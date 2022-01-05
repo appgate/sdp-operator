@@ -45,6 +45,7 @@ __all__ = [
 
 crds: Optional[CustomObjectsApi] = None
 
+
 def get_crds() -> CustomObjectsApi:
     global crds
     if not crds:
@@ -277,7 +278,7 @@ async def main_loop(
         except asyncio.exceptions.TimeoutError:
             # Log all expected entities
             any_expected = False
-            for entity_type, xs in expected_appgate_state.entities_set.items():
+            for entity_type, xs in t5.entities_set.items():
                 expected_entities = {
                     n: e
                     for n, e in xs.entities_by_name.items()

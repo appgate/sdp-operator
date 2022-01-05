@@ -1,11 +1,7 @@
 import logging
 
 
-__all__ = [
-    "set_level",
-    "is_debug",
-    "log"
-]
+__all__ = ["set_level", "is_debug", "log"]
 
 
 TRACE_LEVEL = logging.DEBUG - 5

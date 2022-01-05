@@ -185,7 +185,9 @@ def generate_api_spec_clients(
         assert e.api_path is not None
         if e_name in MAGIC_ENTITIES:
             magic_entities = [
-                e.cls(name=magic_instance, id=magic_instance, tags=frozenset({"builtin"}))
+                e.cls(
+                    name=magic_instance, id=magic_instance, tags=frozenset({"builtin"})
+                )
                 for magic_instance in MAGIC_ENTITIES[e_name]
             ]
         return appgate_client.entity_client(
