@@ -4,6 +4,7 @@ import logging
 __all__ = [
     "set_level",
     "is_debug",
+    "log"
 ]
 
 
@@ -43,7 +44,6 @@ class Logger:
 _formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(_formatter)
-_stream_handler.setLevel(logging.INFO)
 _log = logging.getLogger("appgate-operator")
 _log.addHandler(_stream_handler)
 log = Logger(_log)

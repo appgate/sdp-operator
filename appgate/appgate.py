@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import sys
 from asyncio import Queue
 from contextlib import AsyncExitStack
@@ -13,6 +12,7 @@ from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
 from appgate.types import Context
+from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
 from appgate.openapi.types import AppgateException
@@ -40,14 +40,10 @@ __all__ = [
     "main_loop",
     "get_current_appgate_state",
     "start_entity_loop",
-    "log",
 ]
 
 
 crds: Optional[CustomObjectsApi] = None
-log = logging.getLogger("appgate-operator")
-log.setLevel(logging.INFO)
-
 
 def get_crds() -> CustomObjectsApi:
     global crds
