@@ -10,6 +10,20 @@ on:
       - main
 
 jobs:
+  get-specs:
+    steps:
+      - name: Install wget tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget unzip
+      - name: Get openspec API
+        run: ./bin/get-open-spec.sh
+        shell: bash
+        - uses: actions/upload-artifact@v2
+          with:
+            name: api_spec
+            pat: api_spec
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -18,6 +32,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -38,6 +56,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -61,6 +83,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -84,6 +110,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -107,6 +137,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -130,6 +164,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: api_specs
+          path: api_specs
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
