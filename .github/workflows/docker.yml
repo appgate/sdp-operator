@@ -13,6 +13,7 @@ jobs:
   get-specs:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Install wget tool
         run: |
           sudo apt-get update
