@@ -28,6 +28,7 @@ class Logger:
         self.debug = self._log.debug
         self.warning = self._log.warning
         self.error = self._log.error
+        self.exception = self._log.exception
         self.getEffectiveLevel = self._log.getEffectiveLevel
         self.setLevel = self._log.setLevel
 
