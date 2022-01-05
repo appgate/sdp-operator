@@ -63,7 +63,6 @@ jobs:
   v12:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -101,7 +100,6 @@ jobs:
   v13:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -143,7 +141,6 @@ jobs:
   v14:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -185,7 +182,6 @@ jobs:
   v15:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -227,7 +223,6 @@ jobs:
   v16:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
