@@ -19,10 +19,10 @@ jobs:
       - name: Get openspec API
         run: ./bin/get-open-spec.sh
         shell: bash
-        - uses: actions/upload-artifact@v2
-          with:
-            name: api_spec
-            pat: api_spec
+      - uses: actions/upload-artifact@v2
+        with:
+          name: api_spec
+          path: api_spec
 
   build:
     runs-on: ubuntu-latest
