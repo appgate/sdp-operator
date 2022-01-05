@@ -11,6 +11,7 @@ on:
 
 jobs:
   get-specs:
+    runs-on: ubuntu-latest
     steps:
       - name: Install wget tool
         run: |
