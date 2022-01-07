@@ -93,6 +93,7 @@ class PlatformType(enum.Enum):
 class AppgateException(Exception):
     def __init__(self, message: Optional[str] = None) -> None:
         self.message = message
+        super(AppgateException, self).__init__(message)
 
 
 class OpenApiParserException(Exception):
@@ -107,7 +108,7 @@ class AppgateTypedloadException(AppgateException):
         value: Optional[Any] = None,
         type_: Optional[Type] = None,
     ) -> None:
-        super().__init__(description)
+        super().__init__(message=description)
         self.platform_type = platform_type
         self.value = value
         self.type_ = type_
