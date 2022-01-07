@@ -344,7 +344,11 @@ async def plan_apply(
     errors = set()
     for e in plan.create.entities:
         log.info(
-            "[appgate-operator/%s] + %s: %s [%s]", namespace, type(e.value), e.name, e.id
+            "[appgate-operator/%s] + %s: %s [%s]",
+            namespace,
+            type(e.value),
+            e.name,
+            e.id,
         )
         if entity_client:
             try:
