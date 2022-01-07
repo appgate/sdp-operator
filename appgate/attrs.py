@@ -1,5 +1,4 @@
 import datetime
-import enum
 from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
 from typedload import dataloader
@@ -25,8 +24,10 @@ from appgate.openapi.types import (
     K8S_LOADERS_FIELD_NAME,
     EntityLoader,
     EntityDumper,
-    AppgateException,
+    AppgateTypedloadException,
+    PlatformType,
 )
+
 
 __all__ = [
     "K8S_DUMPER",
@@ -39,12 +40,6 @@ __all__ = [
     "dump_datetime",
     "parse_datetime",
 ]
-
-
-class PlatformType(enum.Enum):
-    K8S = 1
-    APPGATE = 2
-    DIFF = 3
 
 
 def _attrdump(d, value) -> Dict[str, Any]:
@@ -149,8 +144,14 @@ def get_loader(
                     ] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
                     for el in els or []:
                         entity = el.load(orig_values, entity)
+        except TypedloadException as e:
+            raise TypedloadException(
+                description=str(e), value=e.value, type_=e.type_
+            ) from None
         except Exception as e:
-            raise TypedloadException(str(e))
+            raise TypedloadException(
+                description=str(e), value=value, type_=list(t)[-1]
+            ) from None
         return entity
 
     def _attrload(l, value, type_):
@@ -243,10 +244,18 @@ def get_loader(
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         try:
             return loader.load(data, entity)
-        except (TypedloadValueError, TypedloadTypeError) as e:
-            raise AppgateException(
-                f"loader: {platform_type}, type: {e.type_}, value: {e.value}"
-            )
+        except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
+            raise AppgateTypedloadException(
+                platform_type=platform_type,
+                value=e.value,
+                type_=e.type_,
+                description=str(e),
+            ) from None
+        except ValueError as e:
+            raise AppgateTypedloadException(
+                platform_type=platform_type,
+                description=str(e),
+            ) from None
 
     if platform_type == PlatformType.K8S:
         return load

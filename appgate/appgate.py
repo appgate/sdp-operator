@@ -3,11 +3,10 @@ import sys
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
-from typing import Optional, Type, Dict, Callable, Any, FrozenSet, List, Set
+from typing import Optional, Type, Dict, Callable, Any
 import threading
 
 from kubernetes.client.rest import ApiException
-from typedload.exceptions import TypedloadTypeError
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
@@ -15,7 +14,7 @@ from appgate.types import Context
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
-from appgate.openapi.types import AppgateException
+from appgate.openapi.types import AppgateException, AppgateTypedloadException
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     Entity_T,
@@ -151,9 +150,41 @@ def run_entity_loop(
                             latest_entity_generation.modified
                         )
                     entity = load(ev.object.spec, ev.object.metadata, entity_type)
-                except TypedloadTypeError:
-                    log.exception(
-                        "[%s/%s] Unable to parse event %s", crd, namespace, event
+                except AppgateTypedloadException as e:
+                    log.error(
+                        "[%s/%s] Unable to parse event with name %s of type %s",
+                        crd,
+                        namespace,
+                        event.spec["name"],
+                        event.kind,
+                    )
+                    log.error(
+                        "[%s/%s]%s!!! Error message: %s",
+                        crd,
+                        namespace,
+                        " " * 4,
+                        e.message,
+                    )
+                    log.error(
+                        "[%s/%s]%s!!! Error when loading from: %s",
+                        crd,
+                        namespace,
+                        " " * 4,
+                        e.platform_type,
+                    )
+                    log.error(
+                        "[%s/%s]%s!!! Error when loading type: %s",
+                        crd,
+                        namespace,
+                        " " * 4,
+                        e.type_.__qualname__ if e.type_ else "Unknown",
+                    )
+                    log.error(
+                        "[%s/%s]%s!!! Error when loading value: %s",
+                        crd,
+                        namespace,
+                        " " * 4,
+                        e.value,
                     )
                     continue
                 log.debug(
