@@ -183,11 +183,9 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    with pytest.raises(
-        AppgateTypedloadException,
-        match="Unable to get secret: secret-storage.field-one",
-    ):
+    with pytest.raises(AppgateTypedloadException) as exc:
         K8S_LOADER.load(data, None, EntityTest2)
+    assert "Unable to get secret: secret-storage.field-one" in str(exc)
 
 
 def test_get_secret_read_entity_without_password():
