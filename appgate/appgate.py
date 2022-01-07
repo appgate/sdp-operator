@@ -10,7 +10,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
-from appgate.types import Context
+from appgate.types import Context, AppgateEventSuccess, AppgateEventError
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
@@ -150,6 +150,12 @@ def run_entity_loop(
                             latest_entity_generation.modified
                         )
                     entity = load(ev.object.spec, ev.object.metadata, entity_type)
+                    log.debug(
+                        "[%s/%s] K8SEvent type: %s: %s", crd, namespace, ev.type, entity
+                    )
+                    appgate_event: AppgateEvent = AppgateEventSuccess(
+                        op=ev.type, entity=entity
+                    )
                 except AppgateTypedloadException as e:
                     log.error(
                         "[%s/%s] Unable to parse event with name %s of type %s",
@@ -186,13 +192,11 @@ def run_entity_loop(
                         " " * 4,
                         e.value,
                     )
-                    continue
-                log.debug(
-                    "[%s/%s] K8SEvent type: %s: %s", crd, namespace, ev.type, entity
-                )
-                asyncio.run_coroutine_threadsafe(
-                    queue.put(AppgateEvent(op=ev.type, entity=entity)), loop
-                )
+                    appgate_event = AppgateEventError(
+                        name=event.spec["name"], kind=event.kind, error=str(e)
+                    )
+
+                asyncio.run_coroutine_threadsafe(queue.put(appgate_event), loop)
         except ApiException:
             log.exception(
                 "[appgate-operator/%s] Error when subscribing events in k8s for %s",
@@ -290,23 +294,41 @@ async def main_loop(
         "[appgate-operator/%s] Ready to get new events and compute a new plan",
         namespace,
     )
+    event_errors = []
     while True:
         try:
             log.info("[appgate-operator/%s] Waiting for event", namespace)
             event: AppgateEvent = await asyncio.wait_for(
                 queue.get(), timeout=ctx.timeout
             )
-            log.info(
-                "[appgate-operator/%s}] Event: %s %s with name %s",
-                namespace,
-                event.op,
-                event.entity.__class__.__qualname__,
-                event.entity.name,
-            )
-            expected_appgate_state.with_entity(
-                EntityWrapper(event.entity), event.op, current_appgate_state
-            )
+            if isinstance(event, AppgateEventError):
+                event_errors.append(event)
+            else:
+                log.info(
+                    "[appgate-operator/%s}] Event: %s %s with name %s",
+                    namespace,
+                    event.op,
+                    event.entity.__class__.__qualname__,
+                    event.entity.name,
+                )
+                expected_appgate_state.with_entity(
+                    EntityWrapper(event.entity), event.op, current_appgate_state
+                )
         except asyncio.exceptions.TimeoutError:
+            if event_errors:
+                log.error(
+                    "[appgate-operator/%s}] Found events with errors, dying now!",
+                    namespace,
+                )
+                for event_error in event_errors:
+                    log.error(
+                        "[appgate-operator/%s}] - Entity of type %s with name %s : %s",
+                        namespace,
+                        event_error.name,
+                        event_error.kind,
+                        event_error.error,
+                    )
+                sys.exit(1)
             # Log all expected entities
             any_expected = False
             for entity_type, xs in expected_appgate_state.entities_set.items():
