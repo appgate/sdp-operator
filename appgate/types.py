@@ -1,7 +1,8 @@
 import datetime
+import enum
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal
+from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
 from attr import attrib, attrs, evolve
 
 from appgate.openapi.types import Entity_T, APISpec
@@ -12,6 +13,8 @@ __all__ = [
     "K8SEvent",
     "EventObject",
     "AppgateEvent",
+    "AppgateEventError",
+    "AppgateEventSuccess",
     "EntityWrapper",
     "has_tag",
     "is_target",
@@ -63,9 +66,19 @@ class K8SEvent:
 
 
 @attrs(slots=True, frozen=True)
-class AppgateEvent:
+class AppgateEventError:
+    name: str = attrib()
+    kind: str = attrib()
+    error: str = attrib()
+
+
+@attrs(slots=True, frozen=True)
+class AppgateEventSuccess:
     op: Literal["ADDED", "DELETED", "MODIFIED"] = attrib()
     entity: Entity_T = attrib()
+
+
+AppgateEvent = Union[AppgateEventError, AppgateEventSuccess]
 
 
 class EntityWrapper:

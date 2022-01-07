@@ -1,12 +1,10 @@
 import pytest
-from typedload.exceptions import TypedloadException
 
 from appgate.attrs import (
     APPGATE_LOADER,
     K8S_LOADER,
     K8S_DUMPER,
     APPGATE_DUMPER,
-    parse_datetime,
 )
 from appgate.secrets import (
     get_appgate_secret,
@@ -16,6 +14,7 @@ from appgate.secrets import (
     AppgateSecretPlainText,
 )
 from appgate.types import EntityWrapper
+from appgate.openapi.types import AppgateTypedloadException
 from tests.utils import (
     load_test_open_api_spec,
     ENCRYPTED_PASSWORD,
@@ -184,10 +183,9 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    with pytest.raises(
-        TypedloadException, match="Unable to get secret: secret-storage.field-one"
-    ):
+    with pytest.raises(AppgateTypedloadException) as exc:
         K8S_LOADER.load(data, None, EntityTest2)
+    assert "Unable to get secret: secret-storage.field-one" in str(exc)
 
 
 def test_get_secret_read_entity_without_password():

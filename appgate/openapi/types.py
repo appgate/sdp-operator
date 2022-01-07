@@ -1,4 +1,5 @@
 import datetime
+import enum
 import itertools
 import re
 from functools import cached_property
@@ -13,6 +14,7 @@ from typing import (
     Union,
     Iterator,
     Tuple,
+    Type,
 )
 
 from graphlib import TopologicalSorter
@@ -20,6 +22,7 @@ from graphlib import TopologicalSorter
 from attr import attrib, attrs, Attribute, evolve
 
 from appgate.logger import log
+
 
 SPEC_ENTITIES = {
     "/sites": "Site",
@@ -81,13 +84,34 @@ def normalize_attrib_name(name: str) -> str:
     return name
 
 
+class PlatformType(enum.Enum):
+    K8S = 1
+    APPGATE = 2
+    DIFF = 3
+
+
 class AppgateException(Exception):
     def __init__(self, message: Optional[str] = None) -> None:
         self.message = message
+        super(AppgateException, self).__init__(message)
 
 
 class OpenApiParserException(Exception):
     pass
+
+
+class AppgateTypedloadException(AppgateException):
+    def __init__(
+        self,
+        description: str,
+        platform_type: PlatformType,
+        value: Optional[Any] = None,
+        type_: Optional[Type] = None,
+    ) -> None:
+        super().__init__(message=description)
+        self.platform_type = platform_type
+        self.value = value
+        self.type_ = type_
 
 
 @attrs(frozen=True, slots=True)
