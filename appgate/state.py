@@ -344,7 +344,11 @@ async def plan_apply(
     errors = set()
     for e in plan.create.entities:
         log.info(
-            "[appgate-operator/%s] + %s %s [%s]", namespace, type(e.value), e.name, e.id
+            "[appgate-operator/%s] + %s: %s [%s]",
+            namespace,
+            type(e.value),
+            e.name,
+            e.id,
         )
         if entity_client:
             try:
@@ -363,7 +367,7 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_create.entities:
             log.debug(
-                "[appgate-operator/%s] !+ %s %s [%s]",
+                "[appgate-operator/%s] !+ %s: %s [%s]",
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -372,7 +376,7 @@ async def plan_apply(
 
     for e in plan.modify.entities:
         log.info(
-            "[appgate-operator/%s] * %s %s [%s]",
+            "[appgate-operator/%s] * %s: %s [%s]",
             namespace,
             e.value.__class__.__name__,
             e.name,
@@ -400,7 +404,7 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_modify.entities:
             log.debug(
-                "[appgate-operator/%s] !* %s %s [%s]",
+                "[appgate-operator/%s] !* %s: %s [%s]",
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -409,7 +413,7 @@ async def plan_apply(
 
     for e in plan.delete.entities:
         log.info(
-            "[appgate-operator/%s] - %s %s [%s]",
+            "[appgate-operator/%s] - %s: %s [%s]",
             namespace,
             e.value.__class__.__name__,
             e.name,
@@ -431,7 +435,7 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_delete.entities:
             log.debug(
-                "[appgate-operator/%s] !- %s %s [%s]",
+                "[appgate-operator/%s] !- %s: %s [%s]",
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -440,7 +444,7 @@ async def plan_apply(
 
     for e in plan.share.entities:
         log.debug(
-            "[appgate-operator/%s] = %s %s [%s]",
+            "[appgate-operator/%s] = %s: %s [%s]",
             namespace,
             e.value.__class__.__name__,
             e.name,
