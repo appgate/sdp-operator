@@ -266,7 +266,7 @@ async def main_loop(
                 queue.get(), timeout=ctx.timeout
             )
             log.info(
-                "[appgate-operator/%s}] Event op: %s %s with name %s",
+                "[appgate-operator/%s}] Event: %s %s with name %s",
                 namespace,
                 event.op,
                 event.entity.__class__.__qualname__,
