@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sdp-operator.fullname" . }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+spec:
+  replicas: 1q
+  selector:
+    matchLabels:
+      {{- include "sdp-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sdp-operator.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.sdp.operator.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          env:
+            - name: APPGATE_OPERATOR_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: APPGATE_OPERATOR_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sdp-operator.secret" . }}
+                  key: appgate-operator-user
+            - name: APPGATE_OPERATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sdp-operator.secret" . }}
+                  key: appgate-operator-password
+            - name: APPGATE_OPERATOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-host
+            - name: APPGATE_OPERATOR_DEVICE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-device-id
+            - name: APPGATE_OPERATOR_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-log-level
+            - name: APPGATE_OPERATOR_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-timeout
+            - name: APPGATE_OPERATOR_TARGET_TAGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-target-tags
+            - name: APPGATE_OPERATOR_EXCLUDE_TAGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-exclude-tags
+            - name: APPGATE_OPERATOR_BUILTIN_TAGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-builtin-tags
+            - name: APPGATE_OPERATOR_DRY_RUN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-dry-run
+            - name: APPGATE_OPERATOR_CLEANUP
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-cleanup
+            - name: APPGATE_OPERATOR_TWO_WAY_SYNC
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-two-way-sync
+            - name: APPGATE_OPERATOR_SSL_NO_VERIFY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-ssl-no-verify
+            - name: APPGATE_OPERATOR_CONFIG_MAP
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-config-map
+            {{ if .Values.sdp.operator.caCert }}
+             - name: APPGATE_OPERATOR_CACERT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-ca-cert
+            {{ end }}
+            {{ if .Values.sdp.operator.fernetKey }}
+             - name: APPGATE_OPERATOR_FERNET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sdp-operator.config" . }}
+                  key: appgate-operator-fernet-key
+            {{ end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ .Values.sdp.operator.version.tag }}"
+          imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,10 @@
+{{ if not .Values.sdp.operator.configMapMt }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sdp-operator.config-mt" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+data:
+{{ end }}
