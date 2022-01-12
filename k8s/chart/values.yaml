@@ -63,3 +63,7 @@ serviceAccount:
 ##
 rbac:
   create: true
+
+podSecurityContext: {}
+securityContext: {}
+resources: {}

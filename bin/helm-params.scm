@@ -7,7 +7,8 @@
 (define *param-regex* "[^@]+@param ([^ ]+) (.+)")
 (define *value-regex* "^( *)([^#:]+):(.*)")
 (define *indent-level* 2)
-(define k8s-params '(serviceAccount service rbac))
+(define k8s-params '(serviceAccount service rbac podSecurityContext
+                                    securityContext resources))
 
 (define (parse-line line)
   (let* ([eof? (eof-object? line)]
@@ -18,7 +19,8 @@
      (eof? 'eof)
      (param-m `(param ,(match:substring param-m 1)
                       ,(match:substring param-m 2)))
-     (value-m `(value ,(quotient (string-length (match:substring value-m 1))
+     (value-m
+      `(value ,(quotient (string-length (match:substring value-m 1))
                                  *indent-level*)
                       ,(match:substring value-m 2)
                       ,(match:substring value-m 3)))
@@ -46,7 +48,7 @@
       (match (parse-line line)
         ('eof (merge-params-and-values params values))
         (('value ni n v)
-         (let ([empty-value (string= (string-trim-both v) "")]
+         (let ([empty-value (member (string-trim-both v) '("" "{}"))]
                [di (- ni i)])
            (when (not empty-value)
              (hash-set! values (string-join (reverse (cons n vs)) ".")
