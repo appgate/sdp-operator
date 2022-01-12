@@ -66,12 +66,12 @@ spec:
             - name: APPGATE_OPERATOR_CONFIG_MAP
               value: {{ .Values.sdp.operator.configMapMt }}
             {{ with .Values.sdp.operator.caCert }}
-             - name: APPGATE_OPERATOR_CACERT
-               value: {{ . }}
+            - name: APPGATE_OPERATOR_CACERT
+              value: {{ . }}
             {{ end }}
             {{ with .Values.sdp.operator.fernetKey }}
-             - name: APPGATE_OPERATOR_FERNET_KEY
-               value: {{ . }}
+            - name: APPGATE_OPERATOR_FERNET_KEY
+              value: {{ . }}
             {{ end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
