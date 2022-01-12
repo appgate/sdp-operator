@@ -1,0 +1,51 @@
+{{- if .Values.rbac.create}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "sdp-operator.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sdp-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["{{ .Values.sdp.operator.version }}.appgate.com"]
+    resources:
+      - policies
+      - entitlements
+      - conditions
+      - ringfencerules
+      - appliances
+      - sites
+      - ippools
+      - identityproviders
+      - localusers
+      - administrativeroles
+      - mfaproviders
+      - adminmfasettingss
+      - trustedcertificates
+      - criteriascriptss
+      - devicescripts
+      - entitlementscripts
+      - appliancecustomizations
+      - globalsettingss
+      - clientconnections
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "watch", "list", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{- include "sdp-operator.name" . }}
+  namespace: {{- .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "sdp-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "sdp-operator.name" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
