@@ -5,7 +5,7 @@
 ##
 sdp:
   ## @param sdp.operator.host SDP Operator controller host (required)
-  ## @param sdp.operator.deviceId SDP Operator device id (required)
+  ## @param sdp.operator.deviceId SDP Operator device id (uuid format) (required)
   ## @param sdp.operator.version SDP Operator API version
   ## @param sdp.operator.logLevel SDP Operator log level
   ## @param sdp.operator.timeout SDP Operator event loop timeout
