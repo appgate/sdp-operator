@@ -6,9 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "sdp-operator.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "1"
 rules:
   - apiGroups: ["{{ .Values.sdp.operator.version }}.appgate.com"]
     resources:
@@ -43,9 +40,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "-1"
 subjects:
   - kind: ServiceAccount
     name: {{ include "sdp-operator.serviceAccountName" . }}
