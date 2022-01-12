@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "sdp-operator.fullname" . }}
-  namespace: {{ .Release.Namespae }}
+  namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 spec:
@@ -46,33 +46,39 @@ spec:
             - name: APPGATE_OPERATOR_DEVICE_ID
               value: {{ required "A valid .Values.sdp.operator.deviceId entry is required!" .Values.sdp.operator.deviceId }}
             - name: APPGATE_OPERATOR_LOG_LEVEL
-              value: {{ .Values.sdp.operator.logLevel }}
+              value: "{{ .Values.sdp.operator.logLevel }}"
             - name: APPGATE_OPERATOR_TIMEOUT
-              value: {{ .Values.sdp.operator.timeout }}
+              value: "{{ .Values.sdp.operator.timeout }}"
+            {{- with .Values.sdp.operator.targetTags }}
             - name: APPGATE_OPERATOR_TARGET_TAGS
-              value: {{ .Values.sdp.operator.excludeTags }}
-            - name: APPGATE_OPERATOR_EXCLUDE_TAGS
-              value: {{ .Values.sdp.operator.excludeTags }}
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.operator.excludeTags }}
+            - name: APPGATE_OPERATOR_EXCLUDE_TAG
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.operator.builtinTags }}
             - name: APPGATE_OPERATOR_BUILTIN_TAGS
-              value: {{ .Values.sdp.operator.builtinTags }}
+              value: "{{ . }}"
+            {{- end }}
             - name: APPGATE_OPERATOR_DRY_RUN
-              value: {{ .Values.sdp.operator.dryRun }}
+              value: "{{ .Values.sdp.operator.dryRun }}"
             - name: APPGATE_OPERATOR_CLEANUP
-              value: {{ .Values.sdp.operator.cleanup }}
+              value: "{{ .Values.sdp.operator.cleanup }}"
             - name: APPGATE_OPERATOR_TWO_WAY_SYNC
-              value: {{ .Values.sdp.operator.twoWaySync }}
+              value: "{{ .Values.sdp.operator.twoWaySync }}"
             - name: APPGATE_OPERATOR_SSL_NO_VERIFY
-              value: {{ .Values.sdp.operator.sslNoVerify }}
+              value: "{{ .Values.sdp.operator.sslNoVerify }}"
             - name: APPGATE_OPERATOR_CONFIG_MAP
-              value: {{ .Values.sdp.operator.configMapMt }}
-            {{ with .Values.sdp.operator.caCert }}
+              value: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.operator.configMapMt }}
+            {{- with .Values.sdp.operator.caCert }}
             - name: APPGATE_OPERATOR_CACERT
-              value: {{ . }}
-            {{ end }}
-            {{ with .Values.sdp.operator.fernetKey }}
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.operator.fernetKey }}
             - name: APPGATE_OPERATOR_FERNET_KEY
-              value: {{ . }}
-            {{ end }}
+              value: "{{ . }}"
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ .Values.sdp.operator.version | default .Chart.AppVersion }}"

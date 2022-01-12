@@ -1,4 +1,4 @@
-{{ if .Values.rbac.create}}
+{{- if .Values.rbac.create}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -36,8 +36,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{- include "sdp-operator.name" . }}
+  namespace: {{- .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
@@ -48,4 +48,4 @@ roleRef:
   kind: Role
   name: {{ include "sdp-operator.name" . }}
   apiGroup: rbac.authorization.k8s.io
-{{ end }}
+{{- end }}
