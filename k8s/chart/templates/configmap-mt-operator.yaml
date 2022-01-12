@@ -1,4 +1,4 @@
-{{ if not .Values.sdp.operator.configMapMt }}
+{{- if not .Values.sdp.operator.configMapMt }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,4 +7,4 @@ metadata:
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 data:
-{{ end }}
+{{- end }}
