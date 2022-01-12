@@ -5,3 +5,17 @@
 |  ######### ##        ##        ##    ##  #########    ##    ##                ## ##     ## ##          |
 |  ##     ## ##        ##        ##    ##  ##     ##    ##    ##          ##    ## ##     ## ##          |
 |  ##     ## ##        ##         ######   ##     ##    ##    ########     ######  ########  ##          |
+
+Operator configured with:
+
+ - controller host: {{ .Values.sdp.operator.host }}
+ - operator device id: {{ .Values.sdp.operator.deviceId }}
+ - k8s namespace: {{ .Release.Namespace }}
+ - target tags: {{ .Values.sdp.operator.targetTags }}
+ - exclude tags: {{ .Values.sdp.operator.excludeTags }}
+ - builtin tags: {{ .Values.sdp.operator.builtinTags }}
+ - dry-run mode: {{ .Values.sdp.operator.dryRun }}
+ - cleanup mode: {{ .Values.sdp.operator.cleanup }}
+ - two-way-sync mode: {{ .Values.sdp.operator.twoWaySync }}
+ - ssl no verify: {{ .Values.sdp.operator.sslNoVerify }}
+ - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.operator.configMapMt }}
