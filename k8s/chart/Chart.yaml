@@ -1,7 +1,7 @@
 apiVersion: v2
 name: sdp-operator
 description: |
-  A Helm char for deploying the Appgate SDP operator
+  A Helm chart for deploying the Appgate SDP operator
   For more information, please read the documentation here: https://github.com/appgate/sdp-operator/README.org
 
 # A chart can be either an 'application' or a 'library' chart.
