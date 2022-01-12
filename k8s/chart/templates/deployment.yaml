@@ -117,7 +117,7 @@ spec:
             {{ end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ .Values.sdp.operator.version.tag }}"
+          image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ .Values.sdp.operator.version.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
