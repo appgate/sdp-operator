@@ -60,6 +60,28 @@ jobs:
         run: |
           black --check --diff appgate tests
 
+  helm:
+    runs-on: ubuntu-latest
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+      - uses: azure/setup-helm@v1
+        with:
+          version: 3.7.2
+      - name: Login to GitHub Container Registry
+        run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint chart
+        run: helm lint k8s/chart
+      - name: Package chart
+        run: helm package k8s/chart
+      - name: Push chart
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts/sdp-operator
+
+
   v12:
     needs: build
     runs-on: ubuntu-latest
