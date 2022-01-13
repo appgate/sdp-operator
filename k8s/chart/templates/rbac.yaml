@@ -5,7 +5,7 @@ metadata:
   name: {{ include "sdp-operator.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "sdp-operator.labels" . | nindent 4 }}
+  {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["{{ .Values.sdp.operator.version }}.appgate.com"]
     resources:
@@ -36,8 +36,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{- include "sdp-operator.name" . }}
-  namespace: {{- .Release.Namespace }}
+  name: {{ include "sdp-operator.name" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
