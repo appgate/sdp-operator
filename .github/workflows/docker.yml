@@ -79,7 +79,7 @@ jobs:
         run: helm package k8s/chart
       - name: Push chart
         if: ${{ github.ref == 'refs/heads/main' }}
-        run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts/sdp-operator
+        run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
   v12:
     needs: build
