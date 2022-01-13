@@ -81,7 +81,6 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts/sdp-operator
 
-
   v12:
     needs: build
     runs-on: ubuntu-latest
