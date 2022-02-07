@@ -238,6 +238,13 @@ class EntitiesSet:
         # Replace always the id with the one registered in the system
         self.entities.add(entity.with_id(id=self.entities_by_name[entity.name].id))
 
+    def extend(self, other: "EntitiesSet") -> None:
+        """
+        Extends current entiy set with other
+        """
+        for entity in other.entities:
+            self.modify(entity)
+
 
 @attrs(slots=True, frozen=True)
 class LatestEntityGeneration:
