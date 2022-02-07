@@ -785,8 +785,8 @@ def resolve_field_entities(
             )
         else:
             field_path = dep.field_path
-        names.update(dep.entity_dependencies.entities_by_name)
-        ids.update(dep.entity_dependencies.entities_by_id)
+        names.update(dep.known_entities.entities_by_name)
+        ids.update(dep.known_entities.entities_by_id)
 
     # Not found field_path, so nothing to resolve
     if not field_path:

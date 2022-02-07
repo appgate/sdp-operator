@@ -271,9 +271,19 @@ class Context:
 
 @attrs(slots=True, frozen=True)
 class EntityFieldDependency:
+    """
+    Class used to store information about field dependencies for an entity:
+     - entity_name :: is the name of the entity for which we know
+       the dependencies
+     - field_path :: is the field (field1.field2 ...) where the
+       entity has a dependency
+     - known_entities :: is an EntitySet of known entities that match the
+       field where the entity has a dependency on.
+    """
+
     entity_name: str = attrib()
     field_path: str = attrib()
-    entity_dependencies: EntitiesSet = attrib(factory=EntitiesSet)
+    known_entities: EntitiesSet = attrib(factory=EntitiesSet)
 
 
 @attrs(slots=True, frozen=True)
