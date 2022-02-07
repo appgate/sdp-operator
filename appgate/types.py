@@ -240,7 +240,7 @@ class EntitiesSet:
 
     def extend(self, other: "EntitiesSet") -> None:
         """
-        Extends current entiy set with other
+        Extends current entity set with other
         """
         for entity in other.entities:
             self.modify(entity)
