@@ -8,7 +8,7 @@ api_specs:
 	@./bin/unzip-open-spec.sh
 
 lint:
-	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate
+	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate tests
 
 .PHONY: fmt
 fmt:

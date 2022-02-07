@@ -1,3 +1,4 @@
+import typing
 from pathlib import Path
 from typing import List, Optional, Callable
 
@@ -94,7 +95,7 @@ def join_string(s):
 
 def load_test_open_api_spec(
     secrets_key: Optional[str] = KEY,
-    k8s_get_secret: Callable[[str, str], str] = lambda x: ENCRYPTED_PASSWORD,
+    k8s_get_secret: Callable[[str, str], str] = lambda x, y: ENCRYPTED_PASSWORD,
     reload: bool = False,
 ):
     global TestOpenAPI
@@ -110,6 +111,7 @@ def load_test_open_api_spec(
     return TestOpenAPI
 
 
+@typing.no_type_check
 def entitlement(
     name: str,
     id: str = None,
@@ -124,10 +126,12 @@ def entitlement(
     )
 
 
+@typing.no_type_check
 def condition(name: str, id: str = None, expression: Optional[str] = None) -> Condition:
     return Condition(id=id, name=name, expression=expression or "expression-test")
 
 
+@typing.no_type_check
 def policy(
     name: str, id: str = None, entitlements: Optional[List[str]] = None
 ) -> Policy:
