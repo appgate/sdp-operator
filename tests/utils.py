@@ -122,6 +122,7 @@ def entitlement(
         id=id,
         name=name,
         site=site,
+        displayName=name,
         conditions=frozenset(conditions) if conditions else frozenset(),
     )
 
