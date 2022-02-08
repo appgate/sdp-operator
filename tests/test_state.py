@@ -661,7 +661,7 @@ def test_normalize_entitlements_0():
             EntityFieldDependency(
                 entity_name="Conditions",
                 field_path="conditions",
-                entity_dependencies=conditions,
+                known_entities=conditions,
             )
         ],
     )
@@ -697,7 +697,7 @@ def test_normalize_entitlements_1():
             EntityFieldDependency(
                 entity_name="Conditions",
                 field_path="conditions",
-                entity_dependencies=conditions,
+                known_entities=conditions,
             )
         ],
     )
@@ -758,7 +758,7 @@ def test_normalize_entitlements_2():
             EntityFieldDependency(
                 entity_name="Conditions",
                 field_path="conditions",
-                entity_dependencies=conditions,
+                known_entities=conditions,
             )
         ],
     )
@@ -814,7 +814,7 @@ def test_normalize_entitlements_3():
             EntityFieldDependency(
                 entity_name="Conditions",
                 field_path="conditions",
-                entity_dependencies=conditions,
+                known_entities=conditions,
             )
         ],
     )
@@ -839,7 +839,7 @@ def test_normalize_policies_0():
             EntityFieldDependency(
                 entity_name="Entitlement",
                 field_path="entitlements",
-                entity_dependencies=entitlements,
+                known_entities=entitlements,
             )
         ],
     )
@@ -875,7 +875,7 @@ def test_normalize_policies_1():
             EntityFieldDependency(
                 entity_name="Entitlement",
                 field_path="entitlements",
-                entity_dependencies=entitlements,
+                known_entities=entitlements,
             )
         ],
     )
@@ -939,7 +939,7 @@ def test_normalize_policies_2():
             EntityFieldDependency(
                 entity_name="Entitlement",
                 field_path="entitlements",
-                entity_dependencies=entitlements,
+                known_entities=entitlements,
             )
         ],
     )
@@ -994,7 +994,7 @@ def test_normalize_policies_3():
             EntityFieldDependency(
                 entity_name="Entitlement",
                 field_path="entitlements",
-                entity_dependencies=entitlements,
+                known_entities=entitlements,
             )
         ],
     )
@@ -1038,7 +1038,7 @@ def test_dependencies_1():
         deps3,
         [
             EntityFieldDependency(
-                entity_name="EntityDep3", field_path="deps1", entity_dependencies=deps1
+                entity_name="EntityDep3", field_path="deps1", known_entities=deps1
             )
         ],
     )
@@ -1061,7 +1061,7 @@ def test_dependencies_1():
         deps3,
         [
             EntityFieldDependency(
-                entity_name="EntityDep3", field_path="deps1", entity_dependencies=deps1
+                entity_name="EntityDep3", field_path="deps1", known_entities=deps1
             )
         ],
     )
@@ -1123,12 +1123,12 @@ def test_dependencies_2():
                 EntityFieldDependency(
                     entity_name="EntityDep3",
                     field_path="deps1",
-                    entity_dependencies=deps1,
+                    known_entities=deps1,
                 ),
                 EntityFieldDependency(
                     entity_name="EntityDep3",
                     field_path="dep2",
-                    entity_dependencies=deps2,
+                    known_entities=deps2,
                 ),
             ],
         )
@@ -1162,7 +1162,7 @@ def test_dependencies_3():
             EntityFieldDependency(
                 entity_name="EntityDep5",
                 field_path="obj1.obj2.dep1",
-                entity_dependencies=deps1,
+                known_entities=deps1,
             )
         ],
     )

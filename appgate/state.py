@@ -785,8 +785,8 @@ def resolve_field_entities(
             )
         else:
             field_path = dep.field_path
-        names.update(dep.entity_dependencies.entities_by_name)
-        ids.update(dep.entity_dependencies.entities_by_id)
+        names.update(dep.known_entities.entities_by_name)
+        ids.update(dep.known_entities.entities_by_id)
 
     # Not found field_path, so nothing to resolve
     if not field_path:
@@ -861,13 +861,16 @@ def resolve_appgate_state(
             # For example, we could have a field `myId` that could contain
             # references for EntityA or EntityB
             for d in field_dependency.dependencies:
+                known_entities = EntitiesSet()
+                known_entities.extend(
+                    total_appgate_state.entities_set.get(d, EntitiesSet())
+                )
+                known_entities.extend(expected_state.entities_set.get(d, EntitiesSet()))
                 dependencies.append(
                     EntityFieldDependency(
                         entity_name=entity_name,
                         field_path=field_dependency.field_path,
-                        entity_dependencies=total_appgate_state.entities_set.get(
-                            d, EntitiesSet()
-                        ),
+                        known_entities=known_entities,
                     )
                 )
             e1 = expected_state.entities_set.get(entity_name, EntitiesSet())
