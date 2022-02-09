@@ -41,6 +41,26 @@ def test_load_entities_v12():
                 assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
 
 
+def test_loader_deprecated_required():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    # entity with field fieldThree required and deprecated at the same time
+    # required wins, so we need to pass it
+    EntityTest0 = entities["EntityTest0"].cls
+    with pytest.raises(TypeError) as ex:
+        e0 = EntityTest0()
+    assert (
+        str(ex.value)
+        == "__init__() missing 1 required positional argument: 'fieldThree'"
+    )
+
+    # entity with field fieldThree deprecated but not required
+    # we don't need to pass it
+    EntityTest1 = entities["EntityTest1"].cls
+    e1 = EntityTest1()
+    assert e1
+
+
 def test_loader_0():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
     EntityDep5 = entities["EntityDep5"].cls
