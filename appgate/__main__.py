@@ -208,6 +208,7 @@ async def run_k8s(args: OperatorArguments) -> None:
             ctx.device_id,
         )
 
+    # TODO: Prevent the spawning of the thread for IdentityProvider types
     tasks = [
         start_entity_loop(
             ctx=ctx,

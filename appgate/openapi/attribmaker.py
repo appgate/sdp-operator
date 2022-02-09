@@ -130,6 +130,17 @@ class DeprecatedAttribMaker(AttribMaker):
     pass
 
 
+class DiscriminatorAttribMaker(AttribMaker):
+    def __init__(self, name: str, tpe: type, base_tpe: type, default: Optional[AttribType], factory: Optional[type],
+                 definition: OpenApiDict, mapping: dict, repr: bool = True) -> None:
+        super().__init__(name, tpe, base_tpe, default, factory, definition, repr)
+        self.mapping = mapping
+
+    def values(self, attributes: Dict[str, "AttribMaker"], required_fields: List[str],
+               instance_maker_config: EntityClassGeneratorConfig) -> AttributesDict:
+        return super().values(attributes, required_fields, instance_maker_config)
+
+
 class DefaultAttribMaker(AttribMaker):
     def values(
         self,

@@ -61,6 +61,46 @@ def test_loader_deprecated_required():
     assert e1
 
 
+def test_loader_discriminator():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    EntityDiscriminator = entities["EntityDiscriminator"].cls
+    e1 = EntityDiscriminator()
+    assert e1
+
+    data1 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "hello",
+        "type": "EntityDiscriminatorOne",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+    }
+    e1 = APPGATE_LOADER.load(data1, None, EntityDiscriminator)
+    assert e1 == EntityDiscriminator(
+        type="EntityDiscriminatorOne",
+        fieldOne="hello",
+        discriminatorOneFieldOne="hi",
+        discriminatorOneFieldTwo="bye",
+    )
+
+    data2 = {
+        "id": "two",
+        "name": "two",
+        "fieldOne": "baz",
+        "type": "EntityDiscriminatorTwo",
+        "discriminatorTwoFieldOne": True,
+        "discriminatorTwoFieldTwo": False,
+    }
+    e2 = APPGATE_LOADER.load(data2, None, EntityDiscriminator)
+    assert e2 == EntityDiscriminator(
+        type="EntityDiscriminatorOne",
+        fieldOne="hello",
+        discriminatorOneFieldOne="hi",
+        discriminatorOneFieldTwo="bye",
+    )
+
+
 def test_loader_0():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
     EntityDep5 = entities["EntityDep5"].cls

@@ -42,6 +42,8 @@ paths:
     $ref: '#/entity-dep-nested'
   /entity-dep-nested-nullable:
     $ref: '#/entity-dep-nested-nullable'
+  /entity-discriminator:
+    $ref: '#/entity-discriminator'
 
 entity-test0:
   get:
@@ -297,6 +299,21 @@ entity-dep-nested-nullable:
         application/json:
           schema:
             $ref: '#/definitions/EntityDepNestedNullable'
+
+entity-discriminator:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityDiscriminator'
 
 definitions:
   EntityTestList:
@@ -737,3 +754,46 @@ definitions:
                 timeout:
                   type: integer
                   default: 30
+  EntityDiscriminator:
+    allOf:
+      - type: object
+        discriminator:
+          propertyName: type
+          mapping:
+            EntityOne: '#/components/schemas/EntityDiscriminatorOne'
+            EntityTwo: '#/components/schemas/EntityDiscriminatorTwo'
+          required:
+            - type
+        properties:
+          type:
+            type: string
+            enum:
+              - EntityOne
+              - EntityTwo
+          fieldOne:
+            type: string
+
+components:
+  schemas:
+    EntityDiscriminatorOne:
+      allOf:
+        - type: object
+          required:
+            - discriminatorOneFieldOne
+            - discriminatorOneFieldTwo
+          properties:
+            discriminatorOneFieldOne:
+              type: string
+            discriminatorOneFieldTwo:
+              type: string
+    EntityDiscriminatorTwo:
+      allOf:
+        - type: object
+          required:
+            - discriminatorTwoFieldOne
+            - discriminatorTwoFieldTwo
+          properties:
+            discriminatorTwoFieldOne:
+              type: boolean
+            discriminatorTwoFieldTwo:
+              type: boolean

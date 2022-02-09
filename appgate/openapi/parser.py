@@ -20,6 +20,7 @@ from appgate.openapi.attribmaker import (
     DeprecatedAttribMaker,
     UUID_REFERENCE_FIELD,
     DefaultAttribMaker,
+    DiscriminatorAttribMaker,
 )
 from appgate.openapi.types import (
     OpenApiDict,
@@ -383,7 +384,22 @@ class Parser:
         for d in definitions:
             new_definition["required"].extend(d.get("required", {}))
             new_definition["properties"].update(d.get("properties", {}))
-            new_definition["discriminator"].update(d.get("discriminator", {}))
+
+            discriminator = d.get("discriminator")
+            properties = d.get("properties")
+            if discriminator is not None and properties is not None:
+                propertyName = discriminator["propertyName"]
+                mapping = discriminator["mapping"]
+                types = properties[propertyName]
+
+                new_mapping = {}
+                for type in types["enum"]:
+                    resolved = self.resolve_reference(mapping[type], [])
+                    parsed_resolved = self.parse_all_of(resolved["allOf"])
+                    new_mapping.update({type: parsed_resolved})
+                new_definition["discriminator"]["propertyName"] = propertyName
+                new_definition["discriminator"]["mapping"] = new_mapping
+
             if "description" in d:
                 descriptions.append(d["description"])
         new_definition["description"] = ".".join(descriptions)
@@ -399,6 +415,9 @@ class Parser:
         attrib_name = attrib_maker_config.name
         tpe = definition.get("type")
         current_level = attrib_maker_config.instance_maker_config.level
+        discriminator = attrib_maker_config.instance_maker_config.definition.get(
+            "discriminator"
+        )
         if is_compound(definition):
             definition = self.parse_all_of(definition["allOf"])
             instance_maker_config = EntityClassGeneratorConfig(
@@ -488,6 +507,40 @@ class Parser:
                     factory=None,
                     definition=attrib_maker_config.definition,
                 )
+            elif discriminator and attrib_name == discriminator["propertyName"]:
+                mapping = {}
+                for entity, definition in discriminator["mapping"].items():
+                    log.info(
+                        "Creating object type for entity %s and attribute %s",
+                        f"{entity_name}_{entity}",
+                        attrib_name,
+                    )
+
+                    current_level = attrib_maker_config.instance_maker_config.level
+                    discriminator_maker_config = EntityClassGeneratorConfig(
+                        name=attrib_name,
+                        entity_name=f"{entity_name}_{entity}",
+                        definition=definition,
+                        singleton=attrib_maker_config.instance_maker_config.singleton,
+                        api_path=None,
+                        level=current_level + 1,
+                    )
+
+                    generated_entity = self.register_entity(
+                        entity_class_generator_config=discriminator_maker_config
+                    )
+                    mapping.update({entity: generated_entity})
+
+                return DiscriminatorAttribMaker(
+                    name=attrib_name,
+                    tpe=TYPES_MAP[tpe],
+                    base_tpe=TYPES_MAP[tpe],
+                    default=DEFAULT_MAP.get(tpe) if format != "uuid" else None,
+                    factory=None,
+                    definition=attrib_maker_config.definition,
+                    mapping=mapping
+                )
+
             else:
                 return AttribMaker(
                     name=attrib_name,
