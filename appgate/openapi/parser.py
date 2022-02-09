@@ -590,7 +590,18 @@ class Parser:
         definition = attrib_maker_config.definition
         deprecated = definition.get("deprecated", False)
         attrib = self.make_attrib_maker(attrib_maker_config)
+
         if deprecated:
+            required_items = attrib_maker_config.instance_maker_config.definition.get(
+                "required"
+            )
+            required = required_items is not None and attrib.name in required_items
+            if required:
+                log.warning(
+                    f"Attrib {attrib.name} is deprecated but required by openapi spec"
+                )
+                return attrib
+
             return DeprecatedAttribMaker(
                 name=attrib.name,
                 definition=attrib.definition,
@@ -599,6 +610,7 @@ class Parser:
                 tpe=attrib.tpe,
                 base_tpe=attrib.base_tpe,
             )
+
         return attrib
 
     def entity_class_generator(

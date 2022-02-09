@@ -8,6 +8,8 @@ info:
   description: Unit Test files
 
 paths:
+  /entity-test0:
+    $ref: '#/entity-test0'
   /entity-test1:
     $ref: '#/entity-test1'
   /entity-test2:
@@ -40,7 +42,22 @@ paths:
     $ref: '#/entity-dep-nested'
   /entity-dep-nested-nullable:
     $ref: '#/entity-dep-nested-nullable'
-    
+
+entity-test0:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTest0'
+
 entity-test1:
   get:
     responses:
@@ -299,6 +316,24 @@ definitions:
         type: array
         items:
           type: string
+  EntityTest0:
+    type: object
+    required:
+      - fieldThree
+    properties:
+      fieldOne:
+        readOnly: true
+        type: string
+      fieldTwo:
+        writeOnly: true
+        type: string
+      fieldThree:
+        deprecated: true
+        type: string
+      fieldFour:
+        type: string
+      from:
+        type: string
   EntityTest1:
     type: object
     properties:

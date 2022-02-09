@@ -21,6 +21,7 @@ Condition = entities["Condition"].cls
 IdentityProvider = entities["IdentityProvider"].cls
 TestOpenAPI = None
 TestSpec = {
+    "/entity-test0": "EntityTest0",
     "/entity-test1": "EntityTest1",
     "/entity-test2": "EntityTest2",
     "/entity-test2-without-password": "EntityTest2WihoutPassword",
@@ -122,6 +123,7 @@ def entitlement(
         id=id,
         name=name,
         site=site,
+        displayName=name,
         conditions=frozenset(conditions) if conditions else frozenset(),
     )
 
