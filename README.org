@@ -377,9 +377,10 @@ with default value =null= are mandatory when installing the chart.
 That would deploy for example the operator in a namespace called =operator-test=
 
 #+begin_src shell
-  helm install -n operator-test operator-test \
-       --set sdp.operator.host="https://www.my-appgate.com:444" \
-       --set sdp.operator.deviceId="369fb6d0-8820-4169-928b-dad9e7b50335" \
+  HELM_EXPERIMENTAL_OCI=1 helm install -n operator-test operator-test \
+		       oci://ghcr.io/appgate/sdp-operator --version 0.1.1 \
+		       --set sdp.operator.host="https://www.my-appgate.com:444" \
+		       --set sdp.operator.deviceId="369fb6d0-8820-4169-928b-dad9e7b50335" \
 #+end_src
 
 ** Dump current entities in an environment
