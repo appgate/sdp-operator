@@ -331,7 +331,7 @@ The rest of environment variables are taken from a ConfigMap k8s entry (see
 The sdp-operator can be deployed using helm like this:
 
 #+begin_src shell
-  helm install sdp-operator ghcr.io/appgate/sdp-operator --version <version>
+  helm install sdp-operator oci://ghcr.io/appgate/sdp-operator --version <version>
 #+end_src
 
 The latest version released can be found [[https://github.com/appgate/sdp-operator/pkgs/container/charts%2Fsdp-operator][here]].
