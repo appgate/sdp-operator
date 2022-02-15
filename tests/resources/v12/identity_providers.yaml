@@ -4,6 +4,10 @@ metadata:
   name: etewtew
 spec:
   adminProvider: true
+  adminDistinguishedName: "foo"
+  hostnames:
+    - "foo.com"
+  port: 6443
   claimMappings:
   - attributeName: memberOf
     claimName: groups
