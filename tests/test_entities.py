@@ -14,7 +14,7 @@ from appgate.attrs import (
     DIFF_DUMPER,
 )
 from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
-from appgate.openapi.types import AppgateMetadata
+from appgate.openapi.types import AppgateMetadata, AppgateTypedloadException
 from tests.utils import (
     load_test_open_api_spec,
     CERTIFICATE_FIELD,
@@ -59,6 +59,76 @@ def test_loader_deprecated_required():
     EntityTest1 = entities["EntityTest1"].cls
     e1 = EntityTest1()
     assert e1
+
+
+def test_loader_discriminator():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    EntityDiscriminator = entities["EntityDiscriminator"].cls
+    EntityDiscriminatorOne = entities["EntityDiscriminator_DiscriminatorOne"].cls
+    EntityDiscriminatorTwo = entities["EntityDiscriminator_DiscriminatorTwo"].cls
+
+    e1 = EntityDiscriminator(
+        type="DiscriminatorOne", fieldOne="foo", discriminatorOneFieldOne="foo"
+    )
+    assert e1
+    e2 = EntityDiscriminator(
+        type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
+    )
+    assert e2
+    e3 = EntityDiscriminatorOne(fieldOne="foo", discriminatorOneFieldOne="foo")
+    assert e3
+    e4 = EntityDiscriminatorTwo(fieldOne="foo", discriminatorTwoFieldTwo=False)
+    assert e4
+
+    # EntityDiscriminator with type DiscriminatorOne
+    data1 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "hello",
+        "type": "DiscriminatorOne",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+    }
+    e1 = APPGATE_LOADER.load(data1, None, EntityDiscriminator)
+    assert e1 == EntityDiscriminator(
+        type="DiscriminatorOne",
+        fieldOne="hello",
+        discriminatorOneFieldOne="hi",
+        discriminatorOneFieldTwo="bye",
+    )
+
+    # EntityDiscriminator with type DiscriminatorTwo
+    data2 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "foobar",
+        "type": "DiscriminatorTwo",
+        "discriminatorTwoFieldOne": True,
+        "discriminatorTwoFieldTwo": False,
+    }
+    e2 = APPGATE_LOADER.load(data2, None, EntityDiscriminator)
+    assert e2 == EntityDiscriminator(
+        type="DiscriminatorTwo",
+        fieldOne="foobar",
+        discriminatorTwoFieldOne=True,
+        discriminatorTwoFieldTwo=False,
+    )
+
+    # EntityDiscriminator with type DiscriminatorOne missing required field
+    data3 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "hi",
+        "type": "DiscriminatorOne",
+        "discriminatorOneFieldTwo": False,
+    }
+    with pytest.raises(AppgateTypedloadException) as ex:
+        APPGATE_LOADER.load(data3, None, EntityDiscriminator)
+    assert (
+        str(ex.value)
+        == "Missing required fields when loading entity: discriminatorOneFieldOne\nPath: ."
+    )
 
 
 def test_loader_0():
