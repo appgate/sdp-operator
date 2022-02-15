@@ -15,6 +15,7 @@ from appgate.customloaders import (
     CustomAttribLoader,
     CustomEntityLoader,
 )
+from appgate.logger import log
 from appgate.openapi.types import (
     Entity_T,
     ENTITY_METADATA_ATTRIB_NAME,

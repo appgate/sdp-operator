@@ -13,6 +13,10 @@ from appgate.bytes import (
     certificate_attrib_maker,
 )
 from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
+from appgate.discriminator import (
+    get_discriminator_maker_config,
+    DiscriminatorAttribMaker,
+)
 from appgate.logger import log
 from appgate.openapi.attribmaker import (
     AttribMaker,
@@ -383,7 +387,25 @@ class Parser:
         for d in definitions:
             new_definition["required"].extend(d.get("required", {}))
             new_definition["properties"].update(d.get("properties", {}))
-            new_definition["discriminator"].update(d.get("discriminator", {}))
+
+            discriminator = d.get("discriminator")
+            # properties = d.get("properties")
+            if discriminator:
+                new_mapping = {}
+                new_properties = new_definition["properties"]
+                propertyName = discriminator["propertyName"]
+                mapping = discriminator["mapping"]
+                for key, ref in mapping.items():
+                    resolved_ref = self.resolve_reference(ref, [])
+                    if is_compound(resolved_ref):
+                        resolved_ref = self.parse_all_of(resolved_ref["allOf"])
+                    new_mapping.update({key: resolved_ref})
+                    for key, property in resolved_ref["properties"].items():
+                        new_properties.update({key: property})
+                new_definition["discriminator"]["propertyName"] = propertyName
+                new_definition["discriminator"]["mapping"] = new_mapping
+                new_definition["properties"] = new_properties
+
             if "description" in d:
                 descriptions.append(d["description"])
         new_definition["description"] = ".".join(descriptions)
@@ -399,6 +421,9 @@ class Parser:
         attrib_name = attrib_maker_config.name
         tpe = definition.get("type")
         current_level = attrib_maker_config.instance_maker_config.level
+        discriminator = attrib_maker_config.instance_maker_config.definition.get(
+            "discriminator"
+        )
         if is_compound(definition):
             definition = self.parse_all_of(definition["allOf"])
             instance_maker_config = EntityClassGeneratorConfig(
@@ -488,6 +513,40 @@ class Parser:
                     factory=None,
                     definition=attrib_maker_config.definition,
                 )
+            elif (
+                discriminator
+                and attrib_name == discriminator["propertyName"]
+                and current_level == 0
+            ):
+                # If definition contains discriminator, current attribute equals
+                # the value of discriminator.propertyName, and we are at the top level,
+                # generate each discriminator mapping as an entity
+                entity_map = {}
+                definition_map = {}
+                config_map = {}
+                for config in get_discriminator_maker_config(
+                    discriminator, attrib_maker_config, entity_name, attrib_name
+                ):
+                    generated_entity = self.register_entity(
+                        entity_class_generator_config=config
+                    )
+                    entity_map.update({config.name: generated_entity})
+                    definition_map.update({config.name: config.definition})
+                    config_map.update({config.name: config})
+
+                return DiscriminatorAttribMaker(
+                    name=attrib_name,
+                    tpe=TYPES_MAP[tpe],
+                    base_tpe=TYPES_MAP[tpe],
+                    default=None,
+                    factory=None,
+                    top_level_definition=attrib_maker_config.definition,
+                    discriminator_property_name=discriminator["propertyName"],
+                    entity_map=entity_map,
+                    definition_map=definition_map,
+                    config_map=config_map,
+                )
+
             else:
                 return AttribMaker(
                     name=attrib_name,
@@ -616,7 +675,7 @@ class Parser:
     def entity_class_generator(
         self, entity_class_generator_config: EntityClassGeneratorConfig
     ) -> EntityClassGenerator:
-        return EntityClassGenerator(
+        generator = EntityClassGenerator(
             name=entity_class_generator_config.entity_name,
             attributes={
                 nn: self.attrib_maker(
@@ -625,6 +684,25 @@ class Parser:
                 for n, nn in entity_class_generator_config.properties_names
             },
         )
+
+        # Unpack definitions in discriminator and insert fields into top-level
+        # entity. When loading the entity, DiscriminatorAttribMaker will perform a
+        # check of the required fields of the type
+        discriminator_attrs = {}
+        for attrib_maker in generator.attributes.values():
+            if isinstance(attrib_maker, DiscriminatorAttribMaker):
+                for key, config in attrib_maker.config_map.items():
+                    for name, normalized_name in config.properties_names:
+                        attrib_config = AttribMakerConfig(
+                            instance_maker_config=entity_class_generator_config,
+                            name=name,
+                            definition=config.definition["properties"][name],
+                        )
+                        attrib = self.attrib_maker(attrib_config)
+                        discriminator_attrs.update({normalized_name: attrib})
+        generator.attributes.update(discriminator_attrs)
+
+        return generator
 
     def register_entity(
         self, entity_class_generator_config: EntityClassGeneratorConfig
