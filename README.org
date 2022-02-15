@@ -45,7 +45,7 @@ The entities supported by the operator are:
 ** How it works
 Appgate entities are defined in terms of [[https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/][CRD]] in the k8s cluster so they can be
 managed (created, deleted or modified) using `kubectl` command with yaml files
-representing those CRD. (see the directory `examples`).
+representing those CRD.
 
 The appgate-operator, when running, will listen for changes on those CRD entities,
 note that the operator listen to events inside a namespace.
@@ -327,278 +327,61 @@ In this case the pod specification will get `APPGATE_OPERATOR_USER` and
 The rest of environment variables are taken from a ConfigMap k8s entry (see
 ~manifests/01-config.yaml~).
 
-** Testing locally against a k8s cluster
-To test it follow these steps:
+** Installing the sdp-operator
+The sdp-operator can be deployed using helm like this:
 
- - Create or get the =appgate-operator= image we want to use
-
- - Create a k8s cluster (and get the credentials)
-
- - Create some aliases
 #+begin_src shell
-  export API_VER=v13  # Use v12 to deploy for v12
-  export APPGATE_NS=appgate-test
-  export APPGATE_OPERATOR_PASSWORD='PASSWORD'
-  export APPGATE_OPERATOR_USER='USER'
-  export APPGATE_OPERATOR_HOST='https://controllerurl:444'
-  alias appgate-operator="python3.9 -m appgate -l INFO"
-  alias k="kubectl -n $APPGATE_NS"
-  appgate-operator api-info  # This will show us info about the API we are gonna use
+  helm install sdp-operator oci://ghcr.io/appgate/sdp-operator --version <version>
 #+end_src
 
- - Create the namespace
-#+BEGIN_SRC shell
-  kubectl create namespace $APPGATE_NS
-#+END_SRC
+The latest version released can be found [[https://github.com/appgate/sdp-operator/pkgs/container/charts%2Fsdp-operator][here]].
 
- - Create the CRDs
-Now we will dump the CRD definition from the open api specficiation and we will
-add it into the k8s cluster:
-#+BEGIN_SRC shell
-  appgate-operator dump-crd --spec-directory api_specs/${API_VER} --stdout > 00-appgate-test-crd-${API_VER}.yaml
-  kubectl create -f 00-appgate-test-crd-v13.yaml
-#+END_SRC
+This will deploy an sdp-operator in the namespace specified when running ~helm
+install~.
 
- - Create the configuration/secrets
-We will create now the configuration needed to run the operator against our
-appgate environment. We need to edit the files and set the values needed for our
-environment. We will save
-#+BEGIN_SRC shell
-  k create -f manifests/01-config.yaml
-  k create -f manifests/01-secrets.yaml
-#+END_SRC
+*** Available sdp-operator parameters for the helm chart
+The sdp-operator helm chart supports the following parameters. The paramaters
+with default value =null= are mandatory when installing the chart.
 
- - Add permissions to get/watch/list the CRD entities in appgate-operator
-#+BEGIN_SRC shell
-  k create -f manifests/01-role.yaml
-#+END_SRC
+| Name                           | Description                                     | Value                        |
+|--------------------------------+-------------------------------------------------+------------------------------|
+| sdp.operator.host              | SDP Operator controller host (required)         | null                         |
+| sdp.operator.sslNoVerify       | SDP Operator ssl-no-verify mode                 | "0"                          |
+| sdp.operator.twoWaySync        | SDP Operator two-way-sync mode                  | "1"                          |
+| sdp.operator.image.pullSecrets | SDP operator pull secret                        | []                           |
+| sdp.operator.cofigMapMt        | SDP Operator metadata configmap                 | null                         |
+| sdp.operator.image.pullPolicy  | SDP Operator pull policy                        | Always                       |
+| sdp.operator.builtinTags       | SDP Operator builtin tags                       | "builtin"                    |
+| sdp.operator.caCert            | SDP Operator host CA cert                       | null                         |
+| sdp.operator.dryRun            | SDP Operator dry-run mode                       | "1"                          |
+| sdp.operator.timeout           | SDP Operator event loop timeout                 | "30"                         |
+| sdp.operator.targetTags        | SDP Operator target tags                        | ""                           |
+| sdp.operator.version           | SDP Operator API version                        | "v16"                        |
+| sdp.operator.fernetKey         | SDP Operator Fernet Key                         | null                         |
+| sdp.operator.cleanup           | SDP Operator cleanup mode                       | "1"                          |
+| sdp.operator.deviceId          | SDP Operator device id (uuid format) (required) | null                         |
+| sdp.operator.logLevel          | SDP Operator log level                          | info                         |
+| sdp.operator.image.tag         | SDP Operator image tag                          | null                         |
+| sdp.operator.image.repository  | SDP operator image registry                     | ghcr.io/appgate/sdp-operator |
+| sdp.operator.excludeTags       | SDP Operator exclude tags                       | ""                           |
 
- - Start the operator
-#+BEGIN_SRC shell
-  appgate-operator run --namespace $APPGATE_NS
-#+END_SRC
+*** Available kubernetes parameters for the helm chart
 
- - Create the entities in k8s
-#+BEGIN_SRC shell
-  for example in examples/v13/*; do
-      k create -f $example
-  done
-#+END_SRC
+| Name                  | Description                                          | Value |
+|-----------------------+------------------------------------------------------+-------|
+| serviceAccount.create | Enable the creation of a ServiceAccount for SDP pods | true  |
+| rbac.create           | Whether to create & use RBAC resources or not        | true  |
 
-Now the operator should get the new events and reacto to them.
+*** Installation example
 
-** Deploying the operator on a cluster
-To deploy on a real k8s cluster follow these steps:
+That would deploy for example the operator in a namespace called =operator-test=
 
-To deploy the operator inside the k8s cluster we need to follow almost the same
-steps as before. The only difference is that now we will create a deployment for
-the operator and it will run inside the cluster.
-
-To achieve this replace the step where we were running the operator with this
-command to create the deployment.
-
-#+BEGIN_SRC shell
-  k create -f manifests/02-appgate-operator.yaml
-#+END_SRC
-
-** Deploying the operator with argocd
-In this setup we will use argocd to keep track of changes in a github repository
-containing the desired state of the appgate environment.
-
-We will use the push mode in argocd (someone or something needs to tell argocd
-to sync when changes are done) but it's easy to change it to let argocd to pull
-the repository to apply automatically changes (not recommended though).
-
-*** Create cluster or use a cluster we already have.
-The easies way of creating a cluster to start with is to use GCP. See GCP
-documentation.
-
-*** Install argocd in our cluster
-This process is well explained in the argo web but let's summarized it:
-
-#+BEGIN_SRC shell
-  # Create a role binding allowing to user to do stuff
-  kubectl create clusterrolebinding cluster-admin-binding \
-      --clusterrole=cluster-admin --user="$(gcloud config get-value account)"
-
-  # Create a new namespace to deploy the argocd stuff
-  kubectl create namespace argocd
-
-  # Install argocd in our cluster
-  kubectl apply -n argocd \
-      -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-  # Optional. Open the web ui to the exterior.
-  kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
-  ARGOCD_IP=$(kubectl get services -n argocd|awk '$2 ~ /LoadBalancer/ {print($4)}')
-
-  # Get the password of our new argocd instace
-  ARGOCD_PWD=$(kubectl get pods -n argocd|awk '$1 ~ /argocd-server/ {print($1)}')
-
-  # Login into argocd
-  argocd login $ARGOCD_IP
-
-  # Change password, current password is in $ARGOCD_PWD
-  argocd account update-password
-#+END_SRC
-
-*** Prepare appgate-operator
-In this step we need to do basically the same we did when we configured the appgate for testing [[*Testing locally against a k8s cluster][locally]].
- - We will create first a new namespace in our cluster.
- - Then we will register the CRD data in k8s.
- - Finally we create the role allowing our pod to listen new events from the new
-   CRD data.
-
-#+BEGIN_SRC shell
-  API_VER=v13  # Use v12 to deploy for v12
-  APPGATE_NS=appgate-test
-  alias k="kubectl -n ${APPGATE_NS}"
-  alias appgate-operator="docker run --rm -v $HOME/.kube:/root/.kube appgate-operator:${API_VER}"
-  kubectl create namespace ${APPGATE_NS}
-  appgate-operator dump-crd -spec-directory api_specs/${API_VER} --stdout > 00-appgate-test-crd-${API_VER}.yaml
-  kubectl create -f 00-appgate-test-crd-${API_VER}.yaml
-  k create -f manifests/01-role.yaml
-#+END_SRC
-
-We need now to prepare the secrets in the namespace to be there ready for when
-the deployment is done. If you have an automated way of dealing with secrets you
-can omit this step.
-
-The registry entry is only needed if we deploy the operator from a private
-registry (we only have it in a private one right now). If it's coming from a
-public one it's not needed and the deployment should be changed not to use the
-credentials from here (see the k8s [[https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/][documentation]] for more details).
-
-#+BEGIN_SRC shell
-  # Only needed if you use a private docker repository
-  kubectl create -f manifests/01-registry.yaml
-  kubectl create -f manifests/01-secrets.yaml
-#+END_SRC
-
-*** Github preparations
-Now we need to tell argocd about our application (the one containing all the
-entities that we want to keep in sync via the appgate-operator).
-
-In case your github repository is a private one you will need to do some extra
-steps to make it available in gocd:
-
-1. Create a new deployment key in the github's project.
-2. Add the private part of the key in argocd (see argocd documentation).
-
-*** Register the application in argocd
-Now that we have everything ready we can create our new application in argocd.
-
-Using the previous ssh key we added in argocd create a new application that
-points to our repository in github and configure it to be deployed in the same
-namespace we created when preparing the appgate-operator.
-
-Set the sync mode to manual.
-
-Once this is done we will see the new application appearing in the argocd web
-ui. It says it's out of sync since we specified manual synchronization.
-
-*** Environment preparations
-At this point everything is ready to be executed but our environment needs to be
-accessible from the nodes conforming the k8s cluster. Do whatever is needed in
-your environment to make sure the k8s nodes can reach your controller for
-instance in AWS we just need to add the public ip of the k8s nodes into the
-security group used by the controller.
-
-*** Syncing our application
-Right now we have the application created in argocd pointing to the github
-repository. That repository should contain a directory called ~appgate-test-1~
-with the following files:
-
- - ~appgate-test-1/02-appgate-operator.yaml~ :: Deployment file.
- - ~appgate-test-1/01-config.yaml~ :: File with the configuration of
-      appgate-operator.
- - ~appgate-test-1/entities.yaml~ :: File with the entities we want to have.
-
-We don't need to have all the entities in one yaml file, we can have one file
-per entity or one file per entity type, argocd will take care of syncing the CRD
-objects created by the contents of those files.
-
-Once all that is ready we can just press `sync` in the argocd web ui. If
-everything works as expected argocd will create the new appgate-operator
-deployment with the configuration and the entities specified.
-
-*** Checking that it worked
-We can see the logs of the pod created to run the appgate-operator in the argocd
-web ui (we can see also the specs of all the objects synchronized).
-
-If we prefer we can see the logs from the k8s cluster using `kubectl`:
-
-#+BEGIN_SRC shell
-  k get deployments # list the deployments
-  k get pods # get all the pods, one of those is our appgate-operator
-  k logs $(k get pods | awk '$3 ~ /Running/ {print($1)}') -f # see the logs
-#+END_SRC
-
-We can also see the current config and current secrets:
-#+BEGIN_SRC shell
-  k get config appgate-sdp-configmap -o yaml
-  k get secret appgate-operator-secrets -o yaml
-#+END_SRC
-
-Or even the entities registered in the cluster (it should be the same as we have
-in the git repository at this moment):
-
-#+BEGIN_SRC shell
-  k get policies
-  k get entitlements
-  k get conditions
-#+END_SRC
-
-*** Updating image
-If we have a new image for the appgate-operator we want to deploy we can just
-delete the current pod (using the argocd web ui or the kubectl command):
-
-#+BEGIN_SRC shell
-  k delete pod $(k get pods | awk '$3 ~ /Running/ {print($1)}')
-  k logs $(k get pods | awk '$3 ~ /Running/ {print($1)}') -f
-#+END_SRC
-
-Since our operator runs as a deployment with replica 1, k8s will create a new
-one pulling the new image from the docker registry.
-
-*** Changing configuration manually
-When synced for first time argocd will create the configmap with the
-configuration used by the appgate-operator. It runs by default in dry-mode so it
-would not do anything at this point (just printing the plan apply).
-
-If we want to make it operate in normal mode we can just change the
-configuration in the github repo, merge it and click sync again (the gitops
-thing).
-
-But we can also do it manually from argocd:
-
-1. In the application view click the box representing the configmap.
-2. There click edit and change the dry-run variable to "0"
-
-At this point if you look into the configuration using kubectl you will see that
-the value has changed:
-
-#+BEGIN_SRC shell
-  k get configmap appgate-sdp-configmap -o json|jq '.data["appgate-operator-dry-run"]'
-#+END_SRC
-
-Now we can just delete the pod again and a new one (using the new config) will
-be deployed.
-
-#+BEGIN_SRC shell
-  k delete pod $(k get pods | awk '$3 ~ /Running/ {print($1)}')
-#+END_SRC
-
-*** Debugging
-We can get the status of the operator like this:
-#+BEGIN_SRC shell
-  k describe appgate-operator
-#+END_SRC
-
-We can get the logs of the operator like this:
-#+BEGIN_SRC shell
-  k logs appgate-operator
-#+END_SRC
+#+begin_src shell
+  HELM_EXPERIMENTAL_OCI=1 helm install -n operator-test operator-test \
+		       oci://ghcr.io/appgate/sdp-operator --version 0.1.1 \
+		       --set sdp.operator.host="https://www.my-appgate.com:444" \
+		       --set sdp.operator.deviceId="369fb6d0-8820-4169-928b-dad9e7b50335" \
+#+end_src
 
 ** Dump current entities in an environment
 To get the current entities from an existing environment we can call the
