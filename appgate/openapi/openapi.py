@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-SPEC_DIR = "api_specs/v16"
+SPEC_DIR = "api_specs/v12"
 K8S_API_VERSION = "apiextensions.k8s.io/v1beta1"
 K8S_CRD_KIND = "CustomResourceDefinition"
 LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
