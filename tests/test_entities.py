@@ -41,6 +41,20 @@ def test_load_entities_v12():
                 assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
 
 
+def test_load_entities_v16():
+    """
+    Real all yaml files in v16 and try to load them according to the kind
+    """
+    open_api = generate_api_spec(Path("api_specs/v16").parent / "v16")
+    entities = open_api.entities
+    for f in os.listdir("tests/resources/v16"):
+        with (Path("tests/resources/v16") / f).open("r") as f:
+            documents = list(yaml.safe_load_all(f))
+            for d in documents:
+                e = entities[d["kind"]].cls
+                assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
+
+
 def test_loader_deprecated_required():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
 
