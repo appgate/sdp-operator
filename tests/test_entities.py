@@ -724,3 +724,57 @@ Hn+GmxZA
     # Just check that it's dumped properly
     assert e2_dumped["fieldOne"] == "foobar"
     assert e2_dumped["fieldTwo"]["validFrom"] == "2017-03-06T16:50:58.516Z"
+
+
+def test_discriminator_dump():
+    EntityDiscriminator = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityDiscriminator"]
+        .cls
+    )
+    appgate_metadata = {"uuid": "6a01c585-c192-475b-b86f-0e632add2769"}
+    data1 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "hello",
+        "type": "DiscriminatorOne",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+        "appgate_metadata": appgate_metadata,
+    }
+
+    e1 = K8S_LOADER.load(data1, None, EntityDiscriminator)
+    assert DIFF_DUMPER.dump(e1) == {
+        "fieldOne": "hello",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+    }
+    assert APPGATE_DUMPER.dump(e1) == {
+        "type": "DiscriminatorOne",
+        "fieldOne": "hello",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+    }
+
+    data2 = {
+        "id": "baz",
+        "name": "bat",
+        "fieldOne": "bye",
+        "type": "DiscriminatorTwo",
+        "discriminatorTwoFieldOne": True,
+        "discriminatorTwoFieldTwo": False,
+        "appgate_metadata": appgate_metadata,
+    }
+
+    e2 = K8S_LOADER.load(data2, None, EntityDiscriminator)
+    assert DIFF_DUMPER.dump(e2) == {
+        "fieldOne": "bye",
+        "discriminatorTwoFieldOne": True,
+        "discriminatorTwoFieldTwo": False,
+    }
+    assert APPGATE_DUMPER.dump(e2) == {
+        "type": "DiscriminatorTwo",
+        "fieldOne": "bye",
+        "discriminatorTwoFieldOne": True,
+        "discriminatorTwoFieldTwo": False,
+    }
