@@ -110,4 +110,4 @@ spec:
   onDemandClaimMappings: []
   tags:
   - builtin
-  type: IoTConnector
+  type: IotConnector
