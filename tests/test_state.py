@@ -1758,3 +1758,51 @@ def test_compare_entities_updated_changed():
         '+    "updated": "2020-09-16T12:20:14.000Z"\n',
         " }",
     ]
+
+
+def test_discriminator_entities_updated():
+    EntityDiscriminator = (
+        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        .entities["EntityDiscriminator"]
+        .cls
+    )
+    data1 = {
+        "id": "foo",
+        "name": "bar",
+        "fieldOne": "hello",
+        "type": "DiscriminatorOne",
+        "discriminatorOneFieldOne": "hi",
+        "discriminatorOneFieldTwo": "bye",
+    }
+    data2 = {
+        "id": "hello",
+        "name": "world",
+        "fieldOne": "bye",
+        "type": "DiscriminatorOne",
+        "discriminatorOneFieldOne": "hihi",
+        "discriminatorOneFieldTwo": "byebye",
+    }
+    appgate_metadata = {
+        "generation": 1,
+        "latestGeneration": 1,
+        "creationTimestamp": "2020-09-10T10:20:14Z",
+        "modificationTimestamp": "2020-09-16T12:20:14Z",
+    }
+
+    e1 = EntityWrapper(K8S_LOADER.load(data1, appgate_metadata, EntityDiscriminator))
+    e2 = EntityWrapper(APPGATE_LOADER.load(data2, None, EntityDiscriminator))
+
+    diff = compute_diff(e2, e1)
+    assert diff == [
+        "--- \n",
+        "+++ \n",
+        "@@ -1,5 +1,5 @@\n",
+        " {\n",
+        '-    "fieldOne": "bye",\n',
+        '-    "discriminatorOneFieldOne": "hihi",\n',
+        '-    "discriminatorOneFieldTwo": "byebye"\n',
+        '+    "fieldOne": "hello",\n',
+        '+    "discriminatorOneFieldOne": "hi",\n',
+        '+    "discriminatorOneFieldTwo": "bye"\n',
+        " }",
+    ]
