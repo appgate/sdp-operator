@@ -18,7 +18,7 @@ from appgate.openapi.types import (
     SPEC_ENTITIES,
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
-    GeneratedEntity,
+    GeneratedEntity, APPGATE_METADATA_ATTRIB_NAME, ENTITY_METADATA_ATTRIB_NAME,
 )
 
 __all__ = [
@@ -131,7 +131,7 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
             obj: List[ObjectField] = []
             for a in attrs.fields(cls):
                 # Ignore these internal attributes from the schema deserialization
-                if a.name != "appgate_metadata" and a.name != "_entity_metadata":
+                if a.name != APPGATE_METADATA_ATTRIB_NAME and a.name != ENTITY_METADATA_ATTRIB_NAME:
                     obj.append(ObjectField(a.name, a.type, required=a.default == attrs.NOTHING, default=a.default))
             return obj
         else:
