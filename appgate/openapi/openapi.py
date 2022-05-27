@@ -127,9 +127,9 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
     prev_default_object_fields = settings.default_object_fields
 
     def attrs_fields(cls: type) -> Optional[Sequence[ObjectField]]:
-        if hasattr(cls, "__attrs_attrs__"):
+        if attrs.has(cls):
             obj: List[ObjectField] = []
-            for a in getattr(cls, "__attrs_attrs__"):
+            for a in attrs.fields(cls):
                 # Ignore these internal attributes from the schema deserialization
                 if a.name != "appgate_metadata" and a.name != "_entity_metadata":
                     obj.append(ObjectField(a.name, a.type, required=a.default == attrs.NOTHING, default=a.default))
