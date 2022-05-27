@@ -209,7 +209,7 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
 
     # Register yaml representers for apischema custom types AliasedStr and JsonType
     def str_representer(dumper, data):
-        return dumper.represent_scalar(u'tag:yaml.org,2002:str', data)
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
     yaml.SafeDumper.add_representer(AliasedStr, str_representer)
     yaml.SafeDumper.add_representer(JsonType, str_representer)
 
