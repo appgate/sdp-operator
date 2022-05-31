@@ -18,7 +18,9 @@ from appgate.openapi.types import (
     SPEC_ENTITIES,
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
-    GeneratedEntity, APPGATE_METADATA_ATTRIB_NAME, ENTITY_METADATA_ATTRIB_NAME,
+    GeneratedEntity,
+    APPGATE_METADATA_ATTRIB_NAME,
+    ENTITY_METADATA_ATTRIB_NAME,
 )
 
 __all__ = [
@@ -131,8 +133,18 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
             obj: List[ObjectField] = []
             for a in attrs.fields(cls):
                 # Ignore these internal attributes from the schema deserialization
-                if a.name != APPGATE_METADATA_ATTRIB_NAME and a.name != ENTITY_METADATA_ATTRIB_NAME:
-                    obj.append(ObjectField(a.name, a.type, required=a.default == attrs.NOTHING, default=a.default))
+                if (
+                    a.name != APPGATE_METADATA_ATTRIB_NAME
+                    and a.name != ENTITY_METADATA_ATTRIB_NAME
+                ):
+                    obj.append(
+                        ObjectField(
+                            a.name,
+                            a.type,
+                            required=a.default == attrs.NOTHING,
+                            default=a.default,
+                        )
+                    )
             return obj
         else:
             return prev_default_object_fields(cls)
@@ -147,7 +159,11 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
         for k, v in obj.items():
             if isinstance(v, dict):
                 obj[k] = replace_nullable_type(v)
-        if "type" in obj.keys() and isinstance(obj["type"], list) and len(obj["type"]) > 1:
+        if (
+            "type" in obj.keys()
+            and isinstance(obj["type"], list)
+            and len(obj["type"]) > 1
+        ):
             obj["type"] = obj["type"][0]
         return obj
 
@@ -195,11 +211,9 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
                     "schema": {
                         "openAPIV3Schema": {
                             "type": "object",
-                            "properties": {
-                                "spec": schema
-                            }
+                            "properties": {"spec": schema},
                         }
-                    }
+                    },
                 }
             ],
             "scope": "Namespaced",
@@ -208,13 +222,14 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
                 "plural": plural_name,
                 "kind": name,
                 "shortNames": [short_name],
-            }
+            },
         },
     }
 
     # Register yaml representers for apischema custom types AliasedStr and JsonType
     def str_representer(dumper, data):
         return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
     yaml.SafeDumper.add_representer(AliasedStr, str_representer)
     yaml.SafeDumper.add_representer(JsonType, str_representer)
 
