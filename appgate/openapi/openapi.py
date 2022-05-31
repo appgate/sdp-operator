@@ -193,7 +193,12 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
                     "served": True,
                     "storage": True,
                     "schema": {
-                        "openAPIV3Schema": schema
+                        "openAPIV3Schema": {
+                            "type": "object",
+                            "properties": {
+                                "spec": schema
+                            }
+                        }
                     }
                 }
             ],
