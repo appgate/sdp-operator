@@ -1,0 +1,129 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: policies.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  names:
+    kind: Policy
+    plural: policies
+    shortNames:
+    - pol
+    singular: policy
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              administrativeRoles:
+                items:
+                  type: string
+                type: array
+              clientSettings:
+                properties:
+                  addRemoveProfiles:
+                    default: ''
+                    type: string
+                  attentionLevel:
+                    default: ''
+                    type: string
+                  autoStart:
+                    default: ''
+                    type: string
+                  enabled:
+                    default: false
+                    type: boolean
+                  entitlementsList:
+                    default: ''
+                    type: string
+                  keepMeSignedIn:
+                    default: ''
+                    type: string
+                  quit:
+                    default: ''
+                    type: string
+                  samlAutoSignIn:
+                    default: ''
+                    type: string
+                  signOut:
+                    default: ''
+                    type: string
+                  suspend:
+                    default: ''
+                    type: string
+                type: object
+              created:
+                default: null
+                format: date-time
+                type: string
+              disabled:
+                default: false
+                type: boolean
+              entitlementLinks:
+                items:
+                  type: string
+                type: array
+              entitlements:
+                items:
+                  type: string
+                type: array
+              expression:
+                type: string
+              id:
+                type: string
+              name:
+                type: string
+              notes:
+                default: ''
+                type: string
+              overrideSite:
+                type: string
+              proxyAutoConfig:
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  persist:
+                    type: boolean
+                  url:
+                    default: ''
+                    type: string
+                type: object
+              ringfenceRuleLinks:
+                items:
+                  type: string
+                type: array
+              ringfenceRules:
+                items:
+                  type: string
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              tamperProofing:
+                default: true
+                type: boolean
+              trustedNetworkCheck:
+                properties:
+                  dnsSuffix:
+                    default: ''
+                    type: string
+                  enabled:
+                    default: false
+                    type: boolean
+                type: object
+              updated:
+                default: null
+                format: date-time
+                type: string
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true

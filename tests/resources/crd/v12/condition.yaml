@@ -1,0 +1,81 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: conditions.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  names:
+    kind: Condition
+    plural: conditions
+    shortNames:
+    - con
+    singular: condition
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              created:
+                default: null
+                format: date-time
+                type: string
+              expression:
+                type: string
+              id:
+                type: string
+              name:
+                type: string
+              notes:
+                default: ''
+                type: string
+              remedyMethods:
+                items:
+                  properties:
+                    claimSuffix:
+                      default: ''
+                      type: string
+                    id:
+                      default: Condition_Remedymethods
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      default: Condition_Remedymethods
+                      type: string
+                    providerId:
+                      type: string
+                    tags:
+                      default:
+                      - builtin
+                      items:
+                        type: string
+                      type: array
+                    type:
+                      type: string
+                  required:
+                  - type
+                  - message
+                  type: object
+                type: array
+              repeatSchedules:
+                items:
+                  type: string
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              updated:
+                default: null
+                format: date-time
+                type: string
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true
