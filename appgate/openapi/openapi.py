@@ -134,17 +134,22 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
             for a in attrs.fields(cls):
                 # Ignore these internal attributes from the schema deserialization
                 if (
-                    a.name != APPGATE_METADATA_ATTRIB_NAME
-                    and a.name != ENTITY_METADATA_ATTRIB_NAME
+                    a.name == APPGATE_METADATA_ATTRIB_NAME
+                    or a.name == ENTITY_METADATA_ATTRIB_NAME
                 ):
-                    obj.append(
-                        ObjectField(
-                            a.name,
-                            a.type,
-                            required=a.default == attrs.NOTHING,
-                            default=a.default,
-                        )
+                    continue
+                # Ignore readOnly attributes from schema deserialization
+                if "readOnly" in a.metadata.keys() and a.metadata["readOnly"]:
+                    continue
+
+                obj.append(
+                    ObjectField(
+                        a.name,
+                        a.type,
+                        required=a.default == attrs.NOTHING,
+                        default=a.default,
                     )
+                )
             return obj
         else:
             return prev_default_object_fields(cls)

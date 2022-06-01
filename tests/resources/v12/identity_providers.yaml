@@ -67,7 +67,6 @@ spec:
   displayName: local
   dnsSearchDomains: []
   dnsServers: []
-  id: b5ea7cf0-6e75-11e4-9803-0800200c9a66
   ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
   ipPoolV6: 6935b379-205d-4fdd-847f-a0b5f14aff53
   name: local
@@ -100,7 +99,6 @@ spec:
     claimName: clientName
   dnsSearchDomains: []
   dnsServers: []
-  id: b2cdefce-1efe-4a7e-85d1-7976920f118f
   name: IoT Connector
   notes: Built-in IoT Connector provider.
   onDemandClaimMappings: []

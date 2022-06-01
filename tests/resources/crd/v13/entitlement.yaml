@@ -80,15 +80,9 @@ spec:
                 items:
                   type: string
                 type: array
-              created:
-                default: null
-                format: date-time
-                type: string
               disabled:
                 default: false
                 type: boolean
-              id:
-                type: string
               name:
                 type: string
               notes:
@@ -96,17 +90,10 @@ spec:
                 type: string
               site:
                 type: string
-              siteName:
-                default: null
-                type: string
               tags:
                 items:
                   type: string
                 type: array
-              updated:
-                default: null
-                format: date-time
-                type: string
             required:
             - name
             - site

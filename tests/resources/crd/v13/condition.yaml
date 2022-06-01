@@ -18,13 +18,7 @@ spec:
         properties:
           spec:
             properties:
-              created:
-                default: null
-                format: date-time
-                type: string
               expression:
-                type: string
-              id:
                 type: string
               name:
                 type: string
@@ -56,10 +50,6 @@ spec:
                 items:
                   type: string
                 type: array
-              updated:
-                default: null
-                format: date-time
-                type: string
             required:
             - name
             - expression

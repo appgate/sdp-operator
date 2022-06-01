@@ -14,7 +14,6 @@ spec:
     \ }\n         if/*claims.user.username*/(claims.user.username === \"admin\")/*end\
     \ claims.user.username*/ { result = true; } else { return false; }\n         return\
     \ result;"
-  id: 172143a0-7ed4-11e4-b4a9-0800200c9a66
   name: Builtin Administrator Policy
   notes: Policy for built-in admin user.
   ringfenceRuleLinks: []

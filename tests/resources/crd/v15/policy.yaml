@@ -55,10 +55,6 @@ spec:
                     default: ''
                     type: string
                 type: object
-              created:
-                default: null
-                format: date-time
-                type: string
               disabled:
                 default: false
                 type: boolean
@@ -71,8 +67,6 @@ spec:
                   type: string
                 type: array
               expression:
-                type: string
-              id:
                 type: string
               name:
                 type: string
@@ -116,10 +110,6 @@ spec:
                     default: false
                     type: boolean
                 type: object
-              updated:
-                default: null
-                format: date-time
-                type: string
             required:
             - name
             - expression

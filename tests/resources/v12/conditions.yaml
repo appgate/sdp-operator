@@ -5,7 +5,6 @@ metadata:
 spec:
   expression: ' var result = false; /*password*/ if (claims.user.hasPassword(''condition-2'',
     60)) { return true; } /*end password*/ return result; '
-  id: 101f7963-73b6-4872-8555-eb15fd95a613
   name: condition-2
   remedyMethods:
   - claimSuffix: test
@@ -22,10 +21,9 @@ spec:
 apiVersion: beta.appgate.com/v1
 kind: Condition
 metadata:
-  name: Always
+  name: always
 spec:
   expression: return true;
-  id: ee7b7e6f-e904-4b4f-a5ec-b3bef040643e
   name: Always
   notes: Condition for built-in usage.
   remedyMethods: []
@@ -40,7 +38,6 @@ metadata:
 spec:
   expression: ' var result = false; /*password*/ if (claims.user.hasPassword(''condition-3'',
     60)) { return true; } /*end password*/ return result; '
-  id: 09671ca6-04c8-4c1f-95c1-cd47ced128f7
   name: condition-3
   remedyMethods: []
   repeatSchedules:
@@ -58,7 +55,6 @@ metadata:
 spec:
   expression: ' var result = false; /*password*/ if (claims.user.hasPassword(''condition-1'',
     60)) { return true; } /*end password*/ return result; '
-  id: d4083d10-74d8-4979-8a0a-e193d52d798c
   name: condition-1
   remedyMethods: []
   repeatSchedules:

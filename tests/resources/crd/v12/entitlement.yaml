@@ -104,16 +104,10 @@ spec:
                 items:
                   type: string
                 type: array
-              created:
-                default: null
-                format: date-time
-                type: string
               disabled:
                 default: false
                 type: boolean
               displayName:
-                type: string
-              id:
                 type: string
               name:
                 type: string
@@ -126,10 +120,6 @@ spec:
                 items:
                   type: string
                 type: array
-              updated:
-                default: null
-                format: date-time
-                type: string
             required:
             - name
             - displayName

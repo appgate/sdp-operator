@@ -42,10 +42,6 @@ spec:
                   - claimName
                   type: object
                 type: array
-              created:
-                default: null
-                format: date-time
-                type: string
               dnsSearchDomains:
                 items:
                   type: string
@@ -56,8 +52,6 @@ spec:
                 type: array
               enforceWindowsNetworkProfileAsDomain:
                 type: boolean
-              id:
-                type: string
               inactivityTimeoutMinutes:
                 default: 0
                 type: integer
@@ -120,10 +114,6 @@ spec:
                   type: string
                 type: array
               type:
-                type: string
-              updated:
-                default: null
-                format: date-time
                 type: string
               userScripts:
                 items:

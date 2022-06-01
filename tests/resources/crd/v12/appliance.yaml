@@ -18,9 +18,6 @@ spec:
         properties:
           spec:
             properties:
-              activated:
-                default: null
-                type: boolean
               adminInterface:
                 properties:
                   allowSources:
@@ -146,10 +143,6 @@ spec:
                       type: string
                     type: array
                 type: object
-              created:
-                default: null
-                format: date-time
-                type: string
               customization:
                 type: string
               gateway:
@@ -266,8 +259,6 @@ spec:
                 items:
                   type: string
                 type: array
-              id:
-                type: string
               iotConnector:
                 properties:
                   clients:
@@ -760,9 +751,6 @@ spec:
                 required:
                 - hostname
                 type: object
-              pendingCertificateRenewal:
-                default: null
-                type: boolean
               ping:
                 properties:
                   allowSources:
@@ -981,13 +969,6 @@ spec:
                 items:
                   type: string
                 type: array
-              updated:
-                default: null
-                format: date-time
-                type: string
-              version:
-                default: null
-                type: integer
             required:
             - name
             - hostname
