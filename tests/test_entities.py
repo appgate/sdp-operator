@@ -51,7 +51,7 @@ def test_loader_deprecated_required():
         e0 = EntityTest0()
     assert (
         str(ex.value)
-        == "__init__() missing 1 required positional argument: 'fieldThree'"
+        == "EntityTest0.__init__() missing 1 required positional argument: 'fieldThree'"
     )
 
     # entity with field fieldThree deprecated but not required
