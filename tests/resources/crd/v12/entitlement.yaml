@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: entitlements.beta.appgate.com
+  name: entitlements-v12.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: Entitlement
-    plural: entitlements
+    kind: Entitlement-v12
+    plural: entitlements-v12
     shortNames:
-    - ent
-    singular: entitlement
+    - ent-v12
+    singular: entitlement-v12
   scope: Namespaced
   versions:
   - name: v1

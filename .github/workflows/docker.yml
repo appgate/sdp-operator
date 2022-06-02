@@ -148,7 +148,7 @@ jobs:
           pip install -r requirements.txt -r requirements-build.txt
       - name: Dump CRDs
         run: |
-          python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd
+          python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd --version ${{ matrix.version }}
       - run: mv *-crd.yml k8s/crd/${{ matrix.version }}/templates
       - run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV

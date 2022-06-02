@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: identityproviders.beta.appgate.com
+  name: identityproviders-v14.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: IdentityProvider
-    plural: identityproviders
+    kind: IdentityProvider-v14
+    plural: identityproviders-v14
     shortNames:
-    - ide
-    singular: identityprovider
+    - ide-v14
+    singular: identityprovider-v14
   scope: Namespaced
   versions:
   - name: v1

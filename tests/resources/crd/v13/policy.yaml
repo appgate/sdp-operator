@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: policies.beta.appgate.com
+  name: policies-v13.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: Policy
-    plural: policies
+    kind: Policy-v13
+    plural: policies-v13
     shortNames:
-    - pol
-    singular: policy
+    - pol-v13
+    singular: policy-v13
   scope: Namespaced
   versions:
   - name: v1
