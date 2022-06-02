@@ -1,0 +1,165 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: identityproviders.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  names:
+    kind: IdentityProvider
+    plural: identityproviders
+    shortNames:
+    - ide
+    singular: identityprovider
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              adminProvider:
+                default: false
+                type: boolean
+              blockLocalDnsRequests:
+                default: false
+                type: boolean
+              claimMappings:
+                items:
+                  properties:
+                    attributeName:
+                      type: string
+                    claimName:
+                      type: string
+                    encrypt:
+                      default: false
+                      type: boolean
+                    id:
+                      default: IdentityProvider_Claimmappings
+                      type: string
+                    list:
+                      default: false
+                      type: boolean
+                    name:
+                      default: IdentityProvider_Claimmappings
+                      type: string
+                    tags:
+                      default:
+                      - builtin
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - attributeName
+                  - claimName
+                  type: object
+                type: array
+              default:
+                default: false
+                type: boolean
+              dnsSearchDomains:
+                items:
+                  type: string
+                type: array
+              dnsServers:
+                items:
+                  type: string
+                type: array
+              inactivityTimeoutMinutes:
+                default: 0
+                type: integer
+              ipPoolV4:
+                type: string
+              ipPoolV6:
+                type: string
+              name:
+                type: string
+              notes:
+                default: ''
+                type: string
+              onBoarding2FA:
+                properties:
+                  deviceLimitPerUser:
+                    default: 100
+                    type: integer
+                  id:
+                    default: IdentityProvider_Onboarding2fa
+                    type: string
+                  message:
+                    default: ''
+                    type: string
+                  mfaProviderId:
+                    type: string
+                  name:
+                    default: IdentityProvider_Onboarding2fa
+                    type: string
+                  tags:
+                    default:
+                    - builtin
+                    items:
+                      type: string
+                    type: array
+                required:
+                - mfaProviderId
+                type: object
+              onDemandClaimMappings:
+                items:
+                  properties:
+                    claimName:
+                      type: string
+                    command:
+                      type: string
+                    id:
+                      default: IdentityProvider_Ondemandclaimmappings
+                      type: string
+                    name:
+                      default: IdentityProvider_Ondemandclaimmappings
+                      type: string
+                    parameters:
+                      properties:
+                        args:
+                          default: ''
+                          type: string
+                        id:
+                          default: IdentityProvider_Ondemandclaimmappings_Parameters
+                          type: string
+                        name:
+                          default: ''
+                          type: string
+                        path:
+                          default: ''
+                          type: string
+                        tags:
+                          default:
+                          - builtin
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    platform:
+                      type: string
+                    tags:
+                      default:
+                      - builtin
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - command
+                  - claimName
+                  - platform
+                  type: object
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+            required:
+            - name
+            - type
+            type: object
+        type: object
+    served: true
+    storage: true

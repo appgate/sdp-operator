@@ -28,7 +28,6 @@ spec:
   - d4083d10-74d8-4979-8a0a-e193d52d798c
   disabled: true
   displayName: entitlement-3
-  id: a052f6af-47a4-4df4-b7df-171af42a26c3
   name: entitlement-3
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags:
@@ -64,7 +63,6 @@ spec:
   - 101f7963-73b6-4872-8555-eb15fd95a613
   disabled: true
   displayName: entitlement-1
-  id: a91f56dd-af3d-429b-b1df-b0d305f1bca2
   name: entitlement-2
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags:
@@ -100,7 +98,6 @@ spec:
   - d4083d10-74d8-4979-8a0a-e193d52d798c
   disabled: true
   displayName: entitlement-1
-  id: f9b1e308-1dc3-49f5-9896-43d325ee8e23
   name: entitlement-1
   site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
   tags:

@@ -1,7 +1,13 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Type, Callable
+from typing import Dict, Optional, Tuple, Type, Callable, Sequence, List
 
+import attrs
 import yaml
+
+from apischema import settings
+from apischema.json_schema import deserialization_schema
+from apischema.json_schema.types import JsonType
+from apischema.objects import ObjectField, AliasedStr
 
 from appgate.client import AppgateClient, EntityClient
 from appgate.logger import log
@@ -13,6 +19,8 @@ from appgate.openapi.types import (
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
     GeneratedEntity,
+    APPGATE_METADATA_ATTRIB_NAME,
+    ENTITY_METADATA_ATTRIB_NAME,
 )
 
 __all__ = [
@@ -26,7 +34,7 @@ __all__ = [
 
 
 SPEC_DIR = "api_specs/v12"
-K8S_API_VERSION = "apiextensions.k8s.io/v1beta1"
+K8S_API_VERSION = "apiextensions.k8s.io/v1"
 K8S_CRD_KIND = "CustomResourceDefinition"
 LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
 
@@ -118,7 +126,80 @@ def entity_names(
 
 
 def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
+    prev_default_object_fields = settings.default_object_fields
+
+    def attrs_fields(cls: type) -> Optional[Sequence[ObjectField]]:
+        if attrs.has(cls):
+            obj: List[ObjectField] = []
+            for a in attrs.fields(cls):
+                # Ignore these internal attributes from the schema deserialization
+                if (
+                    a.name == APPGATE_METADATA_ATTRIB_NAME
+                    or a.name == ENTITY_METADATA_ATTRIB_NAME
+                ):
+                    continue
+                # Ignore readOnly attributes from schema deserialization
+                if "readOnly" in a.metadata.keys() and a.metadata["readOnly"]:
+                    continue
+
+                obj.append(
+                    ObjectField(
+                        a.name,
+                        a.type,
+                        required=a.default == attrs.NOTHING,
+                        default=a.default,
+                    )
+                )
+            return obj
+        else:
+            return prev_default_object_fields(cls)
+
+    settings.default_object_fields = attrs_fields
+
     name, singular_name, plural_name, short_name = entity_names(entity, short_names)
+    schema = deserialization_schema(entity)
+
+    # apischema deserializes nullable properties into [JsonType.*, JsonType.NULL]
+    def replace_nullable_type(obj: dict) -> dict:
+        for k, v in obj.items():
+            if isinstance(v, dict):
+                obj[k] = replace_nullable_type(v)
+        if (
+            "type" in obj.keys()
+            and isinstance(obj["type"], list)
+            and len(obj["type"]) > 1
+        ):
+            obj["type"] = obj["type"][0]
+        return obj
+
+    schema = replace_nullable_type(dict(schema))
+
+    # comply with OpenAPI v3 schema validated by x-kubernetes-validation
+    # https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/_print/#validation
+    def remove_keys(obj: dict, key_to_del: str) -> dict:
+        if isinstance(obj, dict):
+            obj = {
+                key: remove_keys(value, key_to_del)
+                for key, value in obj.items()
+                if key not in key_to_del
+            }
+        return obj
+
+    schema = remove_keys(schema, "$schema")
+    schema = remove_keys(schema, "uniqueItems")
+    schema = remove_keys(schema, "additionalProperties")
+
+    # add missing required value '.items' for tags - deserialization cannot determine the type from BUILTIN_TAGS
+    def add_items_key_to_tags(obj: dict) -> dict:
+        for k, v in obj.items():
+            if isinstance(v, dict):
+                obj[k] = add_items_key_to_tags(v)
+        if "tags" in obj.keys() and "items" not in obj["tags"].keys():
+            obj["tags"]["items"] = {"type": "string"}
+        return obj
+
+    schema = add_items_key_to_tags(schema)
+
     crd = {
         "apiVersion": K8S_API_VERSION,
         "kind": K8S_CRD_KIND,
@@ -128,7 +209,17 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
         "spec": {
             "group": K8S_APPGATE_DOMAIN,
             "versions": [
-                {"name": K8S_APPGATE_VERSION, "served": True, "storage": True}
+                {
+                    "name": K8S_APPGATE_VERSION,
+                    "served": True,
+                    "storage": True,
+                    "schema": {
+                        "openAPIV3Schema": {
+                            "type": "object",
+                            "properties": {"spec": schema},
+                        }
+                    },
+                }
             ],
             "scope": "Namespaced",
             "names": {
@@ -139,12 +230,14 @@ def generate_crd(entity: Type, short_names: Dict[str, str]) -> str:
             },
         },
     }
-    """
-    TODO: Iterate over all attributes here to generate the spec
-    for a in entity.__attrs_attrs__:
-        spec = a.metadata['spec']
-        str[a.name] = spec()
-    """
+
+    # Register yaml representers for apischema custom types AliasedStr and JsonType
+    def str_representer(dumper, data):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+    yaml.SafeDumper.add_representer(AliasedStr, str_representer)
+    yaml.SafeDumper.add_representer(JsonType, str_representer)
+
     return yaml.safe_dump(crd)
 
 

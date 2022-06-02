@@ -1,0 +1,128 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: identityproviders.beta.appgate.com
+spec:
+  group: beta.appgate.com
+  names:
+    kind: IdentityProvider
+    plural: identityproviders
+    shortNames:
+    - ide
+    singular: identityprovider
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              adminProvider:
+                default: false
+                type: boolean
+              blockLocalDnsRequests:
+                default: false
+                type: boolean
+              claimMappings:
+                items:
+                  properties:
+                    attributeName:
+                      type: string
+                    claimName:
+                      type: string
+                    encrypt:
+                      default: false
+                      type: boolean
+                    list:
+                      default: false
+                      type: boolean
+                  required:
+                  - attributeName
+                  - claimName
+                  type: object
+                type: array
+              deviceLimitPerUser:
+                default: 100
+                type: integer
+              dnsSearchDomains:
+                items:
+                  type: string
+                type: array
+              dnsServers:
+                items:
+                  type: string
+                type: array
+              enforceWindowsNetworkProfileAsDomain:
+                type: boolean
+              inactivityTimeoutMinutes:
+                default: 0
+                type: integer
+              ipPoolV4:
+                type: string
+              ipPoolV6:
+                type: string
+              name:
+                type: string
+              notes:
+                default: ''
+                type: string
+              onBoarding2FA:
+                properties:
+                  alwaysRequired:
+                    type: boolean
+                  claimSuffix:
+                    default: onBoarding
+                    type: string
+                  message:
+                    default: ''
+                    type: string
+                  mfaProviderId:
+                    type: string
+                required:
+                - mfaProviderId
+                type: object
+              onDemandClaimMappings:
+                items:
+                  properties:
+                    claimName:
+                      type: string
+                    command:
+                      type: string
+                    parameters:
+                      properties:
+                        args:
+                          default: ''
+                          type: string
+                        name:
+                          default: ''
+                          type: string
+                        path:
+                          default: ''
+                          type: string
+                      type: object
+                    platform:
+                      type: string
+                  required:
+                  - command
+                  - claimName
+                  - platform
+                  type: object
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+              userScripts:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - type
+            type: object
+        type: object
+    served: true
+    storage: true
