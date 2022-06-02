@@ -81,9 +81,12 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
-  v12:
+  images:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: ["v12", "v13", "v14", "v15", "v16"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -107,141 +110,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           build-args: |
-            SPEC_VERSION=v12
+            SPEC_VERSION=${{ matrix.version }}
           context: .
           file: docker/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v12
-
-  v13:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
-        run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v13
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v13
-
-  v14:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
-        run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v14
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v14
-
-  v15:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
-        run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v15
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v15
-
-  v16:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
-        run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v16
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v16
+            ghcr.io/${{ github.repository }}/sdp-operator:${{ matrix.version }}
