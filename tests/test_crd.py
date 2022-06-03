@@ -21,8 +21,7 @@ def assert_equal_crd(version: str) -> None:
         with (Path("tests/resources/crd") / version / entity.lower()).with_suffix(
             ".yaml"
         ).open("r") as f:
-            print()
-            # assert yaml.safe_load(crd) == yaml.safe_load(f)
+            assert yaml.safe_load(crd) == yaml.safe_load(f)
 
 
 def test_generate_crd_v12():
