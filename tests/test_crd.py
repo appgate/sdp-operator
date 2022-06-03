@@ -42,3 +42,7 @@ def test_generate_crd_v15():
 
 def test_generate_crd_v16():
     assert_equal_crd("v16")
+
+
+def test_generate_crd_v17():
+    assert_equal_crd("v17")
