@@ -39,7 +39,7 @@ def get_discriminator_maker_config(
             definition=definition,
             singleton=attrib_maker_config.instance_maker_config.singleton,
             api_path=None,
-            level=current_level + 1,
+            level=current_level,
         )
         config.append(discriminator_maker_config)
     return config
@@ -77,8 +77,10 @@ class DiscriminatorAttribMaker(AttribMaker):
         def validate_fields(original, entity: Entity_T) -> Entity_T:
             type = original["type"]
 
-            # Check if there are missing fields required for this type
-            required_fields = set(self.definition_map[type]["required"])
+            # Check if there are missing fields required for this type. Exclude readOnly attributes.
+            required_fields = set(
+                k for k in self.definition_map[type]["required"] if k != "id"
+            )
             missing_fields = required_fields.difference(set(original.keys()))
             if len(missing_fields) > 0:
                 raise TypeError(
