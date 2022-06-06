@@ -4,7 +4,6 @@ metadata:
   name: saml
 spec:
   type: Saml
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: saml-example
   adminProvider: false
   deviceLimitPerUser: 100
@@ -55,7 +54,6 @@ metadata:
   name: radius
 spec:
   type: Radius
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: radius-example
   adminProvider: false
   deviceLimitPerUser: 100
@@ -102,7 +100,6 @@ metadata:
   name: ldap
 spec:
   type: Ldap
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: ldap-example
   adminProvider: false
   deviceLimitPerUser: 100
@@ -159,7 +156,6 @@ metadata:
   name: ldapcert
 spec:
   type: LdapCertificate
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: ldapcert-example
   adminProvider: false
   deviceLimitPerUser: 100
@@ -224,7 +220,6 @@ metadata:
   name: localdatabase
 spec:
   type: LocalDatabase
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: localdatabase-example
   adminProvider: false
   deviceLimitPerUser: 100
@@ -269,7 +264,6 @@ metadata:
   name: connector
 spec:
   type: Connector
-  id: 4c07bc67-57ea-42dd-b702-c2d6c45419fc
   name: connector-example
   ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
   ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
