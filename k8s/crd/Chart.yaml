@@ -1,0 +1,28 @@
+apiVersion: v2
+# The SDP API version is appended to .name in GitHub Actions
+name: sdp-operator-crd
+# The SDP API version is appended to .description in GitHub Actions
+description: A Helm chart for SDP Operator CRD
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: library
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version. Versions are expected to follow Semantic
+# Versioning (https://semver.org/).
+# .version is overridden to the operator's chart version in GitHub Actions
+version: VERSION
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+# .appversion is overridden to the SDP API version in GitHub Actions
+appVersion: APP_VERSION

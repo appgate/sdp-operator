@@ -66,7 +66,8 @@ jobs:
       HELM_EXPERIMENTAL_OCI: 1
     steps:
       - uses: actions/checkout@v2
-      - run: |
+      - name: Read operator chart version
+        run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v1
         with:
@@ -81,9 +82,12 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
-  v12:
+  images:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: ["v12", "v13", "v14", "v15", "v16", "v17"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -107,141 +111,75 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           build-args: |
-            SPEC_VERSION=v12
+            SPEC_VERSION=${{ matrix.version }}
           context: .
           file: docker/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v12
+            ghcr.io/${{ github.repository }}/sdp-operator:${{ matrix.version }}
 
-  v13:
+  crd:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    strategy:
+      matrix:
+        version: ["v12", "v13", "v14", "v15", "v16", "v17"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: openspecs
           path: /tmp
-      - name: install unzip
+      - name: Install unzip
         run: |
           sudo apt-get update
           sudo apt-get install unzip
-      - name: Get openspec API
+      - name: Get OpenAPI specs
         run: ./bin/unzip-open-spec.sh
         shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v13
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v13
-
-  v14:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
+          python-version: "3.10"
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v14
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v14
-
-  v15:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+      - name: Dump CRDs
         run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v15
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v15
-
-  v16:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: openspecs
-          path: /tmp
-      - name: install unzip
+          python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd --version ${{ matrix.version }}
+      - name: Move CRDs to chart templates
+        run: mv *-crd.yml k8s/crd/templates
+      - name: Read operator chart version
         run: |
-          sudo apt-get update
-          sudo apt-get install unzip
-      - name: Get openspec API
-        run: ./bin/unzip-open-spec.sh
-        shell: bash
+          echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+      - name: Set .name
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.name = "sdp-operator-crd-${{ matrix.version }}"' k8s/crd/Chart.yaml
+      - name: set .description
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.description = "A Helm chart for SDP Operator CRD ${{ matrix.version }}"' k8s/crd/Chart.yaml
+      - name: Set .version
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.version = "${{ env.chart_version }}"' k8s/crd/Chart.yaml
+      - name: Set .appVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.appVersion = "${{ matrix.version }}"' k8s/crd/Chart.yaml
+      - uses: azure/setup-helm@v1
+        with:
+          version: 3.7.2
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push image
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            SPEC_VERSION=v16
-          context: .
-          file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:v16
+        run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint chart
+        run: helm lint k8s/crd
+      - name: Package chart
+        run: helm package k8s/crd
+      - name: Push chart
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: helm push sdp-operator-crd-${{ matrix.version }}-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts

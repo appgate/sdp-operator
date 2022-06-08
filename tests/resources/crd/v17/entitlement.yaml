@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: entitlements-v12.beta.appgate.com
+  name: entitlements-v17.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: Entitlement-v12
-    plural: entitlements-v12
+    kind: Entitlement-v17
+    plural: entitlements-v17
     shortNames:
-    - ent-v12
-    singular: entitlement-v12
+    - ent-v17
+    singular: entitlement-v17
   scope: Namespaced
   versions:
   - name: v1
@@ -27,76 +27,52 @@ spec:
                       items:
                         type: string
                       type: array
-                    id:
-                      default: Entitlement_Actions
-                      type: string
                     monitor:
                       properties:
                         enabled:
                           default: false
                           type: boolean
-                        id:
-                          default: Entitlement_Actions_Monitor
-                          type: string
-                        name:
-                          default: Entitlement_Actions_Monitor
-                          type: string
-                        tags:
-                          default:
-                          - builtin
-                          items:
-                            type: string
-                          type: array
                         timeout:
                           default: 30
                           type: integer
                       type: object
-                    name:
-                      default: Entitlement_Actions
-                      type: string
                     ports:
                       items:
                         type: string
                       type: array
                     subtype:
+                      default: ''
                       type: string
-                    tags:
-                      default:
-                      - builtin
-                      items:
-                        type: string
-                      type: array
                     types:
                       items:
                         type: string
                       type: array
                   required:
-                  - subtype
                   - action
                   type: object
                 type: array
-              appShortcut:
-                properties:
-                  colorCode:
-                    default: 1
-                    type: integer
-                  id:
-                    default: Entitlement_Appshortcut
-                    type: string
-                  name:
-                    type: string
-                  tags:
-                    default:
-                    - builtin
-                    items:
+              appShortcutScripts:
+                items:
+                  type: string
+                type: array
+              appShortcuts:
+                items:
+                  properties:
+                    colorCode:
+                      default: 1
+                      type: integer
+                    description:
+                      default: ''
                       type: string
-                    type: array
-                  url:
-                    type: string
-                required:
-                - name
-                - url
-                type: object
+                    name:
+                      type: string
+                    url:
+                      type: string
+                  required:
+                  - name
+                  - url
+                  type: object
+                type: array
               conditionLogic:
                 default: and
                 type: string
@@ -107,11 +83,12 @@ spec:
               disabled:
                 default: false
                 type: boolean
-              displayName:
-                type: string
               name:
                 type: string
               notes:
+                default: ''
+                type: string
+              riskSensitivity:
                 default: ''
                 type: string
               site:
@@ -122,7 +99,6 @@ spec:
                 type: array
             required:
             - name
-            - displayName
             - site
             type: object
         type: object

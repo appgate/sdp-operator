@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: appliances.beta.appgate.com
+  name: appliances-v13.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: Appliance
-    plural: appliances
+    kind: Appliance-v13
+    plural: appliances-v13
     shortNames:
-    - app
-    singular: appliance
+    - app-v13
+    singular: appliance-v13
   scope: Namespaced
   versions:
   - name: v1

@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: appliances-v16.beta.appgate.com
+  name: appliances-v17.beta.appgate.com
 spec:
   group: beta.appgate.com
   names:
-    kind: Appliance-v16
-    plural: appliances-v16
+    kind: Appliance-v17
+    plural: appliances-v17
     shortNames:
-    - app-v16
-    singular: appliance-v16
+    - app-v17
+    singular: appliance-v17
   scope: Namespaced
   versions:
   - name: v1
@@ -216,6 +216,8 @@ spec:
                     default: 5555
                     type: integer
                 type: object
+              hostname:
+                type: string
               hostnameAliases:
                 items:
                   type: string
@@ -437,29 +439,6 @@ spec:
                       type: object
                     type: array
                 type: object
-              peerInterface:
-                properties:
-                  allowSources:
-                    items:
-                      properties:
-                        address:
-                          default: ''
-                          type: string
-                        netmask:
-                          type: integer
-                        nic:
-                          default: ''
-                          type: string
-                      type: object
-                    type: array
-                  hostname:
-                    type: string
-                  httpsPort:
-                    default: 444
-                    type: integer
-                required:
-                - hostname
-                type: object
               ping:
                 properties:
                   allowSources:
@@ -534,6 +513,8 @@ spec:
                     type: array
                   signInCustomization:
                     properties:
+                      autoRedirect:
+                        type: boolean
                       backgroundColor:
                         default: ''
                         type: string
@@ -647,8 +628,8 @@ spec:
                 type: array
             required:
             - name
+            - hostname
             - clientInterface
-            - peerInterface
             type: object
         type: object
     served: true
