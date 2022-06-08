@@ -124,10 +124,10 @@ def entity_names(
         plural_name = f"{singular_name}s"
 
     if version_suffix:
-        name = name + "-" + version_suffix
-        singular_name = singular_name + "-" + version_suffix
-        plural_name = plural_name + "-" + version_suffix
-        short_name = short_name + "-" + version_suffix
+        name = f"{name}-{version_suffix}"
+        singular_name = f"{singular_name}-{version_suffix}"
+        plural_name = f"{plural_name}-{version_suffix}"
+        short_name = f"{short_name}-{version_suffix}"
 
     return name, singular_name, plural_name, short_name
 
