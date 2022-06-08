@@ -2,7 +2,7 @@
 
 set -ex
 mkdir api_specs
-for v in 12 13 14 15 16 17; do
+for v in $(seq 12 17); do
     unzip /tmp/openspec-$v.zip -d api_specs
     mv api_specs/sdp-api-specification-version-$v api_specs/v$v
     rm -rf api_specs/v$v/.github
