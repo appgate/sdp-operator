@@ -132,9 +132,7 @@ def entity_names(
     return name, singular_name, plural_name, short_name
 
 
-def generate_crd(
-    entity: Type, short_names: Dict[str, str], version_suffix: str
-) -> str:
+def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str) -> str:
     prev_default_object_fields = settings.default_object_fields
 
     def attrs_fields(cls: type) -> Optional[Sequence[ObjectField]]:
