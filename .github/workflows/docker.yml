@@ -66,7 +66,8 @@ jobs:
       HELM_EXPERIMENTAL_OCI: 1
     steps:
       - uses: actions/checkout@v2
-      - run: |
+      - name: Read operator chart version
+        run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v1
         with:
@@ -149,19 +150,25 @@ jobs:
       - name: Dump CRDs
         run: |
           python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd --version ${{ matrix.version }}
-      - run: mv *-crd.yml k8s/crd/templates
-      - run: |
+      - name: Move CRDs to chart templates
+        run: mv *-crd.yml k8s/crd/templates
+      - name: Read operator chart version
+        run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
-      - uses: mikefarah/yq@master
+      - name: Set .name
+        uses: mikefarah/yq@master
         with:
           cmd: yq eval -i '.name = "sdp-operator-crd-${{ matrix.version }}"' k8s/crd/Chart.yaml
-      - uses: mikefarah/yq@master
+      - name: set .description
+        uses: mikefarah/yq@master
         with:
           cmd: yq eval -i '.description = "A Helm chart for SDP Operator CRD ${{ matrix.version }}"' k8s/crd/Chart.yaml
-      - uses: mikefarah/yq@master
+      - name: Set .version
+        uses: mikefarah/yq@master
         with:
           cmd: yq eval -i '.version = "${{ env.chart_version }}"' k8s/crd/Chart.yaml
-      - uses: mikefarah/yq@master
+      - name: Set .appVersion
+        uses: mikefarah/yq@master
         with:
           cmd: yq eval -i '.appVersion = "${{ matrix.version }}"' k8s/crd/Chart.yaml
       - uses: azure/setup-helm@v1
