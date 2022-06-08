@@ -1,0 +1,282 @@
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: saml
+spec:
+  type: Saml
+  name: saml-example
+  adminProvider: false
+  deviceLimitPerUser: 100
+  onBoarding2FA:
+    mfaProviderId: 87582944-97ef-4239-825a-1dd1fe82b9d1
+    message: Please use your multi factor authentication device to on-board.
+    claimSuffix: onBoarding
+    alwaysRequired: true
+    deviceLimitPerUser: 0
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  dnsServers:
+    - 172.17.18.19
+    - 192.100.111.31
+  dnsSearchDomains:
+    - internal.company.com
+  enforceWindowsNetworkProfileAsDomain: true
+  blockLocalDnsRequests: false
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all
+  userScripts:
+    - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  redirectUrl: https://saml.company.com
+  issuer: http://adfs-test.company.com/adfs/services/trust
+  audience: Company Appgate SDP
+  providerCertificate: |-
+    -----BEGIN CERTIFICATE-----
+    adlkfaldfdfdfdkadkfkdlfj;kdajfkljdadff
+    -----END CERTIFICATE-----
+  decryptionKey: string
+  forceAuthn: true
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: radius
+spec:
+  type: Radius
+  name: radius-example
+  adminProvider: false
+  deviceLimitPerUser: 100
+  onBoarding2FA:
+    mfaProviderId: 87582944-97ef-4239-825a-1dd1fe82b9d1
+    message: Please use your multi factor authentication device to on-board.
+    claimSuffix: onBoarding
+    alwaysRequired: true
+    deviceLimitPerUser: 0
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  dnsServers:
+    - 172.17.18.19
+    - 192.100.111.31
+  dnsSearchDomains:
+    - internal.company.com
+  enforceWindowsNetworkProfileAsDomain: true
+  blockLocalDnsRequests: false
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all
+  userScripts:
+    - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  hostnames:
+    - radius.company.com
+  port: 1812
+  sharedSecret: string
+  authenticationProtocol: CHAP
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: ldap
+spec:
+  type: Ldap
+  name: ldap-example
+  adminProvider: false
+  deviceLimitPerUser: 100
+  onBoarding2FA:
+    mfaProviderId: 87582944-97ef-4239-825a-1dd1fe82b9d1
+    message: Please use your multi factor authentication device to on-board.
+    claimSuffix: onBoarding
+    alwaysRequired: true
+    deviceLimitPerUser: 0
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  dnsServers:
+    - 172.17.18.19
+    - 192.100.111.31
+  dnsSearchDomains:
+    - internal.company.com
+  enforceWindowsNetworkProfileAsDomain: true
+  blockLocalDnsRequests: false
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all
+  userScripts:
+    - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  hostnames:
+    - dc.ad.company.com
+  port: 389
+  sslEnabled: false
+  adminDistinguishedName: CN=admin,OU=Users,DC=company,DC=com
+  adminPassword: tSW3!QBv(rj{UuLY
+  baseDn: OU=Users,DC=company,DC=com
+  objectClass: user
+  usernameAttribute: sAMAccountName
+  membershipFilter: "(objectCategory=group)"
+  membershipBaseDn: OU=Groups,DC=company,DC=com
+  passwordWarning:
+    enabled: true
+    thresholdDays: 5
+    message: Your password is about to expire. Please change it.
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: ldapcert
+spec:
+  type: LdapCertificate
+  name: ldapcert-example
+  adminProvider: false
+  deviceLimitPerUser: 100
+  onBoarding2FA:
+    mfaProviderId: 87582944-97ef-4239-825a-1dd1fe82b9d1
+    message: Please use your multi factor authentication device to on-board.
+    claimSuffix: onBoarding
+    alwaysRequired: true
+    deviceLimitPerUser: 0
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  dnsServers:
+    - 172.17.18.19
+    - 192.100.111.31
+  dnsSearchDomains:
+    - internal.company.com
+  enforceWindowsNetworkProfileAsDomain: true
+  blockLocalDnsRequests: false
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all
+  userScripts:
+    - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  hostnames:
+    - dc.ad.company.com
+  port: 389
+  sslEnabled: false
+  adminDistinguishedName: CN=admin,OU=Users,DC=company,DC=com
+  adminPassword: tSW3!QBv(rj{UuLY
+  baseDn: OU=Users,DC=company,DC=com
+  objectClass: user
+  usernameAttribute: sAMAccountName
+  membershipFilter: "(objectCategory=group)"
+  membershipBaseDn: OU=Groups,DC=company,DC=com
+  passwordWarning:
+    enabled: true
+    thresholdDays: 5
+    message: Your password is about to expire. Please change it.
+  caCertificates:
+    - "-----BEGIN CERTIFICATE----- .... -----END CERTIFICATE-----"
+  certificateUserAttribute: userPrincipalName
+  certificateAttribute: string
+  skipX509ExternalChecks: true
+  certificatePriorities:
+    - type: Template
+      value: 1.3.6.1.4.1.311.21.8.3025710.4393146.2181807.13924342.9568199.8
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: localdatabase
+spec:
+  type: LocalDatabase
+  name: localdatabase-example
+  adminProvider: false
+  deviceLimitPerUser: 100
+  onBoarding2FA:
+    mfaProviderId: 87582944-97ef-4239-825a-1dd1fe82b9d1
+    message: Please use your multi factor authentication device to on-board.
+    claimSuffix: onBoarding
+    alwaysRequired: true
+    deviceLimitPerUser: 0
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  dnsServers:
+    - 172.17.18.19
+    - 192.100.111.31
+  dnsSearchDomains:
+    - internal.company.com
+  enforceWindowsNetworkProfileAsDomain: true
+  blockLocalDnsRequests: false
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all
+  userScripts:
+    - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  userLockoutThreshold: 5
+  userLockoutDurationMinutes: 1
+  minPasswordLength: 0
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: connector
+spec:
+  type: Connector
+  name: connector-example
+  ipPoolV4: 1cbdf511-2da6-4762-8226-c68da51edcac
+  ipPoolV6: 0abcaedb-13e8-4473-bbb1-2e25511b63ae
+  claimMappings:
+    - attributeName: SAMAccountName
+      claimName: username
+      list: false
+      encrypt: false
+  onDemandClaimMappings:
+    - command: fileSize
+      claimName: antivirusRunning
+      parameters:
+        name: python3
+        path: "/usr/bin/python3"
+        args: "--list"
+      platform: desktop.windows.all

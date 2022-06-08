@@ -4,6 +4,10 @@ metadata:
   name: etewtew
 spec:
   adminProvider: true
+  adminDistinguishedName: "foo"
+  hostnames:
+    - "foo.com"
+  port: 6443
   claimMappings:
   - attributeName: memberOf
     claimName: groups
@@ -24,7 +28,6 @@ spec:
   dnsSearchDomains: []
   dnsServers:
   - 127.123.123.1
-  id: 31e92c17-db36-45c6-8c96-e65fb2f57f3a
   ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
   name: etewtew
   notes: 'wradsdf
@@ -104,4 +107,4 @@ spec:
   onDemandClaimMappings: []
   tags:
   - builtin
-  type: IoTConnector
+  type: IotConnector
