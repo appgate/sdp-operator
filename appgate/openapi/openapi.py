@@ -101,7 +101,7 @@ def parse_files(
 
 
 def entity_names(
-    entity: type, short_names: Dict[str, str], version_suffix: Optional[str] = None
+    entity: type, short_names: Dict[str, str], version_suffix: str
 ) -> Tuple[str, str, str, str]:
     name = entity.__name__
     short_name = name[0:3].lower()
@@ -133,7 +133,7 @@ def entity_names(
 
 
 def generate_crd(
-    entity: Type, short_names: Dict[str, str], version_suffix: Optional[str]
+    entity: Type, short_names: Dict[str, str], version_suffix: str
 ) -> str:
     prev_default_object_fields = settings.default_object_fields
 

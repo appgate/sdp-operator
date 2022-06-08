@@ -212,7 +212,7 @@ async def run_k8s(args: OperatorArguments) -> None:
         start_entity_loop(
             ctx=ctx,
             queue=events_queue,
-            crd=entity_names(e.cls, {})[2],
+            crd=entity_names(e.cls, {}, f"v{ctx.api_spec.api_version}")[2],
             singleton=e.singleton,
             entity_type=e.cls,
             k8s_configmap_client=k8s_configmap_client,
@@ -294,7 +294,7 @@ def main_dump_crd(
     stdout: bool,
     output_file: Optional[str],
     spec_directory: Optional[str] = None,
-    version_suffix: Optional[str] = None,
+    version_suffix: str = "v17",
 ) -> None:
     # We need the context here or just parse it
     entities = generate_api_spec(
@@ -460,7 +460,8 @@ def main() -> None:
     dump_crd.add_argument(
         "--version-suffix",
         help="Version string to append to the names of custom resource definitions",
-        default=None,
+        required=True,
+        default="v17",
     )
     # validate entities
     validate_entities = subparsers.add_parser("validate-entities")
