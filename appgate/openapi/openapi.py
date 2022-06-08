@@ -101,7 +101,7 @@ def parse_files(
 
 
 def entity_names(
-    entity: type, short_names: Dict[str, str], prefix: Optional[str] = None
+    entity: type, short_names: Dict[str, str], version_suffix: Optional[str] = None
 ) -> Tuple[str, str, str, str]:
     name = entity.__name__
     short_name = name[0:3].lower()
@@ -123,17 +123,17 @@ def entity_names(
     else:
         plural_name = f"{singular_name}s"
 
-    if prefix:
-        name = name + "-" + prefix
-        singular_name = singular_name + "-" + prefix
-        plural_name = plural_name + "-" + prefix
-        short_name = short_name + "-" + prefix
+    if version_suffix:
+        name = name + "-" + version_suffix
+        singular_name = singular_name + "-" + version_suffix
+        plural_name = plural_name + "-" + version_suffix
+        short_name = short_name + "-" + version_suffix
 
     return name, singular_name, plural_name, short_name
 
 
 def generate_crd(
-    entity: Type, short_names: Dict[str, str], prefix: Optional[str]
+    entity: Type, short_names: Dict[str, str], version_suffix: Optional[str]
 ) -> str:
     prev_default_object_fields = settings.default_object_fields
 
@@ -166,7 +166,7 @@ def generate_crd(
     settings.default_object_fields = attrs_fields
 
     name, singular_name, plural_name, short_name = entity_names(
-        entity, short_names, prefix
+        entity, short_names, version_suffix
     )
     schema = deserialization_schema(entity)
 

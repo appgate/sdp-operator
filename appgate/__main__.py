@@ -294,7 +294,7 @@ def main_dump_crd(
     stdout: bool,
     output_file: Optional[str],
     spec_directory: Optional[str] = None,
-    prefix: Optional[str] = None,
+    version_suffix: Optional[str] = None,
 ) -> None:
     # We need the context here or just parse it
     entities = generate_api_spec(
@@ -313,7 +313,7 @@ def main_dump_crd(
     for i, e in enumerate([e.cls for e in entities.values() if e.api_path is not None]):
         if i > 0:
             f.write("---\n")
-        f.write(generate_crd(e, short_names, prefix))
+        f.write(generate_crd(e, short_names, version_suffix))
     if output_path:
         log.info("[dump-crd] File %s generated with CRD definitions", output_path)
 
@@ -458,8 +458,8 @@ def main() -> None:
         default=None,
     )
     dump_crd.add_argument(
-        "--version",
-        help="Version string for custom resource definitions names",
+        "--version-suffix",
+        help="Version string to append to the names of custom resource definitions",
         default=None,
     )
     # validate entities
@@ -521,7 +521,7 @@ def main() -> None:
                 stdout=args.stdout,
                 output_file=args.file,
                 spec_directory=args.spec_directory,
-                prefix=args.version,
+                version_suffix=args.version_suffix,
             )
         elif args.cmd == "api-info":
             main_api_info(spec_directory=args.spec_directory)
