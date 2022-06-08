@@ -149,18 +149,30 @@ jobs:
       - name: Dump CRDs
         run: |
           python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd --version ${{ matrix.version }}
-      - run: mv *-crd.yml k8s/crd/${{ matrix.version }}/templates
+      - run: mv *-crd.yml k8s/crd/templates
       - run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+      - uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.name = "sdp-operator-crd-${{ matrix.version }}"' k8s/crd/Chart.yaml
+      - uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.description = "A Helm chart for SDP Operator CRD ${{ matrix.version }}"' k8s/crd/Chart.yaml
+      - uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.version = "${{ env.chart_version }}"' k8s/crd/Chart.yaml
+      - uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.appVersion = "${{ matrix.version }}"' k8s/crd/Chart.yaml
       - uses: azure/setup-helm@v1
         with:
           version: 3.7.2
       - name: Login to GitHub Container Registry
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
-        run: helm lint k8s/crd/${{ matrix.version }}
+        run: helm lint k8s/crd
       - name: Package chart
-        run: helm package k8s/crd/${{ matrix.version }} --version ${{ env.chart_version }}
+        run: helm package k8s/crd
       - name: Push chart
         if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-crd-${{ matrix.version }}-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
