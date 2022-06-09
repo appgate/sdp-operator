@@ -9,25 +9,25 @@ metadata:
 rules:
   - apiGroups: ["beta.appgate.com"]
     resources:
-      - policies
-      - entitlements
-      - conditions
-      - ringfencerules
-      - appliances
-      - sites
-      - ippools
-      - identityproviders
-      - localusers
-      - administrativeroles
-      - mfaproviders
-      - adminmfasettingss
-      - trustedcertificates
-      - criteriascriptss
-      - devicescripts
-      - entitlementscripts
-      - appliancecustomizations
-      - globalsettingss
-      - clientconnections
+      - policies-{{ .Values.sdp.operator.version }}
+      - entitlements-{{ .Values.sdp.operator.version }}
+      - conditions-{{ .Values.sdp.operator.version }}
+      - ringfencerules-{{ .Values.sdp.operator.version }}
+      - appliances-{{ .Values.sdp.operator.version }}
+      - sites-{{ .Values.sdp.operator.version }}
+      - ippools-{{ .Values.sdp.operator.version }}
+      - identityproviders-{{ .Values.sdp.operator.version }}
+      - localusers-{{ .Values.sdp.operator.version }}
+      - administrativeroles-{{ .Values.sdp.operator.version }}
+      - mfaproviders-{{ .Values.sdp.operator.version }}
+      - adminmfasettingss-{{ .Values.sdp.operator.version }}
+      - trustedcertificates-{{ .Values.sdp.operator.version }}
+      - criteriascriptss-{{ .Values.sdp.operator.version }}
+      - devicescripts-{{ .Values.sdp.operator.version }}
+      - entitlementscripts-{{ .Values.sdp.operator.version }}
+      - appliancecustomizations-{{ .Values.sdp.operator.version }}
+      - globalsettingss-{{ .Values.sdp.operator.version }}
+      - clientconnections-{{ .Values.sdp.operator.version }}
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
