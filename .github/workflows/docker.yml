@@ -151,7 +151,7 @@ jobs:
         run: |
           python3 -m appgate --spec-directory api_specs/${{ matrix.version }} dump-crd --version ${{ matrix.version }}
       - name: Move CRDs to chart templates
-        run: mv *-crd.yml k8s/crd/templates
+        run: mv *-crd.yml k8s/crd/templates/
       - name: Read operator chart version
         run: |
           echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
