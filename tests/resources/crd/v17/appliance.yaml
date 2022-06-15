@@ -257,6 +257,37 @@ spec:
                       type: object
                     type: array
                   elasticsearch:
+                    properties:
+                      authentication:
+                        properties:
+                          token:
+                            default: null
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - type
+                        type: object
+                      awsId:
+                        default: ''
+                        type: string
+                      awsRegion:
+                        default: ''
+                        type: string
+                      awsSecret:
+                        default: null
+                        type: string
+                      compatibilityMode:
+                        default: 6
+                        type: integer
+                      retentionDays:
+                        type: integer
+                      url:
+                        type: string
+                      useInstanceCredentials:
+                        type: boolean
+                    required:
+                    - url
                     type: object
                   enabled:
                     default: false
