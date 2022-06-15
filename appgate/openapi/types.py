@@ -293,7 +293,7 @@ class EntityClassGeneratorConfig:
     def properties_names(self) -> Iterator[Tuple[str, str]]:
         return map(
             lambda n: (n, normalize_attrib_name(n)),
-            self.definition.get("properties", {}).keys(),
+            self.get_properties(),
         )
 
     def attrib_maker_config(self, attribute: str) -> "AttribMakerConfig":
@@ -309,6 +309,18 @@ class EntityClassGeneratorConfig:
         return AttribMakerConfig(
             instance_maker_config=self, name=attribute, definition=definition
         )
+
+    def get_properties(self) -> dict:
+        properties = self.definition.get("properties", {})
+
+        # If entity is discriminator, merge all properties of the mapping
+        discriminator = self.definition.get("discriminator", {})
+        if discriminator:
+            mapping = discriminator.get("mapping", {})
+            for k, v in mapping.items():
+                properties.update(v["properties"])
+
+        return properties
 
 
 @attrs()
