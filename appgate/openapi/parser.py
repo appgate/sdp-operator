@@ -47,7 +47,7 @@ from appgate.openapi.utils import (
     is_compound,
     is_object,
     is_ref,
-    is_array,
+    is_array, is_mapping, is_discriminator,
 )
 from appgate.secrets import PasswordAttribMaker
 from appgate.types import BUILTIN_TAGS
@@ -300,14 +300,15 @@ class ParserContext:
 class Parser:
     def __init__(self, parser_context: ParserContext, namespace: str) -> None:
         self.namespace = namespace
+        self.previous_namespaces = set()
         self.parser_context = parser_context
         self.data: Dict[str, Any] = parser_context.load_namespace(namespace)
 
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split("#", maxsplit=2)
         new_keys = [x for x in ref.split("/") if x] + keys
+        key_copy = new_keys.copy()
         if not path:
-            # Resolve in current namespace
             # Resolve in current namespace
             log.trace(
                 "Resolving reference %s in current namespace: %s",
@@ -315,6 +316,13 @@ class Parser:
                 self.namespace,
             )
             resolved_ref = self.get_keys(new_keys)
+            if not resolved_ref:
+                for previous in self.previous_namespaces:
+                    keys = key_copy.copy()
+                    resolved_ref = Parser(self.parser_context, namespace=previous).get_keys(keys)
+                    if resolved_ref or len(self.previous_namespaces) == 0:
+                        break
+
         else:
             log.trace(
                 "Resolving reference %s in %s namespace", join(".", new_keys), path
@@ -322,6 +330,7 @@ class Parser:
             resolved_ref = Parser(self.parser_context, namespace=path).get_keys(
                 new_keys
             )
+            self.previous_namespaces.add(path)
         if not resolved_ref:
             raise OpenApiParserException(f"Unable to resolve reference {reference}")
         return resolved_ref
@@ -364,11 +373,20 @@ class Parser:
     def resolve_definition(self, definition: OpenApiDict) -> OpenApiDict:
         if type(definition) is not dict:
             return definition
+        if is_compound(definition):
+            definition = self.parse_all_of(definition["allOf"])
         for k, v in definition.items():
             if is_ref(v):
                 resolved = self.resolve_reference(v["$ref"], [])
                 resolved = self.resolve_definition(resolved)
                 definition[k] = resolved
+            elif is_mapping(k, v):
+                for mk, kv in v.items():
+                    resolved = self.resolve_reference(kv, [])
+                    if is_compound(resolved):
+                        resolved = self.parse_all_of(resolved["allOf"])
+                    resolved = self.resolve_definition(resolved)
+                    definition[k][mk] = resolved
             else:
                 definition[k] = self.resolve_definition(v)
         return definition
@@ -387,28 +405,39 @@ class Parser:
         for d in definitions:
             new_definition["required"].extend(d.get("required", {}))
             new_definition["properties"].update(d.get("properties", {}))
-
-            discriminator = d.get("discriminator")
-            # properties = d.get("properties")
-            if discriminator:
-                new_mapping = {}
-                new_properties = new_definition["properties"]
-                propertyName = discriminator["propertyName"]
-                mapping = discriminator["mapping"]
-                for key, ref in mapping.items():
-                    resolved_ref = self.resolve_reference(ref, [])
-                    if is_compound(resolved_ref):
-                        resolved_ref = self.parse_all_of(resolved_ref["allOf"])
-                    new_mapping.update({key: resolved_ref})
-                    for key, property in resolved_ref["properties"].items():
-                        new_properties.update({key: property})
-                new_definition["discriminator"]["propertyName"] = propertyName
-                new_definition["discriminator"]["mapping"] = new_mapping
-                new_definition["properties"] = new_properties
-
+            new_definition["discriminator"].update(d.get("discriminator", {}))
             if "description" in d:
                 descriptions.append(d["description"])
         new_definition["description"] = ".".join(descriptions)
+        return new_definition
+
+    def parse_discriminator(self, definition: OpenApiDict) -> OpenApiDict:
+        new_definition: OpenApiDict = {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "discriminator": {},
+            "description": "",
+        }
+        new_definition["required"].extend(definition.get("required", {}))
+        new_definition["properties"].update(definition.get("properties", {}))
+
+        discriminator = definition.get("discriminator")
+        propertyName = discriminator["propertyName"]
+        mapping = discriminator["mapping"]
+
+        new_mapping = {}
+        for key, ref in mapping.items():
+            if not isinstance(ref, dict):
+                ref = self.resolve_reference(ref, [])
+            if is_compound(ref):
+                ref = self.parse_all_of(ref["allOf"])
+            new_mapping.update({key: ref})
+
+        new_definition["discriminator"]["propertyName"] = propertyName
+        new_definition["discriminator"]["mapping"] = new_mapping
+        new_definition["description"] = definition.get("description", "")
+
         return new_definition
 
     def make_attrib_maker(self, attrib_maker_config: AttribMakerConfig) -> AttribMaker:
@@ -735,6 +764,8 @@ class Parser:
         definition_to_use = None
         if is_compound(definition):
             definition_to_use = self.parse_all_of(cast(dict, definition)["allOf"])
+        elif is_discriminator(definition):
+            definition_to_use = self.parse_discriminator(definition)
         elif is_object(definition):
             definition_to_use = definition
 
