@@ -90,9 +90,9 @@ def test_loader_discriminator():
         type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
     )
     assert e2
-    e3 = EntityDiscriminatorOne(fieldOne="foo", discriminatorOneFieldOne="foo")
+    e3 = EntityDiscriminatorOne(type="DiscriminatorOne", fieldOne="foo", discriminatorOneFieldOne="foo")
     assert e3
-    e4 = EntityDiscriminatorTwo(fieldOne="foo", discriminatorTwoFieldTwo=False)
+    e4 = EntityDiscriminatorTwo(type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False)
     assert e4
 
     # EntityDiscriminator with type DiscriminatorOne

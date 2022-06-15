@@ -755,30 +755,38 @@ definitions:
                   type: integer
                   default: 30
   EntityDiscriminator:
+    type: object
+    discriminator:
+      propertyName: type
+      mapping:
+        DiscriminatorOne: '#/definitions/DiscriminatorOne'
+        DiscriminatorTwo: '#/definitions/DiscriminatorTwo'
+    required:
+      - type
+  BaseEntityDiscriminator:
     allOf:
       - type: object
-        discriminator:
-          propertyName: type
-          mapping:
-            DiscriminatorOne: '#/definitions/DiscriminatorOne'
-            DiscriminatorTwo: '#/definitions/DiscriminatorTwo'
         required:
           - type
-  EntityDiscriminatorSpec:
-    type: object
-    required:
-      - fieldOne
-    properties:
-      type:
-        type: string
-        enum:
-          - DiscriminatorOne
-          - DiscriminatorTwo
-      fieldOne:
-        type: string
+        properties:
+          type:
+            type: string
+            enum:
+              - DiscriminatorOne
+              - DiscriminatorTwo
+          fieldOne:
+            type: string
+  ConfigurableEntityDiscriminator:
+    allOf:
+      - $ref: '#/definitions/BaseEntityDiscriminator'
+      - type: object
+        properties:
+          configurableFieldOne:
+            type: boolean
+            default: false
   DiscriminatorOne:
     allOf:
-      - $ref: '#/definitions/EntityDiscriminatorSpec'
+      - $ref: '#/definitions/BaseEntityDiscriminator'
       - type: object
         required:
           - discriminatorOneFieldOne
@@ -789,7 +797,7 @@ definitions:
             type: string
   DiscriminatorTwo:
     allOf:
-      - $ref: '#/definitions/EntityDiscriminatorSpec'
+      - $ref: '#/definitions/ConfigurableEntityDiscriminator'
       - type: object
         required:
           - discriminatorTwoFieldTwo
