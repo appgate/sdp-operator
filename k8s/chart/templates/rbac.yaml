@@ -28,6 +28,7 @@ rules:
       - appliancecustomizations-{{ .Values.sdp.operator.version }}
       - globalsettingss-{{ .Values.sdp.operator.version }}
       - clientconnections-{{ .Values.sdp.operator.version }}
+      - serviceusers-{{ .Values.sdp.operator.version }}
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]

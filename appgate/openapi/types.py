@@ -44,6 +44,7 @@ SPEC_ENTITIES = {
     "/conditions": "Condition",
     "/entitlements": "Entitlement",
     "/trusted-certificates": "TrustedCertificate",
+    "/service-users": "ServiceUser",
 }
 
 K8S_APPGATE_DOMAIN = "beta.appgate.com"
