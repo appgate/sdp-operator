@@ -61,27 +61,27 @@ The following tools are required to install the SDP Operator
 
 ### SDP parameters
 
-| Name                             | Description                                     | Value                          |
-| -------------------------------- | ----------------------------------------------- | ------------------------------ |
-| `sdp.operator.host`              | SDP Operator controller host (required)         | `""`                           |
-| `sdp.operator.deviceId`          | SDP Operator device id (uuid format) (required) | `""`                           |
-| `sdp.operator.version`           | SDP Operator API version                        | `v16`                          |
-| `sdp.operator.logLevel`          | SDP Operator log level                          | `info`                         |
-| `sdp.operator.timeout`           | SDP Operator event loop timeout                 | `30`                           |
-| `sdp.operator.targetTags`        | SDP Operator target tags                        | `""`                           |
-| `sdp.operator.excludeTags`       | SDP Operator exclude tags                       | `""`                           |
-| `sdp.operator.builtinTags`       | SDP Operator builtin tags                       | `builtin`                      |
-| `sdp.operator.dryRun`            | SDP Operator dry-run mode                       | `1`                            |
-| `sdp.operator.cleanup`           | SDP Operator cleanup mode                       | `1`                            |
-| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode                  | `1`                            |
-| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode                 | `0`                            |
-| `sdp.operator.caCert`            | SDP Operator host CA cert                       | `""`                           |
-| `sdp.operator.fernetKey`         | SDP Operator Fernet Key                         | `""`                           |
-| `sdp.operator.configMapMt`       | SDP Operator metadata configmap                 | `""`                           |
-| `sdp.operator.image.tag`         | SDP Operator image tag                          | `latest`                       |
-| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy                        | `Always`                       |
-| `sdp.operator.image.repository`  | SDP operator image registry                     | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | SDP operator pull secret                        | `[]`                           |
+| Name                             | Description                                                                                  | Value                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------ |
+| `sdp.operator.host`              | SDP Operator controller host (required)                                                      | `""`                           |
+| `sdp.operator.deviceId`          | SDP Operator device id (uuid format) (required)                                              | `""`                           |
+| `sdp.operator.version`           | SDP Operator API version                                                                     | `v17`                          |
+| `sdp.operator.logLevel`          | SDP Operator log level                                                                       | `info`                         |
+| `sdp.operator.timeout`           | SDP Operator event loop timeout                                                              | `30`                           |
+| `sdp.operator.targetTags`        | SDP Operator target tags                                                                     | `""`                           |
+| `sdp.operator.excludeTags`       | SDP Operator exclude tags                                                                    | `""`                           |
+| `sdp.operator.builtinTags`       | SDP Operator builtin tags                                                                    | `builtin`                      |
+| `sdp.operator.dryRun`            | SDP Operator dry-run mode                                                                    | `1`                            |
+| `sdp.operator.cleanup`           | SDP Operator cleanup mode                                                                    | `1`                            |
+| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode                                                               | `1`                            |
+| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode                                                              | `0`                            |
+| `sdp.operator.caCert`            | SDP Operator host CA cert                                                                    | `""`                           |
+| `sdp.operator.fernetKey`         | SDP Operator Fernet Key                                                                      | `""`                           |
+| `sdp.operator.configMapMt`       | SDP Operator metadata configmap                                                              | `""`                           |
+| `sdp.operator.image.tag`         | SDP Operator image tag. If unspecified, the deployment will use .sdp.operator.version as tag | `""`                           |
+| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy                                                                     | `Always`                       |
+| `sdp.operator.image.repository`  | SDP operator image registry                                                                  | `ghcr.io/appgate/sdp-operator` |
+| `sdp.operator.image.pullSecrets` | SDP operator pull secret                                                                     | `[]`                           |
 
 
 ### Kubernetes parameters
@@ -90,6 +90,7 @@ The following tools are required to install the SDP Operator
 | ----------------------- | ---------------------------------------------------- | ------ |
 | `serviceAccount.create` | Enable the creation of a ServiceAccount for SDP pods | `true` |
 | `rbac.create`           | Whether to create & use RBAC resources or not        | `true` |
+
 
 This table above was generated using readme-generator-for-helm
 
