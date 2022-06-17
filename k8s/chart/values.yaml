@@ -18,7 +18,7 @@ sdp:
   ## @param sdp.operator.sslNoVerify SDP Operator ssl-no-verify mode
   ## @param sdp.operator.caCert SDP Operator host CA cert
   ## @param sdp.operator.fernetKey SDP Operator Fernet Key
-  ## @param sdp.operator.cofigMapMt SDP Operator metadata configmap
+  ## @param sdp.operator.configMapMt SDP Operator metadata configmap
   ## @param sdp.operator.image.tag SDP Operator image tag
   ## @param sdp.operator.image.pullPolicy SDP Operator pull policy
   operator:
@@ -31,11 +31,14 @@ sdp:
     twoWaySync: "1"
     cleanup: "1"
     sslNoVerify: "0"
+    host: ""
+    deviceId: ""
     version: "v16"
     image:
       ## @param sdp.operator.image.repository SDP operator image registry
       ## @param sdp.operator.image.pullSecrets SDP operator pull secret
       repository: ghcr.io/appgate/sdp-operator
+      tag: latest
       ## Optionally specify an array of imagePullSecrets.
       ## Secrets must be manually created in the namespace.
       ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -48,6 +51,9 @@ sdp:
       ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
       ##
       pullPolicy: Always
+    fernetKey: ""
+    caCert: ""
+    configMapMt: ""
 
 ## @section Kubernetes parameters
 
@@ -63,7 +69,3 @@ serviceAccount:
 ##
 rbac:
   create: true
-
-podSecurityContext: {}
-securityContext: {}
-resources: {}
