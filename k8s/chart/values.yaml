@@ -21,22 +21,22 @@ sdp:
   ## @param sdp.operator.configMapMt SDP Operator metadata configmap
   ## @param sdp.operator.image.tag SDP Operator image tag. If unspecified, the deployment will use .sdp.operator.version as tag
   ## @param sdp.operator.image.pullPolicy SDP Operator pull policy
+  ## @param sdp.operator.image.repository SDP operator image registry
+  ## @param sdp.operator.image.pullSecrets SDP operator pull secret
   operator:
     logLevel: info
-    timeout: "30"
+    timeout: 30
     targetTags: ""
     excludeTags: ""
-    builtinTags: "builtin"
-    dryRun: "1"
-    twoWaySync: "1"
-    cleanup: "1"
-    sslNoVerify: "0"
+    builtinTags: builtin
+    dryRun: 1
+    twoWaySync: 1
+    cleanup: 1
+    sslNoVerify: 0
     host: ""
     deviceId: ""
-    version: "v17"
+    version: v16
     image:
-      ## @param sdp.operator.image.repository SDP operator image registry
-      ## @param sdp.operator.image.pullSecrets SDP operator pull secret
       repository: ghcr.io/appgate/sdp-operator
       tag: ""
       ## Optionally specify an array of imagePullSecrets.
