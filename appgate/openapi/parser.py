@@ -281,7 +281,7 @@ class ParserContext:
     ) -> GeneratedEntity:
         log.trace(f"Registering new class {entity_name}")
         if entity_name in self.entities:
-            log.warning(f"Entity %s already registered, ignoring it", entity_name)
+            log.debug(f"Entity %s already registered, ignoring it", entity_name)
         else:
             self.entities[entity_name] = entity
         return self.entities[entity_name]
