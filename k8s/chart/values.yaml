@@ -38,18 +38,8 @@ sdp:
     version: v16
     image:
       repository: ghcr.io/appgate/sdp-operator
-      tag: ""
-      ## Optionally specify an array of imagePullSecrets.
-      ## Secrets must be manually created in the namespace.
-      ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-      ## Example:
-      ## pullSecrets:
-      ##   - myRegistryKeySecretName
+      tag: latest
       pullSecrets: []
-      ## Specify a imagePullPolicy
-      ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-      ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-      ##
       pullPolicy: Always
     fernetKey: ""
     caCert: ""
