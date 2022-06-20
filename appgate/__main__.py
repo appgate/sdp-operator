@@ -244,7 +244,7 @@ def main_run(args: OperatorArguments) -> None:
 
 
 async def dump_entities(
-    ctx: Context, output_dir: Optional[Path], stdout: bool = False
+    ctx: Context, version_suffix: str, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
     expected_appgate_state = AppgateState(
@@ -270,6 +270,7 @@ async def dump_entities(
         entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
     else:
         current_appgate_state.dump(
+            version_suffix=version_suffix,
             output_dir=output_dir,
             stdout=stdout,
             target_tags=ctx.target_tags,
@@ -278,10 +279,10 @@ async def dump_entities(
 
 
 def main_dump_entities(
-    args: OperatorArguments, stdout: bool = False, output_dir: Optional[Path] = None
+    args: OperatorArguments, version_suffix: str, stdout: bool = False, output_dir: Optional[Path] = None
 ) -> None:
     asyncio.run(
-        dump_entities(ctx=get_context(args), output_dir=output_dir, stdout=stdout)
+        dump_entities(ctx=get_context(args), version_suffix=version_suffix, output_dir=output_dir, stdout=stdout)
     )
 
 
@@ -453,6 +454,12 @@ def main() -> None:
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
     )
+    dump_entities.add_argument(
+        "--version-suffix",
+        help="Version string to append to the names of custom resource",
+        required=True,
+        default="v17",
+    )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
     dump_crd.set_defaults(cmd="dump-crd")
@@ -522,6 +529,7 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                 ),
+                version_suffix= args.version_suffix,
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,
             )

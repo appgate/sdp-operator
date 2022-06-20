@@ -119,7 +119,7 @@ def k8s_name(name: str) -> str:
     return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
 
 
-def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
+def dump_entity(entity: EntityWrapper, entity_type: str, version_suffix: str) -> Dict[str, Any]:
     r"""
     name should match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
@@ -134,7 +134,7 @@ def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
         )
     return {
         "apiVersion": f"{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}",
-        "kind": entity_type,
+        "kind": f"{entity_type}-{version_suffix}",
         "metadata": {
             "name": entity_name if entity.is_singleton() else k8s_name(entity.name)
         },
@@ -143,7 +143,7 @@ def dump_entity(entity: EntityWrapper, entity_type: str) -> Dict[str, Any]:
 
 
 def dump_entities(
-    entities: Iterable[EntityWrapper], dump_file: Optional[Path], entity_type: str
+    entities: Iterable[EntityWrapper], version_suffix: str, dump_file: Optional[Path], entity_type: str
 ) -> Optional[List[str]]:
     """
     Dump entities into a yaml file or stdout.
@@ -155,7 +155,7 @@ def dump_entities(
     log.info(f"Dumping entities of type %s", entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
-        dumped_entity = dump_entity(e, entity_type)
+        dumped_entity = dump_entity(e, entity_type, version_suffix)
         if not dumped_entity.get("spec"):
             continue
         appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
@@ -222,6 +222,7 @@ class AppgateState:
 
     def dump(
         self,
+        version_suffix: str,
         output_dir: Optional[Path] = None,
         stdout: bool = False,
         target_tags: Optional[FrozenSet[str]] = None,
@@ -244,7 +245,7 @@ class AppgateState:
                 target_tags=target_tags,
                 exclude_tags=exclude_tags,
             )
-            entity_password_fields = dump_entities(entities_to_dump, p, k)
+            entity_password_fields = dump_entities(entities_to_dump, version_suffix, p, k)
             if entity_password_fields:
                 password_fields[k] = entity_password_fields
         if len(password_fields) > 0:
