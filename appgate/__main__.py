@@ -97,13 +97,21 @@ def get_context(
     device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-    two_way_sync = (
-        os.getenv(TWO_WAY_SYNC_ENV) or ("0" if args.no_two_way_sync else "1")
-    ) == "1"
-    dry_run_mode = (os.getenv(DRY_RUN_ENV) or ("0" if args.no_dry_run else "1")) == "1"
-    cleanup_mode = (os.getenv(CLEANUP_ENV) or ("0" if args.no_cleanup else "1")) == "1"
+
+    def to_bool(value: str) -> bool:
+        # Helm JSON schema validation ensures that the input is true/false string
+        bool_map = {
+            "true": True,
+            "false": False
+        }
+        return bool_map[value.lower()]
+
+    two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
+    dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
+    cleanup_mode = args.no_cleanup or (to_bool(os.getenv(CLEANUP_ENV)))
+    no_verify = args.no_verify or (to_bool(os.getenv(APPGATE_SSL_NO_VERIFY)))
+
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
-    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, "0") == "1" or args.no_verify
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
     appgate_cacert_path = None
     verify = not no_verify

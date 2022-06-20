@@ -34,10 +34,10 @@ sdp:
     logLevel: info
     timeout: 30
     builtinTags: builtin
-    dryRun: 1
-    twoWaySync: 1
-    cleanup: 1
-    sslNoVerify: 0
+    dryRun: true
+    twoWaySync: true
+    cleanup: false
+    sslNoVerify: false
 
 ## @section SDP Optional Parameters
   ## @param sdp.operator.targetTags SDP Operator target tags
