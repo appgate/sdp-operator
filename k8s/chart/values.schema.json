@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": "object",
+  "properties": {
+    "sdp": {
+      "type": "object",
+      "properties": {
+        "serviceAccount": {
+          "type": "object",
+          "properties": {
+            "create": {
+              "type": "boolean"
+            }
+          }
+        },
+        "rbac": {
+          "type": "object",
+          "properties": {
+            "create": {
+              "type": "boolean"
+            }
+          }
+        },
+        "operator": {
+          "required": ["deviceId", "host", "version"],
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string"
+            },
+            "deviceId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string",
+              "enum": [
+                "v12",
+                "v13",
+                "v14",
+                "v15",
+                "v16",
+                "v17"
+              ]
+            },
+            "logLevel": {
+              "type": "string",
+              "enum": [
+                "info",
+                "debug",
+                "trace"
+              ]
+            },
+            "timeout": {
+              "type": "number"
+            },
+            "builtinTags": {
+              "type": "string"
+            },
+            "dryRun": {
+              "type": "boolean"
+            },
+            "cleanup": {
+              "type": "boolean"
+            },
+            "sslNoVerify": {
+              "type": "boolean"
+            },
+            "targetTags": {
+              "type": "string"
+            },
+            "excludeTags": {
+              "type": "string"
+            },
+            "fernetKey": {
+              "type": "string"
+            },
+            "caCert": {
+              "type": "string"
+            },
+            "configMapMt": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
