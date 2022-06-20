@@ -90,10 +90,7 @@ def get_dumper(platform_type: PlatformType):
             elif not platform_type == PlatformType.DIFF:
                 if not attr.repr:
                     continue
-                if (
-                    name == APPGATE_METADATA_ATTRIB_NAME
-                    and platform_type == PlatformType.APPGATE
-                ):
+                if name == APPGATE_METADATA_ATTRIB_NAME:
                     continue
                 if read_only:
                     continue

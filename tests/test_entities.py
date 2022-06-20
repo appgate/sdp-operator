@@ -401,7 +401,6 @@ def test_dumper_2():
     e2_data = {
         "fieldTwo": "this is write only",
         "fieldFour": "this is a field",
-        "appgate_metadata": {"uuid": "666-666-666-666-666"},
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e2_data
@@ -468,9 +467,6 @@ def test_appgate_metadata_secrets_dump_from_appgate():
     e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)
     e2_data = {
         "fieldThree": "this is a field",
-        "appgate_metadata": {
-            "passwordFields": ["fieldOne"],
-        },
     }
     d = K8S_DUMPER.dump(e1)
     assert d == e2_data
