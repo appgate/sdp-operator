@@ -13,14 +13,14 @@ sdp:
     deviceId: ""
     version: ""
 
-## @section SDP Parameters with defaults
+## @section SDP Optional Parameters
     ## @param sdp.operator.image.tag SDP Operator image tag
     ## @param sdp.operator.image.pullPolicy SDP Operator pull policy
     ## @param sdp.operator.image.repository SDP operator image registry
     ## @param sdp.operator.image.pullSecrets SDP operator pull secret
     image:
       repository: ghcr.io/appgate/sdp-operator
-      tag: latest
+      tag: ""
       pullSecrets: [ ]
       pullPolicy: Always
 
@@ -31,6 +31,11 @@ sdp:
     ## @param sdp.operator.cleanup SDP Operator cleanup mode
     ## @param sdp.operator.twoWaySync SDP Operator two-way-sync mode
     ## @param sdp.operator.sslNoVerify SDP Operator ssl-no-verify mode
+    ## @param sdp.operator.targetTags SDP Operator target tags
+    ## @param sdp.operator.excludeTags SDP Operator exclude tags
+    ## @param sdp.operator.caCert SDP Operator host CA cert
+    ## @param sdp.operator.fernetKey SDP Operator Fernet Key
+    ## @param sdp.operator.configMapMt SDP Operator metadata configmap
     logLevel: info
     timeout: 30
     builtinTags: builtin
@@ -38,13 +43,6 @@ sdp:
     twoWaySync: true
     cleanup: false
     sslNoVerify: false
-
-## @section SDP Optional Parameters
-  ## @param sdp.operator.targetTags SDP Operator target tags
-  ## @param sdp.operator.excludeTags SDP Operator exclude tags
-  ## @param sdp.operator.caCert SDP Operator host CA cert
-  ## @param sdp.operator.fernetKey SDP Operator Fernet Key
-  ## @param sdp.operator.configMapMt SDP Operator metadata configmap
     targetTags: ""
     excludeTags: ""
     fernetKey: ""

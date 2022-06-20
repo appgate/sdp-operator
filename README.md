@@ -53,7 +53,7 @@ The following tools are required to install the SDP Operator
    where
    * `<version>` is the version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator CRD chart version in step 1.  
    * `<api-version>` is the API version of the Appgate SDP system (`v12`, `v13`, `v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
-   * `host` is the hostname of the Appgate SDP systme you want to configure.
+   * `host` is the hostname of the Appgate SDP system you want to configure.
    * `device-id` is the UUID to assign to this operator
 
 
@@ -61,27 +61,39 @@ The following tools are required to install the SDP Operator
 
 ### SDP parameters
 
-| Name                             | Description                                                                                  | Value                          |
-| -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------ |
-| `sdp.operator.host`              | SDP Operator controller host (required)                                                      | `""`                           |
-| `sdp.operator.deviceId`          | SDP Operator device id (uuid format) (required)                                              | `""`                           |
-| `sdp.operator.version`           | SDP Operator API version                                                                     | `v17`                          |
-| `sdp.operator.logLevel`          | SDP Operator log level                                                                       | `info`                         |
-| `sdp.operator.timeout`           | SDP Operator event loop timeout                                                              | `30`                           |
-| `sdp.operator.targetTags`        | SDP Operator target tags                                                                     | `""`                           |
-| `sdp.operator.excludeTags`       | SDP Operator exclude tags                                                                    | `""`                           |
-| `sdp.operator.builtinTags`       | SDP Operator builtin tags                                                                    | `builtin`                      |
-| `sdp.operator.dryRun`            | SDP Operator dry-run mode                                                                    | `1`                            |
-| `sdp.operator.cleanup`           | SDP Operator cleanup mode                                                                    | `1`                            |
-| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode                                                               | `1`                            |
-| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode                                                              | `0`                            |
-| `sdp.operator.caCert`            | SDP Operator host CA cert                                                                    | `""`                           |
-| `sdp.operator.fernetKey`         | SDP Operator Fernet Key                                                                      | `""`                           |
-| `sdp.operator.configMapMt`       | SDP Operator metadata configmap                                                              | `""`                           |
-| `sdp.operator.image.tag`         | SDP Operator image tag. If unspecified, the deployment will use .sdp.operator.version as tag | `""`                           |
-| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy                                                                     | `Always`                       |
-| `sdp.operator.image.repository`  | SDP operator image registry                                                                  | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | SDP operator pull secret                                                                     | `[]`                           |
+| Name | Description | Value |
+| ---- | ----------- | ----- |
+
+
+### SDP Required Parameters
+
+| Name                    | Description                             | Value |
+| ----------------------- | --------------------------------------- | ----- |
+| `sdp.operator.host`     | SDP Operator controller host            | `""`  |
+| `sdp.operator.deviceId` | SDP Operator device id (uuid v4 format) | `""`  |
+| `sdp.operator.version`  | SDP Operator API version                | `""`  |
+
+
+### SDP Optional Parameters
+
+| Name                             | Description                     | Value                          |
+| -------------------------------- | ------------------------------- | ------------------------------ |
+| `sdp.operator.image.tag`         | SDP Operator image tag          | `""`                           |
+| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy        | `Always`                       |
+| `sdp.operator.image.repository`  | SDP operator image registry     | `ghcr.io/appgate/sdp-operator` |
+| `sdp.operator.image.pullSecrets` | SDP operator pull secret        | `[]`                           |
+| `sdp.operator.logLevel`          | SDP Operator log level          | `info`                         |
+| `sdp.operator.timeout`           | SDP Operator event loop timeout | `30`                           |
+| `sdp.operator.builtinTags`       | SDP Operator builtin tags       | `builtin`                      |
+| `sdp.operator.dryRun`            | SDP Operator dry-run mode       | `true`                         |
+| `sdp.operator.cleanup`           | SDP Operator cleanup mode       | `false`                        |
+| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode  | `true`                         |
+| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode | `false`                        |
+| `sdp.operator.targetTags`        | SDP Operator target tags        | `""`                           |
+| `sdp.operator.excludeTags`       | SDP Operator exclude tags       | `""`                           |
+| `sdp.operator.caCert`            | SDP Operator host CA cert       | `""`                           |
+| `sdp.operator.fernetKey`         | SDP Operator Fernet Key         | `""`                           |
+| `sdp.operator.configMapMt`       | SDP Operator metadata configmap | `""`                           |
 
 
 ### Kubernetes parameters
