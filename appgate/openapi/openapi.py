@@ -209,6 +209,19 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
 
     schema = add_items_key_to_tags(schema)
 
+    # replace underscore with period
+    def replace_underscore(obj: dict) -> dict:
+        for k, v in obj.items():
+            if isinstance(v, dict):
+                obj[k] = replace_underscore(v)
+        for key in obj.keys():
+            if "_" in key:
+                new_key = key.replace("_", ".")
+                obj[new_key] = obj.pop(key)
+        return obj
+
+    schema = replace_underscore(schema)
+
     crd = {
         "apiVersion": K8S_API_VERSION,
         "kind": K8S_CRD_KIND,

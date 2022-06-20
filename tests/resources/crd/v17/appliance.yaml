@@ -620,7 +620,7 @@ spec:
                   enabled:
                     default: false
                     type: boolean
-                  snmpd_conf:
+                  snmpd.conf:
                     default: ''
                     type: string
                   tcpPort:
