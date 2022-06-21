@@ -311,7 +311,7 @@ class ParserContext:
 class Parser:
     def __init__(self, parser_context: ParserContext, namespace: str) -> None:
         self.namespace = namespace
-        self.previous_namespaces = set()
+        self.previous_namespaces: Set[str] = set()
         self.parser_context = parser_context
         self.data: Dict[str, Any] = parser_context.load_namespace(namespace)
 
@@ -424,7 +424,7 @@ class Parser:
         new_definition["description"] = ".".join(descriptions)
         return new_definition
 
-    def parse_discriminator(self, definition: OpenApiDict) -> OpenApiDict:
+    def parse_discriminator(self, definition: Any) -> OpenApiDict:
         new_definition: OpenApiDict = {
             "type": "object",
             "required": [],
@@ -436,20 +436,21 @@ class Parser:
         new_definition["properties"].update(definition.get("properties", {}))
 
         discriminator = definition.get("discriminator")
-        propertyName = discriminator["propertyName"]
-        mapping = discriminator["mapping"]
+        if discriminator:
+            property_name = discriminator["propertyName"]
+            mapping = discriminator["mapping"]
 
-        new_mapping = {}
-        for key, ref in mapping.items():
-            if not isinstance(ref, dict):
-                ref = self.resolve_reference(ref, [])
-            if is_compound(ref):
-                ref = self.parse_all_of(ref["allOf"])
-            new_mapping.update({key: ref})
+            new_mapping = {}
+            for key, ref in mapping.items():
+                if not isinstance(ref, dict):
+                    ref = self.resolve_reference(ref, [])
+                if is_compound(ref):
+                    ref = self.parse_all_of(ref["allOf"])
+                new_mapping.update({key: ref})
 
-        new_definition["discriminator"]["propertyName"] = propertyName
-        new_definition["discriminator"]["mapping"] = new_mapping
-        new_definition["description"] = definition.get("description", "")
+            new_definition["discriminator"]["propertyName"] = property_name
+            new_definition["discriminator"]["mapping"] = new_mapping
+            new_definition["description"] = definition.get("description", "")
 
         return new_definition
 

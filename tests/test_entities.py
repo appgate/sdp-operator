@@ -31,8 +31,8 @@ def load_entities(version: str) -> None:
     open_api = generate_api_spec(Path(f"api_specs/{version}").parent / version)
     entities = open_api.entities
     for f in os.listdir(f"tests/resources/{version}"):
-        with (Path(f"tests/resources/{version}") / f).open("r") as f:
-            documents = list(yaml.safe_load_all(f))
+        with (Path(f"tests/resources/{version}") / f).open("r") as doc:
+            documents = list(yaml.safe_load_all(doc))
             for d in documents:
                 e = entities[d["kind"]].cls
                 # We load from a k8s yaml spec here

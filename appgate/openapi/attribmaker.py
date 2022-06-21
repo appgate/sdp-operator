@@ -146,7 +146,7 @@ class DefaultAttribMaker(AttribMaker):
         required_fields: List[str],
         instance_maker_config: EntityClassGeneratorConfig,
     ) -> AttributesDict:
-        vs = {
+        vs: Dict[str, Any] = {
             "type": Optional[self.tpe],
             "eq": False,
             "metadata": {

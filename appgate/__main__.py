@@ -98,10 +98,12 @@ def get_context(
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
 
-    def to_bool(value: str) -> bool:
-        # Helm JSON schema validation ensures that the input is true/false string
-        bool_map = {"true": True, "false": False}
-        return bool_map[value.lower()]
+    def to_bool(value: Optional[str]) -> bool:
+        if value:
+            # Helm JSON schema validation ensures that the input is true/false string
+            bool_map = {"true": True, "false": False}
+            return bool_map[value.lower()]
+        return False
 
     two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
     dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
