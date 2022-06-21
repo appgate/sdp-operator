@@ -355,6 +355,7 @@ class APISpec:
     def validate(
         self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader
     ) -> Entity_T:
+        entity_kind = entity_kind.split("-")[0]
         entity_type = self.entities.get(entity_kind)
         if not entity_type:
             raise AppgateException(
