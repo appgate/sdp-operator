@@ -59,12 +59,6 @@ The following tools are required to install the SDP Operator
 
 ## Parameters
 
-### SDP parameters
-
-| Name | Description | Value |
-| ---- | ----------- | ----- |
-
-
 ### SDP Required Parameters
 
 | Name                    | Description                             | Value |
