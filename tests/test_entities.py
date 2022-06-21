@@ -34,7 +34,8 @@ def load_entities(version: str) -> None:
             documents = list(yaml.safe_load_all(f))
             for d in documents:
                 e = entities[d["kind"]].cls
-                assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
+                # We load from a k8s yaml spec here
+                assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
 
 
 @pytest.mark.skip("Skip test until v17 identity provider API spec fix is backported")

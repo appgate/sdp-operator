@@ -137,11 +137,20 @@ class EntityClassGenerator:
         """
         # Add attributes if needed after instance level
         if "name" not in self.attributes and instance_maker_config.singleton:
-            self.attributes["name"] = create_default_attrib("name", self.name)
+            # This field is included by the operator so never load/dump it
+            self.attributes["name"] = create_default_attrib(
+                "name", self.name, read_only=True, write_only=True
+            )
         if "id" not in self.attributes and instance_maker_config.singleton:
-            self.attributes["id"] = create_default_attrib("id", self.name)
+            # This field is included by the operator so never load/dump it
+            self.attributes["id"] = create_default_attrib(
+                "id", self.name, read_only=True, write_only=True
+            )
         if "tags" not in self.attributes and instance_maker_config.singleton:
-            self.attributes["tags"] = create_default_attrib("tags", BUILTIN_TAGS)
+            # This field is included by the operator so never load/dump it
+            self.attributes["tags"] = create_default_attrib(
+                "tags", BUILTIN_TAGS, read_only=True, write_only=True
+            )
 
         # Get values from attrib makers
         values = dict(
