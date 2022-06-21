@@ -100,10 +100,7 @@ def get_context(
 
     def to_bool(value: str) -> bool:
         # Helm JSON schema validation ensures that the input is true/false string
-        bool_map = {
-            "true": True,
-            "false": False
-        }
+        bool_map = {"true": True, "false": False}
         return bool_map[value.lower()]
 
     two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
@@ -279,10 +276,18 @@ async def dump_entities(
 
 
 def main_dump_entities(
-    args: OperatorArguments, version_suffix: str, stdout: bool = False, output_dir: Optional[Path] = None
+    args: OperatorArguments,
+    version_suffix: str,
+    stdout: bool = False,
+    output_dir: Optional[Path] = None,
 ) -> None:
     asyncio.run(
-        dump_entities(ctx=get_context(args), version_suffix=version_suffix, output_dir=output_dir, stdout=stdout)
+        dump_entities(
+            ctx=get_context(args),
+            version_suffix=version_suffix,
+            output_dir=output_dir,
+            stdout=stdout,
+        )
     )
 
 
@@ -529,7 +534,7 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                 ),
-                version_suffix= args.version_suffix,
+                version_suffix=args.version_suffix,
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,
             )

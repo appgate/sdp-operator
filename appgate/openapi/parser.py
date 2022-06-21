@@ -47,7 +47,9 @@ from appgate.openapi.utils import (
     is_compound,
     is_object,
     is_ref,
-    is_array, is_mapping, is_discriminator,
+    is_array,
+    is_mapping,
+    is_discriminator,
 )
 from appgate.secrets import PasswordAttribMaker
 from appgate.types import BUILTIN_TAGS
@@ -328,7 +330,9 @@ class Parser:
             if not resolved_ref:
                 for previous in self.previous_namespaces:
                     keys = key_copy.copy()
-                    resolved_ref = Parser(self.parser_context, namespace=previous).get_keys(keys)
+                    resolved_ref = Parser(
+                        self.parser_context, namespace=previous
+                    ).get_keys(keys)
                     if resolved_ref or len(self.previous_namespaces) == 0:
                         break
 

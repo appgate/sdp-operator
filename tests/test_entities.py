@@ -26,6 +26,7 @@ from tests.utils import (
     FINGERPRINT,
 )
 
+
 def load_entities(version: str) -> None:
     open_api = generate_api_spec(Path(f"api_specs/{version}").parent / version)
     entities = open_api.entities
@@ -87,9 +88,13 @@ def test_loader_discriminator():
         type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
     )
     assert e2
-    e3 = EntityDiscriminatorOne(type="DiscriminatorOne", fieldOne="foo", discriminatorOneFieldOne="foo")
+    e3 = EntityDiscriminatorOne(
+        type="DiscriminatorOne", fieldOne="foo", discriminatorOneFieldOne="foo"
+    )
     assert e3
-    e4 = EntityDiscriminatorTwo(type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False)
+    e4 = EntityDiscriminatorTwo(
+        type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
+    )
     assert e4
 
     # EntityDiscriminator with type DiscriminatorOne
