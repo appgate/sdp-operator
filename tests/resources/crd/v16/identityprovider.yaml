@@ -121,6 +121,7 @@ spec:
                 default: 0
                 type: integer
               name:
+                default: ''
                 type: string
               notes:
                 default: ''
@@ -217,7 +218,6 @@ spec:
                 default: sAMAccountName
                 type: string
             required:
-            - name
             - type
             type: object
         type: object

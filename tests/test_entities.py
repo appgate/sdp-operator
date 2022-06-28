@@ -44,7 +44,6 @@ def test_load_entities_v12():
     load_entities("v12")
 
 
-@pytest.mark.skip("Skip test until v17 identity provider API spec fix is backported")
 def test_load_entities_v16():
     load_entities("v16")
 
