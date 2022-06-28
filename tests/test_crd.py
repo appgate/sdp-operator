@@ -40,7 +40,6 @@ def test_generate_crd_v14():
     assert_equal_crd("v14")
 
 
-@pytest.mark.skip("Skip test until v17 identity provider API spec fix is backported")
 def test_generate_crd_v15():
     assert_equal_crd("v15")
 
