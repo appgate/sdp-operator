@@ -25,12 +25,12 @@ def assert_equal_crd(version: str) -> None:
             assert yaml.safe_load(crd) == yaml.safe_load(f)
 
 
-@pytest.mark.skip("Skip test until v17 identity provider API spec fix is backported")
+@pytest.mark.skip("SDP v5.2 is unsupported")
 def test_generate_crd_v12():
     assert_equal_crd("v12")
 
 
-@pytest.mark.skip("Skip test until v17 identity provider API spec fix is backported")
+@pytest.mark.skip("SDP v5.2 is unsupported")
 def test_generate_crd_v13():
     assert_equal_crd("v13")
 
