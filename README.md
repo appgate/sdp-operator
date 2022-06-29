@@ -2,8 +2,6 @@
 SDP Operator is a cloud-native project to declaratively configure and sync the state of an Appgate SDP system. 
 
 SDP Operator supports the following API versions:
-* v12 (Appgate version 5.1)
-* v13 (Appgate version 5.2)
 * v14 (Appgate version 5.3)
 * v15 (Appgate version 5.4)
 * v16 (Appgate version 5.5)
@@ -29,7 +27,7 @@ The following tools are required to install the SDP Operator
    $ helm install sdp-operator-crd-<api-version> oci://ghcr.io/appgate/charts/sdp-operator-crd-<api-version> --version <version>
    ``` 
    where:
-   * `<api-version>` is the API version of the Appgate SDP system (`v12`, `v13`, `v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
+   * `<api-version>` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
    * `<version>` is the version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator chart version in step 3.
 
 
@@ -52,7 +50,7 @@ The following tools are required to install the SDP Operator
    ```
    where
    * `<version>` is the version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator CRD chart version in step 1.  
-   * `<api-version>` is the API version of the Appgate SDP system (`v12`, `v13`, `v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
+   * `<api-version>` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
    * `host` is the hostname of the Appgate SDP system you want to configure.
    * `device-id` is the UUID to assign to this operator
 
@@ -279,11 +277,10 @@ yaml file.
 The appgate-operator is provided as a docker image tagged with the appgate API
 version. For example:
 
- - appgate-operator:v12
- - appgate-operator:v13
  - appgate-operator:v14
  - appgate-operator:v15
  - appgate-operator:v16
+ - appgate-operator:v17
 
 Each image uses that specific API version by default but contains the specs for
 all the API versions supported.
@@ -300,7 +297,7 @@ make docker-build-image && make docker-images
 
 To push the images into a registry just run:
 ```shell
-for tag in v12 v13 v14 v15 v16 v17; do
+for tag in v14 v15 v16 v17; do
   docker tag appgate-operator:${tag} user/appgate-operator:${tag} && \
   docker push user/appgate-operator:${tag}
 done

@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ["v12", "v13", "v14", "v15", "v16", "v17"]
+        version: ["v14", "v15", "v16", "v17"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -125,7 +125,7 @@ jobs:
       HELM_EXPERIMENTAL_OCI: 1
     strategy:
       matrix:
-        version: ["v12", "v13", "v14", "v15", "v16", "v17"]
+        version: ["v14", "v15", "v16", "v17"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
