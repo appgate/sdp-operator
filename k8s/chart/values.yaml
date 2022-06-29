@@ -9,7 +9,7 @@ sdp:
   operator:
     host: ""
     deviceId: ""
-    version: ""
+    version: v17
 
 ## @section SDP Optional Parameters
     ## @param sdp.operator.image.tag SDP Operator image tag
