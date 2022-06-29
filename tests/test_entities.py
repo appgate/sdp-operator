@@ -44,6 +44,14 @@ def test_load_entities_v12():
     load_entities("v12")
 
 
+def test_load_entities_v14():
+    load_entities("v14")
+
+
+def test_load_entities_v15():
+    load_entities("v15")
+
+
 def test_load_entities_v16():
     load_entities("v16")
 
