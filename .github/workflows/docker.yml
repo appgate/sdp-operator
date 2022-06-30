@@ -59,6 +59,19 @@ jobs:
       - name: Check formatting with black
         run: |
           black --check --diff appgate tests
+      - name: Get Operator chart version
+        id: operatorChartVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.version' k8s/chart/Chart.yaml
+      - name: Get CRD chart version
+        id: crdChartVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.version' k8s/crd/Chart.yaml
+      - name: Compare Operator vs CRD chart version
+        run: |
+          [ "${{ steps.operatorChartVersion.outputs.result }}" == "${{ steps.crdChartVersion.outputs.result }}" ] || (echo "Operator and CRD chart version do not match" && exit 1)
 
   operator:
     needs: images
@@ -153,19 +166,9 @@ jobs:
             echo '{{ end }}' >> v${version}.yaml
             cmp k8s/crd/templates/v${version}.yaml v${version}.yaml || (echo "Generated CRDs and checked-in CRDs do not match." && exit 1)
           done
-      - name: Get Operator chart version
-        id: operatorChartVersion
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval '.version' k8s/chart/Chart.yaml
-      - name: Get CRD chart version
-        id: crdChartVersion
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval '.version' k8s/crd/Chart.yaml
-      - name: Compare Operator vs CRD chart version
+      - name: Read crd chart version
         run: |
-          [ "${{ steps.operatorChartVersion.outputs.result }}" == "${{ steps.crdChartVersion.outputs.result }}" ] || (echo "Operator and CRD chart version do not match" && exit 1)
+          echo "chart_version=$(grep version: k8s/crd/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v1
         with:
           version: 3.7.2
