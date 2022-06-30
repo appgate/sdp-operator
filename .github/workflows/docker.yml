@@ -146,7 +146,7 @@ jobs:
           pip install -r requirements.txt -r requirements-build.txt
       - name: Compare CRDs
         run: |
-          for version in $(seq 12 17); do
+          for version in $(seq 14 17); do
             python3 -m appgate --spec-directory api_specs/v${version} dump-crd --version v${version}
             echo '{{ if eq .Values.version '\"v"${version}"\"' }}' | cat - *-crd.yml > v${version}.yaml
             echo '{{ end }}' >> v${version}.yaml
