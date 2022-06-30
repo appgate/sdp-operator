@@ -61,6 +61,7 @@ jobs:
           black --check --diff appgate tests
 
   operator:
+    needs: images
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
@@ -119,7 +120,7 @@ jobs:
             ghcr.io/${{ github.repository }}/sdp-operator:${{ matrix.version }}
 
   crd:
-    needs: build
+    needs: images
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
