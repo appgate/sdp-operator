@@ -163,4 +163,4 @@ jobs:
         run: helm package k8s/crd
       - name: Push chart
         if: ${{ github.ref == 'refs/heads/main' }}
-        run: helm push sdp-operator-crd-${{ matrix.version }}-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
+        run: helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
