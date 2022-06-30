@@ -60,7 +60,7 @@ jobs:
         run: |
           black --check --diff appgate tests
 
-  helm:
+  operator:
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
