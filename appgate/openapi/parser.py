@@ -405,6 +405,10 @@ class Parser:
         return definition
 
     def parse_all_of(self, definitions: List[OpenApiDict]) -> OpenApiDict:
+        """
+        Parse the allOf element in OpenAPI spec. Every element in the allOf is resolved
+        and added back to the definition.
+        """
         for i, d in enumerate(definitions):
             definitions[i] = self.resolve_definition({"to-resolve": d})["to-resolve"]
         new_definition: OpenApiDict = {
@@ -425,6 +429,10 @@ class Parser:
         return new_definition
 
     def parse_discriminator(self, definition: Any) -> OpenApiDict:
+        """
+        Parse the discriminator element in OpenAPI spec. Each reference in the mapping
+        is fully resolved and added back to the definition.
+        """
         new_definition: OpenApiDict = {
             "type": "object",
             "required": [],
