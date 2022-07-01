@@ -136,6 +136,10 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
     prev_default_object_fields = settings.default_object_fields
 
     def attrs_fields(cls: type) -> Optional[Sequence[ObjectField]]:
+        """
+        Custom attribute getter for apischema. It ignores the Appgate and Entity metadata attributes
+        and read-only attributes.
+        """
         if attrs.has(cls):
             obj: List[ObjectField] = []
             for a in attrs.fields(cls):
@@ -168,8 +172,11 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
     )
     schema = deserialization_schema(entity)
 
-    # apischema deserializes nullable properties into [JsonType.*, JsonType.NULL]
     def replace_nullable_type(obj: dict) -> dict:
+        """
+        Recursively remove JsonType.NULL from type. When the apischema deserializer encounters
+        a nullable property, it produces [JsonType.*, JsonType.NULL].
+        """
         for k, v in obj.items():
             if isinstance(v, dict):
                 obj[k] = replace_nullable_type(v)
@@ -183,9 +190,13 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
 
     schema = replace_nullable_type(dict(schema))
 
-    # comply with OpenAPI v3 schema validated by x-kubernetes-validation
-    # https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/_print/#validation
     def remove_keys(obj: dict, key_to_del: str) -> dict:
+        """
+        Recursively remove '$schema' 'uniqueItems' and 'additionalProperties' keys from the schema
+        to comply with the OpenAPI v4 schema validated by x-kubernetes-validation.
+
+        See https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/_print/#validation
+        """
         if isinstance(obj, dict):
             obj = {
                 key: remove_keys(value, key_to_del)
@@ -198,8 +209,12 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
     schema = remove_keys(schema, "uniqueItems")
     schema = remove_keys(schema, "additionalProperties")
 
-    # add missing required value '.items' for tags - deserialization cannot determine the type from BUILTIN_TAGS
     def add_items_key_to_tags(obj: dict) -> dict:
+        """
+        Recursively add 'items' key for schemas containing tags. When the deserializer encounters a schema
+        that has a tag attribute made from BUILTIN_TAGS, it cannot determine the type. YAML dumper does not
+        like JsonType.NULL.
+        """
         for k, v in obj.items():
             if isinstance(v, dict):
                 obj[k] = add_items_key_to_tags(v)
@@ -209,8 +224,11 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
 
     schema = add_items_key_to_tags(schema)
 
-    # replace underscore with period
     def replace_underscore(obj: dict) -> dict:
+        """
+        Recursively replace underscore with period in the keys of a dictionary object. When the apischema
+        deserializer encounters a key with a period, it replaces it with an underscore. We want to revert that.
+        """
         for k, v in obj.items():
             if isinstance(v, dict):
                 obj[k] = replace_underscore(v)
@@ -253,8 +271,10 @@ def generate_crd(entity: Type, short_names: Dict[str, str], version_suffix: str)
         },
     }
 
-    # Register yaml representers for apischema custom types AliasedStr and JsonType
     def str_representer(dumper, data):
+        """
+        Register representers for types unknown to YAML safe dumper.
+        """
         return dumper.represent_scalar("tag:yaml.org,2002:str", data)
 
     yaml.SafeDumper.add_representer(AliasedStr, str_representer)
