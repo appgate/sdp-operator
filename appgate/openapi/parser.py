@@ -428,7 +428,7 @@ class Parser:
         new_definition["description"] = ".".join(descriptions)
         return new_definition
 
-    def parse_discriminator(self, definition: Any) -> OpenApiDict:
+    def parse_discriminator(self, definition: OpenApiDict) -> OpenApiDict:
         """
         Parse the discriminator element in OpenAPI spec. Each reference in the mapping
         is fully resolved and added back to the definition.
@@ -787,7 +787,7 @@ class Parser:
         if is_compound(definition):
             definition_to_use = self.parse_all_of(cast(dict, definition)["allOf"])
         elif is_discriminator(definition):
-            definition_to_use = self.parse_discriminator(definition)
+            definition_to_use = self.parse_discriminator(cast(dict, definition))
         elif is_object(definition):
             definition_to_use = definition
 
