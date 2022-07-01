@@ -28,6 +28,8 @@ class AttribMaker:
         factory: Optional[type],
         definition: OpenApiDict,
         repr: bool = True,
+        read_only: Optional[bool] = None,
+        write_only: Optional[bool] = None,
     ) -> None:
         self.base_tpe = base_tpe
         self.name = name
@@ -36,6 +38,8 @@ class AttribMaker:
         self.factory = factory
         self.repr = repr
         self.definition = definition
+        self.read_only = read_only
+        self.write_only = write_only
 
     @property
     def metadata(self) -> Dict[str, Any]:
@@ -71,9 +75,14 @@ class AttribMaker:
         required = self.name in required_fields
         nullable = self.definition.get("nullable", False)
         definition = self.definition
-        read_only = definition.get("readOnly", False)
+        if self.read_only:
+            read_only = self.read_only
+        else:
+            read_only = definition.get("readOnly", False)
         format = definition.get("format")
-        if type(format) is not dict and format in write_only_formats:
+        if self.write_only:
+            write_only = self.write_only
+        elif type(format) is not dict and format in write_only_formats:
             write_only = True
         else:
             write_only = definition.get("writeOnly", False)
@@ -137,7 +146,7 @@ class DefaultAttribMaker(AttribMaker):
         required_fields: List[str],
         instance_maker_config: EntityClassGeneratorConfig,
     ) -> AttributesDict:
-        vs = {
+        vs: Dict[str, Any] = {
             "type": Optional[self.tpe],
             "eq": False,
             "metadata": {
@@ -146,6 +155,10 @@ class DefaultAttribMaker(AttribMaker):
             },
             "repr": self.repr,
         }
+        if self.read_only and "metadata" in vs:
+            vs["metadata"]["readOnly"] = self.read_only
+        if self.write_only and "metadata" in vs:
+            vs["metadata"]["writeOnly"] = self.write_only
         if self.default:
             vs["default"] = self.default
             vs["type"] = self.tpe
@@ -155,7 +168,9 @@ class DefaultAttribMaker(AttribMaker):
         return vs
 
 
-def create_default_attrib(name: str, attrib_value: Any) -> DefaultAttribMaker:
+def create_default_attrib(
+    name: str, attrib_value: Any, write_only: bool = False, read_only: bool = False
+) -> DefaultAttribMaker:
     return DefaultAttribMaker(
         tpe=type(attrib_value),
         base_tpe=type(attrib_value),
@@ -163,4 +178,6 @@ def create_default_attrib(name: str, attrib_value: Any) -> DefaultAttribMaker:
         default=attrib_value,
         factory=None,
         definition={},
+        read_only=read_only,
+        write_only=write_only,
     )

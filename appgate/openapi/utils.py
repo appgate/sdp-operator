@@ -24,6 +24,11 @@ def is_compound(entry: Any) -> bool:
     return isinstance(entry, dict) and any(filter(lambda c: c in entry, composite))
 
 
+def is_discriminator(entry: Any) -> bool:
+    composite = {"discriminator"}
+    return isinstance(entry, dict) and any(filter(lambda c: c in entry, composite))
+
+
 def get_field(entity: Entity_T, field: str) -> Any:
     try:
         return getattr(entity, field)
@@ -55,6 +60,13 @@ def is_ref(entry: Any) -> bool:
     Checks if entry is a reference
     """
     return isinstance(entry, dict) and "$ref" in entry
+
+
+def is_mapping(key: Any, value: Any) -> bool:
+    """
+    Checks if entry is a mapping
+    """
+    return isinstance(value, dict) and "mapping" in key
 
 
 def is_object(entry: Any) -> bool:

@@ -1,71 +1,58 @@
-## @section SDP parameters
-
 ## SDP
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
-  ## @param sdp.operator.host SDP Operator controller host (required)
-  ## @param sdp.operator.deviceId SDP Operator device id (uuid format) (required)
+## @section SDP Required Parameters
+  ## @param sdp.operator.host SDP Operator controller host
+  ## @param sdp.operator.deviceId SDP Operator device id (uuid v4 format)
   ## @param sdp.operator.version SDP Operator API version
-  ## @param sdp.operator.logLevel SDP Operator log level
-  ## @param sdp.operator.timeout SDP Operator event loop timeout
-  ## @param sdp.operator.targetTags SDP Operator target tags
-  ## @param sdp.operator.excludeTags SDP Operator exclude tags
-  ## @param sdp.operator.builtinTags SDP Operator builtin tags
-  ## @param sdp.operator.dryRun SDP Operator dry-run mode
-  ## @param sdp.operator.cleanup SDP Operator cleanup mode
-  ## @param sdp.operator.twoWaySync SDP Operator two-way-sync mode
-  ## @param sdp.operator.sslNoVerify SDP Operator ssl-no-verify mode
-  ## @param sdp.operator.caCert SDP Operator host CA cert
-  ## @param sdp.operator.fernetKey SDP Operator Fernet Key
-  ## @param sdp.operator.configMapMt SDP Operator metadata configmap
-  ## @param sdp.operator.image.tag SDP Operator image tag
-  ## @param sdp.operator.image.pullPolicy SDP Operator pull policy
   operator:
-    logLevel: info
-    timeout: "30"
-    targetTags: ""
-    excludeTags: ""
-    builtinTags: "builtin"
-    dryRun: "1"
-    twoWaySync: "1"
-    cleanup: "1"
-    sslNoVerify: "0"
     host: ""
     deviceId: ""
-    version: "v16"
+    version: v17
+
+## @section SDP Optional Parameters
+    ## @param sdp.operator.image.tag SDP Operator image tag
+    ## @param sdp.operator.image.pullPolicy SDP Operator pull policy
+    ## @param sdp.operator.image.repository SDP operator image registry
+    ## @param sdp.operator.image.pullSecrets SDP operator pull secret
     image:
-      ## @param sdp.operator.image.repository SDP operator image registry
-      ## @param sdp.operator.image.pullSecrets SDP operator pull secret
       repository: ghcr.io/appgate/sdp-operator
-      tag: latest
-      ## Optionally specify an array of imagePullSecrets.
-      ## Secrets must be manually created in the namespace.
-      ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-      ## Example:
-      ## pullSecrets:
-      ##   - myRegistryKeySecretName
-      pullSecrets: []
-      ## Specify a imagePullPolicy
-      ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-      ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-      ##
+      tag: ""
+      pullSecrets: [ ]
       pullPolicy: Always
+
+    ## @param sdp.operator.logLevel SDP Operator log level
+    ## @param sdp.operator.timeout SDP Operator event loop timeout
+    ## @param sdp.operator.builtinTags SDP Operator builtin tags
+    ## @param sdp.operator.dryRun SDP Operator dry-run mode
+    ## @param sdp.operator.cleanup SDP Operator cleanup mode
+    ## @param sdp.operator.twoWaySync SDP Operator two-way-sync mode
+    ## @param sdp.operator.sslNoVerify SDP Operator ssl-no-verify mode
+    ## @param sdp.operator.targetTags SDP Operator target tags
+    ## @param sdp.operator.excludeTags SDP Operator exclude tags
+    ## @param sdp.operator.caCert SDP Operator host CA cert
+    ## @param sdp.operator.fernetKey SDP Operator Fernet Key
+    ## @param sdp.operator.configMapMt SDP Operator metadata configmap
+    logLevel: info
+    timeout: 30
+    builtinTags: builtin
+    dryRun: true
+    twoWaySync: true
+    cleanup: false
+    sslNoVerify: false
+    targetTags: ""
+    excludeTags: ""
     fernetKey: ""
     caCert: ""
     configMapMt: ""
 
 ## @section Kubernetes parameters
 
-## Specifies whether a ServiceAccount should be created
-##
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
 serviceAccount:
   create: true
 
-## Specifies whether RBAC resources should be created
-##
 ## @param rbac.create Whether to create & use RBAC resources or not
-##
 rbac:
   create: true

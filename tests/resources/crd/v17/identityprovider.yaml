@@ -17,6 +17,211 @@ spec:
       openAPIV3Schema:
         properties:
           spec:
+            properties:
+              adminDistinguishedName:
+                default: ''
+                type: string
+              adminPassword:
+                default: null
+                type: string
+              adminProvider:
+                default: false
+                type: boolean
+              audience:
+                default: ''
+                type: string
+              authenticationProtocol:
+                default: CHAP
+                type: string
+              baseDn:
+                default: ''
+                type: string
+              blockLocalDnsRequests:
+                default: false
+                type: boolean
+              caCertificates:
+                items:
+                  type: string
+                type: array
+              certificateAttribute:
+                default: ''
+                type: string
+              certificatePriorities:
+                items:
+                  properties:
+                    type:
+                      default: Template
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - value
+                  type: object
+                type: array
+              certificateUserAttribute:
+                default: userPrincipalName
+                type: string
+              claimMappings:
+                items:
+                  properties:
+                    attributeName:
+                      type: string
+                    claimName:
+                      type: string
+                    encrypt:
+                      default: false
+                      type: boolean
+                    list:
+                      default: false
+                      type: boolean
+                  required:
+                  - attributeName
+                  - claimName
+                  type: object
+                type: array
+              decryptionKey:
+                default: ''
+                type: string
+              deviceLimitPerUser:
+                default: 100
+                type: integer
+              dnsSearchDomains:
+                items:
+                  type: string
+                type: array
+              dnsServers:
+                items:
+                  type: string
+                type: array
+              enforceWindowsNetworkProfileAsDomain:
+                type: boolean
+              forceAuthn:
+                type: boolean
+              hostnames:
+                items:
+                  type: string
+                type: array
+              inactivityTimeoutMinutes:
+                default: 0
+                type: integer
+              ipPoolV4:
+                type: string
+              ipPoolV6:
+                type: string
+              issuer:
+                default: ''
+                type: string
+              membershipBaseDn:
+                default: ''
+                type: string
+              membershipFilter:
+                default: (objectCategory=group)
+                type: string
+              minPasswordLength:
+                default: 0
+                type: integer
+              name:
+                default: ''
+                type: string
+              notes:
+                default: ''
+                type: string
+              objectClass:
+                default: user
+                type: string
+              onBoarding2FA:
+                properties:
+                  alwaysRequired:
+                    type: boolean
+                  claimSuffix:
+                    default: onBoarding
+                    type: string
+                  message:
+                    default: ''
+                    type: string
+                  mfaProviderId:
+                    type: string
+                required:
+                - mfaProviderId
+                type: object
+              onDemandClaimMappings:
+                items:
+                  properties:
+                    claimName:
+                      type: string
+                    command:
+                      type: string
+                    parameters:
+                      properties:
+                        args:
+                          default: ''
+                          type: string
+                        name:
+                          default: ''
+                          type: string
+                        path:
+                          default: ''
+                          type: string
+                      type: object
+                    platform:
+                      type: string
+                  required:
+                  - command
+                  - claimName
+                  - platform
+                  type: object
+                type: array
+              passwordWarning:
+                properties:
+                  enabled:
+                    type: boolean
+                  message:
+                    default: ''
+                    type: string
+                  thresholdDays:
+                    default: 5
+                    type: integer
+                type: object
+              port:
+                type: integer
+              providerCertificate:
+                default: ''
+                type: string
+              redirectUrl:
+                default: ''
+                type: string
+              scope:
+                default: openid profile email offline_access
+                type: string
+              sharedSecret:
+                default: null
+                type: string
+              skipX509ExternalChecks:
+                type: boolean
+              sslEnabled:
+                default: false
+                type: boolean
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+              userLockoutDurationMinutes:
+                default: 1
+                type: integer
+              userLockoutThreshold:
+                default: 5
+                type: integer
+              userScripts:
+                items:
+                  type: string
+                type: array
+              usernameAttribute:
+                default: sAMAccountName
+                type: string
+            required:
+            - type
             type: object
         type: object
     served: true

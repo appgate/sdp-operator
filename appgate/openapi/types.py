@@ -44,6 +44,7 @@ SPEC_ENTITIES = {
     "/conditions": "Condition",
     "/entitlements": "Entitlement",
     "/trusted-certificates": "TrustedCertificate",
+    "/service-users": "ServiceUser",
 }
 
 K8S_APPGATE_DOMAIN = "beta.appgate.com"
@@ -293,7 +294,7 @@ class EntityClassGeneratorConfig:
     def properties_names(self) -> Iterator[Tuple[str, str]]:
         return map(
             lambda n: (n, normalize_attrib_name(n)),
-            self.definition.get("properties", {}).keys(),
+            self.get_properties(),
         )
 
     def attrib_maker_config(self, attribute: str) -> "AttribMakerConfig":
@@ -309,6 +310,18 @@ class EntityClassGeneratorConfig:
         return AttribMakerConfig(
             instance_maker_config=self, name=attribute, definition=definition
         )
+
+    def get_properties(self) -> dict:
+        properties = self.definition.get("properties", {})
+
+        # If entity is discriminator, merge all properties of the mapping
+        discriminator = self.definition.get("discriminator", {})
+        if discriminator:
+            mapping = discriminator.get("mapping", {})
+            for k, v in mapping.items():
+                properties.update(v["properties"])
+
+        return properties
 
 
 @attrs()
@@ -342,6 +355,7 @@ class APISpec:
     def validate(
         self, data: Dict[str, Any], entity_kind: str, loader: EntityLoader
     ) -> Entity_T:
+        entity_kind = entity_kind.split("-")[0]
         entity_type = self.entities.get(entity_kind)
         if not entity_type:
             raise AppgateException(

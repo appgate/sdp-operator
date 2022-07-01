@@ -204,6 +204,18 @@ def run_entity_loop(
                 crd,
             )
             sys.exit(1)
+        except StopIteration:
+            log.debug(
+                "[appgate-operator/%s] Event loop stopped, re-initializing watchers",
+                namespace,
+            )
+            watcher = Watch().stream(
+                get_crds().list_namespaced_custom_object,
+                K8S_APPGATE_DOMAIN,
+                K8S_APPGATE_VERSION,
+                namespace,
+                crd,
+            )
         except Exception:
             log.exception(
                 "[appgate-operator/%s] Unhandled error for %s", namespace, crd

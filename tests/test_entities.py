@@ -27,32 +27,37 @@ from tests.utils import (
 )
 
 
-def test_load_entities_v12():
-    """
-    Read all yaml files in v12 and try to load them according to the kind.
-    """
-    open_api = generate_api_spec(Path(SPEC_DIR).parent / "v12")
+def load_entities(version: str) -> None:
+    open_api = generate_api_spec(Path(f"api_specs/{version}").parent / version)
     entities = open_api.entities
-    for f in os.listdir("tests/resources/v12"):
-        with (Path("tests/resources/v12") / f).open("r") as f:
-            documents = list(yaml.safe_load_all(f))
+    for f in os.listdir(f"tests/resources/{version}"):
+        with (Path(f"tests/resources/{version}") / f).open("r") as doc:
+            documents = list(yaml.safe_load_all(doc))
             for d in documents:
                 e = entities[d["kind"]].cls
-                assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
+                # We load from a k8s yaml spec here
+                assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
+
+
+@pytest.mark.skip("SDP v5.2 is unsupported")
+def test_load_entities_v12():
+    load_entities("v12")
+
+
+def test_load_entities_v14():
+    load_entities("v14")
+
+
+def test_load_entities_v15():
+    load_entities("v15")
 
 
 def test_load_entities_v16():
-    """
-    Real all yaml files in v16 and try to load them according to the kind
-    """
-    open_api = generate_api_spec(Path("api_specs/v16").parent / "v16")
-    entities = open_api.entities
-    for f in os.listdir("tests/resources/v16"):
-        with (Path("tests/resources/v16") / f).open("r") as f:
-            documents = list(yaml.safe_load_all(f))
-            for d in documents:
-                e = entities[d["kind"]].cls
-                assert isinstance(APPGATE_LOADER.load(d["spec"], None, e), e)
+    load_entities("v16")
+
+
+def test_load_entities_v17():
+    load_entities("v17")
 
 
 def test_loader_deprecated_required():
@@ -90,9 +95,13 @@ def test_loader_discriminator():
         type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
     )
     assert e2
-    e3 = EntityDiscriminatorOne(fieldOne="foo", discriminatorOneFieldOne="foo")
+    e3 = EntityDiscriminatorOne(
+        type="DiscriminatorOne", fieldOne="foo", discriminatorOneFieldOne="foo"
+    )
     assert e3
-    e4 = EntityDiscriminatorTwo(fieldOne="foo", discriminatorTwoFieldTwo=False)
+    e4 = EntityDiscriminatorTwo(
+        type="DiscriminatorTwo", fieldOne="foo", discriminatorTwoFieldTwo=False
+    )
     assert e4
 
     # EntityDiscriminator with type DiscriminatorOne
@@ -405,7 +414,6 @@ def test_dumper_2():
     e2_data = {
         "fieldTwo": "this is write only",
         "fieldFour": "this is a field",
-        "appgate_metadata": {"uuid": "666-666-666-666-666"},
     }
     e = K8S_DUMPER.dump(e1)
     assert e == e2_data
@@ -472,9 +480,6 @@ def test_appgate_metadata_secrets_dump_from_appgate():
     e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)
     e2_data = {
         "fieldThree": "this is a field",
-        "appgate_metadata": {
-            "passwordFields": ["fieldOne"],
-        },
     }
     d = K8S_DUMPER.dump(e1)
     assert d == e2_data

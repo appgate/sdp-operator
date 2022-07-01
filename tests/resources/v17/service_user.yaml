@@ -1,0 +1,9 @@
+apiVersion: beta.appgate.com/v1
+kind: ServiceUser
+metadata:
+  name: service-user
+spec:
+  name: service-user-example
+  password: "supersecurepassword"
+  disabled: false
+  failedLoginAttempts: 0

@@ -1,9 +1,7 @@
 # SDP Operator
-SDP Operator is a cloud-native project to declaratively configure and sync the state of an Appgate SDP system. 
+SDP Operator is a cloud-native project to declaratively configure an Appgate SDP system. 
 
 SDP Operator supports the following API versions:
-* v12 (Appgate version 5.1)
-* v13 (Appgate version 5.2)
 * v14 (Appgate version 5.3)
 * v15 (Appgate version 5.4)
 * v16 (Appgate version 5.5)
@@ -15,7 +13,7 @@ AdminMfaSettings     AdministrativeRole   Appliance             ApplianceCustomi
 ClientConnection     Condition            CriteriaScripts       DeviceScript   
 Entitlment           EntitlementScript    GlobalSettings        IdentityProvider
 IpPool               LocalUser            MfaProvider           Policy
-RingfenceRule        Site                 TrustedCertificate
+RingfenceRule        ServiceUser          Site                  TrustedCertificate
 ```
 
 ## Requirements
@@ -26,11 +24,11 @@ The following tools are required to install the SDP Operator
 ## Getting Started
 1. Install the SDP Operator CRD charts with Helm. 
    ```shell
-   $ helm install sdp-operator-crd-<api-version> oci://ghcr.io/appgate/charts/sdp-operator-crd-<api-version> --version <version>
+   $ helm install sdp-operator-crdoci://ghcr.io/appgate/charts/sdp-operator-crd --version <version> --set version=<api-version>
    ``` 
    where:
-   * `<api-version>` is the API version of the Appgate SDP system (`v12`, `v13`, `v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
-   * `<version>` is the version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator chart version in step 3.
+   * `api-version` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
+   * `version` is the chart version of the SDP Operator. Browse the available versions in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator chart version in step 3.
 
 
 2. Create a secret containing the username and password for the operator.
@@ -40,10 +38,10 @@ The following tools are required to install the SDP Operator
        --from-literal-appgate-operator-password=<password> --namespace sdp-operator
    ``` 
    where
-   * `<user>` and `<password>` is the credentials that has admin access to the Appgate SDP system.
+   * `user` and `password` is the credentials that has admin access to the Appgate SDP system.
 
 
-3. Install the SDP Operator with Helm. Browse configuration for values.yaml
+3. Install the SDP Operator with Helm. Browse the [Parameters](#parameters) for configurable values.
    ```shell
    $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator --version <version> \
        --set sdp.operator.version=<api-version> \
@@ -51,37 +49,43 @@ The following tools are required to install the SDP Operator
        --set sdp.operator.deviceId=<device-id>
    ```
    where
-   * `<version>` is the version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator CRD chart version in step 1.  
-   * `<api-version>` is the API version of the Appgate SDP system (`v12`, `v13`, `v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
-   * `host` is the hostname of the Appgate SDP systme you want to configure.
+   * `version` is the chart version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator CRD chart version in step 1.  
+   * `api-version` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
+   * `host` is the hostname of the Appgate SDP system you want to configure.
    * `device-id` is the UUID to assign to this operator
 
 
 ## Parameters
 
-### SDP parameters
+### SDP Required Parameters
 
-| Name                             | Description                                     | Value                          |
-| -------------------------------- | ----------------------------------------------- | ------------------------------ |
-| `sdp.operator.host`              | SDP Operator controller host (required)         | `""`                           |
-| `sdp.operator.deviceId`          | SDP Operator device id (uuid format) (required) | `""`                           |
-| `sdp.operator.version`           | SDP Operator API version                        | `v16`                          |
-| `sdp.operator.logLevel`          | SDP Operator log level                          | `info`                         |
-| `sdp.operator.timeout`           | SDP Operator event loop timeout                 | `30`                           |
-| `sdp.operator.targetTags`        | SDP Operator target tags                        | `""`                           |
-| `sdp.operator.excludeTags`       | SDP Operator exclude tags                       | `""`                           |
-| `sdp.operator.builtinTags`       | SDP Operator builtin tags                       | `builtin`                      |
-| `sdp.operator.dryRun`            | SDP Operator dry-run mode                       | `1`                            |
-| `sdp.operator.cleanup`           | SDP Operator cleanup mode                       | `1`                            |
-| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode                  | `1`                            |
-| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode                 | `0`                            |
-| `sdp.operator.caCert`            | SDP Operator host CA cert                       | `""`                           |
-| `sdp.operator.fernetKey`         | SDP Operator Fernet Key                         | `""`                           |
-| `sdp.operator.configMapMt`       | SDP Operator metadata configmap                 | `""`                           |
-| `sdp.operator.image.tag`         | SDP Operator image tag                          | `latest`                       |
-| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy                        | `Always`                       |
-| `sdp.operator.image.repository`  | SDP operator image registry                     | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | SDP operator pull secret                        | `[]`                           |
+| Name                    | Description                             | Value |
+| ----------------------- | --------------------------------------- | ----- |
+| `sdp.operator.host`     | SDP Operator controller host            | `""`  |
+| `sdp.operator.deviceId` | SDP Operator device id (uuid v4 format) | `""`  |
+| `sdp.operator.version`  | SDP Operator API version                | `v17` |
+
+
+### SDP Optional Parameters
+
+| Name                             | Description                     | Value                          |
+| -------------------------------- | ------------------------------- | ------------------------------ |
+| `sdp.operator.image.tag`         | SDP Operator image tag          | `""`                           |
+| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy        | `Always`                       |
+| `sdp.operator.image.repository`  | SDP operator image registry     | `ghcr.io/appgate/sdp-operator` |
+| `sdp.operator.image.pullSecrets` | SDP operator pull secret        | `[]`                           |
+| `sdp.operator.logLevel`          | SDP Operator log level          | `info`                         |
+| `sdp.operator.timeout`           | SDP Operator event loop timeout | `30`                           |
+| `sdp.operator.builtinTags`       | SDP Operator builtin tags       | `builtin`                      |
+| `sdp.operator.dryRun`            | SDP Operator dry-run mode       | `true`                         |
+| `sdp.operator.cleanup`           | SDP Operator cleanup mode       | `false`                        |
+| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode  | `true`                         |
+| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode | `false`                        |
+| `sdp.operator.targetTags`        | SDP Operator target tags        | `""`                           |
+| `sdp.operator.excludeTags`       | SDP Operator exclude tags       | `""`                           |
+| `sdp.operator.caCert`            | SDP Operator host CA cert       | `""`                           |
+| `sdp.operator.fernetKey`         | SDP Operator Fernet Key         | `""`                           |
+| `sdp.operator.configMapMt`       | SDP Operator metadata configmap | `""`                           |
 
 
 ### Kubernetes parameters
@@ -90,6 +94,7 @@ The following tools are required to install the SDP Operator
 | ----------------------- | ---------------------------------------------------- | ------ |
 | `serviceAccount.create` | Enable the creation of a ServiceAccount for SDP pods | `true` |
 | `rbac.create`           | Whether to create & use RBAC resources or not        | `true` |
+
 
 This table above was generated using readme-generator-for-helm
 
@@ -272,11 +277,10 @@ yaml file.
 The appgate-operator is provided as a docker image tagged with the appgate API
 version. For example:
 
- - appgate-operator:v12
- - appgate-operator:v13
  - appgate-operator:v14
  - appgate-operator:v15
  - appgate-operator:v16
+ - appgate-operator:v17
 
 Each image uses that specific API version by default but contains the specs for
 all the API versions supported.
@@ -293,7 +297,7 @@ make docker-build-image && make docker-images
 
 To push the images into a registry just run:
 ```shell
-for tag in v12 v13 v14 v15 v16 v17; do
+for tag in v14 v15 v16 v17; do
   docker tag appgate-operator:${tag} user/appgate-operator:${tag} && \
   docker push user/appgate-operator:${tag}
 done

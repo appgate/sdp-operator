@@ -97,13 +97,20 @@ def get_context(
     device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-    two_way_sync = (
-        os.getenv(TWO_WAY_SYNC_ENV) or ("0" if args.no_two_way_sync else "1")
-    ) == "1"
-    dry_run_mode = (os.getenv(DRY_RUN_ENV) or ("0" if args.no_dry_run else "1")) == "1"
-    cleanup_mode = (os.getenv(CLEANUP_ENV) or ("0" if args.no_cleanup else "1")) == "1"
+
+    def to_bool(value: Optional[str]) -> bool:
+        if value:
+            # Helm JSON schema validation ensures that the input is true/false string
+            bool_map = {"true": True, "false": False}
+            return bool_map[value.lower()]
+        return False
+
+    two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
+    dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
+    cleanup_mode = args.no_cleanup or (to_bool(os.getenv(CLEANUP_ENV)))
+    no_verify = args.no_verify or (to_bool(os.getenv(APPGATE_SSL_NO_VERIFY)))
+
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
-    no_verify = os.getenv(APPGATE_SSL_NO_VERIFY, "0") == "1" or args.no_verify
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
     appgate_cacert_path = None
     verify = not no_verify
@@ -236,7 +243,7 @@ def main_run(args: OperatorArguments) -> None:
 
 
 async def dump_entities(
-    ctx: Context, output_dir: Optional[Path], stdout: bool = False
+    ctx: Context, version_suffix: str, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
     expected_appgate_state = AppgateState(
@@ -262,6 +269,7 @@ async def dump_entities(
         entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
     else:
         current_appgate_state.dump(
+            version_suffix=version_suffix,
             output_dir=output_dir,
             stdout=stdout,
             target_tags=ctx.target_tags,
@@ -270,10 +278,18 @@ async def dump_entities(
 
 
 def main_dump_entities(
-    args: OperatorArguments, stdout: bool = False, output_dir: Optional[Path] = None
+    args: OperatorArguments,
+    version_suffix: str,
+    stdout: bool = False,
+    output_dir: Optional[Path] = None,
 ) -> None:
     asyncio.run(
-        dump_entities(ctx=get_context(args), output_dir=output_dir, stdout=stdout)
+        dump_entities(
+            ctx=get_context(args),
+            version_suffix=version_suffix,
+            output_dir=output_dir,
+            stdout=stdout,
+        )
     )
 
 
@@ -445,6 +461,12 @@ def main() -> None:
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
     )
+    dump_entities.add_argument(
+        "--version-suffix",
+        help="Version string to append to the names of custom resource",
+        required=True,
+        default="v17",
+    )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
     dump_crd.set_defaults(cmd="dump-crd")
@@ -514,6 +536,7 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                 ),
+                version_suffix=args.version_suffix,
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,
             )
