@@ -13,7 +13,7 @@ google-auth==2.3.3
 idna==3.3
 kubernetes==24.2.0
 multidict==5.2.0
-oauthlib==3.1.1
+oauthlib==3.2.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
