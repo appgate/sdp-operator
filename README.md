@@ -24,7 +24,7 @@ The following tools are required to install the SDP Operator
 ## Getting Started
 1. Install the SDP Operator CRD charts with Helm. 
    ```shell
-   $ helm install sdp-operator-crdoci://ghcr.io/appgate/charts/sdp-operator-crd --version <version> --set version=<api-version>
+   $ helm install sdp-operator-crd oci://ghcr.io/appgate/charts/sdp-operator-crd --version <version> --set version=<api-version>
    ``` 
    where:
    * `api-version` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
