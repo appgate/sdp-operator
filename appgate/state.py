@@ -227,7 +227,7 @@ class AppgateState:
 
     def dump(
         self,
-        version_suffix: str,
+        api_version: str,
         output_dir: Optional[Path] = None,
         stdout: bool = False,
         target_tags: Optional[FrozenSet[str]] = None,
@@ -250,9 +250,7 @@ class AppgateState:
                 target_tags=target_tags,
                 exclude_tags=exclude_tags,
             )
-            entity_password_fields = dump_entities(
-                entities_to_dump, version_suffix, p, k
-            )
+            entity_password_fields = dump_entities(entities_to_dump, api_version, p, k)
             if entity_password_fields:
                 password_fields[k] = entity_password_fields
         if len(password_fields) > 0:

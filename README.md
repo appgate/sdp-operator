@@ -99,6 +99,26 @@ The following tools are required to install the SDP Operator
 This table above was generated using readme-generator-for-helm
 
 
+## Development
+Test changes by mounting local repository and kubeconfig
+```
+$ docker build . -f docker/Dockerfile -t sdp-operator:dev
+$ docker run --rm -it -v $HOME/.kube/:/root/.kube/ -v $PWD:/test/ -w /test  --dns 10.97.2.20 --entrypoint /bin/bash sdp-operator:dev
+$ /root/run.sh
+```
+
+Test changes on Kubernetes cluster
+```
+$ docker build . -f docker/Dockerfile -t registry.example.com/sdp-operator:dev
+$ docker push registry.example.com/sdp-operator:dev
+$ helm upgrade --install sdp-operator k8s/operator \
+   --set sdp.operator.image.repository=registry.example.com \
+   --set sdp.operator.image.tag=dev \
+   --set sdp.operator.version=<version> \
+   --set sdp.operator.host=<hostname> \
+   --set sdp.operator.deviceId=<deviceId>
+```
+
 ## How It Works
 Appgate entities are defined in terms of [[https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/][CRD]] in the k8s cluster so they can be
 managed (created, deleted or modified) using `kubectl` command with yaml files

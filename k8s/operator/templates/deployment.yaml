@@ -81,8 +81,12 @@ spec:
             {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ required "A valid sdp.operator.image.tag or sdp.operator.version value is required!" (.Values.sdp.operator.image.tag | default .Values.sdp.operator.version) }}"
+          image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.operator.image.tag}}"
           imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
+          args:
+            - --spec-directory
+            - "/root/appgate/api_specs/{{ required "A valid .Values.sdp.operator.version entry is required!" .Values.sdp.operator.version }}"
+            - run
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

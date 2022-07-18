@@ -243,7 +243,7 @@ def main_run(args: OperatorArguments) -> None:
 
 
 async def dump_entities(
-    ctx: Context, version_suffix: str, output_dir: Optional[Path], stdout: bool = False
+    ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
     expected_appgate_state = AppgateState(
@@ -269,7 +269,7 @@ async def dump_entities(
         entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
     else:
         current_appgate_state.dump(
-            version_suffix=version_suffix,
+            api_version=f"v{ctx.api_spec.api_version}",
             output_dir=output_dir,
             stdout=stdout,
             target_tags=ctx.target_tags,
@@ -279,14 +279,12 @@ async def dump_entities(
 
 def main_dump_entities(
     args: OperatorArguments,
-    version_suffix: str,
     stdout: bool = False,
     output_dir: Optional[Path] = None,
 ) -> None:
     asyncio.run(
         dump_entities(
             ctx=get_context(args),
-            version_suffix=version_suffix,
             output_dir=output_dir,
             stdout=stdout,
         )
@@ -310,12 +308,11 @@ def main_dump_crd(
     stdout: bool,
     output_file: Optional[str],
     spec_directory: Optional[str] = None,
-    version_suffix: str = "v17",
 ) -> None:
     # We need the context here or just parse it
-    entities = generate_api_spec(
+    api_spec = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None
-    ).entities
+    )
     output_path = None
     if not stdout:
         output_file_format = (
@@ -326,10 +323,12 @@ def main_dump_crd(
     else:
         f = sys.stdout
     short_names: Dict[str, str] = {}
-    for i, e in enumerate([e.cls for e in entities.values() if e.api_path is not None]):
+    for i, e in enumerate(
+        [e.cls for e in api_spec.entities.values() if e.api_path is not None]
+    ):
         if i > 0:
             f.write("---\n")
-        f.write(generate_crd(e, short_names, version_suffix))
+        f.write(generate_crd(e, short_names, f"v{api_spec.api_version}"))
     if output_path:
         log.info("[dump-crd] File %s generated with CRD definitions", output_path)
 
@@ -461,12 +460,6 @@ def main() -> None:
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
     )
-    dump_entities.add_argument(
-        "--version-suffix",
-        help="Version string to append to the names of custom resource",
-        required=True,
-        default="v17",
-    )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
     dump_crd.set_defaults(cmd="dump-crd")
@@ -478,12 +471,6 @@ def main() -> None:
         help="File where to dump CRD definitions. "
         'Default value: "YYYY-MM-DD_HH-MM-crd.yaml"',
         default=None,
-    )
-    dump_crd.add_argument(
-        "--version-suffix",
-        help="Version string to append to the names of custom resource definitions",
-        required=True,
-        default="v17",
     )
     # validate entities
     validate_entities = subparsers.add_parser("validate-entities")
@@ -536,7 +523,6 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                 ),
-                version_suffix=args.version_suffix,
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,
             )
@@ -545,7 +531,6 @@ def main() -> None:
                 stdout=args.stdout,
                 output_file=args.file,
                 spec_directory=args.spec_directory,
-                version_suffix=args.version_suffix,
             )
         elif args.cmd == "api-info":
             main_api_info(spec_directory=args.spec_directory)
