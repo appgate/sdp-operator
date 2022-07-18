@@ -310,12 +310,11 @@ def main_dump_crd(
     stdout: bool,
     output_file: Optional[str],
     spec_directory: Optional[str] = None,
-    version_suffix: str = "v17",
 ) -> None:
     # We need the context here or just parse it
-    entities = generate_api_spec(
+    api_spec = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None
-    ).entities
+    )
     output_path = None
     if not stdout:
         output_file_format = (
@@ -326,10 +325,12 @@ def main_dump_crd(
     else:
         f = sys.stdout
     short_names: Dict[str, str] = {}
-    for i, e in enumerate([e.cls for e in entities.values() if e.api_path is not None]):
+    for i, e in enumerate(
+        [e.cls for e in api_spec.entities.values() if e.api_path is not None]
+    ):
         if i > 0:
             f.write("---\n")
-        f.write(generate_crd(e, short_names, version_suffix))
+        f.write(generate_crd(e, short_names, f"v{api_spec.api_version}"))
     if output_path:
         log.info("[dump-crd] File %s generated with CRD definitions", output_path)
 
@@ -479,12 +480,6 @@ def main() -> None:
         'Default value: "YYYY-MM-DD_HH-MM-crd.yaml"',
         default=None,
     )
-    dump_crd.add_argument(
-        "--version-suffix",
-        help="Version string to append to the names of custom resource definitions",
-        required=True,
-        default="v17",
-    )
     # validate entities
     validate_entities = subparsers.add_parser("validate-entities")
     validate_entities.set_defaults(cmd="validate-entities")
@@ -545,7 +540,6 @@ def main() -> None:
                 stdout=args.stdout,
                 output_file=args.file,
                 spec_directory=args.spec_directory,
-                version_suffix=args.version_suffix,
             )
         elif args.cmd == "api-info":
             main_api_info(spec_directory=args.spec_directory)
