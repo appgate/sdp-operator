@@ -1,7 +1,4 @@
 FROM python:3.10-slim
-ARG SPEC_VERSION
-ENV SPEC_VERSION=$SPEC_VERSION
-ENV LOG_LEVEL=INFO
 RUN apt-get update && \
     apt-get install gcc libffi-dev --yes
 COPY requirements.txt /root/
@@ -16,4 +13,3 @@ COPY docker/assets/run.sh /root/run.sh
 RUN chmod +x /root/run.sh
 WORKDIR /root
 ENTRYPOINT ["/root/run.sh"]
-CMD ["run"]
