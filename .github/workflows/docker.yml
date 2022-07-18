@@ -63,7 +63,7 @@ jobs:
         id: operatorChartVersion
         uses: mikefarah/yq@master
         with:
-          cmd: yq eval '.version' k8s/chart/Chart.yaml
+          cmd: yq eval '.version' k8s/operator/Chart.yaml
       - name: Get CRD chart version
         id: crdChartVersion
         uses: mikefarah/yq@master
@@ -71,10 +71,10 @@ jobs:
           cmd: yq eval '.version' k8s/crd/Chart.yaml
       - name: Compare Operator vs CRD chart version
         run: |
-          [ "${{ steps.operatorChartVersion.outputs.result }}" == "${{ steps.crdChartVersion.outputs.result }}" ] || (echo "Operator and CRD chart version do not match" && exit 1)
+          [ "${{ steps.operatorChartVersion.outputs.result }}" == "${{ steps.crdChartVersion.outputs.result }}" ] || (echo "Operator and CRD chart version must match to prevent divergence of operator and crd." && exit 1)
 
   operator:
-    needs: images
+    needs: image
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
@@ -82,26 +82,23 @@ jobs:
       - uses: actions/checkout@v2
       - name: Read operator chart version
         run: |
-          echo "chart_version=$(grep version: k8s/chart/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+          echo "chart_version=$(grep version: k8s/operator/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v1
         with:
           version: 3.7.2
       - name: Login to GitHub Container Registry
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
-        run: helm lint k8s/chart
+        run: helm lint k8s/operator
       - name: Package chart
-        run: helm package k8s/chart
+        run: helm package k8s/operator
       - name: Push chart
         if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
-  images:
+  image:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        version: ["v14", "v15", "v16", "v17"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -112,7 +109,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install unzip
-      - name: Get openspec API
+      - name: Get Open API spec
         run: ./bin/unzip-open-spec.sh
         shell: bash
       - name: Login to GitHub Container Registry
@@ -121,19 +118,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Operator app version
+        id: operatorAppVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.appVersion' k8s/operator/Chart.yaml
       - name: Push image
         uses: docker/build-push-action@v2
         with:
-          build-args: |
-            SPEC_VERSION=${{ matrix.version }}
           context: .
           file: docker/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ghcr.io/${{ github.repository }}/sdp-operator:${{ matrix.version }}
+            ghcr.io/${{ github.repository }}/sdp-operator:${{ steps.operatorAppVersion.outputs.result }}
 
   crd:
-    needs: images
+    needs: image
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
@@ -164,7 +164,7 @@ jobs:
             python3 -m appgate --spec-directory api_specs/v${version} dump-crd --version v${version}
             echo '{{ if eq .Values.version '\"v"${version}"\"' }}' | cat - *-crd.yml > v${version}.yaml
             echo '{{ end }}' >> v${version}.yaml
-            cmp k8s/crd/templates/v${version}.yaml v${version}.yaml || (echo "Generated CRDs and checked-in CRDs do not match." && exit 1)
+            cmp k8s/crd/templates/v${version}.yaml v${version}.yaml || (echo "Generated CRDs and checked-in CRDs do not match. Please download the latest API specs, generate and check-in the updated CRDs under k8s/crd/templates." && exit 1)
           done
       - name: Read crd chart version
         run: |
