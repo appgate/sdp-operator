@@ -51,15 +51,15 @@ spec:
               value: "{{ .Values.sdp.operator.timeout }}"
             {{- with .Values.sdp.operator.targetTags }}
             - name: APPGATE_OPERATOR_TARGET_TAGS
-              value: "{{ . }}"
+              value: "{{ join "," . }}"
             {{- end }}
             {{- with .Values.sdp.operator.excludeTags }}
             - name: APPGATE_OPERATOR_EXCLUDE_TAGS
-              value: "{{ . }}"
+              value: "{{ join "," . }}"
             {{- end }}
             {{- with .Values.sdp.operator.builtinTags }}
             - name: APPGATE_OPERATOR_BUILTIN_TAGS
-              value: "{{ . }}"
+              value: "{{ join "," . }}"
             {{- end }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.operator.dryRun }}"
