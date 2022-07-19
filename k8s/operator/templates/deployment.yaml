@@ -54,7 +54,7 @@ spec:
               value: "{{ . }}"
             {{- end }}
             {{- with .Values.sdp.operator.excludeTags }}
-            - name: APPGATE_OPERATOR_EXCLUDE_TAG
+            - name: APPGATE_OPERATOR_EXCLUDE_TAGS
               value: "{{ . }}"
             {{- end }}
             {{- with .Values.sdp.operator.builtinTags }}
