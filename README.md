@@ -76,13 +76,13 @@ The following tools are required to install the SDP Operator
 | `sdp.operator.image.pullSecrets` | SDP operator pull secret        | `[]`                           |
 | `sdp.operator.logLevel`          | SDP Operator log level          | `info`                         |
 | `sdp.operator.timeout`           | SDP Operator event loop timeout | `30`                           |
-| `sdp.operator.builtinTags`       | SDP Operator builtin tags       | `builtin`                      |
+| `sdp.operator.builtinTags`       | SDP Operator builtin tags       | `["builtin"]`                  |
 | `sdp.operator.dryRun`            | SDP Operator dry-run mode       | `true`                         |
 | `sdp.operator.cleanup`           | SDP Operator cleanup mode       | `false`                        |
 | `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode  | `true`                         |
 | `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode | `false`                        |
-| `sdp.operator.targetTags`        | SDP Operator target tags        | `""`                           |
-| `sdp.operator.excludeTags`       | SDP Operator exclude tags       | `""`                           |
+| `sdp.operator.targetTags`        | SDP Operator target tags        | `[]`                           |
+| `sdp.operator.excludeTags`       | SDP Operator exclude tags       | `[]`                           |
 | `sdp.operator.caCert`            | SDP Operator host CA cert       | `""`                           |
 | `sdp.operator.fernetKey`         | SDP Operator Fernet Key         | `""`                           |
 | `sdp.operator.configMapMt`       | SDP Operator metadata configmap | `""`                           |

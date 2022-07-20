@@ -36,13 +36,14 @@ sdp:
     ## @param sdp.operator.configMapMt SDP Operator metadata configmap
     logLevel: info
     timeout: 30
-    builtinTags: builtin
+    builtinTags:
+      - builtin
     dryRun: true
     twoWaySync: true
     cleanup: false
     sslNoVerify: false
-    targetTags: ""
-    excludeTags: ""
+    targetTags: []
+    excludeTags: []
     fernetKey: ""
     caCert: ""
     configMapMt: ""

@@ -52,7 +52,10 @@
               "type": "number"
             },
             "builtinTags": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "dryRun": {
               "type": "boolean"
@@ -64,10 +67,16 @@
               "type": "boolean"
             },
             "targetTags": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "excludeTags": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "fernetKey": {
               "type": "string"
