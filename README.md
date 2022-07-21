@@ -151,7 +151,7 @@ fieldOne:
   key: "password"
 ```
 
-When operator sees an entity field with `type: k8s/secret`, it will read the kubernetes secret to find the value it can use to decrypt and read the secret.
+When operator sees an entity field with `type: k8s/secret`, it will read the Kubernetes secret to find the value it can use to decrypt and read the secret.
 
 ### CA Certificates
 CA certificate in PEM format can be stored in env `APPGATE_OPERATOR_CACERT`. We recommend storing the contents of the PEM as a base64 encoded string. 
