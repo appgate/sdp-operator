@@ -7,85 +7,83 @@ SDP Operator supports the following API versions:
 * v16 (Appgate version 5.5)
 * v17 (Appgate version 6.0)
 
-SDP Operator supports the following entities:
-```
-AdminMfaSettings     AdministrativeRole   Appliance             ApplianceCustomization
-ClientConnection     Condition            CriteriaScripts       DeviceScript   
-Entitlment           EntitlementScript    GlobalSettings        IdentityProvider
-IpPool               LocalUser            MfaProvider           Policy
-RingfenceRule        ServiceUser          Site                  TrustedCertificate
-```
-
 ## Requirements
 The following tools are required to install the SDP Operator
 * helm v3.7.0+ - https://helm.sh/docs/intro/install/
 * kubectl - https://kubernetes.io/docs/tasks/tools/#kubectl
 
 ## Getting Started
+
+Browse the available charts versions in the [SDP Operator GitHub Container Registry](https://github.com/appgate/sdp-operator/pkgs/container/charts%2Fsdp-operator).
+
 1. Install the SDP Operator CRD charts with Helm. 
    ```shell
-   $ helm install sdp-operator-crd oci://ghcr.io/appgate/charts/sdp-operator-crd --version <version> --set version=<api-version>
-   ``` 
-   where:
-   * `api-version` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
-   * `version` is the chart version of the SDP Operator. Browse the available versions in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator chart version in step 3.
+   $ helm install sdp-operator-crd oci://ghcr.io/appgate/charts/sdp-operator-crd \
+      --version <version> \
+      --set version=<api-version> \
+      --namespace sdp-system
+   ```
+   * `api-version` : API version of the controller (`v14`, `v15`, `v16`, `v17`).
+   * `version` : chart version of the SDP Operator.
 
 
 2. Create a secret containing the username and password for the operator.
    ```shell
    $ kubectl create secret sdp-operator-secret-sdp-operator \
        --from-literal=appgate-operator-user=<user> \
-       --from-literal-appgate-operator-password=<password> --namespace sdp-operator
+       --from-literal-appgate-operator-password=<password> \
+       --namespace sdp-system
    ``` 
-   where
-   * `user` and `password` is the credentials that has admin access to the Appgate SDP system.
+   * `user` : Username of the user with admin access to the controller.
+   * `password`: Password of the user with admin access to the controller.
 
 
-3. Install the SDP Operator with Helm. Browse the [Parameters](#parameters) for configurable values.
+3. Install the SDP Operator with Helm. Browse the options in [values.yaml](#parameters).
    ```shell
-   $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator --version <version> \
+   $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator \ 
+       --version <version> \
        --set sdp.operator.version=<api-version> \
        --set sdp.operator.host=<host> \
-       --set sdp.operator.deviceId=<device-id>
+       --set sdp.operator.deviceId=<device-id> \
+       --namespace sdp-system
    ```
-   where
-   * `version` is the chart version of the SDP Operator. Browse the available version in the [Appgate Operator GitHub Container Registry](https://github.com/orgs/appgate/packages?repo_name=sdp-operator). This must match the SDP Operator CRD chart version in step 1.  
-   * `api-version` is the API version of the Appgate SDP system (`v14`, `v15`, `v16`, `v17`). This must match the API version of the system you want to configure.
-   * `host` is the hostname of the Appgate SDP system you want to configure.
-   * `device-id` is the UUID to assign to this operator
+   * `version` : chart version of the SDP Operator. Must match the CRD chart version in Step 1.
+   * `api-version` : API version of the controller. (`v14`, `v15`, `v16`, `v17`).
+   * `host` : Hostname of the controller you want to configure.
+   * `device-id` : UUID v4 assigned to this operator.
 
 
 ## Parameters
 
 ### SDP Required Parameters
 
-| Name                    | Description                             | Value |
-| ----------------------- | --------------------------------------- | ----- |
-| `sdp.operator.host`     | SDP Operator controller host            | `""`  |
-| `sdp.operator.deviceId` | SDP Operator device id (uuid v4 format) | `""`  |
-| `sdp.operator.version`  | SDP Operator API version                | `v17` |
+| Name                    | Description                                                                       | Value |
+| ----------------------- | --------------------------------------------------------------------------------- | ----- |
+| `sdp.operator.host`     | The hostname of the controller to manage with the operator.                       | `""`  |
+| `sdp.operator.deviceId` | The device ID assigned to the operator for authenticating against the controller. | `""`  |
+| `sdp.operator.version`  | The API version of the controller.                                                | `v17` |
 
 
 ### SDP Optional Parameters
 
-| Name                             | Description                     | Value                          |
-| -------------------------------- | ------------------------------- | ------------------------------ |
-| `sdp.operator.image.tag`         | SDP Operator image tag          | `""`                           |
-| `sdp.operator.image.pullPolicy`  | SDP Operator pull policy        | `Always`                       |
-| `sdp.operator.image.repository`  | SDP operator image registry     | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | SDP operator pull secret        | `[]`                           |
-| `sdp.operator.logLevel`          | SDP Operator log level          | `info`                         |
-| `sdp.operator.timeout`           | SDP Operator event loop timeout | `30`                           |
-| `sdp.operator.builtinTags`       | SDP Operator builtin tags       | `["builtin"]`                  |
-| `sdp.operator.dryRun`            | SDP Operator dry-run mode       | `true`                         |
-| `sdp.operator.cleanup`           | SDP Operator cleanup mode       | `false`                        |
-| `sdp.operator.twoWaySync`        | SDP Operator two-way-sync mode  | `true`                         |
-| `sdp.operator.sslNoVerify`       | SDP Operator ssl-no-verify mode | `false`                        |
-| `sdp.operator.targetTags`        | SDP Operator target tags        | `[]`                           |
-| `sdp.operator.excludeTags`       | SDP Operator exclude tags       | `[]`                           |
-| `sdp.operator.caCert`            | SDP Operator host CA cert       | `""`                           |
-| `sdp.operator.fernetKey`         | SDP Operator Fernet Key         | `""`                           |
-| `sdp.operator.configMapMt`       | SDP Operator metadata configmap | `""`                           |
+| Name                             | Description                                                                                                                                                                              | Value                          |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `sdp.operator.image.tag`         | The image tag of the operator.                                                                                                                                                           | `""`                           |
+| `sdp.operator.image.pullPolicy`  | The image pull policy of the operator.                                                                                                                                                   | `Always`                       |
+| `sdp.operator.image.repository`  | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
+| `sdp.operator.image.pullSecrets` | The secret to access the repository.                                                                                                                                                     | `[]`                           |
+| `sdp.operator.logLevel`          | The log level of the operator.                                                                                                                                                           | `info`                         |
+| `sdp.operator.timeout`           | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`                           |
+| `sdp.operator.builtinTags`       | The list of tags that defines a built-in entity. Built-in entities are never deleted.                                                                                                    | `["builtin"]`                  |
+| `sdp.operator.dryRun`            | Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.                                        | `true`                         |
+| `sdp.operator.cleanup`           | Whether to delete entities from the controller to sync the entities on the operator.                                                                                                     | `false`                        |
+| `sdp.operator.twoWaySync`        | Whether to read the current configuration from the controller before computing the plan.                                                                                                 | `true`                         |
+| `sdp.operator.sslNoVerify`       | Whether to verify the SSL certificate of the controller.                                                                                                                                 | `false`                        |
+| `sdp.operator.targetTags`        | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`                           |
+| `sdp.operator.excludeTags`       | The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.                                                                                      | `[]`                           |
+| `sdp.operator.caCert`            | The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.                                                                                        | `""`                           |
+| `sdp.operator.fernetKey`         | The fernet key to use when decrypting secrets in entities.                                                                                                                               | `""`                           |
+| `sdp.operator.configMapMt`       | The config map to store metadata for entities.                                                                                                                                           | `""`                           |
 
 
 ### Kubernetes parameters
@@ -96,10 +94,119 @@ The following tools are required to install the SDP Operator
 | `rbac.create`           | Whether to create & use RBAC resources or not        | `true` |
 
 
-This table above was generated using readme-generator-for-helm
+This table above was generated using [readme-generator-for-helm](https://github.com/bitnami-labs/readme-generator-for-helm)
+
+
+## How It Works
+[Custom Resource Definitions (CRD)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) on Kubernetes allow the operator to represent Appgate SDP entities as YAMLs. Each instance of an entity is stored as a Custom Resource. The operator reads each instance's spec and syncs the entity with the controller using the Admin API. SDP Operator consumes a version from [Appgate SDP OpenAPI Spec](https://github.com/appgate/sdp-api-specification) to generate entities for a given version of the controller. 
+
+For each entity, the operator begins a timer and an event loop to listen for any changes happening on the cluster. Every time an event is received, the timer resets. After the timeout period has expired (in other words, when no event has newly arrived), the operator proceeds to compute a Plan. A Plan represents the difference between the current state on the controller vs the desired state defined in Kubernetes - it outlines what entities will be created/updated/deleted on the controller. After the plan is computed, the operator to execute the Plan on the controller using the API in order to produce the desired state. 
+
+It is important to note that, by design, any state defined in Kubernetes wins over state in the SDP system - any external changes made outside the operator will be overwritten. For example, if an administrator makes a change to the Policy via admin UI, the operator will determine the change as 'out-of-sync- and undoes the change. 
+
+### Secrets Management
+The operator supports 3 ways to handle sensitive information in YAML files:
+1. Unencrypted secrets
+2. Secrets encrypted with a fernet key
+3. Secrets created as a Secret on kubernetes
+
+#### Unencrypted Secrets
+Secret is stored as-is in the YAML file. The operator will use that value as the value for the secret field. This is not recommended in production.
+
+#### Secrets Encrypted with a Fernet Key
+Sensitive information can be stored in the YAML as encrypted secrets using [fernet (symmetric encryption)](https://cryptography.io/en/latest/fernet/).
+
+To generate a new fernet key, run:
+```shell
+$ python3 -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())'
+```
+
+To generate a secret with the key, run:
+```shell
+$ export SECRET="super-sensitive-information"
+$ export KEY="dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk="
+$ python3 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
+```
+
+After generating the secret, the value is safe to be stored inside the YAML file. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
+
+#### Secrets using Kubernetes Secrets
+Alternatively, the operator supports reading secrets from Kubernetes. 
+
+Let's say, we created the secret below on the Kubernetes cluster.
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+data:
+  password: YmFyCg==
+```
+
+To instruct the operator to use this secret, specify the value of the entity's field with the following dictionary
+```yaml
+fieldOne:
+  type: "k8s/secret",
+  name: "my-secret",
+  key: "password"
+```
+
+When operator sees an entity field with `type: k8s/secret`, it will read the Kubernetes secret to find the value it can use to decrypt and read the secret.
+
+### CA Certificates
+CA certificate in PEM format can be stored in env `APPGATE_OPERATOR_CACERT`. We recommend storing the contents of the PEM as a base64 encoded string. 
+``` shell
+$ export APPGATE_OPERATOR_CACERT=`cat cert.ca`
+```
+
+## Advanced Usage
+### Dump Current Entities into YAML
+`dump-entities` command will read the entities from an existing SDP system and dump them into YAML.
+```shell
+$ python3 -m appgate --spec-directory /root/appgate/api_specs/v15 dump-entities
+```
+
+The above command will generate a directory that contains the YAML
+```shell
+$ ls -l example-v15/
+total 52
+-rw-r--r-- 1 root root 1756 Jul 20 23:03 administrativerole.yaml
+-rw-r--r-- 1 root root 3537 Jul 20 23:03 appliance.yaml
+-rw-r--r-- 1 root root  143 Jul 20 23:03 clientconnection.yaml
+-rw-r--r-- 1 root root  184 Jul 20 23:03 condition.yaml
+-rw-r--r-- 1 root root  194 Jul 20 23:03 criteriascripts.yaml
+-rw-r--r-- 1 root root  332 Jul 20 23:03 globalsettings.yaml
+-rw-r--r-- 1 root root 1405 Jul 20 23:03 identityprovider.yaml
+-rw-r--r-- 1 root root  423 Jul 20 23:03 ippool.yaml
+-rw-r--r-- 1 root root  251 Jul 20 23:03 localuser.yaml
+-rw-r--r-- 1 root root  479 Jul 20 23:03 mfaprovider.yaml
+-rw-r--r-- 1 root root 1054 Jul 20 23:03 policy.yaml
+-rw-r--r-- 1 root root  695 Jul 20 23:03 ringfencerule.yaml
+-rw-r--r-- 1 root root  602 Jul 20 23:03 site.yaml
+```
+
+### Validate Entities against an OpenAPI Specification
+`validate-entities` command will validate the compatibility of entities against a version of the OpenAPI specification. This is useful for verifying if entities dumped from one SDP system is compatible with another SDP system.
+
+```shell
+$ python3 -m appgate --spec-directory /root/appgate/api_specs/v17 validate-entities examples-v15/
+```
+
+In the example above, we validated the v15 entities (generated by `dump-entities` command) to a v17 OpenAPI specification. The command will attempt to load all entities defined in `examples-v15-entities/` as a v17 entities, reporting errors if encountered any.
 
 
 ## Development
+### Versioning
+The versioning of the SDP Operator is managed in [k8s/operator/Chart.yaml](k8s/operator/Chart.yaml)
+
+```
+version: 0.1.2
+appVersion: "0.1.0"
+```
+- `.Chart.appVersion` is used as the SDP Operator image tag. See [deployment.yaml line 84](k8s/operator/templates/deployment.yaml)
+- `.Chart.version` is used as the SDP Operator and CRD chart version. See [GitHub Action line 85](.github/workflows/docker.yml)
+
+### Cheatsheet
 Test changes by mounting local repository and kubeconfig
 ```
 $ docker build . -f docker/Dockerfile -t sdp-operator:dev
@@ -117,208 +224,4 @@ $ helm upgrade --install sdp-operator k8s/operator \
    --set sdp.operator.version=<version> \
    --set sdp.operator.host=<hostname> \
    --set sdp.operator.deviceId=<deviceId>
-```
-
-## How It Works
-Appgate entities are defined in terms of [[https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/][CRD]] in the k8s cluster so they can be
-managed (created, deleted or modified) using `kubectl` command with yaml files
-representing those CRD.
-
-The appgate-operator, when running, will listen for changes on those CRD entities,
-note that the operator listen to events inside a namespace.
-
-When the operator starts, it gets the actual state from the appgate controller
-and from there it starts listening for events.
-
-On each event received it restores a timer, once the timer timeouts (meaning
-that no more events were received in that specified time frame) the operator
-will proceed to compute and apply a new `Plan`.
-
-A `Plan` is the difference between the current state and the desired state and
-it defines for each entity 4 subset of operations to perform:
-
- - create :: a new entity needs to be created
- - delete :: an existing entity needs to be deleted
- - modify :: an existing entity needs to be modified
- - share :: an entity that won't change
-
-All the entities are identified by name, that way we don't need to save real
-uuids in the configuration. Entities referencing other entities (entitlements
-reference conditions for instance) do it by name also, the operator resolves
-those names into real uuids before doing the queries.
-
-### Errors
-There are different sources of errors.
-
-Some entities reference another ones like `entitlements` using `conditions`. If
-one entity references another entity that is not in the expected state after the
-`Plan` is applied then it's marked as a conflict error. If a plan contains
-errors it won't be applied.
-
-Another kind of error is when applying the plan for real. If the REST call to
-the operator fails, that entity is marked as failed as well. Then later when
-creating the new state this entity that failed will be removed from the new
-state (or added if the operation was `delete`).
-
-### Modes of operation
-#### DRY_MODE
-When this flag is on the operator will compute the plan to apply but it won't do
-any call.
-
-#### CLEANUP_ON_STARTUP
-When this flag is on the operator when initializing the state for first time
-will remove all the entities that are not part of the set of builtin tags (see
-[[*Configuration][configuration section]] to know how to configure this set).
-
-#####  Example 1
-We have an Appgate system with a condition but we do not have any condition
-defined in kubernetes.
-
-```
-2020-07-17 17:14:38,940 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
-2020-07-17 17:14:38,942 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
-2020-07-17 17:14:38,943 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
-2020-07-17 17:14:38,945 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
-2020-07-17 17:14:39,228 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
-2020-07-17 17:14:44,235 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
-2020-07-17 17:14:44,235 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
-2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
-2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
-2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
-2020-07-17 17:14:44,236 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
-2020-07-17 17:14:49,242 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
-2020-07-17 17:14:49,243 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
-2020-07-17 17:14:49,243 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
-2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
-2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
-2020-07-17 17:14:49,244 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
-```
-
-As we can see in this example the new condition (not built-in) is detected when
-discovering the first state. Because we did not choose to cleanup on startup,
-the condition is kept there and not managed by the operator.
-
-##### Example 2
-Same example when cleanup is on.
-
-```
-2020-07-17 17:20:12,999 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
-2020-07-17 17:20:13,001 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
-2020-07-17 17:20:13,002 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
-2020-07-17 17:20:13,005 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
-2020-07-17 17:20:13,412 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
-2020-07-17 17:20:18,419 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
-2020-07-17 17:20:18,419 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
-2020-07-17 17:20:18,419 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
-2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] - <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
-2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
-2020-07-17 17:20:18,420 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
-```
-
-Now we can see that the condition was marked as a deletion because it's not defined in the cluster.
-
-If we have the cleanup option on BUT the cluster knows about those entities they are not deleted:
-
-```
-  2020-07-17 17:22:38,393 [INFO] [policies/appgate-test-1] Loop for policies/appgate-test-1 started
-  2020-07-17 17:22:38,396 [INFO] [entitlements/appgate-test-1] Loop for entitlements/appgate-test-1 started
-  2020-07-17 17:22:38,398 [INFO] [conditions/appgate-test-1] Loop for conditions/appgate-test-1 started
-  2020-07-17 17:22:38,403 [INFO] [appgate-operator/appgate-test-1] Getting current state from controller
-  2020-07-17 17:22:38,707 [INFO] [appgate-operator/appgate-test-1] Ready to get new events and compute a new plan
-  2020-07-17 17:22:39,020 [INFO] [appgate-operator/appgate-test-1}] Event op: ADDED <class 'appgate.types.Condition'> with name my-new-condition
-  2020-07-17 17:22:44,025 [INFO] [appgate-operator/appgate-test-1] No more events for a while, creating a plan
-  2020-07-17 17:22:44,025 [WARNING] [appgate-operator/appgate-test-1] Running in dry-mode, nothing will be created
-  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] AppgatePlan Summary:
-  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> Always [ee7b7e6f-e904-4b4f-a5ec-b3bef040643e]
-  2020-07-17 17:22:44,026 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Condition'> my-new-condition [1bd1f4a8-d2ca-409d-b925-3530447caf45]
-  2020-07-17 17:22:44,027 [INFO] [appgate-operator/appgate-test-1] = <class 'appgate.types.Policy'> Builtin Administrator Policy [172143a0-7ed4-11e4-b4a9-0800200c9a66]
-```
-
-#### TWO_WAY_SYNC
-This flag makes the appgate-operator to read the current state from the
-controller before computing the new plan. Basically whatever entity
-created/deleted/modified manually will be reverted.
-
-When it's not set it will just compute the plan against the current state in
-memory (which could be different from the one in the controller).
-
-### Secrets
-The operator supports 3 ways of dealing with secrets:
- - unencrypted secrets.
- - secrets encrypted with a [[https://cryptography.io/en/latest/fernet/][fernet]] key.
- - secrets saved as =secret= store in k8s.
-
-#### Unencrypted secrets
-In the first case (*unencrypted secrets*) we will save the secret in the yaml
-file itself (or some tool will add it before pushing the event into k8s). In
-this case the operator just uses that value as the value of the secrets field.
-
-#### Encrypted secrets
-We can also save an encrypted secret in the yaml file defining the entity, in
-this case we need to provide a fermet key value in the environment variable
-~APPGATE_OPERATOR_FERNET_KEY~ and the operator will decrypt the contents of the
-value before using it.
-
-In order to generate a new fernet key we can run:
-```shell
-$ python3 -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())'
-```
-
-In order to generate a secret with the new key we can do something like this:
-```shell
-$ SECRET='my-secret'
-$ KEY='dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk='
-$ python3.9 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
-```
-
-Now it's safe to store the secrets in github.
-
-If the variable ~APPGATE_OPERATOR_FERNET_KEY~ is set and the value of the secret
-is a string then the operator will use the key to decrypt the secret.
-
-#### k8s secret store
-We can also use k8s the secrets store mechanism to save the secrets and reference
-them in the yaml file. In this case we just set the value of the field with the
-secret to a dictionary like this
-
-```yaml
-type: k8s/secret
-password: my-secret
-```
-
-### bytes
-Some fields require bytes as a value (contents from a file for example) encoded
-in base64. For now we only support the value encoded as base64 directly in the
-yaml file.
-
-
-## Contributing
-### Building SDP Operator
-The appgate-operator is provided as a docker image tagged with the appgate API
-version. For example:
-
- - appgate-operator:v14
- - appgate-operator:v15
- - appgate-operator:v16
- - appgate-operator:v17
-
-Each image uses that specific API version by default but contains the specs for
-all the API versions supported.
-
-To build the images we use a docker image as a builder with all the dependencies
-needed.
-
-In order to create the images run (~make docker-build-image is only needed if we
-don't have yet the builder image or if we have changed any dependency):
-
-```shell
-make docker-build-image && make docker-images
-```
-
-To push the images into a registry just run:
-```shell
-for tag in v14 v15 v16 v17; do
-  docker tag appgate-operator:${tag} user/appgate-operator:${tag} && \
-  docker push user/appgate-operator:${tag}
-done
 ```
