@@ -111,10 +111,10 @@ The operator supports 3 ways to handle sensitive information in YAML files:
 3. Secrets created as a Secret on kubernetes
 
 #### Unencrypted Secrets
-Secret is stored as-is in the yaml file. The operator will use that value as the value for the secret field. This is not recommended in production.
+Secret is stored as-is in the YAML file. The operator will use that value as the value for the secret field. This is not recommended in production.
 
 #### Secrets Encrypted with a Fernet Key
-Sensitive information can be stored in the yaml as encrypted secrets using [fernet (symmetric encryption)](https://cryptography.io/en/latest/fernet/).
+Sensitive information can be stored in the YAML as encrypted secrets using [fernet (symmetric encryption)](https://cryptography.io/en/latest/fernet/).
 
 To generate a new fernet key, run:
 ```shell
@@ -128,7 +128,7 @@ $ export KEY="dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk="
 $ python3 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
 ```
 
-After generating the secret, the value is safe to be stored inside the yaml file. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
+After generating the secret, the value is safe to be stored inside the YAML file. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
 
 #### Secrets using Kubernetes Secrets
 Alternatively, the operator supports reading secrets from Kubernetes. 
@@ -166,7 +166,7 @@ $ export APPGATE_OPERATOR_CACERT=`cat cert.ca`
 $ python3 -m appgate --spec-directory /root/appgate/api_specs/v15 dump-entities
 ```
 
-The above command will generate a directory that contains the yaml
+The above command will generate a directory that contains the YAML
 ```shell
 $ ls -l example-v15/
 total 52
