@@ -2,7 +2,7 @@ aiohttp==3.8.3
 aiosignal==1.2.0
 apischema==0.17.5
 async-timeout==4.0.2
-attrs==21.4.0
+attrs==22.1.0
 cachetools==4.2.4
 certifi==2021.10.8
 cffi==1.15.0
