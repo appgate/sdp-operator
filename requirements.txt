@@ -25,5 +25,5 @@ rsa==4.9
 six==1.16.0
 typedload==2.7
 urllib3==1.26.12
-websocket-client==1.2.3
+websocket-client==1.4.1
 yarl==1.7.2
