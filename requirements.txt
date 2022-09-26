@@ -1,6 +1,6 @@
 aiohttp==3.8.3
 aiosignal==1.2.0
-apischema==0.17
+apischema==0.17.5
 async-timeout==4.0.2
 attrs==21.4.0
 cachetools==4.2.4
