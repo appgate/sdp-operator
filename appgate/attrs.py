@@ -1,4 +1,5 @@
 import datetime
+from dateutil import parser
 from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
 from typedload import dataloader
@@ -68,7 +69,8 @@ def is_datetime_dumper(value: Any) -> bool:
 
 def parse_datetime(value) -> datetime.datetime:
     try:
-        return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        # dateutil.fromisofromat cannot handle string that contains 6+ sub-second digits
+        return parser.isoparse(value.replace("Z", "+00:00"))
     except Exception as e:
         raise TypedloadException(f"Unable to parse {value} as a datetime: {e}")
 
