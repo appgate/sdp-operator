@@ -29,9 +29,9 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 
 2. Create a secret containing the username and password for the operator.
    ```shell
-   $ kubectl create secret sdp-operator-secret-sdp-operator \
+   $ kubectl create secret generic sdp-operator-secret-sdp-operator \
        --from-literal=appgate-operator-user=<user> \
-       --from-literal-appgate-operator-password=<password> \
+       --from-literal=appgate-operator-password=<password> \
        --namespace sdp-system
    ``` 
    * `user` : Username of the user with admin access to the controller.
@@ -40,7 +40,7 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 
 3. Install the SDP Operator with Helm. Browse the options in [values.yaml](#parameters).
    ```shell
-   $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator \ 
+   $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator \
        --version <version> \
        --set sdp.operator.version=<api-version> \
        --set sdp.operator.host=<host> \
