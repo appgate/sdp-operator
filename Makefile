@@ -3,6 +3,7 @@ PYTHON3=python3.10
 
 all: api_specs lint test
 
+.PHONY: api_specs
 api_specs:
 	@./bin/get-open-spec.sh
 	@./bin/unzip-open-spec.sh
