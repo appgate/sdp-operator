@@ -8,7 +8,7 @@ RUN python3 -m venv /root/venv && \
     rm -r /root/.cache && rm /root/requirements.txt
 
 COPY appgate /root/appgate/
-COPY api_specs /root/appgate/api_specs/
+COPY api_specs /root/api_specs
 COPY docker/assets/run.sh /root/run.sh
 RUN chmod +x /root/run.sh
 WORKDIR /root

@@ -85,7 +85,7 @@ spec:
           imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
           args:
             - --spec-directory
-            - "/root/appgate/api_specs/{{ required "A valid .Values.sdp.operator.version entry is required!" .Values.sdp.operator.version }}"
+            - "/root/api_specs/{{ required "A valid .Values.sdp.operator.version entry is required!" .Values.sdp.operator.version }}"
             - run
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
