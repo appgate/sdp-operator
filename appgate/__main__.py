@@ -1,6 +1,7 @@
 import asyncio
 import binascii
 import itertools
+import shutil
 import sys
 import os
 from argparse import ArgumentParser
@@ -242,6 +243,125 @@ def main_run(args: OperatorArguments) -> None:
         log.error("[appgate-operator] Fatal error: %s", e)
 
 
+def main_sync_entities(args: OperatorArguments) -> None:
+    asyncio.run(sync_entities(args))
+
+
+async def sync_entities(args: OperatorArguments) -> None:
+    from git import Repo
+
+    class EnvironmentVariableNotFoundException(Exception):
+        pass
+
+    class GitRepo:
+        repository: Repo
+        repository_dir: Path
+        branch: str
+
+        def check_env_vars(self) -> None:
+            envs = [
+                "GIT_REPOSITORY_URL",
+                "GIT_USERNAME",
+                "GIT_TOKEN",
+                "GIT_BASE_BRANCH",
+            ]
+            for env in envs:
+                if not os.getenv(env):
+                    raise EnvironmentVariableNotFoundException(env)
+
+        def clone_repository(self, dir: Path) -> None:
+            url = os.getenv("GIT_REPOSITORY_URL")
+            username = os.getenv("GIT_USERNAME")
+            password = os.getenv("GIT_TOKEN")
+            repo_url = f"https://{username}:{password}@{url}"
+
+            self.repository_dir = dir
+            if self.repository_dir.exists():
+                shutil.rmtree(self.repository_dir)
+
+            log.info(f"Cloning repository {url}")
+            self.repository = Repo.clone_from(repo_url, self.repository_dir)
+
+        def checkout_branch(self) -> None:
+            self.branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
+            log.info(f"Checking out {self.repository.remote().name}/{self.branch}")
+            self.repository.git.branch(self.branch)
+            self.repository.git.checkout(self.branch)
+
+        def needs_pull_request(self) -> bool:
+            self.repository.index.add([f"{self.repository_dir}/*"])
+            return self.repository.is_dirty()
+
+        def commit_change(self) -> None:
+            log.info(
+                f"Committing changes to {self.repository.remote().name}:{self.branch}"
+            )
+            self.repository.index.commit(self.branch)
+
+        def push_change(self) -> None:
+            log.info(
+                f"Pushing changes to {self.repository.remote().name}:{self.branch}"
+            )
+            self.repository.git.push(
+                "--set-upstream", self.repository.remote().name, self.branch
+            )
+
+        def create_pull_request(self) -> None:
+            pass
+
+    class GitHubRepo(GitRepo):
+        def check_env_vars(self) -> None:
+            super().check_env_vars()
+            envs = ["GITHUB_REPOSITORY"]
+            for env in envs:
+                if not os.getenv(env):
+                    raise EnvironmentVariableNotFoundException(env)
+
+        def create_pull_request(self) -> None:
+            from github import Github
+
+            token = os.getenv("GIT_TOKEN")
+            base_branch = os.getenv("GIT_BASE_BRANCH", "master")
+            repo = os.getenv("GITHUB_REPOSITORY")
+            title = f"Merge changes from {self.branch}"
+
+            log.info(
+                f"Creating pull request in GitHub from '{self.branch}' to '{base_branch}'"
+            )
+            gh = Github(f"{token}")
+            gh_repo = gh.get_repo(f"{repo}")
+            gh_repo.create_pull(
+                title=title, body=self.branch, head=self.branch, base=base_branch
+            )
+
+    def get_git_repository(vendor_type: str) -> GitRepo:
+        vendor_type = vendor_type.lower().strip()
+        if vendor_type == "github":
+            log.info("Detected GitHub as git vendor type")
+            return GitHubRepo()
+        elif vendor_type == "gitlab":
+            log.info("Detected GitLab as git vendor type")
+            raise Exception("GitLab not implemented")
+        else:
+            raise Exception(f"Unknown git vendor type {vendor_type}")
+
+    git: GitRepo = get_git_repository("github")
+    context = get_context(args)
+    dir = Path("/git/sdp-operator-entities")
+    git.check_env_vars()
+    git.clone_repository(dir)
+    while True:
+        git.checkout_branch()
+        await dump_entities(ctx=context, output_dir=dir)
+        if git.needs_pull_request():
+            git.commit_change()
+            git.push_change()
+            git.create_pull_request()
+
+        log.info(f"Sleeping for {context.timeout} seconds")
+        time.sleep(context.timeout)
+
+
 async def dump_entities(
     ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
@@ -460,6 +580,37 @@ def main() -> None:
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
     )
+    # sync entities
+    sync_entities = subparsers.add_parser("sync-entities")
+    sync_entities.set_defaults(cmd="sync-entities")
+    sync_entities.add_argument(
+        "--stdout",
+        action="store_true",
+        default=False,
+        help="Sync entities on SDP controller to a git repository",
+    )
+    sync_entities.add_argument(
+        "--no-verify",
+        action="store_true",
+        default=False,
+        help="Disable SSL strict verification.",
+    )
+    sync_entities.add_argument(
+        "--directory",
+        help="Directory where to dump entities. "
+        'Default value: "YYYY-MM-DD_HH-MM-entities"',
+        default=None,
+    )
+    sync_entities.add_argument(
+        "--cafile", help="cacert file used for ssl verification.", default=None
+    )
+    sync_entities.add_argument(
+        "-t",
+        "--tags",
+        action="append",
+        help="Tags to filter entities. Only entities with any of those tags will be dumped",
+        default=[],
+    )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
     dump_crd.set_defaults(cmd="dump-crd")
@@ -510,6 +661,9 @@ def main() -> None:
                     cafile=Path(args.cafile) if args.cafile else None,
                 )
             )
+
+        elif args.cmd == "sync-entities":
+            main_sync_entities(OperatorArguments())
         elif args.cmd == "dump-entities":
             if args.cafile and not Path(args.cafile).exists():
                 print(f"cafile file not found: {args.cafile}")

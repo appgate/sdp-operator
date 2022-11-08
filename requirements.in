@@ -4,3 +4,5 @@ attrs>=20.3.0
 cryptography>=36.0.1
 kubernetes>=16
 typedload==2.12
+GitPython>=3.1.29
+PyGitHub>=1.57

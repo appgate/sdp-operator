@@ -57,11 +57,14 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 
 ### SDP Required Parameters
 
-| Name                    | Description                                                                       | Value |
-| ----------------------- | --------------------------------------------------------------------------------- | ----- |
-| `sdp.operator.host`     | The hostname of the controller to manage with the operator.                       | `""`  |
-| `sdp.operator.deviceId` | The device ID assigned to the operator for authenticating against the controller. | `""`  |
-| `sdp.operator.version`  | The API version of the controller.                                                | `v17` |
+| Name                                  | Description                                                                                                  | Value  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
+| `sdp.operator.host`                   | The hostname of the controller to manage with the operator.                                                  | `""`   |
+| `sdp.operator.deviceId`               | The device ID assigned to the operator for authenticating against the controller.                            | `""`   |
+| `sdp.operator.version`                | The API version of the controller.                                                                           | `v17`  |
+| `sdp.operator.mode`                   | The mode of the operator to run: run (Push configuration to SDP) | sync (Sync configuration from SDP to Git) | `sync` |
+| `sdp.operator.sync.git.repositoryUrl` | The url of the git repository (HTTPS only supported)                                                         | `""`   |
+| `sdp.operator.sync.git.secret`        | The secret to pull and push the git repository                                                               | `""`   |
 
 
 ### SDP Optional Parameters
