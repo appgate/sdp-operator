@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 RUN apt-get update && \
-    apt-get install gcc libffi-dev --yes
+    apt-get install gcc libffi-dev git --yes
 COPY requirements.txt /root/
 RUN python3 -m venv /root/venv && \
     /root/venv/bin/pip install -r /root/requirements.txt && \

@@ -1,5 +1,5 @@
 # SDP Operator
-SDP Operator is a cloud-native project to declaratively configure an Appgate SDP system. 
+SDP Operator is a cloud-native project to declaratively configure an Appgate SDP system.
 
 SDP Operator supports the following API versions:
 * v14 (Appgate version 5.3)
@@ -17,12 +17,12 @@ The following tools are required to install the SDP Operator
 
 Browse the available charts versions in the [SDP Operator GitHub Container Registry](https://github.com/appgate/sdp-operator/pkgs/container/charts%2Fsdp-operator).
 
-1. Install the SDP Operator CRD charts with Helm. 
+1. Install the SDP Operator CRD charts with Helm.
    ```shell
    $ helm install sdp-operator-crd oci://ghcr.io/appgate/charts/sdp-operator-crd \
-      --version <version> \
-      --set version=<api-version> \
-      --namespace sdp-system
+	  --version <version> \
+	  --set version=<api-version> \
+	  --namespace sdp-system
    ```
    * `api-version` : API version of the controller (`v14`, `v15`, `v16`, `v17`).
    * `version` : chart version of the SDP Operator.
@@ -31,10 +31,10 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 2. Create a secret containing the username and password for the operator.
    ```shell
    $ kubectl create secret generic sdp-operator-secret-sdp-operator \
-       --from-literal=appgate-operator-user=<user> \
-       --from-literal=appgate-operator-password=<password> \
-       --namespace sdp-system
-   ``` 
+	   --from-literal=appgate-operator-user=<user> \
+	   --from-literal=appgate-operator-password=<password> \
+	   --namespace sdp-system
+   ```
    * `user` : Username of the user with admin access to the controller.
    * `password`: Password of the user with admin access to the controller.
 
@@ -42,11 +42,11 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 3. Install the SDP Operator with Helm. Browse the options in [values.yaml](#parameters).
    ```shell
    $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator \
-       --version <version> \
-       --set sdp.operator.version=<api-version> \
-       --set sdp.operator.host=<host> \
-       --set sdp.operator.deviceId=<device-id> \
-       --namespace sdp-system
+	   --version <version> \
+	   --set sdp.operator.version=<api-version> \
+	   --set sdp.operator.host=<host> \
+	   --set sdp.operator.deviceId=<device-id> \
+	   --namespace sdp-system
    ```
    * `version` : chart version of the SDP Operator. Must match the CRD chart version in Step 1.
    * `api-version` : API version of the controller. (`v14`, `v15`, `v16`, `v17`).
@@ -58,11 +58,14 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 
 ### SDP Required Parameters
 
-| Name                    | Description                                                                       | Value |
-| ----------------------- | --------------------------------------------------------------------------------- | ----- |
-| `sdp.operator.host`     | The hostname of the controller to manage with the operator.                       | `""`  |
-| `sdp.operator.deviceId` | The device ID assigned to the operator for authenticating against the controller. | `""`  |
-| `sdp.operator.version`  | The API version of the controller.                                                | `v18` |
+| Name                                  | Description                                                                                                  | Value  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
+| `sdp.operator.host`                   | The hostname of the controller to manage with the operator.                                                  | `""`   |
+| `sdp.operator.deviceId`               | The device ID assigned to the operator for authenticating against the controller.                            | `""`   |
+| `sdp.operator.version`                | The API version of the controller.                                                                           | `v17`  |
+| `sdp.operator.mode`                   | The mode of the operator to run: run (Push configuration to SDP) | sync (Sync configuration from SDP to Git) | `sync` |
+| `sdp.operator.sync.git.repositoryUrl` | The url of the git repository (HTTPS only supported)                                                         | `""`   |
+| `sdp.operator.sync.git.secret`        | The secret to pull and push the git repository                                                               | `""`   |
 
 
 ### SDP Optional Parameters
@@ -99,11 +102,11 @@ This table above was generated using [readme-generator-for-helm](https://github.
 
 
 ## How It Works
-[Custom Resource Definitions (CRD)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) on Kubernetes allow the operator to represent Appgate SDP entities as YAMLs. Each instance of an entity is stored as a Custom Resource. The operator reads each instance's spec and syncs the entity with the controller using the Admin API. SDP Operator consumes a version from [Appgate SDP OpenAPI Spec](https://github.com/appgate/sdp-api-specification) to generate entities for a given version of the controller. 
+[Custom Resource Definitions (CRD)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) on Kubernetes allow the operator to represent Appgate SDP entities as YAMLs. Each instance of an entity is stored as a Custom Resource. The operator reads each instance's spec and syncs the entity with the controller using the Admin API. SDP Operator consumes a version from [Appgate SDP OpenAPI Spec](https://github.com/appgate/sdp-api-specification) to generate entities for a given version of the controller.
 
-For each entity, the operator begins a timer and an event loop to listen for any changes happening on the cluster. Every time an event is received, the timer resets. After the timeout period has expired (in other words, when no event has newly arrived), the operator proceeds to compute a Plan. A Plan represents the difference between the current state on the controller vs the desired state defined in Kubernetes - it outlines what entities will be created/updated/deleted on the controller. After the plan is computed, the operator to execute the Plan on the controller using the API in order to produce the desired state. 
+For each entity, the operator begins a timer and an event loop to listen for any changes happening on the cluster. Every time an event is received, the timer resets. After the timeout period has expired (in other words, when no event has newly arrived), the operator proceeds to compute a Plan. A Plan represents the difference between the current state on the controller vs the desired state defined in Kubernetes - it outlines what entities will be created/updated/deleted on the controller. After the plan is computed, the operator to execute the Plan on the controller using the API in order to produce the desired state.
 
-It is important to note that, by design, any state defined in Kubernetes wins over state in the SDP system - any external changes made outside the operator will be overwritten. For example, if an administrator makes a change to the Policy via admin UI, the operator will determine the change as 'out-of-sync- and undoes the change. 
+It is important to note that, by design, any state defined in Kubernetes wins over state in the SDP system - any external changes made outside the operator will be overwritten. For example, if an administrator makes a change to the Policy via admin UI, the operator will determine the change as 'out-of-sync- and undoes the change.
 
 ### Secrets Management
 The operator supports 3 ways to handle sensitive information in YAML files:
@@ -132,7 +135,7 @@ $ python3 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.g
 After generating the secret, the value is safe to be stored inside the YAML file. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
 
 #### Secrets using Kubernetes Secrets
-Alternatively, the operator supports reading secrets from Kubernetes. 
+Alternatively, the operator supports reading secrets from Kubernetes.
 
 Let's say, we created the secret below on the Kubernetes cluster.
 ```yaml
@@ -155,7 +158,7 @@ fieldOne:
 When operator sees an entity field with `type: k8s/secret`, it will read the Kubernetes secret to find the value it can use to decrypt and read the secret.
 
 ### CA Certificates
-CA certificate in PEM format can be stored in env `APPGATE_OPERATOR_CACERT`. We recommend storing the contents of the PEM as a base64 encoded string. 
+CA certificate in PEM format can be stored in env `APPGATE_OPERATOR_CACERT`. We recommend storing the contents of the PEM as a base64 encoded string.
 ``` shell
 $ export APPGATE_OPERATOR_CACERT=`cat cert.ca`
 ```
