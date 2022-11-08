@@ -79,6 +79,24 @@ spec:
             - name: APPGATE_OPERATOR_FERNET_KEY
               value: "{{ . }}"
             {{- end }}
+            {{- if eq .Values.sdp.operator.mode "sync" }}
+            - name: GIT_REPOSITORY_URL
+              value: {{ .Values.sdp.operator.sync.git.repositoryUrl }}
+            - name: GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.sync.git.secret }}
+                  key: git-username
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.sync.git.secret }}
+                  key: git-token
+            - name: GIT_BASE_BRANCH
+              value: {{ .Values.sdp.operator.sync.git.baseBranch }}
+            - name: GITHUB_REPOSITORY
+              value: {{ .Values.sdp.operator.sync.github.repository }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.operator.image.tag}}"
@@ -86,7 +104,11 @@ spec:
           args:
             - --spec-directory
             - "/root/api_specs/{{ required "A valid .Values.sdp.operator.version entry is required!" .Values.sdp.operator.version }}"
+            {{- if eq .Values.sdp.operator.mode "sync" }}
+            - sync-entities
+            {{- else }}
             - run
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
