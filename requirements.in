@@ -1,5 +1,6 @@
 aiohttp>=3.8.1
+apischema>=0.17
 attrs>=20.3.0
 cryptography>=36.0.1
-kubernetes>=12.0.1
-typedload==2.7
+kubernetes>=16
+typedload==2.12
