@@ -29,7 +29,7 @@ rules:
       - globalsettingss
       - clientconnections
       - serviceusers
-    verbs: ["get", "watch", "list"]
+    verbs: ["get", "create", "patch", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
     verbs: ["get", "watch", "list", "update", "patch"]
