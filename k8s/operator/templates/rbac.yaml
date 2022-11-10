@@ -29,7 +29,7 @@ rules:
       - globalsettingss-{{ .Values.sdp.operator.version }}
       - clientconnections-{{ .Values.sdp.operator.version }}
       - serviceusers-{{ .Values.sdp.operator.version }}
-    verbs: ["get", "watch", "list"]
+    verbs: ["get", "create", "patch", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
     verbs: ["get", "watch", "list", "update", "patch"]
