@@ -12,6 +12,7 @@ ENTITIES_TO_TEST = {
     "Entitlement",
     "Condition",
     "IdentityProvider",
+    "IpPool",
 }
 
 
