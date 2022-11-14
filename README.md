@@ -6,6 +6,7 @@ SDP Operator supports the following API versions:
 * v15 (Appgate version 5.4)
 * v16 (Appgate version 5.5)
 * v17 (Appgate version 6.0)
+* v18 (Appgate version 6.1)
 
 ## Requirements
 The following tools are required to install the SDP Operator
