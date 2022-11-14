@@ -44,6 +44,8 @@ paths:
     $ref: '#/entity-dep-nested-nullable'
   /entity-discriminator:
     $ref: '#/entity-discriminator'
+  /entity-array:
+    $ref: '#/entity-array'
 
 entity-test0:
   get:
@@ -315,6 +317,21 @@ entity-discriminator:
           schema:
             $ref: '#/definitions/EntityDiscriminator'
 
+entity-array:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityArray'
+
 definitions:
   EntityTestList:
     type: object
@@ -549,7 +566,28 @@ definitions:
                   type: string
                   format: uuid
                   x-uuid-ref: EntityDep2
-
+  EntityArray:
+    allOf:
+      - type: object
+        properties:
+          arrayObjectOne:
+            allOf:
+              - $ref: '#/definitions/EntityArrayCommon'
+              - description: First variant of the array
+          arrayObjectTwo:
+            allOf:
+              - $ref: '#/definitions/EntityArrayCommon'
+              - description: Second variant of the array
+  EntityArrayCommon:
+    type: array
+    items:
+      type: object
+      description: Represents a common array property
+      properties:
+        arrayFieldOne:
+          type: string
+        arrayFieldTwo:
+          type: string
   EntityCert:
     type: object
     properties:

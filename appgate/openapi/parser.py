@@ -417,15 +417,26 @@ class Parser:
             "properties": {},
             "discriminator": {},
             "description": "",
+            "items": {"type": "object", "properties": {}},
         }
         descriptions = []
         for d in definitions:
-            new_definition["required"].extend(d.get("required", {}))
-            new_definition["properties"].update(d.get("properties", {}))
-            new_definition["discriminator"].update(d.get("discriminator", {}))
-            if "description" in d:
-                descriptions.append(d["description"])
-        new_definition["description"] = ".".join(descriptions)
+            if d.get("type") == "array":
+                new_definition["type"] = "array"
+                items = d.get("items", {})
+                new_definition["items"]["properties"].update(
+                    items.get("properties", {})
+                )
+                if "description" in items:
+                    descriptions.append(items["description"])
+            else:
+                new_definition["properties"].update(d.get("properties", {}))
+                new_definition["required"].extend(d.get("required", {}))
+                new_definition["discriminator"].update(d.get("discriminator", {}))
+                if "description" in d:
+                    descriptions.append(d["description"])
+
+        new_definition["description"] = "".join(descriptions)
         return new_definition
 
     def parse_discriminator(self, definition: OpenApiDict) -> OpenApiDict:

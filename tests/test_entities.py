@@ -80,6 +80,43 @@ def test_loader_deprecated_required():
     assert e1
 
 
+def test_loader_array_object():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    EntityArray = entities["EntityArray"].cls
+    EntityArrayObjectOne = entities["EntityArray_Arrayobjectone"].cls
+    EntityArrayObjectTwo = entities["EntityArray_Arrayobjecttwo"].cls
+    e1 = EntityArray()
+    assert e1
+
+    data1 = {
+        "arrayObjectOne": [
+            {"arrayFieldOne": "foo", "arrayFieldTwo": "bar"},
+            {"arrayFieldOne": "faa", "arrayFieldTwo": "baa"},
+        ],
+        "arrayObjectTwo": [
+            {"arrayFieldOne": "baz", "arrayFieldTwo": "bat"},
+            {"arrayFieldOne": "baa", "arrayFieldTwo": "bbb"},
+        ],
+    }
+
+    e1 = APPGATE_LOADER.load(data1, None, EntityArray)
+    assert e1 == EntityArray(
+        arrayObjectOne=frozenset(
+            {
+                EntityArrayObjectOne(arrayFieldOne="foo", arrayFieldTwo="bar"),
+                EntityArrayObjectOne(arrayFieldOne="faa", arrayFieldTwo="baa"),
+            }
+        ),
+        arrayObjectTwo=frozenset(
+            {
+                EntityArrayObjectTwo(arrayFieldOne="baz", arrayFieldTwo="bat"),
+                EntityArrayObjectTwo(arrayFieldOne="baa", arrayFieldTwo="bbb"),
+            }
+        ),
+    )
+
+
 def test_loader_discriminator():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
 
