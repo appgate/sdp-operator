@@ -1,0 +1,78 @@
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: connector
+spec:
+  claimMappings:
+  - attributeName: hostname
+    claimName: hostname
+  - attributeName: id
+    claimName: id
+  - attributeName: tags
+    claimName: tags
+    list: true
+  - attributeName: applianceApiVersion
+    claimName: applianceApiVersion
+  - attributeName: clientName
+    claimName: clientName
+  - attributeName: applianceName
+    claimName: applianceName
+  name: Connector
+  notes: Built-in Connector provider.
+  tags:
+  - builtin
+  type: Connector
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: local
+spec:
+  adminProvider: true
+  claimMappings:
+  - attributeName: email
+    claimName: emails
+    list: true
+  - attributeName: id
+    claimName: id
+  - attributeName: tags
+    claimName: tags
+    list: true
+  - attributeName: phone
+    claimName: phone
+  - attributeName: username
+    claimName: username
+  - attributeName: firstName
+    claimName: firstName
+  - attributeName: lastName
+    claimName: lastName
+  deviceLimitPerUser: 100000
+  enforceWindowsNetworkProfileAsDomain: false
+  ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+  ipPoolV6: 6935b379-205d-4fdd-847f-a0b5f14aff53
+  name: local
+  notes: Built-in Identity Provider on local database.
+  tags:
+  - builtin
+  type: LocalDatabase
+---
+apiVersion: beta.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  name: service
+spec:
+  claimMappings:
+  - attributeName: labels
+    claimName: labels
+  - attributeName: tags
+    claimName: tags
+    list: true
+  - attributeName: id
+    claimName: id
+  - attributeName: username
+    claimName: username
+  name: service
+  notes: Built-in Identity Provider on local database for service users.
+  tags:
+  - builtin
+  type: ServiceDatabase

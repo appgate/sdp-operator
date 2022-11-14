@@ -1,0 +1,6 @@
+apiVersion: beta.appgate.com/v1
+kind: ClientConnection
+metadata:
+  name: clientconnection
+spec:
+  profileHostname: envy-10-97-180-2.devops

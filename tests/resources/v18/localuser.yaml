@@ -1,0 +1,25 @@
+apiVersion: beta.appgate.com/v1
+kind: LocalUser
+metadata:
+  name: admin
+spec:
+  disabled: false
+  email: admin@email.com
+  failedLoginAttempts: 0
+  firstName: Builtin
+  lastName: Administrator
+  name: admin
+  notes: Built-in administrator user.
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: LocalUser
+metadata:
+  name: hello
+spec:
+  disabled: false
+  failedLoginAttempts: 0
+  firstName: hello
+  lastName: world
+  name: Hello

@@ -60,6 +60,10 @@ def test_load_entities_v17():
     load_entities("v17")
 
 
+def test_load_entities_v18():
+    load_entities("v18")
+
+
 def test_loader_deprecated_required():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
 
