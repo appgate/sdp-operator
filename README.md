@@ -61,7 +61,7 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 | ----------------------- | --------------------------------------------------------------------------------- | ----- |
 | `sdp.operator.host`     | The hostname of the controller to manage with the operator.                       | `""`  |
 | `sdp.operator.deviceId` | The device ID assigned to the operator for authenticating against the controller. | `""`  |
-| `sdp.operator.version`  | The API version of the controller.                                                | `v17` |
+| `sdp.operator.version`  | The API version of the controller.                                                | `v18` |
 
 
 ### SDP Optional Parameters
