@@ -39,9 +39,14 @@ def load_entities(version: str) -> None:
                 assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
 
 
-@pytest.mark.skip("SDP v5.2 is unsupported")
+@pytest.mark.skip("SDP v5.1 is unsupported")
 def test_load_entities_v12():
     load_entities("v12")
+
+
+@pytest.mark.skip("SDP v5.2 is unsupported")
+def test_load_entities_v13():
+    load_entities("v13")
 
 
 def test_load_entities_v14():

@@ -27,7 +27,7 @@ def assert_equal_crd(version: str) -> None:
             assert yaml.safe_load(crd) == yaml.safe_load(f)
 
 
-@pytest.mark.skip("SDP v5.2 is unsupported")
+@pytest.mark.skip("SDP v5.1 is unsupported")
 def test_generate_crd_v12():
     assert_equal_crd("v12")
 
