@@ -1,0 +1,3 @@
+k8s/crd/templates/*.yaml linguist-generated=true
+tests/resources/crd/*/*.yaml linguist-generated=true
+tests/resources/entity/*/*.yaml linguist-generated=true
