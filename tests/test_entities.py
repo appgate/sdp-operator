@@ -30,8 +30,8 @@ from tests.utils import (
 def load_entities(version: str) -> None:
     open_api = generate_api_spec(Path(f"api_specs/{version}").parent / version)
     entities = open_api.entities
-    for f in os.listdir(f"tests/resources/{version}"):
-        with (Path(f"tests/resources/{version}") / f).open("r") as doc:
+    for f in os.listdir(f"tests/resources/entity/{version}"):
+        with (Path(f"tests/resources/entity/{version}") / f).open("r") as doc:
             documents = list(yaml.safe_load_all(doc))
             for d in documents:
                 e = entities[d["kind"]].cls
