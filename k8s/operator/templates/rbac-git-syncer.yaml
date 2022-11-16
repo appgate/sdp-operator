@@ -1,7 +1,8 @@
+{{- if eq .Values.sdp.operator.mode "git-sync" }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-git-syncer
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -28,7 +29,7 @@ rules:
       - globalsettingss-{{ .Values.sdp.operator.version }}
       - clientconnections-{{ .Values.sdp.operator.version }}
       - serviceusers-{{ .Values.sdp.operator.version }}
-    verbs: ["get", "create", "patch", "watch", "list"]
+    verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
     verbs: ["get", "watch", "list", "update", "patch"]
@@ -36,15 +37,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-git-syncer
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}
+    name: {{ include "sdp-operator.serviceAccountName" . }}-git-syncer
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-git-syncer
   apiGroup: rbac.authorization.k8s.io
+{{- end }}

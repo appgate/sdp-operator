@@ -2,7 +2,7 @@
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
-## @section SDP Required Parameters
+## @section SDP Parameters
   ## @param sdp.operator.host The hostname of the controller to manage with the operator.
   ## @param sdp.operator.deviceId The device ID assigned to the operator for authenticating against the controller.
   ## @param sdp.operator.version The API version of the controller.
@@ -11,7 +11,6 @@ sdp:
     deviceId: ""
     version: v17
 
-## Shared SDP Operator setting
     ## @param sdp.operator.logLevel The log level of the operator.
     ## @param sdp.operator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
     ## @param sdp.operator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
@@ -26,27 +25,27 @@ sdp:
     targetTags: []
     excludeTags: []
 
-    ## @param sdp.operator.mode The mode of the operator: run (Push configuration to SDP) | sync (Sync configuration from SDP to Git)
+    ## @param sdp.operator.mode The mode of the operator: run (Push configuration to SDP) | git-sync (Sync configuration from SDP to Git)
     mode: run
 
   ## Configuration for Run mode
-    ## @param sdp.operator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
-    ## @param sdp.operator.cleanup Whether to delete entities from the controller to sync the entities on the operator.
-    ## @param sdp.operator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
+    ## @param sdp.operator.run.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
+    ## @param sdp.operator.run.cleanup Whether to delete entities from the controller to sync the entities on the operator.
+    ## @param sdp.operator.run.twoWaySync Whether to read the current configuration from the controller before computing the plan.
     run:
       dryRun: true
       twoWaySync: true
       cleanup: false
 
-  ## Configuration for Sync mode
-    ## @param sdp.operator.sync.git.type The vendor of the git repository: github
-    ## @param sdp.operator.sync.git.baseBranch Base branch of the repository to create pull requests
-    ## @param sdp.operator.sync.git.repositoryUrl The url of the git repository (HTTPS only supported)
-    ## @param sdp.operator.sync.git.secret The secret to pull and push the git repository
-    ## @param sdp.operator.sync.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
-    sync:
+  ## Configuration for Git-Sync mode
+    ## @param sdp.operator.gitSync.git.vendor The vendor of the git repository: github
+    ## @param sdp.operator.gitSync.git.baseBranch Base branch of the repository to create pull requests
+    ## @param sdp.operator.gitSync.git.repositoryUrl The url of the git repository (HTTPS only supported)
+    ## @param sdp.operator.gitSync.git.secret The secret to pull and push the git repository
+    ## @param sdp.operator.gitSync.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
+    gitSync:
       git:
-        vendor: ""
+        vendor: github
         baseBranch: ""
         repositoryUrl: ""
         secret: ""
@@ -70,12 +69,3 @@ sdp:
     fernetKey: ""
     caCert: ""
     configMapMt: ""
-
-## @section Kubernetes parameters
-## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
-serviceAccount:
-  create: true
-
-## @param rbac.create Whether to create & use RBAC resources or not
-rbac:
-  create: true

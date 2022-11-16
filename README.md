@@ -55,46 +55,41 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 
 ## Parameters
 
-### SDP Required Parameters
+### SDP Parameters
 
-| Name                                  | Description                                                                                                  | Value  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
-| `sdp.operator.host`                   | The hostname of the controller to manage with the operator.                                                  | `""`   |
-| `sdp.operator.deviceId`               | The device ID assigned to the operator for authenticating against the controller.                            | `""`   |
-| `sdp.operator.version`                | The API version of the controller.                                                                           | `v17`  |
-| `sdp.operator.mode`                   | The mode of the operator to run: run (Push configuration to SDP) | sync (Sync configuration from SDP to Git) | `sync` |
-| `sdp.operator.sync.git.repositoryUrl` | The url of the git repository (HTTPS only supported)                                                         | `""`   |
-| `sdp.operator.sync.git.secret`        | The secret to pull and push the git repository                                                               | `""`   |
+| Name                                     | Description                                                                                                                                                                              | Value         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `sdp.operator.host`                      | The hostname of the controller to manage with the operator.                                                                                                                              | `""`          |
+| `sdp.operator.deviceId`                  | The device ID assigned to the operator for authenticating against the controller.                                                                                                        | `""`          |
+| `sdp.operator.version`                   | The API version of the controller.                                                                                                                                                       | `v17`         |
+| `sdp.operator.logLevel`                  | The log level of the operator.                                                                                                                                                           | `info`        |
+| `sdp.operator.timeout`                   | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`          |
+| `sdp.operator.builtinTags`               | The list of tags that defines a built-in entity. Built-in entities are never deleted.                                                                                                    | `["builtin"]` |
+| `sdp.operator.targetTags`                | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`          |
+| `sdp.operator.excludeTags`               | The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.                                                                                      | `[]`          |
+| `sdp.operator.sslNoVerify`               | Whether to verify the SSL certificate of the controller.                                                                                                                                 | `false`       |
+| `sdp.operator.mode`                      | The mode of the operator: run (Push configuration to SDP) | git-sync (Sync configuration from SDP to Git)                                                                                | `run`         |
+| `sdp.operator.run.dryRun`                | Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.                                        | `true`        |
+| `sdp.operator.run.cleanup`               | Whether to delete entities from the controller to sync the entities on the operator.                                                                                                     | `false`       |
+| `sdp.operator.run.twoWaySync`            | Whether to read the current configuration from the controller before computing the plan.                                                                                                 | `true`        |
+| `sdp.operator.gitSync.git.vendor`        | The vendor of the git repository: github                                                                                                                                                 | `github`      |
+| `sdp.operator.gitSync.git.baseBranch`    | Base branch of the repository to create pull requests                                                                                                                                    | `""`          |
+| `sdp.operator.gitSync.git.repositoryUrl` | The url of the git repository (HTTPS only supported)                                                                                                                                     | `""`          |
+| `sdp.operator.gitSync.git.secret`        | The secret to pull and push the git repository                                                                                                                                           | `""`          |
+| `sdp.operator.gitSync.github.repository` | The name of the GitHub repository (e.g. appgate/sdp-operator)                                                                                                                            | `""`          |
 
 
 ### SDP Optional Parameters
 
-| Name                             | Description                                                                                                                                                                              | Value                          |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `sdp.operator.image.tag`         | The image tag of the operator.                                                                                                                                                           | `""`                           |
-| `sdp.operator.image.pullPolicy`  | The image pull policy of the operator.                                                                                                                                                   | `Always`                       |
-| `sdp.operator.image.repository`  | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | The secret to access the repository.                                                                                                                                                     | `[]`                           |
-| `sdp.operator.logLevel`          | The log level of the operator.                                                                                                                                                           | `info`                         |
-| `sdp.operator.timeout`           | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`                           |
-| `sdp.operator.builtinTags`       | The list of tags that defines a built-in entity. Built-in entities are never deleted.                                                                                                    | `["builtin"]`                  |
-| `sdp.operator.dryRun`            | Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.                                        | `true`                         |
-| `sdp.operator.cleanup`           | Whether to delete entities from the controller to sync the entities on the operator.                                                                                                     | `false`                        |
-| `sdp.operator.twoWaySync`        | Whether to read the current configuration from the controller before computing the plan.                                                                                                 | `true`                         |
-| `sdp.operator.sslNoVerify`       | Whether to verify the SSL certificate of the controller.                                                                                                                                 | `false`                        |
-| `sdp.operator.targetTags`        | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`                           |
-| `sdp.operator.excludeTags`       | The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.                                                                                      | `[]`                           |
-| `sdp.operator.caCert`            | The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.                                                                                        | `""`                           |
-| `sdp.operator.fernetKey`         | The fernet key to use when decrypting secrets in entities.                                                                                                                               | `""`                           |
-| `sdp.operator.configMapMt`       | The config map to store metadata for entities.                                                                                                                                           | `""`                           |
-
-
-### Kubernetes parameters
-
-| Name                    | Description                                          | Value  |
-| ----------------------- | ---------------------------------------------------- | ------ |
-| `serviceAccount.create` | Enable the creation of a ServiceAccount for SDP pods | `true` |
-| `rbac.create`           | Whether to create & use RBAC resources or not        | `true` |
+| Name                             | Description                                                                                       | Value                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `sdp.operator.image.tag`         | The image tag of the operator.                                                                    | `""`                           |
+| `sdp.operator.image.pullPolicy`  | The image pull policy of the operator.                                                            | `Always`                       |
+| `sdp.operator.image.repository`  | The repository to pull the operator image from.                                                   | `ghcr.io/appgate/sdp-operator` |
+| `sdp.operator.image.pullSecrets` | The secret to access the repository.                                                              | `[]`                           |
+| `sdp.operator.fernetKey`         | The fernet key to use when decrypting secrets in entities.                                        | `""`                           |
+| `sdp.operator.caCert`            | The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is. | `""`                           |
+| `sdp.operator.configMapMt`       | The config map to store metadata for entities.                                                    | `""`                           |
 
 
 This table above was generated using [readme-generator-for-helm](https://github.com/bitnami-labs/readme-generator-for-helm)
