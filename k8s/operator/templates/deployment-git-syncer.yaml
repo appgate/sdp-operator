@@ -1,7 +1,8 @@
+{{ if eq .Values.sdp.operator.mode "git-sync" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}
+  name: {{ include "sdp-operator.fullname" . }}-git-syncer
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -49,26 +50,12 @@ spec:
               value: "{{ .Values.sdp.operator.logLevel }}"
             - name: APPGATE_OPERATOR_TIMEOUT
               value: "{{ .Values.sdp.operator.timeout }}"
-            {{- with .Values.sdp.operator.targetTags }}
             - name: APPGATE_OPERATOR_TARGET_TAGS
-              value: "{{ join "," . }}"
-            {{- end }}
-            {{- with .Values.sdp.operator.excludeTags }}
+              value: "{{ join "," .Values.sdp.operator.targetTags }}"
             - name: APPGATE_OPERATOR_EXCLUDE_TAGS
-              value: "{{ join "," . }}"
-            {{- end }}
-            {{- with .Values.sdp.operator.builtinTags }}
+              value: "{{ join "," .Values.sdp.operator.excludeTags }}"
             - name: APPGATE_OPERATOR_BUILTIN_TAGS
-              value: "{{ join "," . }}"
-            {{- end }}
-            - name: APPGATE_OPERATOR_DRY_RUN
-              value: "{{ .Values.sdp.operator.dryRun }}"
-            - name: APPGATE_OPERATOR_CLEANUP
-              value: "{{ .Values.sdp.operator.cleanup }}"
-            - name: APPGATE_OPERATOR_TWO_WAY_SYNC
-              value: "{{ .Values.sdp.operator.twoWaySync }}"
-            - name: APPGATE_OPERATOR_SSL_NO_VERIFY
-              value: "{{ .Values.sdp.operator.sslNoVerify }}"
+              value: "{{ join "," .Values.sdp.operator.builtinTags }}"
             - name: APPGATE_OPERATOR_CONFIG_MAP
               value: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.operator.configMapMt }}
             {{- with .Values.sdp.operator.caCert }}
@@ -79,29 +66,34 @@ spec:
             - name: APPGATE_OPERATOR_FERNET_KEY
               value: "{{ . }}"
             {{- end }}
+            {{- if eq .Values.sdp.operator.mode "git-sync" }}
+            - name: GIT_REPOSITORY_URL
+              value: {{ .Values.sdp.operator.gitSync.git.repositoryUrl }}
+            - name: GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.gitSync.git.secret }}
+                  key: git-username
+            - name: GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.gitSync.git.secret }}
+                  key: git-token
+            - name: GIT_BASE_BRANCH
+              value: {{ .Values.sdp.operator.gitSync.git.baseBranch }}
+            {{- with .Values.sdp.operator.gitSync.github.repository }}
+            - name: GITHUB_REPOSITORY
+              value: {{ . }}
+            {{- end }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.operator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.operator.image.tag}}"
           imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
-          args:
-            - --spec-directory
-            - "/root/api_specs/{{ required "A valid .Values.sdp.operator.version entry is required!" .Values.sdp.operator.version }}"
-            {{- if eq .Values.sdp.operator.mode "git-sync" }}
-            - sync-entities
-            {{- else }}
-            - run
-            {{- end }}
+          command:
+            - "/root/venv/bin/python3"
+            - "-m"
+            - "appgate.syncer"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+{{ end }}
