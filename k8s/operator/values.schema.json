@@ -5,24 +5,8 @@
     "sdp": {
       "type": "object",
       "properties": {
-        "serviceAccount": {
-          "type": "object",
-          "properties": {
-            "create": {
-              "type": "boolean"
-            }
-          }
-        },
-        "rbac": {
-          "type": "object",
-          "properties": {
-            "create": {
-              "type": "boolean"
-            }
-          }
-        },
         "operator": {
-          "required": ["deviceId", "host", "version"],
+          "required": ["deviceId", "host", "version", "mode"],
           "type": "object",
           "properties": {
             "host": {
@@ -41,6 +25,60 @@
                 "v18"
               ]
             },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "run",
+                "git-sync"
+              ]
+            },
+            "run": {
+              "type": "object",
+              "properties": {
+                "dryRun": {
+                  "type": "boolean"
+                },
+                "twoWaySync": {
+                  "type": "boolean"
+                },
+                "cleanup": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "gitSync": {
+              "type": "object",
+              "properties": {
+                "git": {
+                  "type": "object",
+                  "properties": {
+                    "vendor": {
+                      "type": "string",
+                      "enum": [
+                        "github"
+                      ]
+                    },
+                    "baseBranch": {
+                      "type": "string"
+                    },
+                    "repositoryUrl": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "github": {
+                  "type": "object",
+                  "properties": {
+                    "repository": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
             "logLevel": {
               "type": "string",
               "enum": [
@@ -57,12 +95,6 @@
               "items": {
                 "type": "string"
               }
-            },
-            "dryRun": {
-              "type": "boolean"
-            },
-            "cleanup": {
-              "type": "boolean"
             },
             "sslNoVerify": {
               "type": "boolean"

@@ -1,0 +1,52 @@
+{{- if eq .Values.sdp.operator.mode "git-sync" }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "sdp-operator.name" . }}-git-syncer
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["beta.appgate.com"]
+    resources:
+      - policies-{{ .Values.sdp.operator.version }}
+      - entitlements-{{ .Values.sdp.operator.version }}
+      - conditions-{{ .Values.sdp.operator.version }}
+      - ringfencerules-{{ .Values.sdp.operator.version }}
+      - appliances-{{ .Values.sdp.operator.version }}
+      - sites-{{ .Values.sdp.operator.version }}
+      - ippools-{{ .Values.sdp.operator.version }}
+      - identityproviders-{{ .Values.sdp.operator.version }}
+      - localusers-{{ .Values.sdp.operator.version }}
+      - administrativeroles-{{ .Values.sdp.operator.version }}
+      - mfaproviders-{{ .Values.sdp.operator.version }}
+      - adminmfasettingss-{{ .Values.sdp.operator.version }}
+      - trustedcertificates-{{ .Values.sdp.operator.version }}
+      - criteriascriptss-{{ .Values.sdp.operator.version }}
+      - devicescripts-{{ .Values.sdp.operator.version }}
+      - entitlementscripts-{{ .Values.sdp.operator.version }}
+      - appliancecustomizations-{{ .Values.sdp.operator.version }}
+      - globalsettingss-{{ .Values.sdp.operator.version }}
+      - clientconnections-{{ .Values.sdp.operator.version }}
+      - serviceusers-{{ .Values.sdp.operator.version }}
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "watch", "list", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "sdp-operator.name" . }}-git-syncer
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "sdp-operator.serviceAccountName" . }}-git-syncer
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "sdp-operator.name" . }}-git-syncer
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
