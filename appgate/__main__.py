@@ -306,6 +306,7 @@ async def sync_entities(args: OperatorArguments) -> None:
                                 plural,
                                 entity,
                             )
+        log.info("Sleeping 60 seconds")
         time.sleep(60)
 
 
