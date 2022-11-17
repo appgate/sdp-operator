@@ -67,6 +67,8 @@ spec:
               value: "{{ . }}"
             {{- end }}
             {{- if eq .Values.sdp.operator.mode "git-sync" }}
+            - name: GIT_VENDOR
+              value: {{ .Values.sdp.operator.gitSync.git.vendor }}
             - name: GIT_REPOSITORY_URL
               value: {{ .Values.sdp.operator.gitSync.git.repositoryUrl }}
             - name: GIT_USERNAME
