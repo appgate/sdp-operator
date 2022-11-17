@@ -39,12 +39,14 @@ class GitRepo:
         if self.repository_dir.exists():
             shutil.rmtree(self.repository_dir)
 
-        log.info(f"Cloning repository {url}")
+        log.info(f"[git-sync] Initializing the git repository by cloning {url}")
         self.repository = Repo.clone_from(repo_url, self.repository_dir)
 
     def checkout_branch(self) -> None:
         self.branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
-        log.info(f"Checking out {self.repository.remote().name}/{self.branch}")
+        log.info(
+            f"[git-syncer] Checking out new branch {self.repository.remote().name}/{self.branch}"
+        )
         self.repository.git.branch(self.branch)
         self.repository.git.checkout(self.branch)
 
@@ -53,11 +55,15 @@ class GitRepo:
         return self.repository.is_dirty()
 
     def commit_change(self) -> None:
-        log.info(f"Committing changes to {self.repository.remote().name}:{self.branch}")
+        log.info(
+            f"[git-syncer] Committing changes to {self.repository.remote().name}:{self.branch}"
+        )
         self.repository.index.commit(self.branch)
 
     def push_change(self) -> None:
-        log.info(f"Pushing changes to {self.repository.remote().name}:{self.branch}")
+        log.info(
+            f"[git-syncer] Pushing changes to {self.repository.remote().name}:{self.branch}"
+        )
         self.repository.git.push(
             "--set-upstream", self.repository.remote().name, self.branch
         )
@@ -81,7 +87,7 @@ class GitHubRepo(GitRepo):
         title = f"Merge changes from {self.branch}"
 
         log.info(
-            f"Creating pull request in GitHub from '{self.branch}' to '{base_branch}'"
+            f"[git-syncer] Creating pull request in GitHub from '{self.branch}' to '{base_branch}'"
         )
         gh = Github(f"{token}")
         gh_repo = gh.get_repo(f"{repo}")
@@ -90,13 +96,13 @@ class GitHubRepo(GitRepo):
         )
 
 
-def get_git_repository(vendor_type: str) -> GitRepo:
-    vendor_type = vendor_type.lower().strip()
-    if vendor_type == "github":
-        log.info("Detected GitHub as git vendor type")
+def get_git_repository() -> GitRepo:
+    vendor_type = os.getenv("GIT_VENDOR")
+    if not vendor_type:
+        raise EnvironmentVariableNotFoundException("GIT_VENDOR")
+
+    if vendor_type.lower() == "github":
+        log.info("[git-syncer] Detected GitHub as git vendor type")
         return GitHubRepo()
-    elif vendor_type == "gitlab":
-        log.info("Detected GitLab as git vendor type")
-        raise Exception("GitLab not implemented")
     else:
         raise Exception(f"Unknown git vendor type {vendor_type}")
