@@ -280,7 +280,7 @@ async def sync_entities(args: OperatorArguments) -> None:
                     kind = entity["kind"]
                     plural = get_plural(entity["kind"])
                     try:
-                        entity = api.get_namespaced_custom_object(  # type: ignore
+                        api.get_namespaced_custom_object(  # type: ignore
                             K8S_APPGATE_DOMAIN,
                             K8S_APPGATE_VERSION,
                             namespace,

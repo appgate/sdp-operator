@@ -56,13 +56,13 @@ async def run_git_syncer(args: OperatorArguments):
 
 def dump(ctx: Context, entity: Entity_T):
     dumped_entities: List[str] = []
-    entity_type = entity.__class__.__qualname__.lower()
+    entity_type = entity.__class__.__qualname__
 
-    entity_dir = DUMP_DIR / f"{entity_type}-{ctx.api_spec.api_version}"
+    entity_dir = DUMP_DIR / f"{entity_type.lower()}-v{ctx.api_spec.api_version}"
     entity_dir.mkdir(exist_ok=True)
     entity_file = entity_dir / f"{entity.name.lower().replace(' ', '-')}.yaml"
     dumped_entity = dump_entity(
-        EntityWrapper(entity), entity_type, str(ctx.api_spec.api_version)
+        EntityWrapper(entity), entity_type, f"v{ctx.api_spec.api_version}"
     )
 
     appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
