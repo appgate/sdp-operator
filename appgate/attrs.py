@@ -97,9 +97,11 @@ def get_dumper(platform_type: PlatformType):
                 if read_only:
                     continue
             if d.hidedefault:
-                if attrval == attr.default:
+                if name == "_entity_metadata":
                     continue
-                elif (
+                if attrval is None or attrval == "":
+                    continue
+                if (
                     hasattr(attr.default, "factory")
                     and attrval == attr.default.factory()
                 ):

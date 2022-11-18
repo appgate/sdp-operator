@@ -44,8 +44,8 @@ paths:
     $ref: '#/entity-dep-nested-nullable'
   /entity-discriminator:
     $ref: '#/entity-discriminator'
-  /entity-array:
-    $ref: '#/entity-array'
+  /entity-default-value:
+    $ref: '#/entity-default-value'
 
 entity-test0:
   get:
@@ -136,7 +136,7 @@ entity-test3-appgate:
         application/json:
           schema:
             $ref: '#/definitions/EntityTest3Appgate'
-            
+
 entity-test4:
   get:
     responses:
@@ -196,7 +196,7 @@ entity-dep-2:
         application/json:
           schema:
             $ref: '#/definitions/EntityDep2'
-            
+
 entity-dep-3:
   get:
     responses:
@@ -317,7 +317,7 @@ entity-discriminator:
           schema:
             $ref: '#/definitions/EntityDiscriminator'
 
-entity-array:
+entity-default-value:
   get:
     responses:
       '200':
@@ -330,7 +330,7 @@ entity-array:
       content:
         application/json:
           schema:
-            $ref: '#/definitions/EntityArray'
+            $ref: '#/definitions/EntityDefaultValue'
 
 definitions:
   EntityTestList:
@@ -844,3 +844,12 @@ definitions:
             type: boolean
           discriminatorTwoFieldTwo:
             type: boolean
+  EntityDefaultValue:
+    type: object
+    properties:
+      trueAsDefault:
+        type: boolean
+        default: true
+      falseAsDefault:
+        type: boolean
+        default: false
