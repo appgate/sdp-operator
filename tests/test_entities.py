@@ -419,6 +419,15 @@ def test_dumper_2():
     assert e == e2_data
 
 
+def test_dumper_default_value():
+    test_api_spec = load_test_open_api_spec(reload=True)
+    EntityDefaultValue = test_api_spec.entities["EntityDefaultValue"].cls
+    e1 = EntityDefaultValue(trueAsDefault=True, falseAsDefault=False)
+    e1_data = {"trueAsDefault": True, "falseAsDefault": False}
+    e = APPGATE_DUMPER.dump(e1)
+    assert e == e1_data
+
+
 def test_deprecated_entity():
     EntityTest1 = (
         load_test_open_api_spec(secrets_key=None, reload=True)
@@ -753,12 +762,14 @@ def test_discriminator_dump():
         "fieldOne": "hello",
         "discriminatorOneFieldOne": "hi",
         "discriminatorOneFieldTwo": "bye",
+        "configurableFieldOne": False,
     }
     assert APPGATE_DUMPER.dump(e1) == {
         "type": "DiscriminatorOne",
         "fieldOne": "hello",
         "discriminatorOneFieldOne": "hi",
         "discriminatorOneFieldTwo": "bye",
+        "configurableFieldOne": False,
     }
 
     data2 = {
@@ -776,10 +787,12 @@ def test_discriminator_dump():
         "fieldOne": "bye",
         "discriminatorTwoFieldOne": True,
         "discriminatorTwoFieldTwo": False,
+        "configurableFieldOne": False,
     }
     assert APPGATE_DUMPER.dump(e2) == {
         "type": "DiscriminatorTwo",
         "fieldOne": "bye",
         "discriminatorTwoFieldOne": True,
         "discriminatorTwoFieldTwo": False,
+        "configurableFieldOne": False,
     }
