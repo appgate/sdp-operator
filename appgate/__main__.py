@@ -2,7 +2,6 @@ import asyncio
 import binascii
 import glob
 import itertools
-import shutil
 import sys
 import os
 from argparse import ArgumentParser
@@ -265,9 +264,10 @@ async def sync_entities(args: OperatorArguments) -> None:
         else:
             return f"{name}s-{entity[1]}"
 
+    init_kubernetes(args)
+    context = get_context(args)
+
     while True:
-        init_kubernetes(args)
-        context = get_context(args)
         dir = Path("/entities")
         await dump_entities(ctx=context, output_dir=dir)
         api = kubernetes.client.CustomObjectsApi()
@@ -340,7 +340,7 @@ async def dump_entities(
         if is_debug():
             for entity_name, entity_set in current_appgate_state.entities_set.items():
                 for e in entity_set.entities:
-                    log.debug(f"Got entitiy %s: %s [%s]", e.name, e.id, entity_name)
+                    log.debug(f"Got entity %s: %s [%s]", e.name, e.id, entity_name)
         total_conflicts = resolve_appgate_state(
             expected_state=expected_appgate_state,
             total_appgate_state=current_appgate_state,
@@ -349,9 +349,7 @@ async def dump_entities(
         )
         if total_conflicts:
             log.error("[dump-entities] Found errors when getting current state")
-            entities_conflict_summary(
-                conflicts=total_conflicts, namespace=ctx.namespace
-            )
+            entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
         else:
             current_appgate_state.dump(
                 api_version=f"v{ctx.api_spec.api_version}",
