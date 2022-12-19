@@ -299,7 +299,7 @@ spec:
                     items:
                       type: string
                     type: array
-                  splunk:
+                  splunkClients:
                     items:
                       properties:
                         token:
@@ -311,7 +311,7 @@ spec:
                       - url
                       type: object
                     type: array
-                  sumoLogic:
+                  sumoLogicClients:
                     items:
                       properties:
                         url:

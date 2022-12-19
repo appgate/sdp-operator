@@ -1,3 +1,4 @@
+{{ if eq .Values.version "v18" }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -686,7 +687,7 @@ spec:
                     items:
                       type: string
                     type: array
-                  splunk:
+                  splunkClients:
                     items:
                       properties:
                         token:
@@ -698,7 +699,7 @@ spec:
                       - url
                       type: object
                     type: array
-                  sumoLogic:
+                  sumoLogicClients:
                     items:
                       properties:
                         url:
@@ -1120,7 +1121,7 @@ spec:
                     to:
                       type: string
                     type:
-                      default: Map
+                      default: Translation
                       type: string
                   type: object
                 type: array
@@ -2288,3 +2289,4 @@ spec:
         type: object
     served: true
     storage: true
+{{ end }}
