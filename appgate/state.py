@@ -25,7 +25,12 @@ from attr import attrib, attrs, evolve
 
 from appgate.logger import is_debug
 from appgate.attrs import K8S_DUMPER, DIFF_DUMPER, dump_datetime
-from appgate.client import AppgateEntityClient, K8SConfigMapClient, entity_unique_id, K8sEntityClient
+from appgate.client import (
+    AppgateEntityClient,
+    K8SConfigMapClient,
+    entity_unique_id,
+    K8sEntityClient,
+)
 from appgate.logger import log
 from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import (
@@ -44,7 +49,8 @@ from appgate.types import (
     EntityFieldDependency,
     MissingFieldDependencies,
     has_tag,
-    is_target, AppgateEventSuccess,
+    is_target,
+    AppgateEventSuccess,
 )
 from appgate.openapi.utils import has_name
 
@@ -65,7 +71,7 @@ __all__ = [
     "exclude_appgate_entities",
     "exclude_appgate_entity",
     "update_entity",
-    "update_entities"
+    "update_entities",
 ]
 
 
@@ -560,7 +566,6 @@ async def appgate_plan_apply(
             appgate_entity_client=appgate_entity_clients.get(k),
             k8s_entity_client=k8s_entity_clients.get(k),
             k8s_configmap_client=k8s_configmap_client,
-
         )
         for k, v in appgate_plan.ordered_entities_plan(api_spec)
     }
