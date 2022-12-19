@@ -27,7 +27,7 @@ from kubernetes.config import (
 import appgate.openapi.types
 from appgate.client import K8SConfigMapClient
 from appgate.logger import set_level, is_debug
-from appgate.appgate import operator, get_current_appgate_state, start_entity_loop, log
+from appgate.appgate import operator, get_current_appgate_state, start_entity_loop, log, get_operator_name
 from appgate.openapi.openapi import (
     entity_names,
     generate_crd,
@@ -232,10 +232,7 @@ async def run_k8s(args: OperatorArguments) -> None:
     )
     await k8s_configmap_client.init()
 
-    operator_name = "appgate-operator"
-    if args.reverse_mode:
-        operator_name = "reverse-appgate-operator"
-
+    operator_name = get_operator_name(args.reverse_mode)
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
         log.info(
@@ -270,7 +267,7 @@ def main_run(args: OperatorArguments) -> None:
     try:
         asyncio.run(run_k8s(args))
     except AppgateException as e:
-        log.error("[appgate-operator] Fatal error: %s", e)
+        log.error("[%s] Fatal error: %s", get_operator_name(args.reverse_mode), e)
 
 
 def main_sync_entities(args: OperatorArguments) -> None:
