@@ -35,7 +35,7 @@ from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
 
 
 __all__ = [
-    "main_loop",
+    "operator",
     "get_current_appgate_state",
     "start_entity_loop",
 ]
