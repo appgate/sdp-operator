@@ -15,10 +15,14 @@ from appgate.openapi.types import Entity_T, AppgateException
 from appgate.types import LatestEntityGeneration
 
 
-__all__ = ["AppgateClient", "EntityClient", "K8SConfigMapClient", "entity_unique_id"]
+__all__ = ["AppgateClient", "AppgateEntityClient", "K8SConfigMapClient", "entity_unique_id", "K8sEntityClient"]
 
 
-class EntityClient:
+class K8sEntityClient:
+    pass
+
+
+class AppgateEntityClient:
     def __init__(
         self,
         path: str,
@@ -441,9 +445,9 @@ class AppgateClient:
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
-    ) -> EntityClient:
+    ) -> AppgateEntityClient:
         dumper = APPGATE_DUMPER
-        return EntityClient(
+        return AppgateEntityClient(
             appgate_client=self,
             path=f"/admin/{api_path}",
             singleton=singleton,
