@@ -43,6 +43,7 @@ __all__ = [
     "operator",
     "get_current_appgate_state",
     "start_entity_loop",
+    "get_operator_name",
 ]
 
 
@@ -54,6 +55,13 @@ def get_crds() -> CustomObjectsApi:
     if not crds:
         crds = CustomObjectsApi()
     return crds
+
+
+def get_operator_name(reverse_mode: bool) -> str:
+    operator_name = "appgate-operator"
+    if reverse_mode:
+        operator_name = "appgate-reverse-operator"
+    return operator_name
 
 
 async def get_current_appgate_state(
@@ -258,9 +266,7 @@ async def operator(
     appgate_client: AppgateClient,
 ) -> None:
     namespace = ctx.namespace
-    operator_name = "appgate-operator"
-    if ctx.reverse_mode:
-        operator_name = "reverse-appgate-operator"
+    operator_name = get_operator_name(ctx.reverse_mode)
     log.info("[%s/%s] Main loop started:", operator_name, namespace)
     log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
     log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
