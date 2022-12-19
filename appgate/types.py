@@ -50,6 +50,7 @@ class OperatorArguments:
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
+    reverse_mode: bool = attrib(default=False)
 
 
 @attrs(slots=True, frozen=True)

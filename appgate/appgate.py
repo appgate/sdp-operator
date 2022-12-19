@@ -36,7 +36,7 @@ from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
 
 
 __all__ = [
-    "main_loop",
+    "operator",
     "get_current_appgate_state",
     "start_entity_loop",
 ]
@@ -255,7 +255,7 @@ async def start_entity_loop(
     await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
-async def main_loop(
+async def operator(
     queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
 ) -> None:
     namespace = ctx.namespace

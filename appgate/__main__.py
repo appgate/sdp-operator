@@ -27,7 +27,7 @@ from kubernetes.config import (
 import appgate.openapi.types
 from appgate.client import K8SConfigMapClient
 from appgate.logger import set_level, is_debug
-from appgate.appgate import main_loop, get_current_appgate_state, start_entity_loop, log
+from appgate.appgate import operator, get_current_appgate_state, start_entity_loop, log
 from appgate.openapi.openapi import (
     entity_names,
     generate_crd,
@@ -218,14 +218,24 @@ async def run_k8s(args: OperatorArguments) -> None:
     )
     await k8s_configmap_client.init()
 
+    operator_name = "appgate-operator"
+    if args.reverse_mode:
+        operator_name = "reverse-appgate-operator"
+
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
         log.info(
-            "[appgate-operator/%s] Read device id from config map: %s",
+            "[%s/%s] Read device id from config map: %s",
+            operator_name,
             ctx.namespace,
             ctx.device_id,
         )
-
+    if args.reverse_mode:
+        operator_task = reverse_operator(queue=events_queue, ctx=ctx)
+    else:
+        operator_task = operator(
+            queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
+        )
     tasks = [
         start_entity_loop(
             ctx=ctx,
@@ -237,11 +247,7 @@ async def run_k8s(args: OperatorArguments) -> None:
         )
         for e in ctx.api_spec.entities.values()
         if e.api_path
-    ] + [
-        main_loop(
-            queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
-        )
-    ]
+    ] + [operator_task]
 
     await asyncio.gather(*tasks)
 
@@ -508,6 +514,9 @@ def main() -> None:
     run = subparsers.add_parser("run")
     run.set_defaults(cmd="run")
     run.add_argument("--namespace", help="Specify namespace", default=None)
+    run.add_argument("--reverse-mode", action="store_true",
+                     help="Run the operator in reverse mode",
+                     default=False)
     run.add_argument(
         "--no-dry-run",
         help="Disabel run in dry-run mode",
@@ -658,6 +667,7 @@ def main() -> None:
                     metadata_configmap=args.mt_config_map,
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
+                    reverse_mode=args.reverse_mode
                 )
             )
 
