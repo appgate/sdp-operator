@@ -36,8 +36,8 @@ from appgate.openapi.openapi import (
     K8S_APPGATE_VERSION,
 )
 from appgate.openapi.utils import join
-from appgate.state import entities_conflict_summary, resolve_appgate_state, AppgateState
-from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS
+from appgate.state import entities_conflict_summary, resolve_appgate_state, AppgateState, update_entities, update_entity
+from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS, AppgateEventError
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import AppgateException
@@ -310,6 +310,61 @@ async def sync_entities(args: OperatorArguments) -> None:
                             )
         log.info("Sleeping 60 seconds")
         time.sleep(60)
+
+
+async def reverse_operator(
+    queue: Queue, ctx: Context,
+) -> None:
+    namespace = ctx.namespace
+    log.info("[reverse-appgate-operator/%s] Main loop started:", namespace)
+    log.info("[reverse-appgate-operator/%s]   + namespace: %s", namespace, namespace)
+    log.info("[reverse-appgate-operator/%s]   + host: %s", namespace, ctx.controller)
+    log.info("[reverse-appgate-operator/%s]   + log-level: %s", namespace, log.level)
+    log.info("[reverse-appgate-operator/%s]   + timeout: %s", namespace, ctx.timeout)
+    log.info("[reverse-appgate-operator/%s]   + dry-run: %s", namespace, ctx.dry_run_mode)
+    log.info("[reverse-appgate-operator/%s]   + cleanup: %s", namespace, ctx.cleanup_mode)
+    log.info("[reverse-appgate-operator/%s]   + two-way-sync: %s", namespace, ctx.two_way_sync)
+    event_errors = []
+    last_update = None
+    while True:
+        if not last_update or time.monotonic() - last_update > 30:
+            current_appgate_state = await get_current_appgate_state(ctx)
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(
+                        ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
+                    )
+                    for k, v in current_appgate_state.entities_set.items()
+                }
+            )
+            if is_debug():
+                for entity_name, entity_set in current_appgate_state.entities_set.items():
+                    for e in entity_set.entities:
+                        log.debug(f"Got entity %s: %s [%s]", e.name, e.id, entity_name)
+            total_conflicts = resolve_appgate_state(
+                expected_state=expected_appgate_state,
+                total_appgate_state=current_appgate_state,
+                reverse=True,
+                api_spec=ctx.api_spec,
+            )
+            if total_conflicts:
+                log.error("[dump-entities] Found errors when getting current state")
+                entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
+                await asyncio.sleep(30)
+                continue
+
+            for k, v in current_appgate_state.entities_set.items():
+                update_entities(k, v)
+            last_update = time.monotonic()
+
+        # Reject any change now
+        event: AppgateEvent = await asyncio.wait_for(
+            queue.get(), timeout=ctx.timeout
+        )
+        if isinstance(event, AppgateEventError):
+            event_errors.append(event)
+        else:
+            update_entity(event)
 
 
 async def dump_entities(
