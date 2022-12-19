@@ -360,6 +360,7 @@ class Plan:
 async def plan_apply(
     plan: Plan,
     namespace: str,
+    operator_name: str,
     k8s_configmap_client: K8SConfigMapClient,
     appgate_entity_client: Optional[AppgateEntityClient] = None,
     k8s_entity_client: Optional[K8sEntityClient] = None,
@@ -367,7 +368,8 @@ async def plan_apply(
     errors = set()
     for e in plan.create.entities:
         log.info(
-            "[appgate-operator/%s] + %s: %s [%s]",
+            "[%s/%s] + %s: %s [%s]",
+            operator_name,
             namespace,
             type(e.value),
             e.name,
@@ -395,7 +397,8 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_create.entities:
             log.debug(
-                "[appgate-operator/%s] !+ %s: %s [%s]",
+                "[%s/%s] !+ %s: %s [%s]",
+                operator_name,
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -404,7 +407,8 @@ async def plan_apply(
 
     for e in plan.modify.entities:
         log.info(
-            "[appgate-operator/%s] * %s: %s [%s]",
+            "[%s/%s] * %s: %s [%s]",
+            operator_name,
             namespace,
             e.value.__class__.__name__,
             e.name,
@@ -412,7 +416,7 @@ async def plan_apply(
         )
         diff = plan.modifications_diff.get(e.name)
         if diff:
-            log.info("[appgate-operator/%s]    DIFF for %s:", namespace, e.name)
+            log.info("[%s/%s]    DIFF for %s:", operator_name, namespace, e.name)
             for d in diff:
                 log.info("%s", d.rstrip())
         if appgate_entity_client:
@@ -437,7 +441,8 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_modify.entities:
             log.debug(
-                "[appgate-operator/%s] !* %s: %s [%s]",
+                "[%s/%s] !* %s: %s [%s]",
+                operator_name,
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -446,7 +451,8 @@ async def plan_apply(
 
     for e in plan.delete.entities:
         log.info(
-            "[appgate-operator/%s] - %s: %s [%s]",
+            "[%s/%s] - %s: %s [%s]",
+            operator_name,
             namespace,
             e.value.__class__.__name__,
             e.name,
@@ -473,7 +479,8 @@ async def plan_apply(
     if is_debug():
         for e in plan.not_to_delete.entities:
             log.debug(
-                "[appgate-operator/%s] !- %s: %s [%s]",
+                "[%s/%s] !- %s: %s [%s]",
+                operator_name,
                 namespace,
                 e.value.__class__.__name__,
                 e.name,
@@ -482,7 +489,8 @@ async def plan_apply(
 
     for e in plan.share.entities:
         log.debug(
-            "[appgate-operator/%s] = %s: %s [%s]",
+            "[%s/%s] = %s: %s [%s]",
+            operator_name,
             namespace,
             e.value.__class__.__name__,
             e.name,
@@ -536,16 +544,18 @@ class AppgatePlan:
 
 async def appgate_plan_apply(
     appgate_plan: AppgatePlan,
+    operator_name: str,
     namespace: str,
     entity_clients: Dict[str, AppgateEntityClient],
     k8s_configmap_client: K8SConfigMapClient,
     api_spec: APISpec,
 ) -> AppgatePlan:
-    log.info("[appgate-operator/%s] AppgatePlan Summary:", namespace)
+    log.info("[%s/%s] AppgatePlan Summary:", operator_name, namespace)
     entities_plan = {
         k: await plan_apply(
             v,
             namespace=namespace,
+            operator_name=operator_name,
             appgate_entity_client=entity_clients.get(k),
             k8s_configmap_client=k8s_configmap_client,
         )

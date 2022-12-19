@@ -458,6 +458,7 @@ async def operator(
                     new_plan = await appgate_plan_apply(
                         appgate_plan=plan,
                         namespace=namespace,
+                        operator_name=operator_name,
                         entity_clients=generate_api_spec_clients(
                             api_spec=ctx.api_spec, appgate_client=appgate_client
                         )
