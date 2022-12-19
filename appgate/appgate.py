@@ -259,32 +259,48 @@ async def operator(
     queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
 ) -> None:
     namespace = ctx.namespace
-    log.info("[appgate-operator/%s] Main loop started:", namespace)
-    log.info("[appgate-operator/%s]   + namespace: %s", namespace, namespace)
-    log.info("[appgate-operator/%s]   + host: %s", namespace, ctx.controller)
-    log.info("[appgate-operator/%s]   + log-level: %s", namespace, log.level)
-    log.info("[appgate-operator/%s]   + timeout: %s", namespace, ctx.timeout)
-    log.info("[appgate-operator/%s]   + dry-run: %s", namespace, ctx.dry_run_mode)
-    log.info("[appgate-operator/%s]   + cleanup: %s", namespace, ctx.cleanup_mode)
-    log.info("[appgate-operator/%s]   + two-way-sync: %s", namespace, ctx.two_way_sync)
+    operator_name = "appgate-operator"
+    if ctx.reverse_mode:
+        operator_name = "reverse-appgate-operator"
+    log.info("[%s/%s] Main loop started:", operator_name, namespace)
+    log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
+    log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
+    log.info("[%s/%s]   + log-level: %s", operator_name, namespace, log.level)
+    log.info("[%s/%s]   + timeout: %s", operator_name, namespace, ctx.timeout)
+    log.info("[%s/%s]   + dry-run: %s", operator_name, namespace, ctx.dry_run_mode)
+    log.info("[%s/%s]   + cleanup: %s", operator_name, namespace, ctx.cleanup_mode)
+    log.info("[%s/%s]   + two-way-sync: %s", operator_name, namespace, ctx.two_way_sync)
     log.info(
-        "[appgate-operator/%s]   + builtin tags: %s",
+        "[%s/%s]   + builtin tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.builtin_tags),
     )
     log.info(
-        "[appgate-operator/%s]   + target tags: %s",
+        "[%s/%s]   + target tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
     log.info(
-        "[appgate-operator/%s]   + exclude tags: %s",
+        "[%s/%s]   + exclude tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.exclude_tags) if ctx.exclude_tags else "None",
     )
-    log.info("[appgate-operator/%s] Getting current state from controller", namespace)
-    current_appgate_state = await get_current_appgate_state(ctx=ctx)
-    total_appgate_state = deepcopy(current_appgate_state)
+    log.info("[%s/%s] Getting current state from controller", operator_name, namespace)
+
+    # Get current and total state
+    if ctx.reverse_mode:
+        current_appgate_state = AppgateState()
+        expected_appgate_state = await get_current_appgate_state(ctx=ctx)
+        total_appgate_state = deepcopy(expected_appgate_state)
+    else:
+        current_appgate_state = await get_current_appgate_state(ctx=ctx)
+        total_appgate_state = deepcopy(current_appgate_state)
+    if ctx.cleanup_mode and ctx.reverse_mode:
+        log.error("Reverse operator can not run in clean-up mode!")
+        exit(1)
     if ctx.cleanup_mode:
         tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
         expected_appgate_state = AppgateState(
@@ -294,22 +310,25 @@ async def operator(
             }
         )
     elif ctx.target_tags:
-        expected_appgate_state = AppgateState(
-            {
-                k: v.entities_with_tags(ctx.target_tags)
-                for k, v in current_appgate_state.entities_set.items()
-            }
-        )
-    else:
+        new_state = {
+            k: v.entities_with_tags(ctx.target_tags)
+            for k, v in current_appgate_state.entities_set.items()
+        }
+        if ctx.reverse_mode:
+            current_appgate_state = new_state
+        else:
+            expected_appgate_state = new_state
+    elif not ctx.reverse_mode:
         expected_appgate_state = deepcopy(current_appgate_state)
     log.info(
-        "[appgate-operator/%s] Ready to get new events and compute a new plan",
+        "[%sr/%s] Ready to get new events and compute a new plan",
+        operator_name,
         namespace,
     )
     event_errors = []
     while True:
         try:
-            log.info("[appgate-operator/%s] Waiting for event", namespace)
+            log.info("[%s/%s] Waiting for event", operator_name, namespace)
             event: AppgateEvent = await asyncio.wait_for(
                 queue.get(), timeout=ctx.timeout
             )
@@ -317,7 +336,8 @@ async def operator(
                 event_errors.append(event)
             else:
                 log.info(
-                    "[appgate-operator/%s}] Event: %s %s with name %s",
+                    "[%s/%s}] Event: %s %s with name %s",
+                    operator_name,
                     namespace,
                     event.op,
                     event.entity.__class__.__qualname__,
@@ -329,12 +349,14 @@ async def operator(
         except asyncio.exceptions.TimeoutError:
             if event_errors:
                 log.error(
-                    "[appgate-operator/%s}] Found events with errors, dying now!",
+                    "[%s/%s}] Found events with errors, dying now!",
+                    operator_name,
                     namespace,
                 )
                 for event_error in event_errors:
                     log.error(
-                        "[appgate-operator/%s}] - Entity of type %s with name %s : %s",
+                        "[%s/%s}] - Entity of type %s with name %s : %s",
+                        operator_name,
                         namespace,
                         event_error.name,
                         event_error.kind,
@@ -351,17 +373,18 @@ async def operator(
                 }
                 for entity_name, e in expected_entities.items():
                     if not any_expected:
-                        log.info("[appgate-operator/%s] Expected entities:", namespace)
+                        log.info("[%s/%s] Expected entities:", operator_name, namespace)
                         any_expected = True
                     log.info(
-                        "[appgate-operator/%s] %s: %s: %s",
+                        "[%s/%s] %s: %s: %s",
+                        operator_name,
                         namespace,
                         entity_type,
                         entity_name,
                         e.id,
                     )
             if not any_expected:
-                log.warning("[appgate-operator/%s] Not expected any entity", namespace)
+                log.warning("[%s/%s] Not expected any entity", operator_name, namespace)
 
             # Resolve entities now, in order
             # this will be the Topological sort
@@ -373,15 +396,17 @@ async def operator(
             )
             if total_conflicts:
                 log.error(
-                    "[appgate-operator/%s] Found errors in expected state and plan can"
+                    "[%s/%s] Found errors in expected state and plan can"
                     " not be applied.",
+                    operator_name,
                     namespace,
                 )
                 entities_conflict_summary(
                     conflicts=total_conflicts, namespace=namespace
                 )
                 log.info(
-                    "[appgate-operator/%s] Waiting for more events that can fix the state.",
+                    "[%s/%s] Waiting for more events that can fix the state.",
+                    operator_name,
                     namespace,
                 )
                 continue
@@ -403,7 +428,8 @@ async def operator(
             )
             if plan.needs_apply:
                 log.info(
-                    "[appgate-operator/%s] No more events for a while, creating a plan",
+                    "[%s/%s] No more events for a while, creating a plan",
+                    operator_name,
                     namespace,
                 )
                 async with AsyncExitStack() as exit_stack:
@@ -425,7 +451,8 @@ async def operator(
                         )
                     else:
                         log.warning(
-                            "[appgate-operator/%s] Running in dry-mode, nothing will be created",
+                            "[%s/%s] Running in dry-mode, nothing will be created",
+                            operator_name,
                             namespace,
                         )
                     new_plan = await appgate_plan_apply(
@@ -442,11 +469,12 @@ async def operator(
 
                     if len(new_plan.errors) > 0:
                         log.error(
-                            "[appgate-operator/%s] Found errors when applying plan:",
+                            "[%s/%s] Found errors when applying plan:",
+                            operator_name,
                             namespace,
                         )
                         for err in new_plan.errors:
-                            log.error("[appgate-operator/%s] Error %s:", namespace, err)
+                            log.error("[%s/%s] Error %s:", operator_name, namespace, err)
                         sys.exit(1)
 
                     if appgate_client:
@@ -456,6 +484,7 @@ async def operator(
                         )
             else:
                 log.info(
-                    "[appgate-operator/%s] Nothing changed! Keeping watching!",
+                    "[%s/%s] Nothing changed! Keeping watching!",
+                    operator_name,
                     namespace,
                 )
