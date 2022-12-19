@@ -13,7 +13,7 @@ from kubernetes.watch import Watch
 from appgate.types import Context, AppgateEventSuccess, AppgateEventError
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id, K8sEntityClient
 from appgate.openapi.types import AppgateException, AppgateTypedloadException
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
@@ -434,7 +434,8 @@ async def operator(
                 )
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
-                    if not ctx.dry_run_mode:
+                    k8s_client = None
+                    if not ctx.dry_run_mode and not ctx.reverse_mode:
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
                         appgate_client = await exit_stack.enter_async_context(
@@ -449,6 +450,8 @@ async def operator(
                                 cafile=ctx.cafile,
                             )
                         )
+                    elif not ctx.dry_run_mode and ctx.reverse_mode:
+                        k8s_client = K8sEntityClient()
                     else:
                         log.warning(
                             "[%s/%s] Running in dry-mode, nothing will be created",
@@ -459,10 +462,15 @@ async def operator(
                         appgate_plan=plan,
                         namespace=namespace,
                         operator_name=operator_name,
-                        entity_clients=generate_api_spec_clients(
+                        appgate_entity_clients=generate_api_spec_clients(
                             api_spec=ctx.api_spec, appgate_client=appgate_client
                         )
                         if appgate_client
+                        else {},
+                        k8s_entity_clients={
+                            "FIXME": k8s_client
+                        }
+                        if k8s_client
                         else {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
@@ -483,6 +491,9 @@ async def operator(
                         expected_appgate_state = (
                             expected_appgate_state.sync_generations()
                         )
+                    elif k8s_client:
+                        current_appgate_state = new_plan.appgate_state
+                        expected_appgate_state = await get_current_appgate_state(ctx=ctx)
             else:
                 log.info(
                     "[%s/%s] Nothing changed! Keeping watching!",

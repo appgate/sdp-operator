@@ -546,7 +546,8 @@ async def appgate_plan_apply(
     appgate_plan: AppgatePlan,
     operator_name: str,
     namespace: str,
-    entity_clients: Dict[str, AppgateEntityClient],
+    appgate_entity_clients: Dict[str, AppgateEntityClient],
+    k8s_entity_clients: Dict[str, K8sEntityClient],
     k8s_configmap_client: K8SConfigMapClient,
     api_spec: APISpec,
 ) -> AppgatePlan:
@@ -556,8 +557,10 @@ async def appgate_plan_apply(
             v,
             namespace=namespace,
             operator_name=operator_name,
-            appgate_entity_client=entity_clients.get(k),
+            appgate_entity_client=appgate_entity_clients.get(k),
+            k8s_entity_client=k8s_entity_clients.get(k),
             k8s_configmap_client=k8s_configmap_client,
+
         )
         for k, v in appgate_plan.ordered_entities_plan(api_spec)
     }
