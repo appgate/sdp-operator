@@ -12,7 +12,12 @@ from kubernetes.watch import Watch
 from appgate.types import Context, AppgateEventSuccess, AppgateEventError
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id, K8sEntityClient
+from appgate.client import (
+    AppgateClient,
+    K8SConfigMapClient,
+    entity_unique_id,
+    K8sEntityClient,
+)
 from appgate.openapi.types import AppgateException, AppgateTypedloadException
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
@@ -463,11 +468,7 @@ async def operator(
                         )
                         if appgate_client
                         else {},
-                        k8s_entity_clients={
-                            "FIXME": k8s_client
-                        }
-                        if k8s_client
-                        else {},
+                        k8s_entity_clients={"FIXME": k8s_client} if k8s_client else {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
                     )
@@ -479,7 +480,9 @@ async def operator(
                             namespace,
                         )
                         for err in new_plan.errors:
-                            log.error("[%s/%s] Error %s:", operator_name, namespace, err)
+                            log.error(
+                                "[%s/%s] Error %s:", operator_name, namespace, err
+                            )
                         sys.exit(1)
 
                     if appgate_client:
@@ -489,7 +492,9 @@ async def operator(
                         )
                     elif k8s_client:
                         current_appgate_state = new_plan.appgate_state
-                        expected_appgate_state = await get_current_appgate_state(ctx=ctx)
+                        expected_appgate_state = await get_current_appgate_state(
+                            ctx=ctx
+                        )
             else:
                 log.info(
                     "[%s/%s] Nothing changed! Keeping watching!",

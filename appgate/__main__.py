@@ -34,9 +34,21 @@ from appgate.openapi.openapi import (
     K8S_APPGATE_VERSION,
 )
 from appgate.openapi.utils import join
-from appgate.state import entities_conflict_summary, resolve_appgate_state, AppgateState, update_entities, \
-    update_entity, create_appgate_plan
-from appgate.types import AppgateEvent, OperatorArguments, Context, BUILTIN_TAGS, AppgateEventError
+from appgate.state import (
+    entities_conflict_summary,
+    resolve_appgate_state,
+    AppgateState,
+    update_entities,
+    update_entity,
+    create_appgate_plan,
+)
+from appgate.types import (
+    AppgateEvent,
+    OperatorArguments,
+    Context,
+    BUILTIN_TAGS,
+    AppgateEventError,
+)
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import AppgateException
@@ -473,9 +485,12 @@ def main() -> None:
     run = subparsers.add_parser("run")
     run.set_defaults(cmd="run")
     run.add_argument("--namespace", help="Specify namespace", default=None)
-    run.add_argument("--reverse-mode", action="store_true",
-                     help="Run the operator in reverse mode",
-                     default=False)
+    run.add_argument(
+        "--reverse-mode",
+        action="store_true",
+        help="Run the operator in reverse mode",
+        default=False,
+    )
     run.add_argument(
         "--no-dry-run",
         help="Disabel run in dry-run mode",
@@ -626,7 +641,7 @@ def main() -> None:
                     metadata_configmap=args.mt_config_map,
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
-                    reverse_mode=args.reverse_mode
+                    reverse_mode=args.reverse_mode,
                 )
             )
 

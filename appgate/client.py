@@ -15,7 +15,13 @@ from appgate.openapi.types import Entity_T, AppgateException
 from appgate.types import LatestEntityGeneration
 
 
-__all__ = ["AppgateClient", "AppgateEntityClient", "K8SConfigMapClient", "entity_unique_id", "K8sEntityClient"]
+__all__ = [
+    "AppgateClient",
+    "AppgateEntityClient",
+    "K8SConfigMapClient",
+    "entity_unique_id",
+    "K8sEntityClient",
+]
 
 
 class K8sEntityClient:
