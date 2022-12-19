@@ -193,6 +193,7 @@ def get_context(
         exclude_tags=exclude_tags if exclude_tags else None,
         metadata_configmap=metadata_configmap,
         cafile=appgate_cacert_path,
+        reverse_mode=args.reverse_mode,
     )
 
 
