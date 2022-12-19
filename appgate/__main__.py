@@ -446,7 +446,7 @@ def main() -> None:
     parser.add_argument(
         "--spec-directory",
         default=None,
-        help="Specifies the directory where the openapi yml specification is lcoated.",
+        help="Specifies the directory where the openapi yml specification is located.",
     )
     subparsers = parser.add_subparsers(dest="cmd")
     # run
@@ -475,7 +475,7 @@ def main() -> None:
     )
     run.add_argument(
         "--no-two-way-sync",
-        help="Disabel always update current state with latest appgate"
+        help="Disable always update current state with latest appgate"
         " state before applying a plan",
         default=False,
         action="store_true",
