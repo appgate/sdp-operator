@@ -241,12 +241,6 @@ async def run_k8s(args: OperatorArguments) -> None:
             ctx.namespace,
             ctx.device_id,
         )
-    if args.reverse_mode:
-        operator_task = reverse_operator(queue=events_queue, ctx=ctx)
-    else:
-        operator_task = operator(
-            queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
-        )
     tasks = [
         start_entity_loop(
             ctx=ctx,
@@ -258,7 +252,10 @@ async def run_k8s(args: OperatorArguments) -> None:
         )
         for e in ctx.api_spec.entities.values()
         if e.api_path
-    ] + [operator_task]
+    ] + [
+        operator(
+            queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
+        )]
 
     await asyncio.gather(*tasks)
 
