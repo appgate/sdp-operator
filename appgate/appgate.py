@@ -12,7 +12,7 @@ from kubernetes.watch import Watch
 from appgate.types import Context, AppgateEventSuccess, AppgateEventError
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
+from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id, K8sEntityClient
 from appgate.openapi.types import AppgateException, AppgateTypedloadException
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
@@ -428,27 +428,68 @@ async def operator(
                     operator_name,
                     namespace,
                 )
-                new_plan = await appgate_plan_apply(
-                    appgate_plan=plan,
-                    namespace=namespace,
-                    entity_clients=generate_api_spec_clients(
-                        api_spec=ctx.api_spec, appgate_client=appgate_client
-                    ),
-                    k8s_configmap_client=k8s_configmap_client,
-                    api_spec=ctx.api_spec,
-                )
-
-                if len(new_plan.errors) > 0:
-                    log.error(
-                        "[appgate-operator/%s] Found errors when applying plan:",
-                        namespace,
+                async with AsyncExitStack() as exit_stack:
+                    appgate_client = None
+                    k8s_client = None
+                    if not ctx.dry_run_mode and not ctx.reverse_mode:
+                        if ctx.device_id is None:
+                            raise AppgateException("No device id specified")
+                        appgate_client = await exit_stack.enter_async_context(
+                            AppgateClient(
+                                controller=ctx.controller,
+                                user=ctx.user,
+                                password=ctx.password,
+                                provider=ctx.provider,
+                                device_id=ctx.device_id,
+                                version=ctx.api_spec.api_version,
+                                no_verify=ctx.no_verify,
+                                cafile=ctx.cafile,
+                            )
+                        )
+                    elif not ctx.dry_run_mode and ctx.reverse_mode:
+                        k8s_client = K8sEntityClient()
+                    else:
+                        log.warning(
+                            "[%s/%s] Running in dry-mode, nothing will be created",
+                            operator_name,
+                            namespace,
+                        )
+                    new_plan = await appgate_plan_apply(
+                        appgate_plan=plan,
+                        namespace=namespace,
+                        operator_name=operator_name,
+                        appgate_entity_clients=generate_api_spec_clients(
+                            api_spec=ctx.api_spec, appgate_client=appgate_client
+                        )
+                        if appgate_client
+                        else {},
+                        k8s_entity_clients={
+                            "FIXME": k8s_client
+                        }
+                        if k8s_client
+                        else {},
+                        k8s_configmap_client=k8s_configmap_client,
+                        api_spec=ctx.api_spec,
                     )
-                    for err in new_plan.errors:
-                        log.error("[appgate-operator/%s] Error %s:", namespace, err)
-                    sys.exit(1)
-                if not ctx.dry_run_mode:
-                    current_appgate_state = new_plan.appgate_state
-                    expected_appgate_state = expected_appgate_state.sync_generations()
+
+                    if len(new_plan.errors) > 0:
+                        log.error(
+                            "[%s/%s] Found errors when applying plan:",
+                            operator_name,
+                            namespace,
+                        )
+                        for err in new_plan.errors:
+                            log.error("[%s/%s] Error %s:", operator_name, namespace, err)
+                        sys.exit(1)
+
+                    if appgate_client:
+                        current_appgate_state = new_plan.appgate_state
+                        expected_appgate_state = (
+                            expected_appgate_state.sync_generations()
+                        )
+                    elif k8s_client:
+                        current_appgate_state = new_plan.appgate_state
+                        expected_appgate_state = await get_current_appgate_state(ctx=ctx)
             else:
                 log.info(
                     "[%s/%s] Nothing changed! Keeping watching!",
