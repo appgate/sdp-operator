@@ -544,24 +544,24 @@ def main() -> None:
         default=[],
     )
     # sync entities
-    sync_entities = subparsers.add_parser("sync-entities")
-    sync_entities.set_defaults(cmd="sync-entities")
-    sync_entities.add_argument(
+    git_syncer = subparsers.add_parser("git-syncer")
+    git_syncer.set_defaults(cmd="git-syncer")
+    git_syncer.add_argument(
         "--stdout",
         action="store_true",
         default=False,
         help="Sync entities on SDP controller to the Kubernetes cluster",
     )
-    sync_entities.add_argument(
+    git_syncer.add_argument(
         "--no-verify",
         action="store_true",
         default=False,
         help="Disable SSL strict verification.",
     )
-    sync_entities.add_argument(
+    git_syncer.add_argument(
         "--cafile", help="cacert file used for ssl verification.", default=None
     )
-    sync_entities.add_argument(
+    git_syncer.add_argument(
         "-t",
         "--tags",
         action="append",
