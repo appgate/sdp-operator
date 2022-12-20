@@ -435,8 +435,7 @@ class Parser:
                 new_definition["discriminator"].update(d.get("discriminator", {}))
                 if "description" in d:
                     descriptions.append(d["description"])
-
-        new_definition["description"] = "".join(descriptions)
+        new_definition["description"] = ".".join(descriptions)
         return new_definition
 
     def parse_discriminator(self, definition: OpenApiDict) -> OpenApiDict:
