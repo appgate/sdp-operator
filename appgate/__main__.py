@@ -69,6 +69,7 @@ from appgate.types import (
     APPGATE_MT_CONFIGMAP_ENV,
     APPGATE_LOG_LEVEL,
     get_tags,
+    to_bool,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -116,13 +117,6 @@ def appgate_operator_context(
     device_id = os.getenv(DEVICE_ID_ENV) or args.device_id
     controller = os.getenv(HOST_ENV) or args.host
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
-
-    def to_bool(value: Optional[str]) -> bool:
-        if value:
-            # Helm JSON schema validation ensures that the input is true/false string
-            bool_map = {"true": True, "false": False}
-            return bool_map[value.lower()]
-        return False
 
     two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
     dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))

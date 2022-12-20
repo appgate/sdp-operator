@@ -370,3 +370,11 @@ def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
     if xs or ys:
         ts = xs.union(ys)
     return ts
+
+
+def to_bool(value: Optional[str]) -> bool:
+    if value:
+        # Helm JSON schema validation ensures that the input is true/false string
+        bool_map = {"true": True, "false": False}
+        return bool_map[value.lower()]
+    return False
