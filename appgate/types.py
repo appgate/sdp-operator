@@ -4,6 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
 from attr import attrib, attrs, evolve
+from kubernetes.client import CustomObjectsApi
 
 from appgate.openapi.types import Entity_T, APISpec
 from appgate.openapi.utils import is_entity_t

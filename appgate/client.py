@@ -4,7 +4,7 @@ import functools
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union
+from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta, CustomObjectsApi

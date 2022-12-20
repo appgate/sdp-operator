@@ -3,34 +3,25 @@ import sys
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
-from typing import Optional, Type, Dict, Callable, Any
-import threading
+from typing import Optional, Dict
 
-from kubernetes.client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
-from kubernetes.watch import Watch
 
-from appgate.types import AppgateOperatorContext, AppgateEventSuccess, AppgateEventError
+from appgate.types import AppgateOperatorContext, AppgateEventError
 from appgate.logger import log
-from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import (
     AppgateClient,
     K8SConfigMapClient,
-    entity_unique_id,
     K8sEntityClient,
 )
 from appgate.openapi.types import (
     AppgateException,
-    AppgateTypedloadException,
     APISpec,
 )
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
-    Entity_T,
     K8S_APPGATE_VERSION,
     K8S_APPGATE_DOMAIN,
-    APPGATE_METADATA_LATEST_GENERATION_FIELD,
-    APPGATE_METADATA_MODIFICATION_FIELD,
 )
 from appgate.state import (
     AppgateState,
@@ -41,15 +32,14 @@ from appgate.state import (
     resolve_appgate_state,
     exclude_appgate_entity,
 )
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
+from appgate.types import AppgateEvent, EntityWrapper
 
 
 __all__ = [
     "appgate_operator",
     "get_current_appgate_state",
-    "start_entity_loop",
     "get_operator_name",
-    "log",
+    "get_crds",
 ]
 
 
@@ -116,162 +106,6 @@ async def get_current_appgate_state(ctx: AppgateOperatorContext) -> AppgateState
         appgate_state = AppgateState(entities_set=entities_set)
 
     return appgate_state
-
-
-def run_entity_loop(
-    namespace: str,
-    crd: str,
-    loop: asyncio.AbstractEventLoop,
-    queue: Queue[AppgateEvent],
-    load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-    entity_type: type,
-    singleton: bool,
-    k8s_configmap_client: K8SConfigMapClient | None,
-):
-    log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
-    watcher = Watch().stream(
-        get_crds().list_namespaced_custom_object,
-        K8S_APPGATE_DOMAIN,
-        K8S_APPGATE_VERSION,
-        namespace,
-        crd,
-    )
-    while True:
-        try:
-            data = next(watcher)
-            data_obj = data["object"]
-            data_mt = data_obj["metadata"]
-            kind = data_obj["kind"]
-            spec = data_obj["spec"]
-            event = EventObject(metadata=data_mt, spec=spec, kind=kind)
-            if singleton:
-                name = "singleton"
-            else:
-                name = event.spec["name"]
-            if event:
-                assert data["type"] in ("ADDED", "DELETED", "MODIFIED")
-                ev = K8SEvent(data["type"], event)
-                try:
-                    # names are not unique between entities, so we need to come up with a unique name now
-                    mt = ev.object.metadata
-                    latest_entity_generation = None
-                    if k8s_configmap_client:
-                        latest_entity_generation = (
-                            k8s_configmap_client.read_entity_generation(
-                                entity_unique_id(kind, name)
-                            )
-                        )
-                    if latest_entity_generation:
-                        mt[
-                            APPGATE_METADATA_LATEST_GENERATION_FIELD
-                        ] = latest_entity_generation.generation
-                        mt[APPGATE_METADATA_MODIFICATION_FIELD] = dump_datetime(
-                            latest_entity_generation.modified
-                        )
-                    entity = load(ev.object.spec, ev.object.metadata, entity_type)
-                    log.debug(
-                        "[%s/%s] K8SEvent type: %s: %s", crd, namespace, ev.type, entity
-                    )
-                    appgate_event: AppgateEvent = AppgateEventSuccess(
-                        op=ev.type, entity=entity
-                    )
-                except AppgateTypedloadException as e:
-                    log.error(
-                        "[%s/%s] Unable to parse event with name %s of type %s",
-                        crd,
-                        namespace,
-                        event.spec["name"],
-                        event.kind,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error message: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.message,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading from: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.platform_type,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading type: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.type_.__qualname__ if e.type_ else "Unknown",
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading value: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.value,
-                    )
-                    appgate_event = AppgateEventError(
-                        name=event.spec["name"], kind=event.kind, error=str(e)
-                    )
-
-                asyncio.run_coroutine_threadsafe(queue.put(appgate_event), loop)
-        except ApiException:
-            log.exception(
-                "[appgate-operator/%s] Error when subscribing events in k8s for %s",
-                namespace,
-                crd,
-            )
-            sys.exit(1)
-        except StopIteration:
-            log.debug(
-                "[appgate-operator/%s] Event loop stopped, re-initializing watchers",
-                namespace,
-            )
-            watcher = Watch().stream(
-                get_crds().list_namespaced_custom_object,
-                K8S_APPGATE_DOMAIN,
-                K8S_APPGATE_VERSION,
-                namespace,
-                crd,
-            )
-        except Exception:
-            log.exception(
-                "[appgate-operator/%s] Unhandled error for %s", namespace, crd
-            )
-            sys.exit(1)
-
-
-async def start_entity_loop(
-    namespace: str,
-    crd: str,
-    entity_type: Type[Entity_T],
-    singleton: bool,
-    queue: Queue[AppgateEvent],
-    k8s_configmap_client: K8SConfigMapClient | None,
-) -> None:
-    log.debug(
-        "[%s/%s] Starting loop event for entities on path: %s", crd, namespace, crd
-    )
-
-    def run(loop: asyncio.AbstractEventLoop) -> None:
-        t = threading.Thread(
-            target=run_entity_loop,
-            args=(
-                namespace,
-                crd,
-                loop,
-                queue,
-                K8S_LOADER.load,
-                entity_type,
-                singleton,
-                k8s_configmap_client,
-            ),
-            daemon=True,
-        )
-        t.start()
-
-    await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
 def generate_k8s_clients(
