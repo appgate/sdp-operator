@@ -471,15 +471,6 @@ def main() -> None:
     git_syncer.set_defaults(cmd="git-operator")
     git_syncer.add_argument("--namespace", help="Specify namespace", default=None)
     git_syncer.add_argument(
-        "--no-verify",
-        action="store_true",
-        default=False,
-        help="Disable SSL strict verification.",
-    )
-    git_syncer.add_argument(
-        "--cafile", help="cacert file used for ssl verification.", default=None
-    )
-    git_syncer.add_argument(
         "--no-dry-run",
         help="DiDisablesabel run in dry-run mode",
         default=False,

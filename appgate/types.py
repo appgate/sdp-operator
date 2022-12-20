@@ -334,7 +334,8 @@ class GitOperatorContext:
     namespace: str = attrib()
     api_spec: APISpec = attrib()
     timeout: int = attrib()
-    target_tags: Optional[FrozenSet[str]] = attrib(default=None)
+    target_tags: FrozenSet[str] | None = attrib(default=None)
+    dry_run: bool = attrib(default=True)
 
 
 @attrs(slots=True, frozen=True)
