@@ -1,33 +1,34 @@
+{{- if has "appgate-operator" .Values.sdp.operators }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-sdp
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["beta.appgate.com"]
     resources:
-      - policies-{{ .Values.sdp.operator.version }}
-      - entitlements-{{ .Values.sdp.operator.version }}
-      - conditions-{{ .Values.sdp.operator.version }}
-      - ringfencerules-{{ .Values.sdp.operator.version }}
-      - appliances-{{ .Values.sdp.operator.version }}
-      - sites-{{ .Values.sdp.operator.version }}
-      - ippools-{{ .Values.sdp.operator.version }}
-      - identityproviders-{{ .Values.sdp.operator.version }}
-      - localusers-{{ .Values.sdp.operator.version }}
-      - administrativeroles-{{ .Values.sdp.operator.version }}
-      - mfaproviders-{{ .Values.sdp.operator.version }}
-      - adminmfasettingss-{{ .Values.sdp.operator.version }}
-      - trustedcertificates-{{ .Values.sdp.operator.version }}
-      - criteriascriptss-{{ .Values.sdp.operator.version }}
-      - devicescripts-{{ .Values.sdp.operator.version }}
-      - entitlementscripts-{{ .Values.sdp.operator.version }}
-      - appliancecustomizations-{{ .Values.sdp.operator.version }}
-      - globalsettingss-{{ .Values.sdp.operator.version }}
-      - clientconnections-{{ .Values.sdp.operator.version }}
-      - serviceusers-{{ .Values.sdp.operator.version }}
+      - policies-{{ .Values.sdp.appgateOperator.version }}
+      - entitlements-{{ .Values.sdp.appgateOperator.version }}
+      - conditions-{{ .Values.sdp.appgateOperator.version }}
+      - ringfencerules-{{ .Values.sdp.appgateOperator.version }}
+      - appliances-{{ .Values.sdp.appgateOperator.version }}
+      - sites-{{ .Values.sdp.appgateOperator.version }}
+      - ippools-{{ .Values.sdp.appgateOperator.version }}
+      - identityproviders-{{ .Values.sdp.appgateOperator.version }}
+      - localusers-{{ .Values.sdp.appgateOperator.version }}
+      - administrativeroles-{{ .Values.sdp.appgateOperator.version }}
+      - mfaproviders-{{ .Values.sdp.appgateOperator.version }}
+      - adminmfasettingss-{{ .Values.sdp.appgateOperator.version }}
+      - trustedcertificates-{{ .Values.sdp.appgateOperator.version }}
+      - criteriascriptss-{{ .Values.sdp.appgateOperator.version }}
+      - devicescripts-{{ .Values.sdp.appgateOperator.version }}
+      - entitlementscripts-{{ .Values.sdp.appgateOperator.version }}
+      - appliancecustomizations-{{ .Values.sdp.appgateOperator.version }}
+      - globalsettingss-{{ .Values.sdp.appgateOperator.version }}
+      - clientconnections-{{ .Values.sdp.appgateOperator.version }}
+      - serviceusers-{{ .Values.sdp.appgateOperator.version }}
     verbs: ["get", "create", "patch", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
@@ -36,50 +37,51 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-sdp
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}
+    name: {{ include "sdp-operator.serviceAccountName" . }}-sdp
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.name" . }}-sdp
   apiGroup: rbac.authorization.k8s.io
+{{- end }}
 ---
 {{- if has "git-operator" .Values.sdp.operators }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "sdp-operator.name" . }}-git-operator
+  name: {{ include "sdp-operator.name" . }}-git
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["beta.appgate.com"]
     resources:
-      - policies-{{ .Values.sdp.operator.version }}
-      - entitlements-{{ .Values.sdp.operator.version }}
-      - conditions-{{ .Values.sdp.operator.version }}
-      - ringfencerules-{{ .Values.sdp.operator.version }}
-      - appliances-{{ .Values.sdp.operator.version }}
-      - sites-{{ .Values.sdp.operator.version }}
-      - ippools-{{ .Values.sdp.operator.version }}
-      - identityproviders-{{ .Values.sdp.operator.version }}
-      - localusers-{{ .Values.sdp.operator.version }}
-      - administrativeroles-{{ .Values.sdp.operator.version }}
-      - mfaproviders-{{ .Values.sdp.operator.version }}
-      - adminmfasettingss-{{ .Values.sdp.operator.version }}
-      - trustedcertificates-{{ .Values.sdp.operator.version }}
-      - criteriascriptss-{{ .Values.sdp.operator.version }}
-      - devicescripts-{{ .Values.sdp.operator.version }}
-      - entitlementscripts-{{ .Values.sdp.operator.version }}
-      - appliancecustomizations-{{ .Values.sdp.operator.version }}
-      - globalsettingss-{{ .Values.sdp.operator.version }}
-      - clientconnections-{{ .Values.sdp.operator.version }}
-      - serviceusers-{{ .Values.sdp.operator.version }}
+      - policies-{{ .Values.sdp.gitOperator.version }}
+      - entitlements-{{ .Values.sdp.gitOperator.version }}
+      - conditions-{{ .Values.sdp.gitOperator.version }}
+      - ringfencerules-{{ .Values.sdp.gitOperator.version }}
+      - appliances-{{ .Values.sdp.gitOperator.version }}
+      - sites-{{ .Values.sdp.gitOperator.version }}
+      - ippools-{{ .Values.sdp.gitOperator.version }}
+      - identityproviders-{{ .Values.sdp.gitOperator.version }}
+      - localusers-{{ .Values.sdp.gitOperator.version }}
+      - administrativeroles-{{ .Values.sdp.gitOperator.version }}
+      - mfaproviders-{{ .Values.sdp.gitOperator.version }}
+      - adminmfasettingss-{{ .Values.sdp.gitOperator.version }}
+      - trustedcertificates-{{ .Values.sdp.gitOperator.version }}
+      - criteriascriptss-{{ .Values.sdp.gitOperator.version }}
+      - devicescripts-{{ .Values.sdp.gitOperator.version }}
+      - entitlementscripts-{{ .Values.sdp.gitOperator.version }}
+      - appliancecustomizations-{{ .Values.sdp.gitOperator.version }}
+      - globalsettingss-{{ .Values.sdp.gitOperator.version }}
+      - clientconnections-{{ .Values.sdp.gitOperator.version }}
+      - serviceusers-{{ .Values.sdp.gitOperator.version }}
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
@@ -88,16 +90,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.name" . }}-git-operator
+  name: {{ include "sdp-operator.name" . }}-git
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}-git-operator
+    name: {{ include "sdp-operator.serviceAccountName" . }}-git
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.name" . }}-git-operator
+  name: {{ include "sdp-operator.name" . }}-git
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

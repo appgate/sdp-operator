@@ -1,7 +1,8 @@
+{{- if has "appgate-operator" .Values.sdp.operators }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}
+  name: {{ include "sdp-operator.fullname" . }}-sdp
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -27,7 +28,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-sdp
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
@@ -47,6 +48,8 @@ spec:
               value: {{ required "A valid .Values.sdp.appgateOperator.deviceId entry is required!" .Values.sdp.appgateOperator.deviceId }}
             - name: APPGATE_OPERATOR_LOG_LEVEL
               value: "{{ .Values.sdp.appgateOperator.logLevel }}"
+            - name: APPGATE_OPERATOR_SPEC_DIRECTORY
+              value: /root/api_specs/{{ required "A valid .Values.sdp.appgateOperator.version entry is required!" .Values.sdp.appgateOperator.version }}
             - name: APPGATE_OPERATOR_TIMEOUT
               value: "{{ .Values.sdp.appgateOperator.timeout }}"
             {{- with .Values.sdp.appgateOperator.targetTags }}
@@ -84,8 +87,6 @@ spec:
           image: "{{ .Values.sdp.appgateOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.appgateOperator.image.tag}}"
           imagePullPolicy: {{ .Values.sdp.appgateOperator.image.pullPolicy }}
           args:
-            - --spec-directory
-            - "/root/api_specs/{{ required "A valid .Values.sdp.appgateOperator.version entry is required!" .Values.sdp.appgateOperator.version }}"
             - appgate-operator
             {{- if eq .Values.sdp.appgateOperator.reverseMode true }}
             - reverse-mode
@@ -104,12 +105,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}
 ---
 {{- if has "git-operator" .Values.sdp.operators }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}-git-operator
+  name: {{ include "sdp-operator.fullname" . }}-git
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -135,7 +137,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-git
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
@@ -146,11 +148,11 @@ spec:
             - name: APPGATE_OPERATOR_TARGET_TAGS
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
-              value {{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
+              value: /root/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.gitOperator.dryRun }}"
             - name: GIT_VENDOR
-              value: {{ .Values.sdp.operator.gitOperator.git.vendor }}
+              value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY_URL
               value: {{ .Values.sdp.gitOperator.git.repositoryUrl }}
             - name: GIT_USERNAME
@@ -172,7 +174,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.gitOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.gitOperator.image.tag}}"
-          imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.sdp.gitOperator.image.pullPolicy }}
           args:
             - "git-operator"
           resources:
