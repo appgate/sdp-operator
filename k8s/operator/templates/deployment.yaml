@@ -139,30 +139,14 @@ spec:
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
-            - name: APPGATE_OPERATOR_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "sdp-operator.secret" . }}
-                  key: appgate-operator-user
-            - name: APPGATE_OPERATOR_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "sdp-operator.secret" . }}
-                  key: appgate-operator-password
-            - name: APPGATE_OPERATOR_HOST
-              value: {{ required "A valid .Values.sdp.gitOperator.host entry is required!" .Values.sdp.gitOperator.host }}
-            - name: APPGATE_OPERATOR_DEVICE_ID
-              value: {{ required "A valid .Values.sdp.gitOperator.deviceId entry is required!" .Values.sdp.gitOperator.deviceId }}
             - name: APPGATE_OPERATOR_LOG_LEVEL
               value: "{{ .Values.sdp.gitOperator.logLevel }}"
             - name: APPGATE_OPERATOR_TIMEOUT
               value: "{{ .Values.sdp.gitOperator.timeout }}"
             - name: APPGATE_OPERATOR_TARGET_TAGS
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
-            {{- with .Values.sdp.gitOperator.caCert }}
-            - name: APPGATE_OPERATOR_CACERT
-              value: "{{ . }}"
-            {{- end }}
+            - name: APPGATE_OPERATOR_SPEC_DIRECTORY
+              value {{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
             - name: GIT_VENDOR
               value: {{ .Values.sdp.operator.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY_URL
@@ -189,8 +173,6 @@ spec:
           imagePullPolicy: {{ .Values.sdp.operator.image.pullPolicy }}
           args:
             - "git-operator"
-            - "--spec-directory"
-            - "/root/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 {{ end }}
