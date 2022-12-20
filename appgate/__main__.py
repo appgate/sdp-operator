@@ -1,6 +1,5 @@
 import asyncio
 import binascii
-import glob
 import itertools
 import sys
 import os
@@ -14,8 +13,6 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
-    Coroutine,
-    Any,
 )
 import datetime
 import time
@@ -25,28 +22,20 @@ import base64
 import yaml
 from kubernetes.client.api_client import ApiClient  # type: ignore
 from kubernetes.utils import create_from_directory  # type: ignore
-from kubernetes.config import (
-    load_kube_config,
-    list_kube_config_contexts,
-    load_incluster_config,
-)
 
 from appgate.client import K8SConfigMapClient, AppgateClient
-from appgate.logger import set_level, is_debug
+from appgate.logger import set_level, is_debug, log
 from appgate.appgate import (
     appgate_operator,
     get_current_appgate_state,
-    start_entity_loop,
-    log,
     get_operator_name,
 )
 from appgate.openapi.openapi import (
-    entity_names,
     generate_crd,
     SPEC_DIR,
-    APISpec,
 )
 from appgate.openapi.utils import join
+from appgate.operator import init_kubernetes, run_k8s
 from appgate.state import (
     entities_conflict_summary,
     resolve_appgate_state,
@@ -202,47 +191,6 @@ def appgate_operator_context(
         cafile=appgate_cacert_path,
         reverse_mode=args.reverse_mode,
     )
-
-
-def init_kubernetes(namespace: str | None) -> str:
-    if "KUBERNETES_PORT" in os.environ:
-        load_incluster_config()
-        # TODO: Discover it somehow
-        # https://github.com/kubernetes-client/python/issues/363
-        ns = namespace or os.getenv(NAMESPACE_ENV)
-    else:
-        load_kube_config()
-        ns = (
-            namespace
-            or os.getenv(NAMESPACE_ENV)
-            or list_kube_config_contexts()[1]["context"].get("namespace")
-        )
-    if not ns:
-        raise AppgateException("Unable to discover namespace, please provide it.")
-    return ns
-
-
-async def run_k8s(
-    queue: Queue[AppgateEvent],
-    namespace: str,
-    api_spec: APISpec,
-    k8s_configmap_client: Optional[K8SConfigMapClient],
-    operator: Coroutine[Any, Any, None],
-) -> None:
-    tasks = [
-        start_entity_loop(
-            namespace=namespace,
-            queue=queue,
-            crd=entity_names(e.cls, {}, f"v{api_spec.api_version}")[2],
-            singleton=e.singleton,
-            entity_type=e.cls,
-            k8s_configmap_client=k8s_configmap_client,
-        )
-        for e in api_spec.entities.values()
-        if e.api_path
-    ] + [operator]
-
-    await asyncio.gather(*tasks)
 
 
 async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
