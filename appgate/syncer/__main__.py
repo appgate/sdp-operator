@@ -14,7 +14,12 @@ from appgate.types import (
     AppgateEventError,
     EntityWrapper,
     GitOperatorContext,
-    GitOperatorArguments, NAMESPACE_ENV, SPEC_DIR_ENV, APPGATE_SECRETS_KEY, TIMEOUT_ENV, get_tags,
+    GitOperatorArguments,
+    NAMESPACE_ENV,
+    SPEC_DIR_ENV,
+    APPGATE_SECRETS_KEY,
+    TIMEOUT_ENV,
+    get_tags,
     APPGATE_TARGET_TAGS_ENV,
 )
 from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL, run_k8s
