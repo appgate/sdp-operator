@@ -21,6 +21,7 @@ import base64
 
 import yaml
 from kubernetes.client.api_client import ApiClient  # type: ignore
+from kubernetes.config import ConfigException
 from kubernetes.utils import create_from_directory  # type: ignore
 
 from appgate.client import K8SConfigMapClient, AppgateClient
@@ -194,7 +195,10 @@ def appgate_operator_context(
 
 
 async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
-    ns = init_kubernetes(args.namespace)
+    try:
+        ns = init_kubernetes(args.namespace)
+    except ConfigException:
+        raise AppgateException("Unable to find kube config file")
     ctx = appgate_operator_context(
         args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(
