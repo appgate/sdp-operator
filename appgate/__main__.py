@@ -67,10 +67,27 @@ from appgate.types import (
     BUILTIN_TAGS,
     AppgateEventError,
     GitOperatorArguments,
-    GitOperatorContext, APPGATE_TARGET_TAGS_ENV, APPGATE_EXCLUDE_TAGS_ENV, APPGATE_BUILTIN_TAGS_ENV, NAMESPACE_ENV,
-    USER_ENV, PASSWORD_ENV, PROVIDER_ENV, DEVICE_ID_ENV, HOST_ENV, TIMEOUT_ENV, TWO_WAY_SYNC_ENV, DRY_RUN_ENV,
-    CLEANUP_ENV, APPGATE_SSL_NO_VERIFY, SPEC_DIR_ENV, APPGATE_SSL_CACERT, APPGATE_SECRETS_KEY, APPGATE_MT_CONFIGMAP_ENV,
-    APPGATE_LOG_LEVEL, get_tags,
+    GitOperatorContext,
+    APPGATE_TARGET_TAGS_ENV,
+    APPGATE_EXCLUDE_TAGS_ENV,
+    APPGATE_BUILTIN_TAGS_ENV,
+    NAMESPACE_ENV,
+    USER_ENV,
+    PASSWORD_ENV,
+    PROVIDER_ENV,
+    DEVICE_ID_ENV,
+    HOST_ENV,
+    TIMEOUT_ENV,
+    TWO_WAY_SYNC_ENV,
+    DRY_RUN_ENV,
+    CLEANUP_ENV,
+    APPGATE_SSL_NO_VERIFY,
+    SPEC_DIR_ENV,
+    APPGATE_SSL_CACERT,
+    APPGATE_SECRETS_KEY,
+    APPGATE_MT_CONFIGMAP_ENV,
+    APPGATE_LOG_LEVEL,
+    get_tags,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -431,8 +448,12 @@ def main() -> None:
         default=False,
         action="store_true",
     )
-    appgate_operator.add_argument("--host", help="Controller host to connect", default=None)
-    appgate_operator.add_argument("--user", help="Username used for authentication", default=None)
+    appgate_operator.add_argument(
+        "--host", help="Controller host to connect", default=None
+    )
+    appgate_operator.add_argument(
+        "--user", help="Username used for authentication", default=None
+    )
     appgate_operator.add_argument(
         "--password", help="Password used for authentication", default=None
     )
