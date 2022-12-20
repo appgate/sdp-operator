@@ -1,5 +1,6 @@
 import datetime
 import enum
+import os
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
@@ -46,6 +47,7 @@ __all__ = [
     "APPGATE_EXCLUDE_TAGS_ENV",
     "APPGATE_TARGET_TAGS_ENV",
     "APPGATE_BUILTIN_TAGS_ENV",
+    "get_tags",
 ]
 
 
@@ -98,6 +100,8 @@ class GitOperatorArguments:
     namespace: Optional[str] = attrib(default=None)
     spec_directory: Optional[str] = attrib(default=None)
     no_dry_run: bool = attrib(default=False)
+    timeout: str = attrib(default="30")
+    target_tags: List[str] = attrib(factory=list)
 
 
 @attrs(slots=True, frozen=True)
@@ -329,6 +333,8 @@ class AppgateOperatorContext:
 class GitOperatorContext:
     namespace: str = attrib()
     api_spec: APISpec = attrib()
+    timeout: int = attrib()
+    target_tags: Optional[FrozenSet[str]] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)
@@ -354,3 +360,12 @@ class MissingFieldDependencies:
     parent_type: str = attrib()
     field_path: str = attrib()
     dependencies: FrozenSet[str] = attrib(factory=frozenset)
+
+
+def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
+    xs = frozenset(tags) if tags else frozenset()
+    ys = filter(None, os.getenv(tags_env, "").split(","))
+    ts = None
+    if xs or ys:
+        ts = xs.union(ys)
+    return ts
