@@ -40,7 +40,7 @@ from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
 
 
 __all__ = [
-    "operator",
+    "appgate_operator",
     "get_current_appgate_state",
     "start_entity_loop",
     "get_operator_name",
@@ -259,7 +259,17 @@ async def start_entity_loop(
     await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
-async def operator(
+def generate_k8s_clients(api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi) ->  Dict[str, K8sEntityClient]:
+    return {k: K8sEntityClient(
+            api=k8s_api,
+            domain=K8S_APPGATE_DOMAIN,
+            version=K8S_APPGATE_VERSION,
+            namespace=namespace,
+            kind=f"{k}-v{api_spec.api_version}",
+        ) for k in api_spec.entities.keys()}
+
+
+async def appgate_operator(
     queue: Queue,
     ctx: Context,
     k8s_configmap_client: K8SConfigMapClient,
@@ -532,4 +542,4 @@ async def main_loop(
         expiration_time_delta=ctx.timeout,
         dry_run=ctx.dry_run_mode,
     ) as appgate_client:
-        await operator(queue, ctx, k8s_configmap_client, appgate_client)
+        await appgate_operator(queue, ctx, k8s_configmap_client, appgate_client)
