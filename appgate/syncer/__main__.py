@@ -7,13 +7,14 @@ import yaml
 from typing import List, Optional, Callable
 
 from appgate.logger import log, set_level
+from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
 from appgate.secrets import k8s_get_secret
 from appgate.types import (
     AppgateEvent,
     AppgateEventError,
     EntityWrapper,
     GitOperatorContext,
-    GitOperatorArguments,
+    GitOperatorArguments, NAMESPACE_ENV, SPEC_DIR_ENV, APPGATE_SECRETS_KEY,
 )
 from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL, run_k8s
 from appgate.openapi.types import (
