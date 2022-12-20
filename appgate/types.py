@@ -20,8 +20,10 @@ __all__ = [
     "is_target",
     "EntitiesSet",
     "LatestEntityGeneration",
-    "OperatorArguments",
-    "Context",
+    "AppgateOperatorArguments",
+    "GitOperatorArguments",
+    "AppgateOperatorContext",
+    "GitOperatorContext",
     "BUILTIN_TAGS",
     "EntityFieldDependency",
     "MissingFieldDependencies",
@@ -32,7 +34,7 @@ BUILTIN_TAGS = frozenset({"builtin"})
 
 
 @attrs(slots=True, frozen=True)
-class OperatorArguments:
+class AppgateOperatorArguments:
     namespace: Optional[str] = attrib(default=None)
     spec_directory: Optional[str] = attrib(default=None)
     no_dry_run: bool = attrib(default=False)
@@ -51,6 +53,13 @@ class OperatorArguments:
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
     reverse_mode: bool = attrib(default=False)
+
+
+@attrs(slots=True, frozen=True)
+class GitOperatorArguments:
+    namespace: Optional[str] = attrib(default=None)
+    spec_directory: Optional[str] = attrib(default=None)
+    no_dry_run: bool = attrib(default=False)
 
 
 @attrs(slots=True, frozen=True)
@@ -254,7 +263,7 @@ class LatestEntityGeneration:
 
 
 @attrs()
-class Context:
+class AppgateOperatorContext:
     namespace: str = attrib()
     user: str = attrib()
     password: str = attrib()
@@ -276,6 +285,12 @@ class Context:
     no_verify: bool = attrib(default=True)
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
+
+
+@attrs()
+class GitOperatorContext:
+    namespace: str = attrib()
+    api_spec: APISpec = attrib()
 
 
 @attrs(slots=True, frozen=True)
