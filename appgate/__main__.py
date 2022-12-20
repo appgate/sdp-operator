@@ -535,9 +535,6 @@ def main() -> None:
             )
 
         elif args.cmd == "git-operator":
-            if args.cafile and not Path(args.cafile).exists():
-                print(f"cafile file not found: {args.cafile}")
-                sys.exit(1)
             main_git_operator(
                 GitOperatorArguments(
                     namespace=args.namespace,
