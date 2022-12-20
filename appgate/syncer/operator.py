@@ -6,7 +6,6 @@ import sys
 import yaml
 from typing import List, Optional, Callable
 
-from attr.converters import to_bool
 from kubernetes.config import ConfigException
 from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
@@ -24,7 +23,9 @@ from appgate.types import (
     TIMEOUT_ENV,
     get_tags,
     APPGATE_TARGET_TAGS_ENV,
-    APPGATE_LOG_LEVEL, DRY_RUN_ENV,
+    APPGATE_LOG_LEVEL,
+    DRY_RUN_ENV,
+    to_bool,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
