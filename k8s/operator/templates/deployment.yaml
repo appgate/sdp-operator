@@ -147,6 +147,8 @@ spec:
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
               value {{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
+            - name: APPGATE_OPERATOR_DRY_RUN
+              value: "{{ .Values.sdp.gitOperator.dryRun }}"
             - name: GIT_VENDOR
               value: {{ .Values.sdp.operator.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY_URL

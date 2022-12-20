@@ -6,6 +6,7 @@ import sys
 import yaml
 from typing import List, Optional, Callable
 
+from attr.converters import to_bool
 from kubernetes.config import ConfigException
 from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
@@ -23,7 +24,7 @@ from appgate.types import (
     TIMEOUT_ENV,
     get_tags,
     APPGATE_TARGET_TAGS_ENV,
-    APPGATE_LOG_LEVEL,
+    APPGATE_LOG_LEVEL, DRY_RUN_ENV,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -54,11 +55,13 @@ def git_operator_context(
         raise AppgateException(
             "Namespace must be defined in order to run the appgate-operator"
         )
+    dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
     return GitOperatorContext(
         namespace=namespace,
         api_spec=api_spec,
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
         target_tags=get_tags(args.target_tags, APPGATE_TARGET_TAGS_ENV),
+        dry_run=dry_run_mode,
     )
 
 
