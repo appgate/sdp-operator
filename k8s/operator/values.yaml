@@ -67,14 +67,10 @@ sdp:
   ## @param sdp.operator.gitOperator.git.secret The secret to pull and push the git repository
   ## @param sdp.operator.gitOperator.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
   gitOperator:
-    host: ""
-    deviceId: ""
     version: v17
     logLevel: info
     timeout: 30
     targetTags: []
-    sslNoVerify: false
-    caCert: ""
     dryRun: true
     git:
       vendor: github
