@@ -315,10 +315,12 @@ async def operator(
             }
         )
     elif ctx.target_tags:
-        new_state = AppgateState({
-            k: v.entities_with_tags(ctx.target_tags)
-            for k, v in current_appgate_state.entities_set.items()
-        })
+        new_state = AppgateState(
+            {
+                k: v.entities_with_tags(ctx.target_tags)
+                for k, v in current_appgate_state.entities_set.items()
+            }
+        )
         if ctx.reverse_mode:
             current_appgate_state = new_state
         else:
