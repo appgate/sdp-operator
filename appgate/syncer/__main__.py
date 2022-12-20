@@ -78,21 +78,33 @@ def dump(ctx: Context, entity: Entity_T):
             f.write(de)
 
 
-def print_configuration(ctx: Context):
-    log.info("[git-syncer] Starting Git Syncer loop with the following configuration: ")
+def print_configuration(ctx: GitOperatorContext):
     log.info(
-        "[git-syncer]     Target tags: %s",
+        "[appgate-git-operator] Starting Git Syncer loop with the following configuration: "
+    )
+    log.info(
+        "[appgate-git-operator]     Target tags: %s",
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
-    log.info("[git-syncer]     Log level: %s", os.getenv(APPGATE_LOG_LEVEL, "info"))
-    log.info("[git-syncer]     Timeout: %s", ctx.timeout)
-    log.info("[git-syncer]     Git repository: %s", os.getenv("GIT_REPOSITORY_URL", ""))
-    log.info("[git-syncer]     Git vendor: %s", os.getenv("GIT_VENDOR", ""))
-    log.info("[git-syncer]     Git username: %s", os.getenv("GIT_USERNAME", ""))
-    log.info("[git-syncer]     Git base branch: %s", os.getenv("GIT_BASE_BRANCH", ""))
+    log.info(
+        "[appgate-git-operator]     Log level: %s", os.getenv(APPGATE_LOG_LEVEL, "info")
+    )
+    log.info("[appgate-git-operator]     Timeout: %s", ctx.timeout)
+    log.info(
+        "[appgate-git-operator]     Git repository: %s",
+        os.getenv("GIT_REPOSITORY_URL", ""),
+    )
+    log.info("[appgate-git-operator]     Git vendor: %s", os.getenv("GIT_VENDOR", ""))
+    log.info(
+        "[appgate-git-operator]     Git username: %s", os.getenv("GIT_USERNAME", "")
+    )
+    log.info(
+        "[appgate-git-operator]     Git base branch: %s",
+        os.getenv("GIT_BASE_BRANCH", ""),
+    )
 
 
-async def main_loop(queue: Queue, ctx: Context) -> None:
+async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     entities: List[Entity_T] = []
     error_events: List[AppgateEventError] = []
 
