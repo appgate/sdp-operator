@@ -43,6 +43,7 @@ class K8sEntityClient:
     version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
+
     @functools.cache
     def plural(self):
         return get_plural(self.kind)

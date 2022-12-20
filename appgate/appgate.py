@@ -18,7 +18,12 @@ from appgate.client import (
     entity_unique_id,
     K8sEntityClient,
 )
-from appgate.openapi.types import AppgateException, AppgateTypedloadException, APISpec, GeneratedEntity
+from appgate.openapi.types import (
+    AppgateException,
+    AppgateTypedloadException,
+    APISpec,
+    GeneratedEntity,
+)
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     Entity_T,
@@ -260,14 +265,19 @@ async def start_entity_loop(
     await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
-def generate_k8s_clients(api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi) ->  Dict[str, K8sEntityClient]:
-    return {k: K8sEntityClient(
+def generate_k8s_clients(
+    api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi
+) -> Dict[str, K8sEntityClient]:
+    return {
+        k: K8sEntityClient(
             api=k8s_api,
             domain=K8S_APPGATE_DOMAIN,
             version=K8S_APPGATE_VERSION,
             namespace=namespace,
             kind=f"{k}-v{api_spec.api_version}",
-        ) for k in api_spec.entities.keys()}
+        )
+        for k in api_spec.entities.keys()
+    }
 
 
 async def appgate_operator(
@@ -488,9 +498,12 @@ async def appgate_operator(
                         if appgate_client
                         else {},
                         k8s_entity_clients=generate_k8s_clients(
-                            api_spec=ctx.api_spec, namespace=ctx.namespace, k8s_api=k8s_api,
+                            api_spec=ctx.api_spec,
+                            namespace=ctx.namespace,
+                            k8s_api=k8s_api,
                         )
-                        if k8s_api else {},
+                        if k8s_api
+                        else {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
                     )
