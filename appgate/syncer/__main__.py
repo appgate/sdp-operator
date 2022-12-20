@@ -181,12 +181,3 @@ def main_git_operator(args: GitOperatorArguments) -> None:
         asyncio.run(run_git_operator(args))
     except AppgateException as e:
         log.error("[appgate-git-operator] Fatal error: %s", e)
-
-
-if __name__ == "__main__":
-    try:
-        set_level(log_level=os.getenv(APPGATE_LOG_LEVEL, "info"))
-        asyncio.run(run_git_syncer(GitOperatorArguments()))
-    except KeyboardInterrupt:
-        log.info("Interrupted by user.")
-        sys.exit(1)
