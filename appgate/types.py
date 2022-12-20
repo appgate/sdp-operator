@@ -1,5 +1,4 @@
 import datetime
-import enum
 import os
 from copy import deepcopy
 from pathlib import Path

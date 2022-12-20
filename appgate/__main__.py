@@ -14,7 +14,6 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
-    Awaitable,
     Coroutine,
     Any,
 )
@@ -23,7 +22,6 @@ import time
 import tempfile
 import base64
 
-import kubernetes.client
 import yaml
 from kubernetes.client.api_client import ApiClient  # type: ignore
 from kubernetes.utils import create_from_directory  # type: ignore
@@ -60,9 +58,7 @@ from appgate.types import (
     AppgateOperatorArguments,
     AppgateOperatorContext,
     BUILTIN_TAGS,
-    AppgateEventError,
     GitOperatorArguments,
-    GitOperatorContext,
     APPGATE_TARGET_TAGS_ENV,
     APPGATE_EXCLUDE_TAGS_ENV,
     APPGATE_BUILTIN_TAGS_ENV,

@@ -50,7 +50,6 @@ from appgate.types import (
     MissingFieldDependencies,
     has_tag,
     is_target,
-    AppgateEventSuccess,
 )
 from appgate.openapi.utils import has_name
 
@@ -70,8 +69,6 @@ __all__ = [
     "compute_diff",
     "exclude_appgate_entities",
     "exclude_appgate_entity",
-    "update_entity",
-    "update_entities",
 ]
 
 
@@ -125,20 +122,6 @@ def k8s_name(name: str) -> str:
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
     return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
-
-
-def update_entity(appgate_event: AppgateEventSuccess) -> None:
-    """
-    Re-conciliate entity from event with the current version on k8s
-    """
-    pass
-
-
-def update_entities(entity_type: str, entities: EntitiesSet) -> None:
-    """
-    Re-conciliate entities the current versions on k8s
-    """
-    pass
 
 
 def dump_entity(

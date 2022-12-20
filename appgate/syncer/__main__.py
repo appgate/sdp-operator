@@ -6,7 +6,7 @@ import sys
 import yaml
 from typing import List, Optional, Callable
 
-from appgate.logger import log, set_level
+from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
 from appgate.secrets import k8s_get_secret
 from appgate.types import (
