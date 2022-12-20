@@ -6,6 +6,7 @@ import sys
 import yaml
 from typing import List, Optional, Callable
 
+from kubernetes.config import ConfigException
 from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
 from appgate.operator import init_kubernetes, run_k8s
@@ -62,7 +63,10 @@ def git_operator_context(
 
 
 async def run_git_operator(args: GitOperatorArguments) -> None:
-    ns = init_kubernetes(args.namespace)
+    try:
+        ns = init_kubernetes(args.namespace)
+    except ConfigException:
+        raise AppgateException("Unable to find kibe config file")
     ctx = git_operator_context(
         args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(
