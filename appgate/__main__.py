@@ -370,7 +370,7 @@ def main() -> None:
         default=None,
         help="Specifies the directory where the openapi yml specification is located.",
     )
-    subparsers = parser.add_subparsers(dest="operator")
+    subparsers = parser.add_subparsers(dest="cmd")
     # appgate_operator
     appgate_operator = subparsers.add_parser("appgate-operator")
     appgate_operator.set_defaults(cmd="appgate-operator")
@@ -466,14 +466,6 @@ def main() -> None:
     git_syncer = subparsers.add_parser("git-operator")
     git_syncer.set_defaults(cmd="git-operator")
     git_syncer.add_argument(
-        "-l", "--log-level", choices=["DEBUG", "INFO"], default="INFO"
-    )
-    git_syncer.add_argument(
-        "--spec-directory",
-        default=None,
-        help="Specifies the directory where the openapi yml specification is located.",
-    )
-    git_syncer.add_argument(
         "--no-verify",
         action="store_true",
         default=False,
@@ -499,15 +491,6 @@ def main() -> None:
         "--timeout",
         help="Event loop timeout to determine when there are not more events",
         default=30,
-    )
-    git_syncer.add_argument(
-        "--no-verify",
-        action="store_true",
-        default=False,
-        help="Disable SSL strict verification.",
-    )
-    git_syncer.add_argument(
-        "--cafile", help="cacert file used for ssl verification.", default=None
     )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
