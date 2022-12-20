@@ -9,7 +9,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
 from kubernetes.watch import Watch
 
-from appgate.types import Context, AppgateEventSuccess, AppgateEventError
+from appgate.types import AppgateOperatorContext, AppgateEventSuccess, AppgateEventError
 from appgate.logger import log
 from appgate.attrs import K8S_LOADER, dump_datetime
 from appgate.client import (
@@ -18,7 +18,7 @@ from appgate.client import (
     entity_unique_id,
     K8sEntityClient,
 )
-from appgate.openapi.types import AppgateException, AppgateTypedloadException
+from appgate.openapi.types import AppgateException, AppgateTypedloadException, APISpec, GeneratedEntity
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     Entity_T,
@@ -65,7 +65,7 @@ def get_operator_name(reverse_mode: bool) -> str:
 
 
 async def get_current_appgate_state(
-    ctx: Context, appgate_client: AppgateClient
+    ctx: AppgateOperatorContext, appgate_client: AppgateClient
 ) -> AppgateState:
     """
     Gets the current AppgateState for controller
@@ -105,16 +105,15 @@ async def get_current_appgate_state(
 
 
 def run_entity_loop(
-    ctx: Context,
+    namespace: str,
     crd: str,
     loop: asyncio.AbstractEventLoop,
     queue: Queue[AppgateEvent],
     load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
     entity_type: type,
     singleton: bool,
-    k8s_configmap_client: K8SConfigMapClient,
+    k8s_configmap_client: K8SConfigMapClient | None,
 ):
-    namespace = ctx.namespace
     log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
     watcher = Watch().stream(
         get_crds().list_namespaced_custom_object,
@@ -230,22 +229,22 @@ def run_entity_loop(
 
 
 async def start_entity_loop(
-    ctx: Context,
+    namespace: str,
     crd: str,
     entity_type: Type[Entity_T],
     singleton: bool,
     queue: Queue[AppgateEvent],
-    k8s_configmap_client: K8SConfigMapClient,
+    k8s_configmap_client: K8SConfigMapClient | None,
 ) -> None:
     log.debug(
-        "[%s/%s] Starting loop event for entities on path: %s", crd, ctx.namespace, crd
+        "[%s/%s] Starting loop event for entities on path: %s", crd, namespace, crd
     )
 
     def run(loop: asyncio.AbstractEventLoop) -> None:
         t = threading.Thread(
             target=run_entity_loop,
             args=(
-                ctx,
+                namespace,
                 crd,
                 loop,
                 queue,
@@ -273,7 +272,7 @@ def generate_k8s_clients(api_spec: APISpec, namespace: str, k8s_api: CustomObjec
 
 async def appgate_operator(
     queue: Queue,
-    ctx: Context,
+    ctx: AppgateOperatorContext,
     k8s_configmap_client: K8SConfigMapClient,
     appgate_client: AppgateClient,
 ) -> None:
