@@ -70,7 +70,7 @@ from appgate.types import (
     GitOperatorContext, APPGATE_TARGET_TAGS_ENV, APPGATE_EXCLUDE_TAGS_ENV, APPGATE_BUILTIN_TAGS_ENV, NAMESPACE_ENV,
     USER_ENV, PASSWORD_ENV, PROVIDER_ENV, DEVICE_ID_ENV, HOST_ENV, TIMEOUT_ENV, TWO_WAY_SYNC_ENV, DRY_RUN_ENV,
     CLEANUP_ENV, APPGATE_SSL_NO_VERIFY, SPEC_DIR_ENV, APPGATE_SSL_CACERT, APPGATE_SECRETS_KEY, APPGATE_MT_CONFIGMAP_ENV,
-    APPGATE_LOG_LEVEL,
+    APPGATE_LOG_LEVEL, get_tags,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -89,7 +89,7 @@ def save_cert(cert: str) -> Path:
     return cert_path
 
 
-def get_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
+def get_all_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
     tags: List[Optional[FrozenSet[str]]] = []
     for i, (tags_arg, tags_env) in enumerate(
         [
@@ -98,11 +98,7 @@ def get_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[str]
             (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV),
         ]
     ):
-        xs = frozenset(tags_arg) if tags_arg else frozenset()
-        ys = filter(None, os.getenv(tags_env, "").split(","))
-        ts = None
-        if xs or ys:
-            ts = xs.union(ys)
+        ts = get_tags(tags_arg, tags_env)
         tags.append(ts)
     return tags
 
@@ -150,7 +146,7 @@ def appgate_operator_context(
     elif verify and args.cafile:
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
-    target_tags, exclude_tags, builtin_tags = get_tags(args)
+    target_tags, exclude_tags, builtin_tags = get_all_tags(args)
     metadata_configmap = (
         args.metadata_configmap
         or os.getenv(APPGATE_MT_CONFIGMAP_ENV)

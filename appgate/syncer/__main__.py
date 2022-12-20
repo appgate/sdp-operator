@@ -14,7 +14,8 @@ from appgate.types import (
     AppgateEventError,
     EntityWrapper,
     GitOperatorContext,
-    GitOperatorArguments, NAMESPACE_ENV, SPEC_DIR_ENV, APPGATE_SECRETS_KEY,
+    GitOperatorArguments, NAMESPACE_ENV, SPEC_DIR_ENV, APPGATE_SECRETS_KEY, TIMEOUT_ENV, get_tags,
+    APPGATE_TARGET_TAGS_ENV,
 )
 from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL, run_k8s
 from appgate.openapi.types import (
@@ -49,6 +50,8 @@ def git_operator_context(
     return GitOperatorContext(
         namespace=namespace,
         api_spec=api_spec,
+        timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
+        target_tags=get_tags(args.target_tags, APPGATE_TARGET_TAGS_ENV),
     )
 
 
