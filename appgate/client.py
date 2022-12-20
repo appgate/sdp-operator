@@ -43,9 +43,6 @@ class K8sEntityClient:
     version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
-
-
-    @property
     @functools.cache
     def plural(self):
         return get_plural(self.kind)
@@ -55,7 +52,7 @@ class K8sEntityClient:
             self.domain,
             self.version,
             self.namespace,
-            self.plural,
+            self.plural(),
             e,
         )
 
@@ -64,7 +61,7 @@ class K8sEntityClient:
             self.domain,
             self.version,
             self.namespace,
-            self.plural,
+            self.plural(),
             name,
         )
 
@@ -73,7 +70,7 @@ class K8sEntityClient:
             self.domain,
             self.version,
             self.namespace,
-            self.plural,
+            self.plural(),
             e.name,
             e,
         )
