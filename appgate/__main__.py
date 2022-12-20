@@ -42,7 +42,7 @@ from appgate.state import (
     resolve_appgate_state,
     AppgateState,
 )
-from appgate.syncer.__main__ import main_git_operator
+from appgate.syncer.operator import main_git_operator
 from appgate.types import (
     AppgateEvent,
     AppgateOperatorArguments,
