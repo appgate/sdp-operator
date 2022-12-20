@@ -23,7 +23,6 @@ from appgate.openapi.types import (
     AppgateException,
     AppgateTypedloadException,
     APISpec,
-    GeneratedEntity,
 )
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
@@ -50,6 +49,7 @@ __all__ = [
     "get_current_appgate_state",
     "start_entity_loop",
     "get_operator_name",
+    "log",
 ]
 
 

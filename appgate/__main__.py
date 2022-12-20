@@ -14,7 +14,6 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
-    Awaitable,
     Coroutine,
     Any,
 )
@@ -23,7 +22,6 @@ import time
 import tempfile
 import base64
 
-import kubernetes.client
 import yaml
 from kubernetes.client.api_client import ApiClient  # type: ignore
 from kubernetes.utils import create_from_directory  # type: ignore
@@ -46,8 +44,6 @@ from appgate.openapi.openapi import (
     entity_names,
     generate_crd,
     SPEC_DIR,
-    K8S_APPGATE_DOMAIN,
-    K8S_APPGATE_VERSION,
     APISpec,
 )
 from appgate.openapi.utils import join
@@ -55,9 +51,6 @@ from appgate.state import (
     entities_conflict_summary,
     resolve_appgate_state,
     AppgateState,
-    update_entities,
-    update_entity,
-    create_appgate_plan,
 )
 from appgate.syncer.__main__ import main_git_operator
 from appgate.types import (
@@ -65,9 +58,7 @@ from appgate.types import (
     AppgateOperatorArguments,
     AppgateOperatorContext,
     BUILTIN_TAGS,
-    AppgateEventError,
     GitOperatorArguments,
-    GitOperatorContext,
     APPGATE_TARGET_TAGS_ENV,
     APPGATE_EXCLUDE_TAGS_ENV,
     APPGATE_BUILTIN_TAGS_ENV,
