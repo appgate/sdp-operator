@@ -445,7 +445,7 @@ async def operator(
                 )
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
-                    k8s_client = None
+                    k8s_api = None
                     if not ctx.dry_run_mode and not ctx.reverse_mode:
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
@@ -462,7 +462,7 @@ async def operator(
                             )
                         )
                     elif not ctx.dry_run_mode and ctx.reverse_mode:
-                        k8s_client = K8sEntityClient()
+                        k8s_api = CustomObjectsApi()
                     else:
                         log.warning(
                             "[%s/%s] Running in dry-mode, nothing will be created",
@@ -478,7 +478,10 @@ async def operator(
                         )
                         if appgate_client
                         else {},
-                        k8s_entity_clients={"FIXME": k8s_client} if k8s_client else {},
+                        k8s_entity_clients=generate_k8s_clients(
+                            api_spec=ctx.api_spec, namespace=ctx.namespace, k8s_api=k8s_api,
+                        )
+                        if k8s_api else {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
                     )
@@ -500,7 +503,7 @@ async def operator(
                         expected_appgate_state = (
                             expected_appgate_state.sync_generations()
                         )
-                    elif k8s_client:
+                    elif k8s_api:
                         current_appgate_state = new_plan.appgate_state
                         expected_appgate_state = await get_current_appgate_state(
                             ctx=ctx
