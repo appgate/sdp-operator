@@ -319,7 +319,7 @@ async def appgate_operator(
                             )
                         )
                     elif not ctx.dry_run_mode and ctx.reverse_mode:
-                        k8s_api = CustomObjectsApi()
+                        k8s_api = get_crds()
                     else:
                         log.warning(
                             "[%s/%s] Running in dry-mode, nothing will be created",
