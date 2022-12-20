@@ -59,6 +59,7 @@ from appgate.state import (
     update_entity,
     create_appgate_plan,
 )
+from appgate.syncer.__main__ import main_git_operator
 from appgate.types import (
     AppgateEvent,
     AppgateOperatorArguments,
