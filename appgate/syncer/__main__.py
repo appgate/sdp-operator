@@ -4,24 +4,23 @@ import os
 from pathlib import Path
 import sys
 import yaml
-from typing import List
+from typing import List, Optional, Callable
 
 from appgate.logger import log, set_level
+from appgate.secrets import k8s_get_secret
 from appgate.types import (
-    OperatorArguments,
-    Context,
     AppgateEvent,
     AppgateEventError,
     EntityWrapper,
+    GitOperatorContext,
+    GitOperatorArguments,
 )
-from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL
-from appgate.client import K8SConfigMapClient
-from appgate.appgate import start_entity_loop
-from appgate.openapi.openapi import entity_names
+from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL, run_k8s
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
     Entity_T,
+    AppgateException,
 )
 from appgate.state import dump_entity
 from appgate.syncer.git import get_git_repository, GitRepo
@@ -30,31 +29,48 @@ from appgate.syncer.git import get_git_repository, GitRepo
 DUMP_DIR: Path = Path("/entities")
 
 
-async def run_git_syncer(args: OperatorArguments):
-    ctx = init_kubernetes(args)
-    events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    k8s_configmap_client = K8SConfigMapClient(
-        namespace=ctx.namespace, name=ctx.metadata_configmap
+def git_operator_context(
+    args: GitOperatorArguments,
+    k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+) -> GitOperatorContext:
+    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
+    secrets_key = os.getenv(APPGATE_SECRETS_KEY)
+    api_spec = generate_api_spec(
+        spec_directory=Path(spec_directory) if spec_directory else None,
+        secrets_key=secrets_key,
+        k8s_get_secret=k8s_get_secret,
     )
-    await k8s_configmap_client.init()
-
-    tasks = [
-        start_entity_loop(
-            ctx=ctx,
-            queue=events_queue,
-            crd=entity_names(e.cls, {}, f"v{ctx.api_spec.api_version}")[2],
-            singleton=e.singleton,
-            entity_type=e.cls,
-            k8s_configmap_client=k8s_configmap_client,
+    if not namespace:
+        raise AppgateException(
+            "Namespace must be defined in order to run the appgate-operator"
         )
-        for e in ctx.api_spec.entities.values()
-        if e.api_path
-    ] + [main_loop(events_queue, ctx)]
+    return GitOperatorContext(
+        namespace=namespace,
+        api_spec=api_spec,
+    )
 
-    await asyncio.gather(*tasks)
+
+async def run_git_operator(args: GitOperatorArguments) -> None:
+    ns = init_kubernetes(args.namespace)
+    ctx = git_operator_context(
+        args=args,
+        k8s_get_secret=lambda secret, key: k8s_get_secret(
+            namespace=ns, key=key, secret=secret
+        ),
+    )
+    events_queue: Queue[AppgateEvent] = asyncio.Queue()
+    operator = git_operator(queue=events_queue, ctx=ctx)
+    await run_k8s(
+        queue=events_queue,
+        namespace=ctx.namespace,
+        api_spec=ctx.api_spec,
+        k8s_configmap_client=None,
+        operator=operator,
+    )
 
 
-def dump(ctx: Context, entity: Entity_T):
+def dump(ctx: GitOperatorContext, entity: Entity_T):
     dumped_entities: List[str] = []
     entity_type = entity.__class__.__qualname__
 
@@ -159,10 +175,17 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 )
 
 
+def main_git_operator(args: GitOperatorArguments) -> None:
+    try:
+        asyncio.run(run_git_operator(args))
+    except AppgateException as e:
+        log.error("[appgate-git-operator] Fatal error: %s", e)
+
+
 if __name__ == "__main__":
     try:
         set_level(log_level=os.getenv(APPGATE_LOG_LEVEL, "info"))
-        asyncio.run(run_git_syncer(OperatorArguments()))
+        asyncio.run(run_git_syncer(GitOperatorArguments()))
     except KeyboardInterrupt:
         log.info("Interrupted by user.")
         sys.exit(1)
