@@ -527,10 +527,12 @@ def main() -> None:
     git_syncer = subparsers.add_parser("git-syncer")
     git_syncer.set_defaults(cmd="git-syncer")
     git_syncer.add_argument(
-        "--stdout",
-        action="store_true",
-        default=False,
-        help="Sync entities on SDP controller to the Kubernetes cluster",
+        "-l", "--log-level", choices=["DEBUG", "INFO"], default="INFO"
+    )
+    git_syncer.add_argument(
+        "--spec-directory",
+        default=None,
+        help="Specifies the directory where the openapi yml specification is located.",
     )
     git_syncer.add_argument(
         "--no-verify",
@@ -541,12 +543,32 @@ def main() -> None:
     git_syncer.add_argument(
         "--cafile", help="cacert file used for ssl verification.", default=None
     )
+    run.add_argument(
+        "--no-dry-run",
+        help="DiDisablesabel run in dry-run mode",
+        default=False,
+        action="store_true",
+    )
     git_syncer.add_argument(
         "-t",
         "--tags",
         action="append",
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
+    )
+    git_syncer.add_argument(
+        "--timeout",
+        help="Event loop timeout to determine when there are not more events",
+        default=30,
+    )
+    git_syncer.add_argument(
+        "--no-verify",
+        action="store_true",
+        default=False,
+        help="Disable SSL strict verification.",
+    )
+    git_syncer.add_argument(
+        "--cafile", help="cacert file used for ssl verification.", default=None
     )
     # dump crd
     dump_crd = subparsers.add_parser("dump-crd")
