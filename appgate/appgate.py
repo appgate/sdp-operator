@@ -268,8 +268,18 @@ async def start_entity_loop(
     await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
-async def operator(
-    queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
+def generate_k8s_clients(api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi) ->  Dict[str, K8sEntityClient]:
+    return {k: K8sEntityClient(
+            api=k8s_api,
+            domain=K8S_APPGATE_DOMAIN,
+            version=K8S_APPGATE_VERSION,
+            namespace=namespace,
+            kind=f"{k}-v{api_spec.api_version}",
+        ) for k in api_spec.entities.keys()}
+
+
+async def appgate_operator(
+    queue: Queue, ctx: AppgateOperatorContext, k8s_configmap_client: K8SConfigMapClient
 ) -> None:
     namespace = ctx.namespace
     operator_name = get_operator_name(ctx.reverse_mode)
