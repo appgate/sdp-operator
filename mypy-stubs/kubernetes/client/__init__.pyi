@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 class CustomObjectsApi:
     def list_namespaced_custom_object(self) -> None: ...
-
+    def delete_namespaced_custom_object(self, group: str, version: str, namespace: str, plural: str, name: str) -> V1ConfigMap: ...
 
 class V1Secret:
     data: Dict[str, str]
