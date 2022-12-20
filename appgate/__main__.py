@@ -2,13 +2,22 @@ import asyncio
 import binascii
 import glob
 import itertools
-import shutil
 import sys
 import os
 from argparse import ArgumentParser
 from asyncio import Queue
 from pathlib import Path
-from typing import Optional, Dict, List, Callable, FrozenSet, Iterable
+from typing import (
+    Optional,
+    Dict,
+    List,
+    Callable,
+    FrozenSet,
+    Iterable,
+    Awaitable,
+    Coroutine,
+    Any,
+)
 import datetime
 import time
 import tempfile
@@ -24,16 +33,22 @@ from kubernetes.config import (
     load_incluster_config,
 )
 
-import appgate.openapi.types
 from appgate.client import K8SConfigMapClient
 from appgate.logger import set_level, is_debug
-from appgate.appgate import operator, get_current_appgate_state, start_entity_loop, log, get_operator_name
+from appgate.appgate import (
+    appgate_operator,
+    get_current_appgate_state,
+    start_entity_loop,
+    log,
+    get_operator_name,
+)
 from appgate.openapi.openapi import (
     entity_names,
     generate_crd,
     SPEC_DIR,
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
+    APISpec,
 )
 from appgate.openapi.utils import join
 from appgate.state import (
@@ -46,10 +61,12 @@ from appgate.state import (
 )
 from appgate.types import (
     AppgateEvent,
-    OperatorArguments,
-    Context,
+    AppgateOperatorArguments,
+    AppgateOperatorContext,
     BUILTIN_TAGS,
     AppgateEventError,
+    GitOperatorArguments,
+    GitOperatorContext,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -89,7 +106,7 @@ def save_cert(cert: str) -> Path:
     return cert_path
 
 
-def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
+def get_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
     tags: List[Optional[FrozenSet[str]]] = []
     for i, (tags_arg, tags_env) in enumerate(
         [
@@ -107,9 +124,10 @@ def get_tags(args: OperatorArguments) -> Iterable[Optional[FrozenSet[str]]]:
     return tags
 
 
-def get_context(
-    args: OperatorArguments, k8s_get_secret: Optional[Callable[[str, str], str]] = None
-) -> Context:
+def appgate_operator_context(
+    args: AppgateOperatorArguments,
+    k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+) -> AppgateOperatorContext:
     namespace = args.namespace or os.getenv(NAMESPACE_ENV)
     if not namespace:
         raise AppgateException(
@@ -177,7 +195,7 @@ def get_context(
         k8s_get_secret=k8s_get_secret,
     )
 
-    return Context(
+    return AppgateOperatorContext(
         namespace=namespace,
         user=user,
         password=password,
@@ -199,40 +217,60 @@ def get_context(
     )
 
 
-def init_kubernetes(args: OperatorArguments) -> Context:
+def init_kubernetes(namespace: str | None) -> str:
     if "KUBERNETES_PORT" in os.environ:
         load_incluster_config()
         # TODO: Discover it somehow
         # https://github.com/kubernetes-client/python/issues/363
-        namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+        ns = namespace or os.getenv(NAMESPACE_ENV)
     else:
         load_kube_config()
-        namespace = (
-            args.namespace
+        ns = (
+            namespace
             or os.getenv(NAMESPACE_ENV)
             or list_kube_config_contexts()[1]["context"].get("namespace")
         )
-
-    if not namespace:
+    if not ns:
         raise AppgateException("Unable to discover namespace, please provide it.")
-    ns: str = namespace  # lambda thinks it's an Optional
-    return get_context(
+    return ns
+
+
+async def run_k8s(
+    queue: Queue[AppgateEvent],
+    namespace: str,
+    api_spec: APISpec,
+    k8s_configmap_client: Optional[K8SConfigMapClient],
+    operator: Coroutine[Any, Any, None],
+) -> None:
+    tasks = [
+        start_entity_loop(
+            namespace=namespace,
+            queue=queue,
+            crd=entity_names(e.cls, {}, f"v{api_spec.api_version}")[2],
+            singleton=e.singleton,
+            entity_type=e.cls,
+            k8s_configmap_client=k8s_configmap_client,
+        )
+        for e in api_spec.entities.values()
+        if e.api_path
+    ] + [operator]
+
+    await asyncio.gather(*tasks)
+
+
+async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
+    ns = init_kubernetes(args.namespace)
+    ctx = appgate_operator_context(
         args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns, key=key, secret=secret
         ),
     )
-
-
-async def run_k8s(args: OperatorArguments) -> None:
-    ctx = init_kubernetes(args)
-    events_queue: Queue[AppgateEvent] = asyncio.Queue()
     k8s_configmap_client = K8SConfigMapClient(
         namespace=ctx.namespace, name=ctx.metadata_configmap
     )
     await k8s_configmap_client.init()
-
-    operator_name = get_operator_name(args.reverse_mode)
+    operator_name = get_operator_name(ctx.reverse_mode)
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
         log.info(
@@ -241,93 +279,28 @@ async def run_k8s(args: OperatorArguments) -> None:
             ctx.namespace,
             ctx.device_id,
         )
-    tasks = [
-        start_entity_loop(
-            ctx=ctx,
-            queue=events_queue,
-            crd=entity_names(e.cls, {}, f"v{ctx.api_spec.api_version}")[2],
-            singleton=e.singleton,
-            entity_type=e.cls,
-            k8s_configmap_client=k8s_configmap_client,
-        )
-        for e in ctx.api_spec.entities.values()
-        if e.api_path
-    ] + [
-        operator(
-            queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
-        )]
-
-    await asyncio.gather(*tasks)
+    events_queue: Queue[AppgateEvent] = asyncio.Queue()
+    operator = appgate_operator(
+        queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
+    )
+    await run_k8s(
+        queue=events_queue,
+        namespace=ctx.namespace,
+        api_spec=ctx.api_spec,
+        k8s_configmap_client=k8s_configmap_client,
+        operator=operator,
+    )
 
 
-def main_run(args: OperatorArguments) -> None:
+def main_appgate_operator(args: AppgateOperatorArguments) -> None:
     try:
-        asyncio.run(run_k8s(args))
+        asyncio.run(run_appgate_operator(args))
     except AppgateException as e:
         log.error("[%s] Fatal error: %s", get_operator_name(args.reverse_mode), e)
 
 
-def main_sync_entities(args: OperatorArguments) -> None:
-    asyncio.run(sync_entities(args))
-
-
-async def sync_entities(args: OperatorArguments) -> None:
-    def get_plural(kind: str) -> str:
-        entity = kind.lower().split("-")
-        name = entity[0]
-        if name.endswith("y"):
-            return f"{name[:-1]}ies-{entity[1]}"
-        else:
-            return f"{name}s-{entity[1]}"
-
-    init_kubernetes(args)
-    context = get_context(args)
-
-    while True:
-        dir = Path("/entities")
-        await dump_entities(ctx=context, output_dir=dir)
-        api = kubernetes.client.CustomObjectsApi()
-        namespace = os.getenv(NAMESPACE_ENV, "default")
-
-        for file in glob.glob(f"{dir}/*.yaml"):
-            with open(file, "r") as stream:
-                for entity in yaml.safe_load_all(stream):
-                    name = entity["metadata"]["name"]
-                    kind = entity["kind"]
-                    plural = get_plural(entity["kind"])
-                    try:
-                        api.get_namespaced_custom_object(  # type: ignore
-                            K8S_APPGATE_DOMAIN,
-                            K8S_APPGATE_VERSION,
-                            namespace,
-                            plural,
-                            name,
-                        )
-                        log.info(f"Updating entity of type {kind}: {name}")
-                        api.patch_namespaced_custom_object(  # type: ignore
-                            K8S_APPGATE_DOMAIN,
-                            K8S_APPGATE_VERSION,
-                            namespace,
-                            plural,
-                            name,
-                            entity,
-                        )
-                    except kubernetes.client.exceptions.ApiException as e:
-                        if e.status == 404:  # type: ignore
-                            log.info(f"Creating entity of type {kind}: {name}")
-                            api.create_namespaced_custom_object(  # type: ignore
-                                K8S_APPGATE_DOMAIN,
-                                K8S_APPGATE_VERSION,
-                                namespace,
-                                plural,
-                                entity,
-                            )
-        log.info("Sleeping 60 seconds")
-        time.sleep(60)
-
-
 async def dump_entities(
-    ctx: Context, output_dir: Optional[Path], stdout: bool = False
+    ctx: AppgateOperatorContext, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
     current_appgate_state = await get_current_appgate_state(ctx)
     expected_appgate_state = AppgateState(
@@ -362,13 +335,13 @@ async def dump_entities(
 
 
 def main_dump_entities(
-    args: OperatorArguments,
+    args: AppgateOperatorArguments,
     stdout: bool = False,
     output_dir: Optional[Path] = None,
 ) -> None:
     asyncio.run(
         dump_entities(
-            ctx=get_context(args),
+            ctx=appgate_operator_context(args),
             output_dir=output_dir,
             stdout=stdout,
         )
@@ -462,9 +435,9 @@ def main() -> None:
         default=None,
         help="Specifies the directory where the openapi yml specification is located.",
     )
-    subparsers = parser.add_subparsers(dest="cmd")
+    subparsers = parser.add_subparsers(dest="operator")
     # run
-    run = subparsers.add_parser("run")
+    run = subparsers.add_parser("operator")
     run.set_defaults(cmd="run")
     run.add_argument("--namespace", help="Specify namespace", default=None)
     run.add_argument(
@@ -475,7 +448,7 @@ def main() -> None:
     )
     run.add_argument(
         "--no-dry-run",
-        help="Disabel run in dry-run mode",
+        help="Disable run in dry-run mode",
         default=False,
         action="store_true",
     )
@@ -608,8 +581,8 @@ def main() -> None:
             if args.cafile and not Path(args.cafile).exists():
                 print(f"cafile file not found: {args.cafile}")
                 sys.exit(1)
-            main_run(
-                OperatorArguments(
+            main_appgate_operator(
+                AppgateOperatorArguments(
                     namespace=args.namespace,
                     spec_directory=args.spec_directory,
                     no_dry_run=args.no_dry_run,
@@ -628,14 +601,20 @@ def main() -> None:
             )
 
         elif args.cmd == "sync-entities":
-            main_sync_entities(OperatorArguments())
+            main_git_operator(
+                GitOperatorArguments(
+                    namespace=args.namespace,
+                    spec_directory=args.spec_directory,
+                    no_dry_run=args.no_dry_run,
+                )
+            )
         elif args.cmd == "dump-entities":
             if args.cafile and not Path(args.cafile).exists():
                 print(f"cafile file not found: {args.cafile}")
                 sys.exit(1)
 
             main_dump_entities(
-                OperatorArguments(
+                AppgateOperatorArguments(
                     namespace="cli",
                     spec_directory=args.spec_directory,
                     target_tags=args.tags,
