@@ -1,13 +1,16 @@
 import asyncio
 import datetime
+import functools
 import ssl
 import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable, Union, Type
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
-from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
+from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta, CustomObjectsApi
 from kubernetes.client.exceptions import ApiException
+
+from attr import attrib, attrs
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
@@ -24,8 +27,56 @@ __all__ = [
 ]
 
 
+def get_plural(kind: str) -> str:
+    entity = kind.lower().split("-")
+    name = entity[0]
+    if name.endswith("y"):
+        return f"{name[:-1]}ies-{entity[1]}"
+    else:
+        return f"{name}s-{entity[1]}"
+
+
+@attrs()
 class K8sEntityClient:
-    pass
+    api: CustomObjectsApi = attrib()
+    domain: str = attrib()
+    version: str = attrib()
+    namespace: str = attrib()
+    kind: str = attrib()
+
+
+    @property
+    @functools.cache
+    def plural(self):
+        return get_plural(self.kind)
+
+    async def create(self, e: Entity_T) -> None:
+        self.api.create_namespaced_custom_object(  # type: ignore
+            self.domain,
+            self.version,
+            self.namespace,
+            self.plural,
+            e,
+        )
+
+    async def delete(self, name: str) -> None:
+        self.api.delete_namespaced_custom_object(
+            self.domain,
+            self.version,
+            self.namespace,
+            self.plural,
+            name,
+        )
+
+    async def modify(self, e: Entity_T) -> None:
+        self.api.patch_namespaced_custom_object(  # type: ignore
+            self.domain,
+            self.version,
+            self.namespace,
+            self.plural,
+            e.name,
+            e,
+        )
 
 
 class AppgateEntityClient:

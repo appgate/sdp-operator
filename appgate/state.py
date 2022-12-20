@@ -397,7 +397,7 @@ async def plan_apply(
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
         elif k8s_entity_client:
             try:
-                await k8s_entity_client.create()
+                await k8s_entity_client.create(e.value)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -441,7 +441,7 @@ async def plan_apply(
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
         elif k8s_entity_client:
             try:
-                await k8s_entity_client.modify()
+                await k8s_entity_client.modify(e.value)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -479,7 +479,7 @@ async def plan_apply(
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
         elif k8s_entity_client:
             try:
-                await k8s_entity_client.delete()
+                await k8s_entity_client.delete(e.name)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
