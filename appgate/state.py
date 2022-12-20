@@ -69,6 +69,7 @@ __all__ = [
     "compute_diff",
     "exclude_appgate_entities",
     "exclude_appgate_entity",
+    "dump_entity",
 ]
 
 

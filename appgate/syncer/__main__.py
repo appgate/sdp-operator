@@ -8,6 +8,7 @@ from typing import List, Optional, Callable
 
 from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
+from appgate.operator import init_kubernetes, run_k8s
 from appgate.secrets import k8s_get_secret
 from appgate.types import (
     AppgateEvent,
@@ -21,8 +22,8 @@ from appgate.types import (
     TIMEOUT_ENV,
     get_tags,
     APPGATE_TARGET_TAGS_ENV,
+    APPGATE_LOG_LEVEL,
 )
-from appgate.__main__ import init_kubernetes, APPGATE_LOG_LEVEL, run_k8s
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
