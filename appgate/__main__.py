@@ -417,7 +417,7 @@ def main_validate_entities(
 
 def main() -> None:
     set_level(log_level="info")
-    parser = ArgumentParser("appgate-operator")
+    parser = ArgumentParser("run")
     parser.add_argument("-l", "--log-level", choices=["DEBUG", "INFO"], default="INFO")
     parser.add_argument(
         "--spec-directory",
@@ -425,62 +425,62 @@ def main() -> None:
         help="Specifies the directory where the openapi yml specification is located.",
     )
     subparsers = parser.add_subparsers(dest="operator")
-    # run
-    run = subparsers.add_parser("operator")
-    run.set_defaults(cmd="run")
-    run.add_argument("--namespace", help="Specify namespace", default=None)
-    run.add_argument(
+    # appgate_operator
+    appgate_operator = subparsers.add_parser("appgate-operator")
+    appgate_operator.set_defaults(cmd="appgate-operator")
+    appgate_operator.add_argument("--namespace", help="Specify namespace", default=None)
+    appgate_operator.add_argument(
         "--reverse-mode",
         action="store_true",
         help="Run the operator in reverse mode",
         default=False,
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--no-dry-run",
         help="Disable run in dry-run mode",
         default=False,
         action="store_true",
     )
-    run.add_argument("--host", help="Controller host to connect", default=None)
-    run.add_argument("--user", help="Username used for authentication", default=None)
-    run.add_argument(
+    appgate_operator.add_argument("--host", help="Controller host to connect", default=None)
+    appgate_operator.add_argument("--user", help="Username used for authentication", default=None)
+    appgate_operator.add_argument(
         "--password", help="Password used for authentication", default=None
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--no-cleanup",
         help="Disable delete entities not defined in expected state",
         default=False,
         action="store_true",
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--mt-config-map", help="Name for the configmap used for metadata", default=None
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--no-two-way-sync",
         help="Disable always update current state with latest appgate"
         " state before applying a plan",
         default=False,
         action="store_true",
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "-t",
         "--tags",
         action="append",
         help="Tags to filter entities. Only entities with any of those tags will be dumped",
         default=[],
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--timeout",
         help="Event loop timeout to determine when there are not more events",
         default=30,
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--no-verify",
         action="store_true",
         default=False,
         help="Disable SSL strict verification.",
     )
-    run.add_argument(
+    appgate_operator.add_argument(
         "--cafile", help="cacert file used for ssl verification.", default=None
     )
 
@@ -513,8 +513,8 @@ def main() -> None:
         default=[],
     )
     # sync entities
-    git_syncer = subparsers.add_parser("git-syncer")
-    git_syncer.set_defaults(cmd="git-syncer")
+    git_syncer = subparsers.add_parser("git-operator")
+    git_syncer.set_defaults(cmd="git-operator")
     git_syncer.add_argument(
         "-l", "--log-level", choices=["DEBUG", "INFO"], default="INFO"
     )
@@ -532,7 +532,7 @@ def main() -> None:
     git_syncer.add_argument(
         "--cafile", help="cacert file used for ssl verification.", default=None
     )
-    run.add_argument(
+    git_syncer.add_argument(
         "--no-dry-run",
         help="DiDisablesabel run in dry-run mode",
         default=False,
@@ -588,7 +588,7 @@ def main() -> None:
     args = parser.parse_args()
     set_level(log_level=os.getenv(APPGATE_LOG_LEVEL) or args.log_level.lower())
     try:
-        if args.cmd == "run":
+        if args.cmd == "appgate-operator":
             if args.cafile and not Path(args.cafile).exists():
                 print(f"cafile file not found: {args.cafile}")
                 sys.exit(1)
@@ -611,12 +611,14 @@ def main() -> None:
                 )
             )
 
-        elif args.cmd == "sync-entities":
+        elif args.cmd == "git-operator":
             main_git_operator(
                 GitOperatorArguments(
                     namespace=args.namespace,
                     spec_directory=args.spec_directory,
                     no_dry_run=args.no_dry_run,
+                    timeout=args.timeout,
+                    target_tags=args.tags,
                 )
             )
         elif args.cmd == "dump-entities":
