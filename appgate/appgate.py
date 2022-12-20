@@ -150,11 +150,13 @@ def run_entity_loop(
                 try:
                     # names are not unique between entities, so we need to come up with a unique name now
                     mt = ev.object.metadata
-                    latest_entity_generation = (
-                        k8s_configmap_client.read_entity_generation(
-                            entity_unique_id(kind, name)
+                    latest_entity_generation = None
+                    if k8s_configmap_client:
+                        latest_entity_generation = (
+                            k8s_configmap_client.read_entity_generation(
+                                entity_unique_id(kind, name)
+                            )
                         )
-                    )
                     if latest_entity_generation:
                         mt[
                             APPGATE_METADATA_LATEST_GENERATION_FIELD
