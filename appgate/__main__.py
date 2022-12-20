@@ -484,6 +484,7 @@ def main() -> None:
     # sync entities
     git_syncer = subparsers.add_parser("git-operator")
     git_syncer.set_defaults(cmd="git-operator")
+    git_syncer.add_argument("--namespace", help="Specify namespace", default=None)
     git_syncer.add_argument(
         "--no-verify",
         action="store_true",
@@ -564,6 +565,9 @@ def main() -> None:
             )
 
         elif args.cmd == "git-operator":
+            if args.cafile and not Path(args.cafile).exists():
+                print(f"cafile file not found: {args.cafile}")
+                sys.exit(1)
             main_git_operator(
                 GitOperatorArguments(
                     namespace=args.namespace,
