@@ -153,8 +153,8 @@ spec:
               value: "{{ .Values.sdp.gitOperator.dryRun }}"
             - name: GIT_VENDOR
               value: {{ .Values.sdp.gitOperator.git.vendor }}
-            - name: GIT_REPOSITORY_URL
-              value: {{ .Values.sdp.gitOperator.git.repositoryUrl }}
+            - name: GIT_REPOSITORY
+              value: {{ .Values.sdp.gitOperator.git.repository }}
             - name: GIT_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -167,10 +167,6 @@ spec:
                   key: git-token
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
-            {{- with .Values.sdp.gitOperator.github.repository }}
-            - name: GITHUB_REPOSITORY
-              value: {{ . }}
-            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.gitOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.gitOperator.image.tag}}"
