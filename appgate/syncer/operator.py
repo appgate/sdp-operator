@@ -27,10 +27,9 @@ from appgate.types import (
     APPGATE_TARGET_TAGS_ENV,
     get_dry_run,
     ensure_env,
-    GIT_USERNAME_ENV,
     GIT_REPOSITORY_ENV,
     GIT_VENDOR_ENV,
-    GIT_BASE_BRANCH_ENV,
+    GIT_BASE_BRANCH_ENV, GIT_DUMP_DIR, GITHUB_USERNAME_ENV, APPGATE_LOG_LEVEL,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -40,9 +39,6 @@ from appgate.openapi.types import (
 )
 from appgate.state import dump_entity
 from appgate.syncer.git import get_git_repository, GitRepo
-
-
-DUMP_DIR: Path = Path("/entities")
 
 
 def git_operator_context(
@@ -69,11 +65,11 @@ def git_operator_context(
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
         target_tags=get_tags(args.target_tags, APPGATE_TARGET_TAGS_ENV),
         dry_run=dry_run_mode,
-        git_username=ensure_env(GIT_USERNAME_ENV),
+        git_username=os.environ.get(GITHUB_USERNAME_ENV),
         git_vendor=ensure_env(GIT_VENDOR_ENV),
         git_repository=ensure_env(GIT_REPOSITORY_ENV),
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
-        log_level=os.environ.get(GIT_USERNAME_ENV, "info"),
+        log_level=os.environ.get(APPGATE_LOG_LEVEL, "info"),
     )
 
 
@@ -104,7 +100,7 @@ def dump(ctx: GitOperatorContext, entity: Entity_T):
     dumped_entities: List[str] = []
     entity_type = entity.__class__.__qualname__
 
-    entity_dir = DUMP_DIR / f"{entity_type.lower()}-v{ctx.api_spec.api_version}"
+    entity_dir = GIT_DUMP_DIR / f"{entity_type.lower()}-v{ctx.api_spec.api_version}"
     entity_dir.mkdir(exist_ok=True)
     entity_file = entity_dir / f"{entity.name.lower().replace(' ', '-')}.yaml"
     dumped_entity = dump_entity(
