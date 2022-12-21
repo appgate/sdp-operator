@@ -1,3 +1,5 @@
+import os
+
 from git import Repo
 from github import Github
 from pathlib import Path
@@ -6,8 +8,8 @@ import shutil
 from attr import attrib, attrs
 
 from appgate.logger import log
-from appgate.syncer.operator import DUMP_DIR
-from appgate.types import ensure_env, GIT_TOKEN_ENV, GitOperatorContext
+from appgate.openapi.types import AppgateException
+from appgate.types import ensure_env, GITHUB_TOKEN_ENV, GitOperatorContext, GIT_DUMP_DIR
 
 
 class EnvironmentVariableNotFoundException(Exception):
@@ -16,8 +18,6 @@ class EnvironmentVariableNotFoundException(Exception):
 
 @attrs(slots=True, frozen=True)
 class GitRepo:
-    username: str = attrib()
-    token: str = attrib()
     repository_name: str = attrib()
     repository_path: Path = attrib()
     git_repo: Repo = attrib()
@@ -52,20 +52,29 @@ class GitRepo:
 
 
 def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
-    token = ensure_env(GIT_TOKEN_ENV)
+    token = ensure_env(GITHUB_TOKEN_ENV)
     # Fine-grained token? make sure the user is oauth2
     if token.startswith("github_pat_"):
         username = "oauth2"
+    elif not ctx.git_username:
+        raise AppgateException("Unable to find github username.")
     else:
         username = ctx.git_username
-    repository = f"github.com/{ctx.git_repository}"
+    repository = f"github.com:{ctx.git_repository}"
     log.info(f"[git-operator] Initializing the git repository by cloning {repository}")
     if repository_path.exists():
         shutil.rmtree(repository_path)
+    deployment_key = Path("/opt") / "sdp-operator" / "k8s" / "deployment.key"
+    if not deployment_key.exists():
+        raise AppgateException(f"Unable to find deployment key {deployment_key}")
     git_repo = Repo.clone_from(
-        f"https://{username}:{token}@{repository}", repository_path
+        f"git@{repository}", repository_path,
+        env={
+            "GIT_SSH_COMMAND": f"ssh -i {deployment_key} -o IdentitiesOnly=yes"
+        }
     )
-    return GitRepo(
+    log.info(f"[git-operator] Repository {repository} cloned")
+    return GitHubRepo(
         username=username,
         token=token,
         repository_name=repository,
@@ -73,11 +82,16 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
         repository_path=repository_path,
+        deployment_key=deployment_key
     )
 
 
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
+    username: str = attrib()
+    token: str = attrib()
+    deployment_key: Path = attrib()
+
     def create_pull_request(self, branch: str) -> None:
         title = f"Merge changes from {branch}"
         log.info(
@@ -93,6 +107,6 @@ class GitHubRepo(GitRepo):
 def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
     if ctx.git_vendor.lower() == "github":
         log.info("[git-syncer] Detected GitHub as git vendor type")
-        return github_repo(ctx, DUMP_DIR)
+        return github_repo(ctx, GIT_DUMP_DIR)
     else:
         raise Exception(f"Unknown git vendor type {ctx.git_vendor}")
