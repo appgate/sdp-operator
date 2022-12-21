@@ -29,7 +29,7 @@ from appgate.state import (
     EntitiesSet,
     entities_conflict_summary,
     resolve_appgate_state,
-    exclude_appgate_entity,
+    exclude_appgate_entity, appgate_state_empty,
 )
 from appgate.types import AppgateEvent, EntityWrapper
 
@@ -153,7 +153,7 @@ async def appgate_operator(
 
     # Get current and total state
     if ctx.reverse_mode:
-        current_appgate_state = AppgateState()
+        current_appgate_state = appgate_state_empty(ctx.api_spec)
         expected_appgate_state = await get_current_appgate_state(ctx=ctx, appgate_client=appgate_client)
         total_appgate_state = deepcopy(expected_appgate_state)
     else:
