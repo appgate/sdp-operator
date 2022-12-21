@@ -60,7 +60,7 @@ def git_operator_context(
     )
     if not namespace:
         raise AppgateException(
-            "Namespace must be defined in order to run the appgate-operator"
+            "Namespace must be defined in order to run the git-operator"
         )
     dry_run_mode = get_dry_run(args.no_dry_run)
     return GitOperatorContext(
@@ -133,12 +133,12 @@ def print_configuration(ctx: GitOperatorContext):
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
     log.info("[git-operator]     Log level: %s", ctx.log_level)
-    log.info("[appgate-git-operator]     Timeout: %s", ctx.timeout)
+    log.info("[git-operator]     Timeout: %s", ctx.timeout)
     log.info(
         "[git-operator]     Git repository: %s",
         ctx.git_repository,
     )
-    log.info("[operator]     Git vendor: %s", ctx.git_vendor)
+    log.info("[git-operator]     Git vendor: %s", ctx.git_vendor)
     log.info("[git-operator]     Git username: %s", ctx.git_username)
     log.info("[git-operator]     Git base branch: %s", ctx.git_base_branch)
 
