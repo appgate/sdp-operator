@@ -44,6 +44,7 @@ sdp:
     fernetKey: ""
     caCert: ""
     configMapMt: ""
+    secret: ""
 
     ## @param sdp.appgateOperator.image.tag The image tag of the operator.
     ## @param sdp.appgateOperator.image.pullPolicy The image pull policy of the operator.
@@ -73,11 +74,11 @@ sdp:
     timeout: 30
     targetTags: []
     dryRun: true
+    secret: ""
     git:
       vendor: github
       baseBranch: ""
       repositoryUrl: ""
-      secret: ""
     github:
       repository: ""
 
