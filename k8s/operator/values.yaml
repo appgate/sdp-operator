@@ -3,32 +3,32 @@
 ##
 sdp:
   ## @section SDP Parameters
-   ## @param sdp.operators List of operators to run in the deployment. At least one must be defined. Values can be appgate-operator, appgate-reverse-operator and git-operator
+   ## @param sdp.operators List of operators to run in the deployment. At least one must be defined. Values can be sdp-operator and git-operator
   operators:
-    - appgate-operator
+    - sdp-operator
 
   ## @section SDP Parameters
-  ## @param sdp.appgateOperator.host The hostname of the controller to manage with the operator.
-  ## @param sdp.appgateOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
-  appgateOperator:
+  ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
+  ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
+  sdpOperator:
     host: ""
     deviceId: ""
     version: v18
 
     ## @section SDP git operator Optional Parameters
-    ## @param sdp.appgateOperator.version The API version of the controller.
-    ## @param sdp.appgateOperator.logLevel The log level of the operator.
-    ## @param sdp.appgateOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
-    ## @param sdp.appgateOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
-    ## @param sdp.appgateOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
-    ## @param sdp.appgateOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
-    ## @param sdp.appgateOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
-    ## @param sdp.appgateOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
-    ## @param sdp.appgateOperator.cleanup Whether to delete entities from the controller to sync the entities on the operator.
-    ## @param sdp.appgateOperator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
-    ## @param sdp.appgateOperator.fernetKey The fernet key to use when decrypting secrets in entities.
-    ## @param sdp.appgateOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
-    ## @param sdp.appgateOperator.configMapMt The config map to store metadata for entities.
+    ## @param sdp.sdpOperator.version The API version of the controller.
+    ## @param sdp.sdpOperator.logLevel The log level of the operator.
+    ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
+    ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
+    ## @param sdp.sdpOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
+    ## @param sdp.sdpOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
+    ## @param sdp.sdpOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
+    ## @param sdp.sdpOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
+    ## @param sdp.sdpOperator.cleanup Whether to delete entities from the controller to sync the entities on the operator.
+    ## @param sdp.sdpOperator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
+    ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
+    ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
+    ## @param sdp.sdpOperator.configMapMt The config map to store metadata for entities.
     reverseMode: false
     version: v17
     logLevel: info
@@ -46,10 +46,10 @@ sdp:
     configMapMt: ""
     secret: ""
 
-    ## @param sdp.appgateOperator.image.tag The image tag of the operator.
-    ## @param sdp.appgateOperator.image.pullPolicy The image pull policy of the operator.
-    ## @param sdp.appgateOperator.image.repository The repository to pull the operator image from.
-    ## @param sdp.appgateOperator.image.pullSecrets The secret to access the repository.
+    ## @param sdp.sdpOperator.image.tag The image tag of the operator.
+    ## @param sdp.sdpOperator.image.pullPolicy The image pull policy of the operator.
+    ## @param sdp.sdpOperator.image.repository The repository to pull the operator image from.
+    ## @param sdp.sdpOperator.image.pullSecrets The secret to access the repository.
     image:
       repository: ghcr.io/appgate/sdp-operator
       tag: ""
@@ -90,6 +90,3 @@ sdp:
       tag: ""
       pullSecrets: []
       pullPolicy: Always
-
-  operators:
-    - appgate-operator

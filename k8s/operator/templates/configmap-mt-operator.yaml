@@ -1,4 +1,4 @@
-{{- if not .Values.sdp.appgateOperator.configMapMt }}
+{{- if not .Values.sdp.sdpOperator.configMapMt }}
 {{- if has "appgate-operator" .Values.sdp.operators }}
 apiVersion: v1
 kind: ConfigMap
