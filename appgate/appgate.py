@@ -29,7 +29,8 @@ from appgate.state import (
     EntitiesSet,
     entities_conflict_summary,
     resolve_appgate_state,
-    exclude_appgate_entity, appgate_state_empty,
+    exclude_appgate_entity,
+    appgate_state_empty,
 )
 from appgate.types import AppgateEvent, EntityWrapper
 
