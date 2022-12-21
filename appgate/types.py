@@ -48,6 +48,7 @@ __all__ = [
     "APPGATE_TARGET_TAGS_ENV",
     "APPGATE_BUILTIN_TAGS_ENV",
     "get_tags",
+    "get_dry_run",
 ]
 
 
@@ -370,6 +371,10 @@ def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
     if xs or ys:
         ts = xs.union(ys)
     return ts
+
+
+def get_dry_run(no_dry_run_arg: bool) -> bool:
+    return to_bool(os.getenv(DRY_RUN_ENV)) or not no_dry_run_arg
 
 
 def to_bool(value: Optional[str]) -> bool:

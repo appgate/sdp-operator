@@ -25,7 +25,7 @@ from appgate.types import (
     APPGATE_TARGET_TAGS_ENV,
     APPGATE_LOG_LEVEL,
     DRY_RUN_ENV,
-    to_bool,
+    to_bool, get_dry_run,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -57,7 +57,7 @@ def git_operator_context(
         raise AppgateException(
             "Namespace must be defined in order to run the appgate-operator"
         )
-    dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
+    dry_run_mode = get_dry_run(args.no_dry_run)
     return GitOperatorContext(
         namespace=namespace,
         api_spec=api_spec,
