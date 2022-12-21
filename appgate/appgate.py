@@ -125,6 +125,7 @@ async def appgate_operator(
     log.info("[%s/%s] Main loop started:", operator_name, namespace)
     log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
     log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
+    log.info("[%s/%s]   + reverse mode: %s", operator_name, namespace, ctx.reverse_mode)
     log.info("[%s/%s]   + log-level: %s", operator_name, namespace, log.level)
     log.info("[%s/%s]   + timeout: %s", operator_name, namespace, ctx.timeout)
     log.info("[%s/%s]   + dry-run: %s", operator_name, namespace, ctx.dry_run_mode)
