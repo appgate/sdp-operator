@@ -9,26 +9,26 @@ metadata:
 rules:
   - apiGroups: ["beta.appgate.com"]
     resources:
-      - policies-{{ .Values.sdp.appgateOperator.version }}
-      - entitlements-{{ .Values.sdp.appgateOperator.version }}
-      - conditions-{{ .Values.sdp.appgateOperator.version }}
-      - ringfencerules-{{ .Values.sdp.appgateOperator.version }}
-      - appliances-{{ .Values.sdp.appgateOperator.version }}
-      - sites-{{ .Values.sdp.appgateOperator.version }}
-      - ippools-{{ .Values.sdp.appgateOperator.version }}
-      - identityproviders-{{ .Values.sdp.appgateOperator.version }}
-      - localusers-{{ .Values.sdp.appgateOperator.version }}
-      - administrativeroles-{{ .Values.sdp.appgateOperator.version }}
-      - mfaproviders-{{ .Values.sdp.appgateOperator.version }}
-      - adminmfasettingss-{{ .Values.sdp.appgateOperator.version }}
-      - trustedcertificates-{{ .Values.sdp.appgateOperator.version }}
-      - criteriascriptss-{{ .Values.sdp.appgateOperator.version }}
-      - devicescripts-{{ .Values.sdp.appgateOperator.version }}
-      - entitlementscripts-{{ .Values.sdp.appgateOperator.version }}
-      - appliancecustomizations-{{ .Values.sdp.appgateOperator.version }}
-      - globalsettingss-{{ .Values.sdp.appgateOperator.version }}
-      - clientconnections-{{ .Values.sdp.appgateOperator.version }}
-      - serviceusers-{{ .Values.sdp.appgateOperator.version }}
+      - policies-{{ .Values.sdp.sdpOperator.version }}
+      - entitlements-{{ .Values.sdp.sdpOperator.version }}
+      - conditions-{{ .Values.sdp.sdpOperator.version }}
+      - ringfencerules-{{ .Values.sdp.sdpOperator.version }}
+      - appliances-{{ .Values.sdp.sdpOperator.version }}
+      - sites-{{ .Values.sdp.sdpOperator.version }}
+      - ippools-{{ .Values.sdp.sdpOperator.version }}
+      - identityproviders-{{ .Values.sdp.sdpOperator.version }}
+      - localusers-{{ .Values.sdp.sdpOperator.version }}
+      - administrativeroles-{{ .Values.sdp.sdpOperator.version }}
+      - mfaproviders-{{ .Values.sdp.sdpOperator.version }}
+      - adminmfasettingss-{{ .Values.sdp.sdpOperator.version }}
+      - trustedcertificates-{{ .Values.sdp.sdpOperator.version }}
+      - criteriascriptss-{{ .Values.sdp.sdpOperator.version }}
+      - devicescripts-{{ .Values.sdp.sdpOperator.version }}
+      - entitlementscripts-{{ .Values.sdp.sdpOperator.version }}
+      - appliancecustomizations-{{ .Values.sdp.sdpOperator.version }}
+      - globalsettingss-{{ .Values.sdp.sdpOperator.version }}
+      - clientconnections-{{ .Values.sdp.sdpOperator.version }}
+      - serviceusers-{{ .Values.sdp.sdpOperator.version }}
     verbs: ["get", "create", "patch", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
