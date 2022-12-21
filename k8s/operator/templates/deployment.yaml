@@ -26,7 +26,7 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}
+      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-sdp
       containers:
         - name: {{ .Chart.Name }}-sdp
           env:
@@ -35,12 +35,12 @@ spec:
             - name: APPGATE_OPERATOR_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "sdp-operator.secret" . }}
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.appgateOperator.secret }}
                   key: appgate-operator-user
             - name: APPGATE_OPERATOR_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "sdp-operator.secret" . }}
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.appgateOperator.secret }}
                   key: appgate-operator-password
             - name: APPGATE_OPERATOR_HOST
               value: {{ required "A valid .Values.sdp.appgateOperator.host entry is required!" .Values.sdp.appgateOperator.host }}
@@ -89,7 +89,7 @@ spec:
           args:
             - appgate-operator
             {{- if eq .Values.sdp.appgateOperator.reverseMode true }}
-            - reverse-mode
+            - --reverse-mode
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -135,7 +135,7 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}
+      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
       containers:
         - name: {{ .Chart.Name }}-git
           env:
@@ -158,12 +158,12 @@ spec:
             - name: GIT_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.sdp.gitOperator.git.secret }}
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
                   key: git-username
             - name: GIT_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.sdp.gitOperator.git.secret }}
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
                   key: git-token
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
