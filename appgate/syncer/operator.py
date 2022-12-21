@@ -136,10 +136,10 @@ def print_configuration(ctx: GitOperatorContext):
     )
     log.info("[operator]     Git vendor: %s", ctx.git_vendor)
     log.info(
-        "[git-operator]     Git username: %s", ctx.username
+        "[git-operator]     Git username: %s", ctx.git_username
     )
     log.info(
-        "[git-operator]     Git base branch: %s", ctx.base_branch
+        "[git-operator]     Git base branch: %s", ctx.git_base_branch
     )
 
 
