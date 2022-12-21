@@ -7,7 +7,7 @@
 |  ##     ## ##        ##         ######   ##     ##    ##    ########     ######  ########  ##          |
 
 
-{{- if has "operator-operator" .Values.sdp.operators }}
+{{- if has "appgate-operator" .Values.sdp.operators }}
 SDP Operator configured with:
  - controller host: {{ .Values.sdp.appgateOperator.host }}
  - operator device id: {{ .Values.sdp.appgateOperator.deviceId }}
