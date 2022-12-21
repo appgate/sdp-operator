@@ -45,9 +45,7 @@ class GitRepo:
         log.info(
             f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
         )
-        self.git_repo.git.push(
-            "--set-upstream", self.git_repo.remote().name, branch
-        )
+        self.git_repo.git.push("--set-upstream", self.git_repo.remote().name, branch)
 
     def create_pull_request(self, branch: str) -> None:
         pass
@@ -64,7 +62,9 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
     log.info(f"[git-operator] Initializing the git repository by cloning {repository}")
     if repository_path.exists():
         shutil.rmtree(repository_path)
-    git_repo = Repo.clone_from(f"https://{username}:{token}@{repository}", repository_path)
+    git_repo = Repo.clone_from(
+        f"https://{username}:{token}@{repository}", repository_path
+    )
     return GitRepo(
         username=username,
         token=token,
@@ -72,7 +72,7 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
-        repository_path=repository_path
+        repository_path=repository_path,
     )
 
 
