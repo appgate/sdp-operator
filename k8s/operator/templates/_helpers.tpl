@@ -61,7 +61,7 @@ ServiceAccount
 Operator Secrets
 */}}
 {{- define "sdp-operator.secret" -}}
-{{- printf "sdp-operator-secret-%s" .Release.Name }}
+{{- printf "sdp-operator-%s-secret" .Release.Name }}
 {{- end }}
 
 {{/*
