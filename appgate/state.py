@@ -70,6 +70,7 @@ __all__ = [
     "exclude_appgate_entities",
     "exclude_appgate_entity",
     "dump_entity",
+    "appgate_state_empty",
 ]
 
 
@@ -194,7 +195,7 @@ class AppgateState:
     The state is stored in a dictionary that maps: EntityType -> EntitiesSet
     """
 
-    entities_set: Dict[str, EntitiesSet] = attrib(factory=dict)
+    entities_set: Dict[str, EntitiesSet] = attrib()
 
     def with_entity(
         self,
@@ -265,6 +266,10 @@ class AppgateState:
                 print(f"+ Entity: {entity_name}")
                 for password_field in pwd_fields:
                     print(f"  - {password_field}")
+
+
+def appgate_state_empty(api_spec: APISpec) -> AppgateState:
+    return AppgateState({k: EntitiesSet() for k in api_spec.entities.keys()})
 
 
 def entity_sync_generation(entity_wrapper: EntityWrapper) -> EntityWrapper:
