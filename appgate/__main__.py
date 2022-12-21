@@ -105,8 +105,9 @@ def get_all_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[
 def appgate_operator_context(
     args: AppgateOperatorArguments,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+    namespace: str | None = None,
 ) -> AppgateOperatorContext:
-    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    namespace = namespace or args.namespace or os.getenv(NAMESPACE_ENV)
     if not namespace:
         raise AppgateException(
             "Namespace must be defined in order to run the appgate-operator"
@@ -198,6 +199,7 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns, key=key, secret=secret
         ),
+        namespace=ns
     )
     k8s_configmap_client = K8SConfigMapClient(
         namespace=ctx.namespace, name=ctx.metadata_configmap

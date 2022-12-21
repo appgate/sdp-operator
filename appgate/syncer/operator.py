@@ -43,8 +43,9 @@ DUMP_DIR: Path = Path("/entities")
 def git_operator_context(
     args: GitOperatorArguments,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+    namespace: str | None = None,
 ) -> GitOperatorContext:
-    namespace = args.namespace or os.getenv(NAMESPACE_ENV)
+    namespace = namespace or args.namespace or os.getenv(NAMESPACE_ENV)
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     api_spec = generate_api_spec(
@@ -76,6 +77,7 @@ async def run_git_operator(args: GitOperatorArguments) -> None:
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns, key=key, secret=secret
         ),
+        namespace=ns
     )
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     operator = git_operator(queue=events_queue, ctx=ctx)
