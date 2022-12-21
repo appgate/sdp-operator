@@ -29,7 +29,10 @@ from appgate.types import (
     ensure_env,
     GIT_REPOSITORY_ENV,
     GIT_VENDOR_ENV,
-    GIT_BASE_BRANCH_ENV, GIT_DUMP_DIR, GITHUB_USERNAME_ENV, APPGATE_LOG_LEVEL,
+    GIT_BASE_BRANCH_ENV,
+    GIT_DUMP_DIR,
+    GITHUB_USERNAME_ENV,
+    APPGATE_LOG_LEVEL,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
