@@ -69,7 +69,7 @@ from appgate.types import (
     APPGATE_MT_CONFIGMAP_ENV,
     APPGATE_LOG_LEVEL,
     get_tags,
-    to_bool,
+    to_bool, get_dry_run,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -120,7 +120,7 @@ def appgate_operator_context(
     timeout = os.getenv(TIMEOUT_ENV) or args.timeout
 
     two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
-    dry_run_mode = args.no_dry_run or (to_bool(os.getenv(DRY_RUN_ENV)))
+    dry_run_mode = get_dry_run(args.no_dry_run)
     cleanup_mode = args.no_cleanup or (to_bool(os.getenv(CLEANUP_ENV)))
     no_verify = args.no_verify or (to_bool(os.getenv(APPGATE_SSL_NO_VERIFY)))
 
