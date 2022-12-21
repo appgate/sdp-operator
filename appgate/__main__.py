@@ -192,8 +192,8 @@ def appgate_operator_context(
 async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
     try:
         ns = init_kubernetes(args.namespace)
-    except ConfigException:
-        raise AppgateException("Unable to find kube config file")
+    except ConfigException as e:
+        raise AppgateException(f"Unable to find kube config file: {e}")
     ctx = appgate_operator_context(
         args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(
