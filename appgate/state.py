@@ -194,7 +194,7 @@ class AppgateState:
     The state is stored in a dictionary that maps: EntityType -> EntitiesSet
     """
 
-    entities_set: Dict[str, EntitiesSet] = attrib(factory=EntitiesSet)
+    entities_set: Dict[str, EntitiesSet] = attrib(factory=dict)
 
     def with_entity(
         self,
