@@ -4,9 +4,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
 from attr import attrib, attrs, evolve
-from kubernetes.client import CustomObjectsApi
 
-from appgate.openapi.types import Entity_T, APISpec
+from appgate.openapi.types import Entity_T, APISpec, AppgateException
 from appgate.openapi.utils import is_entity_t
 
 
@@ -49,6 +48,12 @@ __all__ = [
     "APPGATE_BUILTIN_TAGS_ENV",
     "get_tags",
     "get_dry_run",
+    "ensure_env",
+    "GIT_REPOSITORY_ENV",
+    "GIT_VENDOR_ENV",
+    "GIT_BASE_BRANCH_ENV",
+    "GIT_TOKEN_ENV",
+    "GIT_USERNAME_ENV",
 ]
 
 
@@ -72,6 +77,12 @@ APPGATE_SSL_CACERT = "APPGATE_OPERATOR_CACERT"
 APPGATE_EXCLUDE_TAGS_ENV = "APPGATE_OPERATOR_EXCLUDE_TAGS"
 APPGATE_TARGET_TAGS_ENV = "APPGATE_OPERATOR_TARGET_TAGS"
 APPGATE_BUILTIN_TAGS_ENV = "APPGATE_OPERATOR_BUILTIN_TAGS"
+
+GIT_REPOSITORY_ENV = "GIT_REPOSITORY"
+GIT_USERNAME_ENV = "GIT_USERNAME"
+GIT_TOKEN_ENV = "GIT_TOKEN"
+GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
+GIT_VENDOR_ENV = "GIT_VENDOR"
 
 
 @attrs(slots=True, frozen=True)
@@ -335,6 +346,11 @@ class GitOperatorContext:
     namespace: str = attrib()
     api_spec: APISpec = attrib()
     timeout: int = attrib()
+    log_level: str = attrib()
+    git_repository: str = attrib()
+    git_username: str = attrib()
+    git_vendor: str = attrib()
+    git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
 
@@ -383,3 +399,10 @@ def to_bool(value: Optional[str]) -> bool:
         bool_map = {"true": True, "false": False}
         return bool_map[value.lower()]
     return False
+
+
+def ensure_env(env_name: str) -> str:
+    v = os.getenv(env_name)
+    if not v:
+        raise AppgateException(f"Environment Variable {env_name} is not defined!")
+    return v

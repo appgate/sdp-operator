@@ -1,6 +1,8 @@
 import asyncio
+import time
 from asyncio import Queue
 import os
+import datetime
 from pathlib import Path
 import sys
 import yaml
@@ -23,9 +25,7 @@ from appgate.types import (
     TIMEOUT_ENV,
     get_tags,
     APPGATE_TARGET_TAGS_ENV,
-    APPGATE_LOG_LEVEL,
-    DRY_RUN_ENV,
-    to_bool, get_dry_run,
+    get_dry_run, ensure_env, GIT_USERNAME_ENV, GIT_REPOSITORY_ENV, GIT_VENDOR_ENV, GIT_BASE_BRANCH_ENV,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -64,6 +64,11 @@ def git_operator_context(
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
         target_tags=get_tags(args.target_tags, APPGATE_TARGET_TAGS_ENV),
         dry_run=dry_run_mode,
+        git_username=ensure_env(GIT_USERNAME_ENV),
+        git_vendor=ensure_env(GIT_VENDOR_ENV),
+        git_repository=ensure_env(GIT_REPOSITORY_ENV),
+        git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
+        log_level=os.environ.get(GIT_USERNAME_ENV, "info")
     )
 
 
@@ -116,27 +121,25 @@ def dump(ctx: GitOperatorContext, entity: Entity_T):
 
 def print_configuration(ctx: GitOperatorContext):
     log.info(
-        "[appgate-git-operator] Starting Git Syncer loop with the following configuration: "
+        "[git-operator] Starting Git Syncer loop with the following configuration: "
     )
     log.info(
-        "[appgate-git-operator]     Target tags: %s",
+        "[git-operator]     Target tags: %s",
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
     log.info(
-        "[appgate-git-operator]     Log level: %s", os.getenv(APPGATE_LOG_LEVEL, "info")
+        "[git-operator]     Log level: %s", ctx.log_level
     )
     log.info("[appgate-git-operator]     Timeout: %s", ctx.timeout)
     log.info(
-        "[appgate-git-operator]     Git repository: %s",
-        os.getenv("GIT_REPOSITORY_URL", ""),
+        "[git-operator]     Git repository: %s", ctx.git_repository,
     )
-    log.info("[appgate-git-operator]     Git vendor: %s", os.getenv("GIT_VENDOR", ""))
+    log.info("[operator]     Git vendor: %s", ctx.git_vendor)
     log.info(
-        "[appgate-git-operator]     Git username: %s", os.getenv("GIT_USERNAME", "")
+        "[git-operator]     Git username: %s", ctx.username
     )
     log.info(
-        "[appgate-git-operator]     Git base branch: %s",
-        os.getenv("GIT_BASE_BRANCH", ""),
+        "[git-operator]     Git base branch: %s", ctx.base_branch
     )
 
 
@@ -144,10 +147,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     entities: List[Entity_T] = []
     error_events: List[AppgateEventError] = []
 
-    git: GitRepo = get_git_repository()
-    git.check_env_vars()
-    git.clone_repository(DUMP_DIR)
-
+    git: GitRepo = get_git_repository(ctx)
     print_configuration(ctx)
 
     while True:
@@ -161,7 +161,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 continue
 
             log.info(
-                '[git-syncer] Event: %s entity of type %s "%s"',
+                '[git-operator] Event: %s entity of type %s "%s"',
                 event.op,
                 event.entity.__class__.__qualname__,
                 event.entity.name,
@@ -172,26 +172,27 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
             if error_events:
                 for event_error in error_events:
                     log.error(
-                        "[git-syncer] Entity of type %s %s: %s",
+                        "[git-operator] Entity of type %s %s: %s",
                         event_error.name,
                         event_error.kind,
                         event_error.error,
                     )
                 sys.exit(1)
 
-            git.checkout_branch()
+            branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
+            git.checkout_branch(branch)
 
             for entity in entities:
                 dump(ctx, entity)
 
             if git.needs_pull_request():
-                log.info("[git-syncer] Found changes in the git repository")
-                git.commit_change()
-                git.push_change()
-                git.create_pull_request()
+                log.info("[git-operator] Found changes in the git repository")
+                git.commit_change(branch)
+                git.push_change(branch)
+                git.create_pull_request(branch)
             else:
                 log.info(
-                    f"[git-syncer] No changes in the git repository. Sleeping {ctx.timeout} seconds"
+                    f"[git-operator] No changes in the git repository. Sleeping {ctx.timeout} seconds"
                 )
 
 
@@ -199,4 +200,4 @@ def main_git_operator(args: GitOperatorArguments) -> None:
     try:
         asyncio.run(run_git_operator(args))
     except AppgateException as e:
-        log.error("[appgate-git-operator] Fatal error: %s", e)
+        log.error("[git-operator] Fatal error: %s", e)
