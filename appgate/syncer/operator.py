@@ -25,7 +25,12 @@ from appgate.types import (
     TIMEOUT_ENV,
     get_tags,
     APPGATE_TARGET_TAGS_ENV,
-    get_dry_run, ensure_env, GIT_USERNAME_ENV, GIT_REPOSITORY_ENV, GIT_VENDOR_ENV, GIT_BASE_BRANCH_ENV,
+    get_dry_run,
+    ensure_env,
+    GIT_USERNAME_ENV,
+    GIT_REPOSITORY_ENV,
+    GIT_VENDOR_ENV,
+    GIT_BASE_BRANCH_ENV,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -68,7 +73,7 @@ def git_operator_context(
         git_vendor=ensure_env(GIT_VENDOR_ENV),
         git_repository=ensure_env(GIT_REPOSITORY_ENV),
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
-        log_level=os.environ.get(GIT_USERNAME_ENV, "info")
+        log_level=os.environ.get(GIT_USERNAME_ENV, "info"),
     )
 
 
@@ -82,7 +87,7 @@ async def run_git_operator(args: GitOperatorArguments) -> None:
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns, key=key, secret=secret
         ),
-        namespace=ns
+        namespace=ns,
     )
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     operator = git_operator(queue=events_queue, ctx=ctx)
@@ -127,20 +132,15 @@ def print_configuration(ctx: GitOperatorContext):
         "[git-operator]     Target tags: %s",
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
-    log.info(
-        "[git-operator]     Log level: %s", ctx.log_level
-    )
+    log.info("[git-operator]     Log level: %s", ctx.log_level)
     log.info("[appgate-git-operator]     Timeout: %s", ctx.timeout)
     log.info(
-        "[git-operator]     Git repository: %s", ctx.git_repository,
+        "[git-operator]     Git repository: %s",
+        ctx.git_repository,
     )
     log.info("[operator]     Git vendor: %s", ctx.git_vendor)
-    log.info(
-        "[git-operator]     Git username: %s", ctx.git_username
-    )
-    log.info(
-        "[git-operator]     Git base branch: %s", ctx.git_base_branch
-    )
+    log.info("[git-operator]     Git username: %s", ctx.git_username)
+    log.info("[git-operator]     Git base branch: %s", ctx.git_base_branch)
 
 
 async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:

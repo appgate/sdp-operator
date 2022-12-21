@@ -69,7 +69,8 @@ from appgate.types import (
     APPGATE_MT_CONFIGMAP_ENV,
     APPGATE_LOG_LEVEL,
     get_tags,
-    to_bool, get_dry_run,
+    to_bool,
+    get_dry_run,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -199,7 +200,7 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
         k8s_get_secret=lambda secret, key: k8s_get_secret(
             namespace=ns, key=key, secret=secret
         ),
-        namespace=ns
+        namespace=ns,
     )
     k8s_configmap_client = K8SConfigMapClient(
         namespace=ctx.namespace, name=ctx.metadata_configmap
