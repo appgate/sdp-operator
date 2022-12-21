@@ -9,7 +9,13 @@ from attr import attrib, attrs
 
 from appgate.logger import log
 from appgate.openapi.types import AppgateException
-from appgate.types import ensure_env, GITHUB_TOKEN_ENV, GitOperatorContext, GIT_DUMP_DIR
+from appgate.types import (
+    ensure_env,
+    GITHUB_TOKEN_ENV,
+    GitOperatorContext,
+    GIT_DUMP_DIR,
+    GITHUB_DEPLOYMENT_KEY_PATH,
+)
 
 
 class EnvironmentVariableNotFoundException(Exception):
@@ -64,14 +70,16 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
     log.info(f"[git-operator] Initializing the git repository by cloning {repository}")
     if repository_path.exists():
         shutil.rmtree(repository_path)
-    deployment_key = Path("/opt") / "sdp-operator" / "k8s" / "deployment.key"
-    if not deployment_key.exists():
-        raise AppgateException(f"Unable to find deployment key {deployment_key}")
+    if not GITHUB_DEPLOYMENT_KEY_PATH.exists():
+        raise AppgateException(
+            f"Unable to find deployment key {GITHUB_DEPLOYMENT_KEY_PATH}"
+        )
     git_repo = Repo.clone_from(
-        f"git@{repository}", repository_path,
+        f"git@{repository}",
+        repository_path,
         env={
-            "GIT_SSH_COMMAND": f"ssh -i {deployment_key} -o IdentitiesOnly=yes"
-        }
+            "GIT_SSH_COMMAND": f"ssh -i {GITHUB_DEPLOYMENT_KEY_PATH} -o IdentitiesOnly=yes"
+        },
     )
     log.info(f"[git-operator] Repository {repository} cloned")
     return GitHubRepo(
@@ -82,7 +90,6 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
         repository_path=repository_path,
-        deployment_key=deployment_key
     )
 
 
@@ -90,7 +97,6 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
 class GitHubRepo(GitRepo):
     username: str = attrib()
     token: str = attrib()
-    deployment_key: Path = attrib()
 
     def create_pull_request(self, branch: str) -> None:
         title = f"Merge changes from {branch}"

@@ -56,6 +56,7 @@ __all__ = [
     "GITHUB_USERNAME_ENV",
     "GITHUB_TOKEN_ENV",
     "GITHUB_DEPLOYMENT_KEY",
+    "GITHUB_DEPLOYMENT_KEY_PATH",
 ]
 
 
@@ -88,6 +89,8 @@ GITHUB_DEPLOYMENT_KEY = "GITHUB_DEPLOYMENT_KEY"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/entities")
+
+GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 
 
 @attrs(slots=True, frozen=True)
