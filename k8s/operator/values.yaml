@@ -78,8 +78,6 @@ sdp:
     git:
       vendor: github
       baseBranch: ""
-      repositoryUrl: ""
-    github:
       repository: ""
 
     ## @section SDP git operator Optional Parameters
