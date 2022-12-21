@@ -27,16 +27,8 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-sdp
-      volumes:
-        - name: git-operator-deployment-key
-          items:
-            - key: github-deployment-key
-              path: deployment.key
       containers:
         - name: {{ .Chart.Name }}-sdp
-          volumeMounts:
-            - mountPath: /opt/git-operator/k8s
-              name: git-operator-deployment-key
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
@@ -144,8 +136,16 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
+      volumes:
+        - name: github-deployment-key
+          items:
+            - key: github-deployment-key
+              path: deployment.key
       containers:
         - name: {{ .Chart.Name }}-git
+          volumeMounts:
+            - mountPath: /opt/git-operator/k8s
+              name: github-deployment-key
           env:
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
@@ -167,12 +167,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
-                  key: git-username
+                  key: github-username
             - name: GIT_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
-                  key: git-token
+                  key: github-token
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
           securityContext:
