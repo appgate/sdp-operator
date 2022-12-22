@@ -408,8 +408,8 @@ def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
 
 
 def get_dry_run(no_dry_run_arg: bool) -> bool:
-    env_dry_run = to_bool(os.getenv(DRY_RUN_ENV))
-    return env_dry_run if env_dry_run is not None else not no_dry_run_arg
+    env_dry_run = os.getenv(DRY_RUN_ENV)
+    return to_bool(env_dry_run) if env_dry_run is not None else not no_dry_run_arg
 
 
 def to_bool(value: Optional[str]) -> bool:
