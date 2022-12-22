@@ -1,0 +1,31 @@
+apiVersion: beta.appgate.com/v1
+kind: Site
+metadata:
+  name: 6f6fa9d9-17b2-4157-9f68-e97662acccdf
+spec:
+  name: 6f6fa9d9-17b2-4157-9f68-e97662acccdf
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: Site
+metadata:
+  name: 6263435b-c9f6-4b7f-99f8-37e2e6b006a9
+spec:
+  name: 6263435b-c9f6-4b7f-99f8-37e2e6b006a9
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: Site
+metadata:
+  name: default-site
+spec:
+  entitlementBasedRouting: true
+  name: Default Site
+  notes: Built-in default site with EBR.
+  tags:
+  - builtin
+  vpn:
+    snat: true
+    urlAccessEnabled: false

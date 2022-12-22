@@ -1,0 +1,205 @@
+apiVersion: beta.appgate.com/v1
+kind: Appliance
+metadata:
+  name: gateway-0da3fc33-195e-4e87-860a-3719c8b9da44-site1
+spec:
+  adminInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: envy-10-97-180-3.devops
+    httpsCiphers:
+    - ECDHE-RSA-AES128-GCM-SHA256
+    - ECDHE-RSA-AES256-GCM-SHA384
+  clientInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: envy-10-97-180-3.devops
+  gateway:
+    enabled: true
+    vpn:
+      allowDestinations:
+      - nic: eth1
+  healthcheckServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+  hostname: envy-10-97-180-3.devops
+  name: gateway-0da3fc33-195e-4e87-860a-3719c8b9da44-site1
+  networking:
+    dnsServers:
+    - 10.97.2.20
+    - 10.97.2.23
+    nics:
+    - enabled: true
+      ipv4:
+        dhcp:
+          dns: true
+          enabled: false
+          mtu: false
+          ntp: false
+          routers: true
+        static:
+        - address: 10.97.180.3
+          netmask: 26
+          snat: false
+      ipv6:
+        dhcp:
+          dns: true
+          enabled: false
+          mtu: false
+          ntp: false
+      name: eth0
+    - enabled: true
+      ipv4:
+        dhcp:
+          dns: true
+          enabled: false
+          mtu: false
+          ntp: false
+          routers: true
+        static:
+        - address: 10.97.241.66
+          netmask: 26
+          snat: false
+      ipv6:
+        dhcp:
+          dns: true
+          enabled: false
+          mtu: false
+          ntp: false
+      name: eth1
+    routes:
+    - address: 0.0.0.0
+      gateway: 10.97.180.1
+      netmask: 0
+  ntp:
+    servers:
+    - hostname: 10.97.2.23
+    - hostname: 10.97.2.20
+  ping:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  portal:
+    proxyPorts:
+    - 443
+    signInCustomization:
+      autoRedirect: false
+  prometheusExporter:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  sshServer:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    enabled: true
+---
+apiVersion: beta.appgate.com/v1
+kind: Appliance
+metadata:
+  name: controller-0da3fc33-195e-4e87-860a-3719c8b9da44-site1
+spec:
+  adminInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: envy-10-97-180-2.devops
+    httpsCiphers:
+    - ECDHE-RSA-AES128-GCM-SHA256
+    - ECDHE-RSA-AES256-GCM-SHA384
+  clientInterface:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    hostname: envy-10-97-180-2.devops
+  controller:
+    enabled: true
+  healthcheckServer:
+    allowSources:
+    - address: '::'
+      netmask: 0
+    - address: 0.0.0.0
+      netmask: 0
+  hostname: envy-10-97-180-2.devops
+  hostnameAliases:
+  - 10.97.180.2
+  logServer:
+    enabled: true
+  name: controller-0da3fc33-195e-4e87-860a-3719c8b9da44-site1
+  networking:
+    dnsServers:
+    - 10.97.2.20
+    - 10.97.2.23
+    nics:
+    - enabled: true
+      ipv4:
+        dhcp:
+          dns: false
+          enabled: false
+          mtu: false
+          ntp: false
+          routers: false
+        static:
+        - address: 10.97.180.2
+          netmask: 26
+          snat: false
+      ipv6:
+        dhcp:
+          dns: false
+          enabled: false
+          mtu: false
+          ntp: false
+      name: eth0
+    routes:
+    - address: 0.0.0.0
+      gateway: 10.97.180.1
+      netmask: 0
+  ntp:
+    servers:
+    - hostname: 10.97.2.23
+    - hostname: 10.97.2.20
+  ping:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  portal:
+    proxyPorts:
+    - 443
+    signInCustomization:
+      autoRedirect: false
+  prometheusExporter:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+  site: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  sshServer:
+    allowSources:
+    - address: 0.0.0.0
+      netmask: 0
+    - address: '::'
+      netmask: 0
+    enabled: true

@@ -30,8 +30,8 @@ from tests.utils import (
 def load_entities(version: str) -> None:
     open_api = generate_api_spec(Path(f"api_specs/{version}").parent / version)
     entities = open_api.entities
-    for f in os.listdir(f"tests/resources/{version}"):
-        with (Path(f"tests/resources/{version}") / f).open("r") as doc:
+    for f in os.listdir(f"tests/resources/entity/{version}"):
+        with (Path(f"tests/resources/entity/{version}") / f).open("r") as doc:
             documents = list(yaml.safe_load_all(doc))
             for d in documents:
                 e = entities[d["kind"]].cls
@@ -39,9 +39,14 @@ def load_entities(version: str) -> None:
                 assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
 
 
-@pytest.mark.skip("SDP v5.2 is unsupported")
+@pytest.mark.skip("SDP v5.1 is unsupported")
 def test_load_entities_v12():
     load_entities("v12")
+
+
+@pytest.mark.skip("SDP v5.2 is unsupported")
+def test_load_entities_v13():
+    load_entities("v13")
 
 
 def test_load_entities_v14():
@@ -58,6 +63,10 @@ def test_load_entities_v16():
 
 def test_load_entities_v17():
     load_entities("v17")
+
+
+def test_load_entities_v18():
+    load_entities("v18")
 
 
 def test_loader_deprecated_required():
@@ -78,6 +87,43 @@ def test_loader_deprecated_required():
     EntityTest1 = entities["EntityTest1"].cls
     e1 = EntityTest1()
     assert e1
+
+
+def test_loader_array_object():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    EntityArray = entities["EntityArray"].cls
+    EntityArrayObjectOne = entities["EntityArray_Arrayobjectone"].cls
+    EntityArrayObjectTwo = entities["EntityArray_Arrayobjecttwo"].cls
+    e1 = EntityArray()
+    assert e1
+
+    data1 = {
+        "arrayObjectOne": [
+            {"arrayFieldOne": "foo", "arrayFieldTwo": "bar"},
+            {"arrayFieldOne": "faa", "arrayFieldTwo": "baa"},
+        ],
+        "arrayObjectTwo": [
+            {"arrayFieldOne": "baz", "arrayFieldTwo": "bat"},
+            {"arrayFieldOne": "baa", "arrayFieldTwo": "bbb"},
+        ],
+    }
+
+    e1 = APPGATE_LOADER.load(data1, None, EntityArray)
+    assert e1 == EntityArray(
+        arrayObjectOne=frozenset(
+            {
+                EntityArrayObjectOne(arrayFieldOne="foo", arrayFieldTwo="bar"),
+                EntityArrayObjectOne(arrayFieldOne="faa", arrayFieldTwo="baa"),
+            }
+        ),
+        arrayObjectTwo=frozenset(
+            {
+                EntityArrayObjectTwo(arrayFieldOne="baz", arrayFieldTwo="bat"),
+                EntityArrayObjectTwo(arrayFieldOne="baa", arrayFieldTwo="bbb"),
+            }
+        ),
+    )
 
 
 def test_loader_discriminator():

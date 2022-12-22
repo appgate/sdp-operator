@@ -12,6 +12,7 @@ ENTITIES_TO_TEST = {
     "Entitlement",
     "Condition",
     "IdentityProvider",
+    "IpPool",
 }
 
 
@@ -26,7 +27,7 @@ def assert_equal_crd(version: str) -> None:
             assert yaml.safe_load(crd) == yaml.safe_load(f)
 
 
-@pytest.mark.skip("SDP v5.2 is unsupported")
+@pytest.mark.skip("SDP v5.1 is unsupported")
 def test_generate_crd_v12():
     assert_equal_crd("v12")
 
@@ -50,3 +51,7 @@ def test_generate_crd_v16():
 
 def test_generate_crd_v17():
     assert_equal_crd("v17")
+
+
+def test_generate_crd_v18():
+    assert_equal_crd("v18")

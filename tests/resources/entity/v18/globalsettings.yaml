@@ -1,0 +1,15 @@
+apiVersion: beta.appgate.com/v1
+kind: GlobalSettings
+metadata:
+  name: globalsettings
+spec:
+  administrationTokenExpiration: 1440
+  auditLogPersistenceMode: Default
+  backupApiEnabled: false
+  claimsTokenExpiration: 1440
+  collectiveName: 3523f3f9
+  entitlementTokenExpiration: 1440
+  geoIpUpdates: false
+  profileHostname: envy-10-97-180-2.devops
+  spaMode: TCP
+  vpnCertificateExpiration: 525600

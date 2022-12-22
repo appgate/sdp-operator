@@ -1,0 +1,22 @@
+apiVersion: beta.appgate.com/v1
+kind: MfaProvider
+metadata:
+  name: default-time-based-otp-provider
+spec:
+  inputType: Numeric
+  name: Default Time-Based OTP Provider
+  notes: Built-in default time-based OTP provider.
+  tags:
+  - builtin
+  type: DefaultTimeBased
+---
+apiVersion: beta.appgate.com/v1
+kind: MfaProvider
+metadata:
+  name: default-fido2-provider
+spec:
+  name: Default FIDO2 Provider
+  notes: Built-in default FIDO2 provider.
+  tags:
+  - builtin
+  type: Fido2

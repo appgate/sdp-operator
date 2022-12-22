@@ -1,0 +1,101 @@
+apiVersion: beta.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  name: system-administration
+spec:
+  name: System Administration
+  notes: Built-in Administrative Role that has access to all.
+  privileges:
+  - scope:
+      all: true
+    target: All
+    type: All
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  name: api-access
+spec:
+  name: Api Access
+  notes: Built-in Administrative Role for API usage..
+  privileges:
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: Edit
+  - scope:
+      all: true
+    target: Policy
+    type: Edit
+  - scope:
+      all: true
+    target: Entitlement
+    type: Edit
+  - scope:
+      all: true
+    target: Condition
+    type: Delete
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Policy
+    type: Create
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Condition
+    type: Create
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: CriteriaScript
+    type: Create
+  - scope:
+      all: true
+    target: Condition
+    type: View
+  - scope:
+      all: true
+    target: Policy
+    type: Delete
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: Delete
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Entitlement
+    type: Create
+  - scope:
+      all: true
+    target: Condition
+    type: Edit
+  - scope:
+      all: true
+    target: Site
+    type: View
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: View
+  - scope:
+      all: true
+    target: Entitlement
+    type: Delete
+  - scope:
+      all: true
+    target: Policy
+    type: View
+  - scope:
+      all: true
+    target: Entitlement
+    type: View
+  tags:
+  - builtin

@@ -1,0 +1,24 @@
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: default-pool-v6
+spec:
+  ipVersion6: true
+  name: default pool v6
+  ranges:
+  - first: fd00::ffff:c0a8:6401
+    last: fd00::ffff:c0a8:64fe
+  tags:
+  - builtin
+---
+apiVersion: beta.appgate.com/v1
+kind: IpPool
+metadata:
+  name: default-pool-v4
+spec:
+  name: default pool v4
+  ranges:
+  - first: 192.168.100.1
+    last: 192.168.100.254
+  tags:
+  - builtin

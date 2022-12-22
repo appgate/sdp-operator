@@ -160,9 +160,9 @@ jobs:
           pip install -r requirements.txt -r requirements-build.txt
       - name: Compare CRDs
         run: |
-          for version in $(seq 14 17); do
-            python3 -m appgate --spec-directory api_specs/v${version} dump-crd
-            echo '{{ if eq .Values.version '\"v"${version}"\"' }}' | cat - *-crd.yml > v${version}.yaml
+          for version in $(seq 14 18); do
+            python3 -m appgate --spec-directory api_specs/v${version} dump-crd --file ${version}.yml
+            echo '{{ if eq .Values.version '\"v"${version}"\"' }}' | cat - ${version}.yml > v${version}.yaml
             echo '{{ end }}' >> v${version}.yaml
             cmp k8s/crd/templates/v${version}.yaml v${version}.yaml || (echo "Generated CRDs and checked-in CRDs do not match. Please download the latest API specs, generate and check-in the updated CRDs under k8s/crd/templates." && exit 1)
           done

@@ -6,6 +6,7 @@ SDP Operator supports the following API versions:
 * v15 (Appgate version 5.4)
 * v16 (Appgate version 5.5)
 * v17 (Appgate version 6.0)
+* v18 (Appgate version 6.1)
 
 ## Requirements
 The following tools are required to install the SDP Operator
@@ -61,7 +62,7 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 | ----------------------- | --------------------------------------------------------------------------------- | ----- |
 | `sdp.operator.host`     | The hostname of the controller to manage with the operator.                       | `""`  |
 | `sdp.operator.deviceId` | The device ID assigned to the operator for authenticating against the controller. | `""`  |
-| `sdp.operator.version`  | The API version of the controller.                                                | `v17` |
+| `sdp.operator.version`  | The API version of the controller.                                                | `v18` |
 
 
 ### SDP Optional Parameters
