@@ -55,7 +55,9 @@ class GitRepo:
             f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
         )
         if not dry_run:
-            self.git_repo.git.push("--set-upstream", self.git_repo.remote().name, branch)
+            self.git_repo.git.push(
+                "--set-upstream", self.git_repo.remote().name, branch
+            )
 
     def create_pull_request(self, branch: str, dry_run: bool) -> None:
         pass
