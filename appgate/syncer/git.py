@@ -30,10 +30,12 @@ class GitRepo:
     base_branch: str = attrib()
     vendor: str = attrib()
 
-    def checkout_branch(self, branch: str) -> None:
+    def checkout_branch(self, branch: str, dry_run: bool) -> None:
         log.info(
             f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
         )
+        if dry_run:
+            return
         self.git_repo.git.branch(branch)
         self.git_repo.git.checkout(branch)
 
@@ -41,19 +43,21 @@ class GitRepo:
         self.git_repo.index.add([f"{self.repository_path}/*"])
         return self.git_repo.is_dirty()
 
-    def commit_change(self, branch: str) -> None:
+    def commit_change(self, branch: str, dry_run) -> None:
         log.info(
             f"[git-operator] Committing changes to {self.git_repo.remote().name}:{branch}"
         )
-        self.git_repo.index.commit(branch)
+        if not dry_run:
+            self.git_repo.index.commit(branch)
 
-    def push_change(self, branch: str) -> None:
+    def push_change(self, branch: str, dry_run: bool) -> None:
         log.info(
             f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
         )
-        self.git_repo.git.push("--set-upstream", self.git_repo.remote().name, branch)
+        if not dry_run:
+            self.git_repo.git.push("--set-upstream", self.git_repo.remote().name, branch)
 
-    def create_pull_request(self, branch: str) -> None:
+    def create_pull_request(self, branch: str, dry_run: bool) -> None:
         pass
 
 
@@ -98,11 +102,13 @@ class GitHubRepo(GitRepo):
     username: str = attrib()
     token: str = attrib()
 
-    def create_pull_request(self, branch: str) -> None:
+    def create_pull_request(self, branch: str, dry_run: bool) -> None:
         title = f"Merge changes from {branch}"
         log.info(
             f"[git-operator] Creating pull request in GitHub from '{branch}' to '{self.base_branch}'"
         )
+        if dry_run:
+            return
         gh = Github(f"{self.token}")
         gh_repo = gh.get_repo(f"{self.repository_name}")
         gh_repo.create_pull(
