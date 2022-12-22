@@ -1,7 +1,6 @@
 import difflib
 import itertools
 import json
-import re
 import sys
 import datetime
 import time
@@ -24,7 +23,7 @@ import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.logger import is_debug
-from appgate.attrs import K8S_DUMPER, DIFF_DUMPER, dump_datetime
+from appgate.attrs import DIFF_DUMPER, dump_datetime
 from appgate.client import (
     AppgateEntityClient,
     K8SConfigMapClient,
@@ -32,13 +31,10 @@ from appgate.client import (
     K8sEntityClient,
 )
 from appgate.logger import log
-from appgate.openapi.parser import ENTITY_METADATA_ATTRIB_NAME
 from appgate.openapi.types import (
     Entity_T,
     APISpec,
     PYTHON_TYPES,
-    K8S_APPGATE_DOMAIN,
-    K8S_APPGATE_VERSION,
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
     AppgateException,
@@ -50,8 +46,8 @@ from appgate.types import (
     MissingFieldDependencies,
     has_tag,
     is_target,
+    dump_entity,
 )
-from appgate.openapi.utils import has_name
 
 
 __all__ = [
@@ -69,7 +65,6 @@ __all__ = [
     "compute_diff",
     "exclude_appgate_entities",
     "exclude_appgate_entity",
-    "dump_entity",
     "appgate_state_empty",
 ]
 
@@ -118,37 +113,6 @@ def entities_op(
         entity_set.delete(entity)
     elif op == "MODIFIED":
         entity_set.modify(entity)
-
-
-def k8s_name(name: str) -> str:
-    # This is ugly but we need to go from a bigger set of strings
-    # into a smaller one :(
-    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
-
-
-def dump_entity(
-    entity: EntityWrapper, entity_type: str, version_suffix: str
-) -> Dict[str, Any]:
-    r"""
-    name should match this regexp:
-       '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
-    """
-    entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
-    entity_mt = getattr(entity.value, ENTITY_METADATA_ATTRIB_NAME, {})
-    singleton = entity_mt.get("singleton", False)
-    if not singleton:
-        entity.value = evolve(
-            entity.value,
-            appgate_metadata=evolve(entity.value.appgate_metadata, uuid=entity.id),
-        )
-    return {
-        "apiVersion": f"{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}",
-        "kind": f"{entity_type}-{version_suffix}",
-        "metadata": {
-            "name": entity_name if entity.is_singleton() else k8s_name(entity.name)
-        },
-        "spec": K8S_DUMPER.dump(entity.value),
-    }
 
 
 def dump_entities(
