@@ -15,8 +15,7 @@ from attr import attrib, attrs
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AppgateException
-from appgate.types import LatestEntityGeneration
-
+from appgate.types import LatestEntityGeneration, EntityWrapper, dump_entity
 
 __all__ = [
     "AppgateClient",
@@ -36,6 +35,11 @@ def get_plural(kind: str) -> str:
         return f"{name}s-{entity[1]}"
 
 
+@functools.cache
+def plural(kind):
+    return get_plural(kind)
+
+
 @attrs()
 class K8sEntityClient:
     api: CustomObjectsApi = attrib()
@@ -44,17 +48,15 @@ class K8sEntityClient:
     namespace: str = attrib()
     kind: str = attrib()
 
-    @functools.cache
-    def plural(self):
-        return get_plural(self.kind)
-
     async def create(self, e: Entity_T) -> None:
+        log.info("Creating k8s entity %s", e.name)
+        data = dump_entity(EntityWrapper(e), self.kind, None)
         self.api.create_namespaced_custom_object(  # type: ignore
             self.domain,
             self.version,
             self.namespace,
-            self.plural(),
-            e,
+            plural(self.kind),
+            data,
         )
 
     async def delete(self, name: str) -> None:
@@ -62,18 +64,19 @@ class K8sEntityClient:
             self.domain,
             self.version,
             self.namespace,
-            self.plural(),
+            plural(self.kind),
             name,
         )
 
     async def modify(self, e: Entity_T) -> None:
+        data = dump_entity(EntityWrapper(e), self.kind, f"v{self.version}")
         self.api.patch_namespaced_custom_object(  # type: ignore
             self.domain,
             self.version,
             self.namespace,
-            self.plural(),
-            e.name,
-            e,
+            plural(self.kind),
+            data["name"],
+            data,
         )
 
 
