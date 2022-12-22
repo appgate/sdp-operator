@@ -60,6 +60,7 @@ class K8sEntityClient:
         )
 
     async def delete(self, name: str) -> None:
+        log.info("Deleting k8s entity %s", name)
         self.api.delete_namespaced_custom_object(
             self.domain,
             self.version,
@@ -69,6 +70,7 @@ class K8sEntityClient:
         )
 
     async def modify(self, e: Entity_T) -> None:
+        log.info("Updating k8s entity %s", e.name)
         data = dump_entity(EntityWrapper(e), self.kind, f"v{self.version}")
         self.api.patch_namespaced_custom_object(  # type: ignore
             self.domain,
