@@ -365,11 +365,12 @@ async def appgate_operator(
                         expected_appgate_state = (
                             expected_appgate_state.sync_generations()
                         )
-                    elif k8s_api:
-                        current_appgate_state = new_plan.appgate_state
+                    elif ctx.reverse_mode:
                         expected_appgate_state = await get_current_appgate_state(
                             ctx=ctx
                         )
+                    elif k8s_api:
+                        current_appgate_state = new_plan.appgate_state
             else:
                 log.info(
                     "[%s/%s] Nothing changed! Keeping watching!",
