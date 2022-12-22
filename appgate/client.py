@@ -15,7 +15,7 @@ from attr import attrib, attrs
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AppgateException
-from appgate.types import LatestEntityGeneration, EntityWrapper, dump_entity
+from appgate.types import LatestEntityGeneration, EntityWrapper, dump_entity, k8s_name
 
 __all__ = [
     "AppgateClient",
@@ -66,7 +66,7 @@ class K8sEntityClient:
             self.version,
             self.namespace,
             plural(self.kind),
-            name,
+            k8s_name(name),
         )
 
     async def modify(self, e: Entity_T) -> None:
@@ -77,7 +77,7 @@ class K8sEntityClient:
             self.version,
             self.namespace,
             plural(self.kind),
-            data["name"],
+            k8s_name(data["name"]),
             data,
         )
 
