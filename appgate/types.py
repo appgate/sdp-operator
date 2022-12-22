@@ -1,13 +1,21 @@
 import datetime
 import os
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
 from attr import attrib, attrs, evolve
 
-from appgate.openapi.types import Entity_T, APISpec, AppgateException
-from appgate.openapi.utils import is_entity_t
-
+from appgate.attrs import K8S_DUMPER
+from appgate.openapi.types import (
+    Entity_T,
+    APISpec,
+    AppgateException,
+    ENTITY_METADATA_ATTRIB_NAME,
+    K8S_APPGATE_DOMAIN,
+    K8S_APPGATE_VERSION,
+)
+from appgate.openapi.utils import is_entity_t, has_name
 
 __all__ = [
     "K8SEvent",
@@ -57,6 +65,8 @@ __all__ = [
     "GITHUB_TOKEN_ENV",
     "GITHUB_DEPLOYMENT_KEY",
     "GITHUB_DEPLOYMENT_KEY_PATH",
+    "dump_entity",
+    "k8s_name",
 ]
 
 
@@ -398,7 +408,8 @@ def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
 
 
 def get_dry_run(no_dry_run_arg: bool) -> bool:
-    return to_bool(os.getenv(DRY_RUN_ENV)) or not no_dry_run_arg
+    env_dry_run = to_bool(os.getenv(DRY_RUN_ENV))
+    return env_dry_run if env_dry_run is not None else not no_dry_run_arg
 
 
 def to_bool(value: Optional[str]) -> bool:
@@ -414,3 +425,37 @@ def ensure_env(env_name: str) -> str:
     if not v:
         raise AppgateException(f"Environment Variable {env_name} is not defined!")
     return v
+
+
+def k8s_name(name: str) -> str:
+    # This is ugly but we need to go from a bigger set of strings
+    # into a smaller one :(
+    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
+
+
+def dump_entity(
+    entity: EntityWrapper, entity_type: str, version_suffix: str | None
+) -> Dict[str, Any]:
+    r"""
+    name should match this regexp:
+       '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
+    """
+    entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
+    entity_mt = getattr(entity.value, ENTITY_METADATA_ATTRIB_NAME, {})
+    singleton = entity_mt.get("singleton", False)
+    if not singleton:
+        entity.value = evolve(
+            entity.value,
+            appgate_metadata=evolve(entity.value.appgate_metadata, uuid=entity.id),
+        )
+    kind = entity_type
+    if version_suffix:
+        kind = f"{kind}-{version_suffix}"
+    return {
+        "apiVersion": f"{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}",
+        "kind": kind,
+        "metadata": {
+            "name": entity_name if entity.is_singleton() else k8s_name(entity.name)
+        },
+        "spec": K8S_DUMPER.dump(entity.value),
+    }
