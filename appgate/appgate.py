@@ -168,7 +168,8 @@ async def appgate_operator(
                 {
                     k: v.entities_with_tags(ctx.target_tags)
                     for k, v in expected_appgate_state.entities_set.items()
-                })
+                }
+            )
         if ctx.cleanup_mode:
             log.error("Reverse operator can not run in clean-up mode!")
             exit(1)
@@ -180,7 +181,8 @@ async def appgate_operator(
                 {
                     k: v.entities_with_tags(ctx.target_tags)
                     for k, v in current_appgate_state.entities_set.items()
-                })
+                }
+            )
         else:
             expected_appgate_state = deepcopy(current_appgate_state)
         if ctx.cleanup_mode:
@@ -381,9 +383,7 @@ async def appgate_operator(
                 )
             # In reverse mode always update the state from controller
             if ctx.reverse_mode:
-                expected_appgate_state = await get_current_appgate_state(
-                    ctx=ctx
-                )
+                expected_appgate_state = await get_current_appgate_state(ctx=ctx)
                 if ctx.target_tags:
                     expected_appgate_state = AppgateState(
                         {
