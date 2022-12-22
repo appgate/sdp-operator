@@ -102,7 +102,7 @@ def parse_files(
 
 
 def entity_names(
-    entity: type, short_names: Dict[str, str], api_version: str
+    entity: type, short_names: Dict[str, str]
 ) -> Tuple[str, str, str, str]:
     name = entity.__name__
     short_name = name[0:3].lower()
@@ -123,12 +123,6 @@ def entity_names(
         plural_name = f"{singular_name[:-1]}ies"
     else:
         plural_name = f"{singular_name}s"
-
-    if api_version:
-        name = f"{name}-{api_version}"
-        singular_name = f"{singular_name}-{api_version}"
-        plural_name = f"{plural_name}-{api_version}"
-        short_name = f"{short_name}-{api_version}"
 
     return name, singular_name, plural_name, short_name
 
@@ -169,7 +163,7 @@ def generate_crd(entity: Type, short_names: Dict[str, str], api_version: str) ->
     settings.default_object_fields = attrs_fields
 
     name, singular_name, plural_name, short_name = entity_names(
-        entity, short_names, api_version
+        entity, short_names
     )
     schema = deserialization_schema(entity)
 
@@ -241,14 +235,16 @@ def generate_crd(entity: Type, short_names: Dict[str, str], api_version: str) ->
 
     schema = replace_underscore(schema)
 
+    domain = f"{api_version}.{K8S_APPGATE_DOMAIN}"
+
     crd = {
         "apiVersion": K8S_API_VERSION,
         "kind": K8S_CRD_KIND,
         "metadata": {
-            "name": f"{plural_name}.{K8S_APPGATE_DOMAIN}",
+            "name": f"{plural_name}.{domain}",
         },
         "spec": {
-            "group": K8S_APPGATE_DOMAIN,
+            "group": domain,
             "versions": [
                 {
                     "name": K8S_APPGATE_VERSION,
