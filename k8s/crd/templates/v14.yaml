@@ -2,15 +2,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: policies-v14.beta.appgate.com
+  name: policies.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: Policy-v14
-    plural: policies-v14
+    kind: Policy
+    plural: policies
     shortNames:
-    - pol-v14
-    singular: policy-v14
+    - pol
+    singular: policy
   scope: Namespaced
   versions:
   - name: v1
@@ -87,15 +87,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: conditions-v14.beta.appgate.com
+  name: conditions.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: Condition-v14
-    plural: conditions-v14
+    kind: Condition
+    plural: conditions
     shortNames:
-    - con-v14
-    singular: condition-v14
+    - con
+    singular: condition
   scope: Namespaced
   versions:
   - name: v1
@@ -150,15 +150,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: entitlements-v14.beta.appgate.com
+  name: entitlements.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: Entitlement-v14
-    plural: entitlements-v14
+    kind: Entitlement
+    plural: entitlements
     shortNames:
-    - ent-v14
-    singular: entitlement-v14
+    - ent
+    singular: entitlement
   scope: Namespaced
   versions:
   - name: v1
@@ -254,15 +254,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: ringfencerules-v14.beta.appgate.com
+  name: ringfencerules.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: RingfenceRule-v14
-    plural: ringfencerules-v14
+    kind: RingfenceRule
+    plural: ringfencerules
     shortNames:
-    - rin-v14
-    singular: ringfencerule-v14
+    - rin
+    singular: ringfencerule
   scope: Namespaced
   versions:
   - name: v1
@@ -317,15 +317,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: appliances-v14.beta.appgate.com
+  name: appliances.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: Appliance-v14
-    plural: appliances-v14
+    kind: Appliance
+    plural: appliances
     shortNames:
-    - app-v14
-    singular: appliance-v14
+    - app
+    singular: appliance
   scope: Namespaced
   versions:
   - name: v1
@@ -902,15 +902,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: sites-v14.beta.appgate.com
+  name: sites.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: Site-v14
-    plural: sites-v14
+    kind: Site
+    plural: sites
     shortNames:
-    - sit-v14
-    singular: site-v14
+    - sit
+    singular: site
   scope: Namespaced
   versions:
   - name: v1
@@ -1156,15 +1156,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: ippools-v14.beta.appgate.com
+  name: ippools.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: IpPool-v14
-    plural: ippools-v14
+    kind: IpPool
+    plural: ippools
     shortNames:
-    - ipp-v14
-    singular: ippool-v14
+    - ipp
+    singular: ippool
   scope: Namespaced
   versions:
   - name: v1
@@ -1212,15 +1212,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: identityproviders-v14.beta.appgate.com
+  name: identityproviders.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: IdentityProvider-v14
-    plural: identityproviders-v14
+    kind: IdentityProvider
+    plural: identityproviders
     shortNames:
-    - ide-v14
-    singular: identityprovider-v14
+    - ide
+    singular: identityprovider
   scope: Namespaced
   versions:
   - name: v1
@@ -1424,15 +1424,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: localusers-v14.beta.appgate.com
+  name: localusers.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: LocalUser-v14
-    plural: localusers-v14
+    kind: LocalUser
+    plural: localusers
     shortNames:
-    - loc-v14
-    singular: localuser-v14
+    - loc
+    singular: localuser
   scope: Namespaced
   versions:
   - name: v1
@@ -1480,15 +1480,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: administrativeroles-v14.beta.appgate.com
+  name: administrativeroles.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: AdministrativeRole-v14
-    plural: administrativeroles-v14
+    kind: AdministrativeRole
+    plural: administrativeroles
     shortNames:
-    - adm-v14
-    singular: administrativerole-v14
+    - adm
+    singular: administrativerole
   scope: Namespaced
   versions:
   - name: v1
@@ -1545,15 +1545,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: mfaproviders-v14.beta.appgate.com
+  name: mfaproviders.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: MfaProvider-v14
-    plural: mfaproviders-v14
+    kind: MfaProvider
+    plural: mfaproviders
     shortNames:
-    - mfa-v14
-    singular: mfaprovider-v14
+    - mfa
+    singular: mfaprovider
   scope: Namespaced
   versions:
   - name: v1
@@ -1610,15 +1610,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: adminmfasettingss-v14.beta.appgate.com
+  name: adminmfasettingss.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: AdminMfaSettings-v14
-    plural: adminmfasettingss-v14
+    kind: AdminMfaSettings
+    plural: adminmfasettingss
     shortNames:
-    - adi-v14
-    singular: adminmfasettings-v14
+    - adi
+    singular: adminmfasettings
   scope: Namespaced
   versions:
   - name: v1
@@ -1641,15 +1641,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: trustedcertificates-v14.beta.appgate.com
+  name: trustedcertificates.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: TrustedCertificate-v14
-    plural: trustedcertificates-v14
+    kind: TrustedCertificate
+    plural: trustedcertificates
     shortNames:
-    - tru-v14
-    singular: trustedcertificate-v14
+    - tru
+    singular: trustedcertificate
   scope: Namespaced
   versions:
   - name: v1
@@ -1680,15 +1680,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: criteriascriptss-v14.beta.appgate.com
+  name: criteriascriptss.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: CriteriaScripts-v14
-    plural: criteriascriptss-v14
+    kind: CriteriaScripts
+    plural: criteriascriptss
     shortNames:
-    - cri-v14
-    singular: criteriascripts-v14
+    - cri
+    singular: criteriascripts
   scope: Namespaced
   versions:
   - name: v1
@@ -1719,15 +1719,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: devicescripts-v14.beta.appgate.com
+  name: devicescripts.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: DeviceScript-v14
-    plural: devicescripts-v14
+    kind: DeviceScript
+    plural: devicescripts
     shortNames:
-    - dev-v14
-    singular: devicescript-v14
+    - dev
+    singular: devicescript
   scope: Namespaced
   versions:
   - name: v1
@@ -1761,15 +1761,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: entitlementscripts-v14.beta.appgate.com
+  name: entitlementscripts.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: EntitlementScript-v14
-    plural: entitlementscripts-v14
+    kind: EntitlementScript
+    plural: entitlementscripts
     shortNames:
-    - enr-v14
-    singular: entitlementscript-v14
+    - enr
+    singular: entitlementscript
   scope: Namespaced
   versions:
   - name: v1
@@ -1803,15 +1803,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: appliancecustomizations-v14.beta.appgate.com
+  name: appliancecustomizations.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: ApplianceCustomization-v14
-    plural: appliancecustomizations-v14
+    kind: ApplianceCustomization
+    plural: appliancecustomizations
     shortNames:
-    - apt-v14
-    singular: appliancecustomization-v14
+    - apt
+    singular: appliancecustomization
   scope: Namespaced
   versions:
   - name: v1
@@ -1842,15 +1842,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: globalsettingss-v14.beta.appgate.com
+  name: globalsettingss.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: GlobalSettings-v14
-    plural: globalsettingss-v14
+    kind: GlobalSettings
+    plural: globalsettingss
     shortNames:
-    - glo-v14
-    singular: globalsettings-v14
+    - glo
+    singular: globalsettings
   scope: Namespaced
   versions:
   - name: v1
@@ -1902,15 +1902,15 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: clientconnections-v14.beta.appgate.com
+  name: clientconnections.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: ClientConnection-v14
-    plural: clientconnections-v14
+    kind: ClientConnection
+    plural: clientconnections
     shortNames:
-    - cli-v14
-    singular: clientconnection-v14
+    - cli
+    singular: clientconnection
   scope: Namespaced
   versions:
   - name: v1

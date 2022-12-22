@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: conditions-v16.beta.appgate.com
+  name: conditions.v16.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v16.sdp.appgate.com
   names:
-    kind: Condition-v16
-    plural: conditions-v16
+    kind: Condition
+    plural: conditions
     shortNames:
-    - con-v16
-    singular: condition-v16
+    - con
+    singular: condition
   scope: Namespaced
   versions:
   - name: v1
