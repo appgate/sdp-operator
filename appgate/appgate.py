@@ -157,33 +157,34 @@ async def appgate_operator(
         current_appgate_state = appgate_state_empty(ctx.api_spec)
         expected_appgate_state = await get_current_appgate_state(ctx=ctx, appgate_client=appgate_client)
         total_appgate_state = deepcopy(expected_appgate_state)
+        if ctx.target_tags:
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(ctx.target_tags)
+                    for k, v in expected_appgate_state.entities_set.items()
+                })
+        if ctx.cleanup_mode:
+            log.error("Reverse operator can not run in clean-up mode!")
+            exit(1)
     else:
         current_appgate_state = await get_current_appgate_state(ctx=ctx, appgate_client=appgate_client)
         total_appgate_state = deepcopy(current_appgate_state)
-    if ctx.cleanup_mode and ctx.reverse_mode:
-        log.error("Reverse operator can not run in clean-up mode!")
-        exit(1)
-    if ctx.cleanup_mode:
-        tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
-        expected_appgate_state = AppgateState(
-            {
-                k: v.entities_with_tags(tags_in_cleanup)
-                for k, v in current_appgate_state.entities_set.items()
-            }
-        )
-    elif ctx.target_tags:
-        new_state = AppgateState(
-            {
-                k: v.entities_with_tags(ctx.target_tags)
-                for k, v in current_appgate_state.entities_set.items()
-            }
-        )
-        if ctx.reverse_mode:
-            current_appgate_state = new_state
+        if ctx.target_tags:
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(ctx.target_tags)
+                    for k, v in current_appgate_state.entities_set.items()
+                })
         else:
-            expected_appgate_state = new_state
-    elif not ctx.reverse_mode:
-        expected_appgate_state = deepcopy(current_appgate_state)
+            expected_appgate_state = deepcopy(current_appgate_state)
+        if ctx.cleanup_mode:
+            tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(tags_in_cleanup)
+                    for k, v in current_appgate_state.entities_set.items()
+                }
+            )
     log.info(
         "[%sr/%s] Ready to get new events and compute a new plan",
         operator_name,
@@ -207,9 +208,14 @@ async def appgate_operator(
                     event.entity.__class__.__qualname__,
                     event.entity.name,
                 )
-                expected_appgate_state.with_entity(
-                    EntityWrapper(event.entity), event.op, current_appgate_state
-                )
+                if ctx.reverse_mode:
+                    current_appgate_state.with_entity(
+                        EntityWrapper(event.entity), event.op, expected_appgate_state
+                    )
+                else:
+                    expected_appgate_state.with_entity(
+                        EntityWrapper(event.entity), event.op, current_appgate_state
+                    )
         except asyncio.exceptions.TimeoutError:
             if event_errors:
                 log.error(
@@ -361,10 +367,6 @@ async def appgate_operator(
                         expected_appgate_state = (
                             expected_appgate_state.sync_generations()
                         )
-                    elif ctx.reverse_mode:
-                        expected_appgate_state = await get_current_appgate_state(
-                            ctx=ctx
-                        )
                     elif k8s_api:
                         current_appgate_state = new_plan.appgate_state
             else:
@@ -394,3 +396,4 @@ async def main_loop(
         dry_run=ctx.dry_run_mode,
     ) as appgate_client:
         await appgate_operator(queue, ctx, k8s_configmap_client, appgate_client)
+
