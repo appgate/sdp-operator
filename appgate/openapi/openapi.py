@@ -162,9 +162,7 @@ def generate_crd(entity: Type, short_names: Dict[str, str], api_version: str) ->
 
     settings.default_object_fields = attrs_fields
 
-    name, singular_name, plural_name, short_name = entity_names(
-        entity, short_names
-    )
+    name, singular_name, plural_name, short_name = entity_names(entity, short_names)
     schema = deserialization_schema(entity)
 
     def replace_nullable_type(obj: dict) -> dict:
