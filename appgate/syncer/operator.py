@@ -180,7 +180,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 sys.exit(1)
 
             branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
-            git.checkout_branch(branch, ctx.dry_run)
+            git.checkout_branch(branch)
 
             if not ctx.dry_run:
                 for entity in entities:
@@ -188,12 +188,13 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
 
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
-                git.commit_change(branch, ctx.dry_run)
-                git.push_change(branch, ctx.dry_run)
-                git.create_pull_request(branch, ctx.dry_run)
+                git.commit_change(branch)
+                git.push_change(branch)
+                git.create_pull_request(branch)
             else:
                 log.info(
-                    f"[git-operator] No changes in the git repository. Sleeping {ctx.timeout} seconds"
+                    "[git-operator] No changes in the git repository. Sleeping %s seconds",
+                    ctx.timeout,
                 )
 
 
