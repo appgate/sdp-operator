@@ -114,7 +114,7 @@ def run_entity_loop(
     log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
     watcher = Watch().stream(
         get_crds().list_namespaced_custom_object,
-        K8S_APPGATE_DOMAIN,
+        f"v{ctx.api_spec.api_version}.{K8S_APPGATE_DOMAIN}",
         K8S_APPGATE_VERSION,
         namespace,
         crd,
