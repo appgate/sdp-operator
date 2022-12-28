@@ -81,3 +81,17 @@ Operator Metadata Config
 {{- define "sdp-operator.config-mt" -}}
 {{- printf "sdp-operator-config-mt-%s" .Release.Name }}
 {{- end }}
+
+{{/*
+Operator Role
+*/}}
+{{- define "sdp-operator.role" -}}
+{{- printf "role-%s" .Release.Name }}
+{{- end }}
+
+{{/*
+Operator RoleBinding
+*/}}
+{{- define "sdp-operator.rolebinding" -}}
+{{- printf "rolebinding-%s" .Release.Name }}
+{{- end }}
