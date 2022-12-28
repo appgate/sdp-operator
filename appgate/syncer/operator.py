@@ -80,7 +80,7 @@ async def run_git_operator(args: GitOperatorArguments) -> None:
     try:
         ns = init_kubernetes(args.namespace)
     except ConfigException as e:
-        raise AppgateException(f"Unable to find kube config file: {e}")
+        raise AppgateException(f"Unable to load kube config: {e}")
     ctx = git_operator_context(
         args=args,
         k8s_get_secret=lambda secret, key: k8s_get_secret(

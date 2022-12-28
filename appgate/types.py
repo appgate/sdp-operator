@@ -398,13 +398,12 @@ class MissingFieldDependencies:
     dependencies: FrozenSet[str] = attrib(factory=frozenset)
 
 
-def get_tags(tags: List[str], tags_env: str) -> Optional[FrozenSet[str]]:
-    xs = frozenset(tags) if tags else frozenset()
-    ys = filter(None, os.getenv(tags_env, "").split(","))
-    ts = None
-    if xs or ys:
-        ts = xs.union(ys)
-    return ts
+def get_tags(tags: List[str], tags_env: str) -> FrozenSet[str]:
+    xs = frozenset(tags)
+    ts = os.getenv(tags_env)
+    if ts:
+        xs.union(ts.split(","))
+    return xs
 
 
 def get_dry_run(no_dry_run_arg: bool) -> bool:
