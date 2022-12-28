@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -37,7 +37,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
@@ -47,6 +47,6 @@ subjects:
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.name" . }}
+  name: {{ include "sdp-operator.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
