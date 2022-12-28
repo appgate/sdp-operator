@@ -471,7 +471,7 @@ def main() -> None:
     git_syncer.add_argument("--namespace", help="Specify namespace", default=None)
     git_syncer.add_argument(
         "--no-dry-run",
-        help="DiDisablesabel run in dry-run mode",
+        help="Disable dry-run mode",
         default=False,
         action="store_true",
     )
@@ -484,7 +484,7 @@ def main() -> None:
     )
     git_syncer.add_argument(
         "--timeout",
-        help="Event loop timeout to determine when there are not more events",
+        help="Event loop timeout to determine when there are no more events",
         default=30,
     )
     # dump crd
