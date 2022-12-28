@@ -369,7 +369,7 @@ def main() -> None:
     parser.add_argument(
         "--spec-directory",
         default=None,
-        help="Specifies the directory where the openapi yml specification is located.",
+        help="Specifies the directory where the openapi yaml specification is located.",
     )
     subparsers = parser.add_subparsers(dest="cmd")
     # appgate_operator
@@ -392,7 +392,9 @@ def main() -> None:
         "--host", help="Controller host to connect", default=None
     )
     appgate_operator.add_argument(
-        "--user", help="Username used for authentication", default=None
+        "--user",
+        help="Username used for authentication to Controller API",
+        default=None,
     )
     appgate_operator.add_argument(
         "--password", help="Password used for authentication", default=None

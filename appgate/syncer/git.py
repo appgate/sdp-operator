@@ -66,6 +66,8 @@ class GitRepo:
 def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
     token = ensure_env(GITHUB_TOKEN_ENV)
     # Fine-grained token? make sure the user is oauth2
+    # Github uses a prefix for the tokens so they can be easily identified.
+    # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
     if token.startswith("github_pat_"):
         username = "oauth2"
     elif not ctx.git_username:
@@ -73,7 +75,7 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
     else:
         username = ctx.git_username
     repository = f"github.com:{ctx.git_repository}"
-    log.info(f"[git-operator] Initializing the git repository by cloning {repository}")
+    log.info("[git-operator] Initializing the git repository by cloning %s", repository)
     if repository_path.exists():
         shutil.rmtree(repository_path)
     if not GITHUB_DEPLOYMENT_KEY_PATH.exists():
@@ -87,7 +89,7 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
             "GIT_SSH_COMMAND": f"ssh -i {GITHUB_DEPLOYMENT_KEY_PATH} -o IdentitiesOnly=yes"
         },
     )
-    log.info(f"[git-operator] Repository {repository} cloned")
+    log.info(f"[git-operator] Repository %s cloned", repository)
     return GitHubRepo(
         username=username,
         token=token,
@@ -107,12 +109,14 @@ class GitHubRepo(GitRepo):
     def create_pull_request(self, branch: str, dry_run: bool) -> None:
         title = f"Merge changes from {branch}"
         log.info(
-            f"[git-operator] Creating pull request in GitHub from '{branch}' to '{self.base_branch}'"
+            f"[git-operator] Creating pull request in GitHub from '%s' to '%s'",
+            branch,
+            self.base_branch,
         )
         if dry_run:
             return
         gh = Github(f"{self.token}")
-        gh_repo = gh.get_repo(f"{self.repository_name}")
+        gh_repo = gh.get_repo(self.repository_name)
         gh_repo.create_pull(
             title=title, body=branch, head=branch, base=self.base_branch
         )
@@ -120,7 +124,7 @@ class GitHubRepo(GitRepo):
 
 def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
     if ctx.git_vendor.lower() == "github":
-        log.info("[git-syncer] Detected GitHub as git vendor type")
+        log.info("[git-operator] Detected GitHub as git vendor type")
         return github_repo(ctx, GIT_DUMP_DIR)
     else:
         raise Exception(f"Unknown git vendor type {ctx.git_vendor}")
