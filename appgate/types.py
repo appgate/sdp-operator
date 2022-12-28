@@ -398,11 +398,10 @@ class MissingFieldDependencies:
     dependencies: FrozenSet[str] = attrib(factory=frozenset)
 
 
-def get_tags(tags: List[str], tags_env: str) -> FrozenSet[str]:
+def get_tags(tags: List[str], env_tags: str | None) -> FrozenSet[str]:
     xs = frozenset(tags)
-    ts = os.getenv(tags_env)
-    if ts:
-        xs.union(ts.split(","))
+    if env_tags:
+        return xs.union(env_tags.split(","))
     return xs
 
 
