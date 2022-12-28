@@ -98,7 +98,7 @@ def get_all_tags(args: AppgateOperatorArguments) -> Iterable[Optional[FrozenSet[
             (args.builtin_tags, APPGATE_BUILTIN_TAGS_ENV),
         ]
     ):
-        ts = get_tags(tags_arg, tags_env)
+        ts = get_tags(tags_arg, os.getenv(tags_env))
         tags.append(ts)
     return tags
 

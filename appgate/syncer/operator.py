@@ -66,7 +66,7 @@ def git_operator_context(
         namespace=namespace,
         api_spec=api_spec,
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
-        target_tags=get_tags(args.target_tags, APPGATE_TARGET_TAGS_ENV),
+        target_tags=get_tags(args.target_tags, os.getenv(APPGATE_TARGET_TAGS_ENV)),
         dry_run=dry_run_mode,
         git_username=os.environ.get(GITHUB_USERNAME_ENV),
         git_vendor=ensure_env(GIT_VENDOR_ENV),
