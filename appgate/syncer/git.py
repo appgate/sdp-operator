@@ -29,12 +29,13 @@ class GitRepo:
     git_repo: Repo = attrib()
     base_branch: str = attrib()
     vendor: str = attrib()
+    dry_run: bool = attrib()
 
-    def checkout_branch(self, branch: str, dry_run: bool) -> None:
+    def checkout_branch(self, branch: str) -> None:
         log.info(
             f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
         )
-        if dry_run:
+        if self.dry_run:
             return
         self.git_repo.git.branch(branch)
         self.git_repo.git.checkout(branch)
@@ -43,23 +44,23 @@ class GitRepo:
         self.git_repo.index.add([f"{self.repository_path}/*"])
         return self.git_repo.is_dirty()
 
-    def commit_change(self, branch: str, dry_run) -> None:
+    def commit_change(self, branch: str) -> None:
         log.info(
             f"[git-operator] Committing changes to {self.git_repo.remote().name}:{branch}"
         )
-        if not dry_run:
+        if not self.dry_run:
             self.git_repo.index.commit(branch)
 
-    def push_change(self, branch: str, dry_run: bool) -> None:
+    def push_change(self, branch: str) -> None:
         log.info(
             f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
         )
-        if not dry_run:
+        if not self.dry_run:
             self.git_repo.git.push(
                 "--set-upstream", self.git_repo.remote().name, branch
             )
 
-    def create_pull_request(self, branch: str, dry_run: bool) -> None:
+    def create_pull_request(self, branch: str) -> None:
         pass
 
 
@@ -98,6 +99,7 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
         repository_path=repository_path,
+        dry_run=ctx.dry_run,
     )
 
 
@@ -106,14 +108,14 @@ class GitHubRepo(GitRepo):
     username: str = attrib()
     token: str = attrib()
 
-    def create_pull_request(self, branch: str, dry_run: bool) -> None:
+    def create_pull_request(self, branch: str) -> None:
         title = f"Merge changes from {branch}"
         log.info(
             f"[git-operator] Creating pull request in GitHub from '%s' to '%s'",
             branch,
             self.base_branch,
         )
-        if dry_run:
+        if self.dry_run:
             return
         gh = Github(f"{self.token}")
         gh_repo = gh.get_repo(self.repository_name)
