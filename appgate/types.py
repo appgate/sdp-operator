@@ -434,7 +434,7 @@ def k8s_name(name: str) -> str:
 def dump_entity(
     entity: EntityWrapper, entity_type: str, version_suffix: str | None
 ) -> Dict[str, Any]:
-    r"""
+    """
     name should match this regexp:
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
