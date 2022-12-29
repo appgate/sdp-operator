@@ -498,7 +498,7 @@ class AppgatePlan:
     def appgate_state(self) -> AppgateState:
         """
         Return an AppgateState from the AppgatePlan
-        It will synchronized the current and latest generation since this is called
+        It will synchronize the current and latest generation since this is called
         once a plan has been applied properly.
         """
         return AppgateState({k: v.entities for k, v in self.entities_plan.items()})
