@@ -32,6 +32,7 @@ __all__ = [
     "generate_api_spec_clients",
 ]
 
+from appgate.types import EntityClient
 
 SPEC_DIR = "api_specs/v17"
 K8S_API_VERSION = "apiextensions.k8s.io/v1"
@@ -313,7 +314,7 @@ MAGIC_ENTITIES = {
 
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
-) -> Dict[str, AppgateEntityClient]:
+) -> Dict[str, EntityClient]:
     def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
         magic_entities = None
         # We filter the None's in the caller anyway
