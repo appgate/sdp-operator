@@ -1,6 +1,7 @@
-import os
+import functools
+import sys
 
-from git import Repo
+from git import Repo, GitCommandError
 from github import Github
 from pathlib import Path
 import shutil
@@ -24,14 +25,20 @@ class EnvironmentVariableNotFoundException(Exception):
 
 @attrs(slots=True, frozen=True)
 class GitRepo:
-    repository_name: str = attrib()
+    repository: str = attrib()
     repository_path: Path = attrib()
     git_repo: Repo = attrib()
     base_branch: str = attrib()
     vendor: str = attrib()
     dry_run: bool = attrib()
+    repository_fork: str | None = attrib()
+
+    @functools.cache
+    def user_fork(self) -> str | None:
+        return self.repository_fork.split("/")[0] if self.repository_fork else None
 
     def checkout_branch(self, branch: str) -> None:
+        # Checkout the fork if we are using a forked repository
         log.info(
             f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
         )
@@ -66,16 +73,7 @@ class GitRepo:
 
 def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
     token = ensure_env(GITHUB_TOKEN_ENV)
-    # Fine-grained token? make sure the user is oauth2
-    # Github uses a prefix for the tokens so they can be easily identified.
-    # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
-    if token.startswith("github_pat_"):
-        username = "oauth2"
-    elif not ctx.git_username:
-        raise AppgateException("Unable to find github username.")
-    else:
-        username = ctx.git_username
-    repository = f"github.com:{ctx.git_repository}"
+    repository = ctx.git_repository_fork or ctx.git_repository
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
     if repository_path.exists():
         shutil.rmtree(repository_path)
@@ -83,18 +81,23 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         raise AppgateException(
             f"Unable to find deployment key {GITHUB_DEPLOYMENT_KEY_PATH}"
         )
-    git_repo = Repo.clone_from(
-        f"git@{repository}",
-        repository_path,
-        env={
-            "GIT_SSH_COMMAND": f"ssh -i {GITHUB_DEPLOYMENT_KEY_PATH} -o IdentitiesOnly=yes"
-        },
-    )
+    try:
+        git_repo = Repo.clone_from(
+            f"git@github.com:{repository}",
+            repository_path,
+            env={
+                "GIT_SSH_COMMAND": f"ssh -i {GITHUB_DEPLOYMENT_KEY_PATH} -o IdentitiesOnly=yes"
+            },
+        )
+    except GitCommandError as e:
+        log.error("Error cloning repository %s: %s", repository, e.stderr)
+        raise AppgateException(f"Unable to clone repository {repository}")
+
     log.info(f"[git-operator] Repository %s cloned", repository)
     return GitHubRepo(
-        username=username,
         token=token,
-        repository_name=repository,
+        repository=repository,
+        repository_fork=ctx.git_repository_fork,
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
@@ -105,22 +108,27 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
 
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
-    username: str = attrib()
     token: str = attrib()
 
     def create_pull_request(self, branch: str) -> None:
         title = f"Merge changes from {branch}"
+        head_branch = branch
+        if self.user_fork():
+            head_branch = f"{self.user_fork()}:{branch}"
         log.info(
-            f"[git-operator] Creating pull request in GitHub from '%s' to '%s'",
-            branch,
+            f"[git-operator] Creating pull request in GitHub from '%s' to '%s' into repo '%s' with title '%s",
+            head_branch,
             self.base_branch,
+            self.repository,
+            title,
         )
         if self.dry_run:
             return
-        gh = Github(f"{self.token}")
-        gh_repo = gh.get_repo(self.repository_name)
+        gh = Github(self.token)
+        gh_repo = gh.get_repo(self.repository)
+
         gh_repo.create_pull(
-            title=title, body=branch, head=branch, base=self.base_branch
+            title=title, body=branch, head=head_branch, base=self.base_branch
         )
 
 

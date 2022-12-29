@@ -61,7 +61,7 @@ __all__ = [
     "GIT_VENDOR_ENV",
     "GIT_BASE_BRANCH_ENV",
     "GIT_DUMP_DIR",
-    "GITHUB_USERNAME_ENV",
+    "GIT_REPOSITORY_FORK_ENV",
     "GITHUB_TOKEN_ENV",
     "GITHUB_DEPLOYMENT_KEY",
     "GITHUB_DEPLOYMENT_KEY_PATH",
@@ -92,9 +92,9 @@ APPGATE_TARGET_TAGS_ENV = "APPGATE_OPERATOR_TARGET_TAGS"
 APPGATE_BUILTIN_TAGS_ENV = "APPGATE_OPERATOR_BUILTIN_TAGS"
 
 GIT_REPOSITORY_ENV = "GIT_REPOSITORY"
+GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
 GIT_VENDOR_ENV = "GIT_VENDOR"
-GITHUB_USERNAME_ENV = "GITHUB_USERNAME"
 GITHUB_DEPLOYMENT_KEY = "GITHUB_DEPLOYMENT_KEY"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 
@@ -366,7 +366,7 @@ class GitOperatorContext:
     timeout: int = attrib()
     log_level: str = attrib()
     git_repository: str = attrib()
-    git_username: str | None = attrib()
+    git_repository_fork: str | None = attrib()
     git_vendor: str = attrib()
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
