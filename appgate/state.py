@@ -457,9 +457,6 @@ async def plan_apply(
             e.id,
         )
 
-    if entity_client:
-        await entity_client.commit()
-
     has_errors = len(errors) > 0
     return Plan(
         create=plan.create,
