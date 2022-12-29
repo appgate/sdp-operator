@@ -1,6 +1,6 @@
 import functools
-import sys
 
+import yaml
 from git import Repo, GitCommandError
 from github import Github
 from pathlib import Path
@@ -8,8 +8,9 @@ import shutil
 
 from attr import attrib, attrs
 
+from appgate.attrs import K8S_LOADER
 from appgate.logger import log
-from appgate.openapi.types import AppgateException
+from appgate.openapi.types import AppgateException, APISpec, Entity_T
 from appgate.state import AppgateState
 from appgate.types import (
     ensure_env,
@@ -17,6 +18,10 @@ from appgate.types import (
     GitOperatorContext,
     GIT_DUMP_DIR,
     GITHUB_DEPLOYMENT_KEY_PATH,
+    dump_entity,
+    EntityWrapper,
+    EntitiesSet,
+    EntityClient,
 )
 
 
@@ -24,8 +29,33 @@ class EnvironmentVariableNotFoundException(Exception):
     pass
 
 
-def get_current_branch_state() -> AppgateState:
-    pass
+def git_dump(entity: Entity_T, api_version: str, dest: Path):
+    entity_type = entity.__class__.__qualname__
+    entity_file = dest / f"{entity.name.lower().replace(' ', '-')}.yaml"
+    dumped_entity = dump_entity(EntityWrapper(entity), entity_type, f"v{api_version}")
+    with entity_file.open("w") as f:
+        f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
+
+
+def git_load(file: Path, entity_type: type) -> Entity_T:
+    with file.open("r") as f:
+        data = yaml.safe_load(f)
+        return K8S_LOADER.load(data, None, entity_type)
+
+
+def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
+    entities_set = {}
+    for e, v in api_spec.api_entities.items():
+        dest = repository_path / e
+        if not dest.is_dir():
+            log.info("Directory for entities %s not found, ignoring", dest)
+            entities_set[e] = EntitiesSet()
+            continue
+        entities_set[e] = EntitiesSet(
+            {EntityWrapper(git_load(f, entity_type=v.cls)) for f in dest.glob("*.yaml")}
+        )
+
+    return AppgateState(entities_set=entities_set)
 
 
 @attrs(slots=True, frozen=True)
