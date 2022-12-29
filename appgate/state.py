@@ -358,6 +358,7 @@ async def plan_apply(
                         generation=e.value.appgate_metadata.current_generation,
                     )
             except Exception as err:
+                log.exception("Error creating entity %s", e.name)
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
         for e in plan.not_to_create.entities:
@@ -398,6 +399,7 @@ async def plan_apply(
                         generation=e.value.appgate_metadata.current_generation,
                     )
             except Exception as err:
+                log.exception("Error modifying entity %s", e.name)
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
         for e in plan.not_to_modify.entities:
@@ -432,6 +434,7 @@ async def plan_apply(
                         entity_unique_id(e.value.__class__.__name__, name)
                     )
             except Exception as err:
+                log.exception("Error deleting entity %s", e.name)
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
         for e in plan.not_to_delete.entities:
