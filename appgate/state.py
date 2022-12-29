@@ -29,6 +29,7 @@ from appgate.client import (
     K8SConfigMapClient,
     entity_unique_id,
     K8sEntityClient,
+    GitEntityClient,
 )
 from appgate.logger import log
 from appgate.openapi.types import (
@@ -323,6 +324,7 @@ async def plan_apply(
     k8s_configmap_client: K8SConfigMapClient,
     appgate_entity_client: Optional[AppgateEntityClient] = None,
     k8s_entity_client: Optional[K8sEntityClient] = None,
+    git_entity_client: Optional[GitEntityClient] = None,
 ) -> Plan:
     errors = set()
     for e in plan.create.entities:
@@ -351,6 +353,11 @@ async def plan_apply(
         elif k8s_entity_client:
             try:
                 await k8s_entity_client.create(e.value)
+            except Exception as err:
+                errors.add(f"{e.name} [{e.id}]: {str(err)}")
+        elif git_entity_client:
+            try:
+                await git_entity_client.create(e.value)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -397,6 +404,11 @@ async def plan_apply(
                 await k8s_entity_client.modify(e.value)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
+        elif git_entity_client:
+            try:
+                await git_entity_client.modify(e.value)
+            except Exception as err:
+                errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
         for e in plan.not_to_modify.entities:
             log.debug(
@@ -435,6 +447,11 @@ async def plan_apply(
                 await k8s_entity_client.delete(e.name)
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
+        elif git_entity_client:
+            try:
+                await git_entity_client.delete(e.name)
+            except Exception as err:
+                errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
         for e in plan.not_to_delete.entities:
             log.debug(
@@ -455,6 +472,9 @@ async def plan_apply(
             e.name,
             e.id,
         )
+
+    if git_entity_client:
+        await git_entity_client.commit()
 
     has_errors = len(errors) > 0
     return Plan(

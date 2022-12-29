@@ -10,6 +10,7 @@ from attr import attrib, attrs
 
 from appgate.logger import log
 from appgate.openapi.types import AppgateException
+from appgate.state import AppgateState
 from appgate.types import (
     ensure_env,
     GITHUB_TOKEN_ENV,
@@ -20,6 +21,10 @@ from appgate.types import (
 
 
 class EnvironmentVariableNotFoundException(Exception):
+    pass
+
+
+def get_current_branch_state() -> AppgateState:
     pass
 
 

@@ -40,6 +40,20 @@ def plural(kind):
     return get_plural(kind)
 
 
+class GitEntityClient:
+    async def create(self, e: Entity_T) -> None:
+        pass
+
+    async def delete(self, name: str) -> None:
+        pass
+
+    async def modify(self, e: Entity_T) -> None:
+        pass
+
+    async def commit(self) -> None:
+        pass
+
+
 @attrs()
 class K8sEntityClient:
     api: CustomObjectsApi = attrib()
