@@ -67,6 +67,7 @@ __all__ = [
     "GITHUB_DEPLOYMENT_KEY_PATH",
     "dump_entity",
     "k8s_name",
+    "EntityClient",
 ]
 
 
@@ -101,6 +102,20 @@ GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GIT_DUMP_DIR: Path = Path("/entities")
 
 GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
+
+
+class EntityClient:
+    async def create(self, e: Entity_T) -> None:
+        raise NotImplementedError
+
+    async def delete(self, name: str) -> None:
+        raise NotImplementedError
+
+    async def modify(self, e: Entity_T) -> None:
+        raise NotImplementedError
+
+    async def commit(self) -> None:
+        pass
 
 
 @attrs(slots=True, frozen=True)
