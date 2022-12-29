@@ -31,8 +31,8 @@ from appgate.types import (
     GIT_VENDOR_ENV,
     GIT_BASE_BRANCH_ENV,
     GIT_DUMP_DIR,
-    GITHUB_USERNAME_ENV,
     APPGATE_LOG_LEVEL,
+    GIT_REPOSITORY_FORK_ENV,
 )
 from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
@@ -68,11 +68,11 @@ def git_operator_context(
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
         target_tags=get_tags(args.target_tags, os.getenv(APPGATE_TARGET_TAGS_ENV)),
         dry_run=dry_run_mode,
-        git_username=os.environ.get(GITHUB_USERNAME_ENV),
         git_vendor=ensure_env(GIT_VENDOR_ENV),
         git_repository=ensure_env(GIT_REPOSITORY_ENV),
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
         log_level=os.environ.get(APPGATE_LOG_LEVEL, "info"),
+        git_repository_fork=os.environ.get(GIT_REPOSITORY_FORK_ENV),
     )
 
 
@@ -137,8 +137,10 @@ def print_configuration(ctx: GitOperatorContext):
         "[git-operator]     Git repository: %s",
         ctx.git_repository,
     )
+    log.info(
+        "[git-operator]     Git repository fork: %s", ctx.git_repository_fork or "None"
+    )
     log.info("[git-operator]     Git vendor: %s", ctx.git_vendor)
-    log.info("[git-operator]     Git username: %s", ctx.git_username)
     log.info("[git-operator]     Git base branch: %s", ctx.git_base_branch)
     log.info("[git-operator]     Dry-run mode: %s", ctx.dry_run)
 
