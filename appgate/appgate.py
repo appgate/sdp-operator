@@ -6,12 +6,13 @@ from typing import Optional, Dict
 
 from kubernetes.client import CustomObjectsApi
 
-from appgate.types import AppgateOperatorContext, AppgateEventError
+from appgate.types import AppgateOperatorContext, AppgateEventError, EntityClient
 from appgate.logger import log
 from appgate.client import (
     AppgateClient,
     K8SConfigMapClient,
     K8sEntityClient,
+    AppgateEntityClient,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -86,6 +87,7 @@ async def get_current_appgate_state(
     )
     entities_set = {}
     for entity, client in entity_clients.items():
+        assert isinstance(client, AppgateEntityClient)
         entities = await client.get()
         if entities is not None:
             entities_set[entity] = EntitiesSet({EntityWrapper(e) for e in entities})
@@ -102,7 +104,7 @@ async def get_current_appgate_state(
 
 def generate_k8s_clients(
     api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi
-) -> Dict[str, K8sEntityClient]:
+) -> Dict[str, EntityClient]:
     return {
         k: K8sEntityClient(
             api=k8s_api,
