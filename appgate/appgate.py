@@ -312,6 +312,7 @@ async def appgate_operator(
                 )
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
+                    entity_clients: Dict[str, EntityClient] | None = None
                     k8s_api = None
                     if not ctx.dry_run_mode and not ctx.reverse_mode:
                         if ctx.device_id is None:
@@ -328,30 +329,28 @@ async def appgate_operator(
                                 cafile=ctx.cafile,
                             )
                         )
+                        entity_clients = generate_api_spec_clients(
+                            api_spec=ctx.api_spec, appgate_client=appgate_client
+                        )
                     elif not ctx.dry_run_mode and ctx.reverse_mode:
                         k8s_api = get_crds()
+                        entity_clients = generate_k8s_clients(
+                            api_spec=ctx.api_spec,
+                            namespace=ctx.namespace,
+                            k8s_api=k8s_api,
+                        )
                     else:
                         log.warning(
                             "[%s/%s] Running in dry-mode, nothing will be created",
                             operator_name,
                             namespace,
                         )
+
                     new_plan = await appgate_plan_apply(
                         appgate_plan=plan,
                         namespace=namespace,
                         operator_name=operator_name,
-                        appgate_entity_clients=generate_api_spec_clients(
-                            api_spec=ctx.api_spec, appgate_client=appgate_client
-                        )
-                        if appgate_client
-                        else {},
-                        k8s_entity_clients=generate_k8s_clients(
-                            api_spec=ctx.api_spec,
-                            namespace=ctx.namespace,
-                            k8s_api=k8s_api,
-                        )
-                        if k8s_api
-                        else {},
+                        entity_clients=entity_clients,
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
                     )

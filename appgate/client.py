@@ -15,7 +15,13 @@ from attr import attrib, attrs
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AppgateException
-from appgate.types import LatestEntityGeneration, EntityWrapper, dump_entity, k8s_name
+from appgate.types import (
+    LatestEntityGeneration,
+    EntityWrapper,
+    dump_entity,
+    k8s_name,
+    EntityClient,
+)
 
 __all__ = [
     "AppgateClient",
@@ -40,22 +46,8 @@ def plural(kind):
     return get_plural(kind)
 
 
-class GitEntityClient:
-    async def create(self, e: Entity_T) -> None:
-        pass
-
-    async def delete(self, name: str) -> None:
-        pass
-
-    async def modify(self, e: Entity_T) -> None:
-        pass
-
-    async def commit(self) -> None:
-        pass
-
-
 @attrs()
-class K8sEntityClient:
+class K8sEntityClient(EntityClient):
     api: CustomObjectsApi = attrib()
     domain: str = attrib()
     version: str = attrib()
@@ -96,7 +88,7 @@ class K8sEntityClient:
         )
 
 
-class AppgateEntityClient:
+class AppgateEntityClient(EntityClient):
     def __init__(
         self,
         path: str,
@@ -131,6 +123,9 @@ class AppgateEntityClient:
             return entities + self.magic_entities
         return entities
 
+    async def create(self, entity: Entity_T) -> None:
+        await self.post(entity)
+
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] POST %s [%s]",
@@ -149,6 +144,9 @@ class AppgateEntityClient:
             return None
         return self.load(data)
 
+    async def modify(self, entity: Entity_T) -> None:
+        await self.put(entity)
+
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] PUT %s [%s]",
@@ -164,10 +162,8 @@ class AppgateEntityClient:
             return None
         return self.load(data)
 
-    async def delete(self, id: str) -> bool:
-        if not await self._client.delete(f"{self.path}/{id}"):
-            return False
-        return True
+    async def delete(self, id: str) -> None:
+        await self._client.delete(f"{self.path}/{id}")
 
 
 def load_latest_entity_generation(key: str, value: str) -> LatestEntityGeneration:

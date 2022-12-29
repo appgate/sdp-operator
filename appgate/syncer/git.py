@@ -143,3 +143,33 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
         return github_repo(ctx, GIT_DUMP_DIR)
     else:
         raise Exception(f"Unknown git vendor type {ctx.git_vendor}")
+
+
+@attrs()
+class GitEntityClient(EntityClient):
+    version: str = attrib()
+    kind: str = attrib()
+    repository_path: Path = attrib()
+    git: GitRepo = attrib()
+    branch: str = attrib()
+
+    @functools.cache
+    def entity_path(self) -> Path:
+        return self.repository_path / self.kind
+
+    async def create(self, e: Entity_T) -> None:
+        git_dump(e, self.version, self.entity_path())
+
+    async def delete(self, name: str) -> None:
+        p: Path = self.entity_path() / f"{name}.yaml"
+        if p.exists():
+            p.unlink()
+        else:
+            log.warning("File %s should be deleted but it's not present")
+
+    async def modify(self, e: Entity_T) -> None:
+        await self.delete(e.name)
+        await self.create(e)
+
+    async def commit(self) -> None:
+        self.git.commit_change(self.branch)

@@ -25,11 +25,8 @@ from attr import attrib, attrs, evolve
 from appgate.logger import is_debug
 from appgate.attrs import DIFF_DUMPER, dump_datetime
 from appgate.client import (
-    AppgateEntityClient,
     K8SConfigMapClient,
     entity_unique_id,
-    K8sEntityClient,
-    GitEntityClient,
 )
 from appgate.logger import log
 from appgate.openapi.types import (
@@ -48,6 +45,7 @@ from appgate.types import (
     has_tag,
     is_target,
     dump_entity,
+    EntityClient,
 )
 
 
@@ -321,10 +319,8 @@ async def plan_apply(
     plan: Plan,
     namespace: str,
     operator_name: str,
-    k8s_configmap_client: K8SConfigMapClient,
-    appgate_entity_client: Optional[AppgateEntityClient] = None,
-    k8s_entity_client: Optional[K8sEntityClient] = None,
-    git_entity_client: Optional[GitEntityClient] = None,
+    k8s_configmap_client: K8SConfigMapClient | None,
+    entity_client: EntityClient | None = None,
 ) -> Plan:
     errors = set()
     for e in plan.create.entities:
@@ -332,32 +328,23 @@ async def plan_apply(
             "[%s/%s] + %s: %s [%s]",
             operator_name,
             namespace,
-            type(e.value),
+            e.value.__class__.__qualname__,
             e.name,
             e.id,
         )
-        if appgate_entity_client:
+        if entity_client:
             try:
-                await appgate_entity_client.post(e.value)
+                await entity_client.create(e.value)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
                     else e.name
                 )
-                await k8s_configmap_client.update_entity_generation(
-                    key=entity_unique_id(e.value.__class__.__name__, name),
-                    generation=e.value.appgate_metadata.current_generation,
-                )
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif k8s_entity_client:
-            try:
-                await k8s_entity_client.create(e.value)
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif git_entity_client:
-            try:
-                await git_entity_client.create(e.value)
+                if k8s_configmap_client:
+                    await k8s_configmap_client.update_entity_generation(
+                        key=entity_unique_id(e.value.__class__.__name__, name),
+                        generation=e.value.appgate_metadata.current_generation,
+                    )
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -385,28 +372,19 @@ async def plan_apply(
             log.info("[%s/%s]    DIFF for %s:", operator_name, namespace, e.name)
             for d in diff:
                 log.info("%s", d.rstrip())
-        if appgate_entity_client:
+        if entity_client:
             try:
-                await appgate_entity_client.put(e.value)
+                await entity_client.modify(e.value)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
                     else e.name
                 )
-                await k8s_configmap_client.update_entity_generation(
-                    key=entity_unique_id(e.value.__class__.__name__, name),
-                    generation=e.value.appgate_metadata.current_generation,
-                )
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif k8s_entity_client:
-            try:
-                await k8s_entity_client.modify(e.value)
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif git_entity_client:
-            try:
-                await git_entity_client.modify(e.value)
+                if k8s_configmap_client:
+                    await k8s_configmap_client.update_entity_generation(
+                        key=entity_unique_id(e.value.__class__.__name__, name),
+                        generation=e.value.appgate_metadata.current_generation,
+                    )
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -429,27 +407,18 @@ async def plan_apply(
             e.name,
             e.id,
         )
-        if appgate_entity_client:
+        if entity_client:
             try:
-                await appgate_entity_client.delete(e.id)
+                await entity_client.delete(e.id)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
                     else e.name
                 )
-                await k8s_configmap_client.delete_entity_generation(
-                    entity_unique_id(e.value.__class__.__name__, name)
-                )
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif k8s_entity_client:
-            try:
-                await k8s_entity_client.delete(e.name)
-            except Exception as err:
-                errors.add(f"{e.name} [{e.id}]: {str(err)}")
-        elif git_entity_client:
-            try:
-                await git_entity_client.delete(e.name)
+                if k8s_configmap_client:
+                    await k8s_configmap_client.delete_entity_generation(
+                        entity_unique_id(e.value.__class__.__name__, name)
+                    )
             except Exception as err:
                 errors.add(f"{e.name} [{e.id}]: {str(err)}")
     if is_debug():
@@ -473,8 +442,8 @@ async def plan_apply(
             e.id,
         )
 
-    if git_entity_client:
-        await git_entity_client.commit()
+    if entity_client:
+        await entity_client.commit()
 
     has_errors = len(errors) > 0
     return Plan(
@@ -525,10 +494,9 @@ async def appgate_plan_apply(
     appgate_plan: AppgatePlan,
     operator_name: str,
     namespace: str,
-    appgate_entity_clients: Dict[str, AppgateEntityClient],
-    k8s_entity_clients: Dict[str, K8sEntityClient],
-    k8s_configmap_client: K8SConfigMapClient,
     api_spec: APISpec,
+    entity_clients: Dict[str, EntityClient] | None = None,
+    k8s_configmap_client: K8SConfigMapClient | None = None,
 ) -> AppgatePlan:
     log.info("[%s/%s] AppgatePlan Summary:", operator_name, namespace)
     entities_plan = {
@@ -536,8 +504,7 @@ async def appgate_plan_apply(
             v,
             namespace=namespace,
             operator_name=operator_name,
-            appgate_entity_client=appgate_entity_clients.get(k),
-            k8s_entity_client=k8s_entity_clients.get(k),
+            entity_client=(entity_clients or {}).get(k),
             k8s_configmap_client=k8s_configmap_client,
         )
         for k, v in appgate_plan.ordered_entities_plan(api_spec)
