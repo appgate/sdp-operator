@@ -6,7 +6,7 @@ import datetime
 from pathlib import Path
 import sys
 import yaml
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, FrozenSet, Set
 
 from kubernetes.config import ConfigException
 from appgate.logger import log
@@ -40,8 +40,13 @@ from appgate.openapi.types import (
     Entity_T,
     AppgateException,
 )
-from appgate.state import dump_entity
-from appgate.syncer.git import get_git_repository, GitRepo
+from appgate.state import (
+    dump_entity,
+    AppgateState,
+    appgate_state_empty,
+    create_appgate_plan,
+)
+from appgate.syncer.git import get_git_repository, GitRepo, get_current_branch_state
 
 
 def git_operator_context(
@@ -146,10 +151,14 @@ def print_configuration(ctx: GitOperatorContext):
 
 
 async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
-    entities: List[Entity_T] = []
+    added_entities: Set[Entity_T] = set()
+    deleted_entities: Set[Entity_T] = set()
+    modified_entities: Set[Entity_T] = set()
     error_events: List[AppgateEventError] = []
 
     git: GitRepo = get_git_repository(ctx)
+    current_state = get_current_branch_state()
+    expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
 
     while True:
@@ -168,8 +177,11 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 event.entity.__class__.__qualname__,
                 event.entity.name,
             )
-            entities.append(event.entity)
-
+            expected_state.with_entity(
+                EntityWrapper(event.entity),
+                event.op,
+                current_appgate_state=current_state,
+            )
         except asyncio.exceptions.TimeoutError:
             if error_events:
                 for event_error in error_events:
@@ -183,7 +195,13 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
 
             branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
             git.checkout_branch(branch)
-
+            plan = create_appgate_plan(
+                current_state=current_state,
+                expected_state=expected_state,
+                builtin_tags=frozenset(),
+                target_tags=frozenset(),
+                excluded_tags=frozenset(),
+            )
             if not ctx.dry_run:
                 for entity in entities:
                     dump(ctx, entity)
