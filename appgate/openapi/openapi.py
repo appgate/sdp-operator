@@ -32,6 +32,7 @@ __all__ = [
     "generate_api_spec_clients",
 ]
 
+from appgate.types import EntityClient
 
 # Always set the default API version to latest released version
 SPEC_DIR = "api_specs/v18"
@@ -308,7 +309,7 @@ MAGIC_ENTITIES = {
 
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
-) -> Dict[str, AppgateEntityClient]:
+) -> Dict[str, EntityClient]:
     def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
         magic_entities = None
         # We filter the None's in the caller anyway
