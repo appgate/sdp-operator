@@ -5,10 +5,10 @@ import os
 import datetime
 from pathlib import Path
 import sys
-import yaml
-from typing import List, Optional, Callable, FrozenSet, Set
+from typing import List, Optional, Callable, Dict
 
 from kubernetes.config import ConfigException
+
 from appgate.logger import log
 from appgate.openapi.openapi import SPEC_DIR, generate_api_spec
 from appgate.operator import init_kubernetes, run_k8s
@@ -33,20 +33,24 @@ from appgate.types import (
     GIT_DUMP_DIR,
     APPGATE_LOG_LEVEL,
     GIT_REPOSITORY_FORK_ENV,
+    BUILTIN_TAGS,
+    EntityClient,
 )
 from appgate.openapi.types import (
-    APPGATE_METADATA_ATTRIB_NAME,
-    APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
-    Entity_T,
     AppgateException,
+    APISpec,
 )
 from appgate.state import (
-    dump_entity,
-    AppgateState,
     appgate_state_empty,
     create_appgate_plan,
+    appgate_plan_apply,
 )
-from appgate.syncer.git import get_git_repository, GitRepo, get_current_branch_state
+from appgate.syncer.git import (
+    get_git_repository,
+    GitRepo,
+    get_current_branch_state,
+    GitEntityClient,
+)
 
 
 def git_operator_context(
@@ -104,30 +108,6 @@ async def run_git_operator(args: GitOperatorArguments) -> None:
     )
 
 
-def dump(ctx: GitOperatorContext, entity: Entity_T):
-    dumped_entities: List[str] = []
-    entity_type = entity.__class__.__qualname__
-
-    entity_dir = GIT_DUMP_DIR / f"{entity_type.lower()}-v{ctx.api_spec.api_version}"
-    entity_dir.mkdir(exist_ok=True)
-    entity_file = entity_dir / f"{entity.name.lower().replace(' ', '-')}.yaml"
-    dumped_entity = dump_entity(
-        EntityWrapper(entity), entity_type, f"v{ctx.api_spec.api_version}"
-    )
-
-    appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
-    if appgate_metadata:
-        entity_passwords = appgate_metadata.get(APPGATE_METADATA_PASSWORD_FIELDS_FIELD)
-    dumped_entities.append(
-        yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True)
-    )
-    with entity_file.open("w") as f:
-        for i, de in enumerate(dumped_entities):
-            if i > 0:
-                f.write("---\n")
-            f.write(de)
-
-
 def print_configuration(ctx: GitOperatorContext):
     log.info(
         "[git-operator] Starting Git Syncer loop with the following configuration: "
@@ -150,14 +130,28 @@ def print_configuration(ctx: GitOperatorContext):
     log.info("[git-operator]     Dry-run mode: %s", ctx.dry_run)
 
 
-async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
-    added_entities: Set[Entity_T] = set()
-    deleted_entities: Set[Entity_T] = set()
-    modified_entities: Set[Entity_T] = set()
-    error_events: List[AppgateEventError] = []
+def generate_git_entity_clients(
+    api_spec: APISpec,
+    repository_path: Path,
+    branch: str,
+    git: GitRepo,
+) -> Dict[str, EntityClient]:
+    return {
+        k: GitEntityClient(
+            version=str(api_spec.api_version),
+            kind=k,
+            repository_path=repository_path,
+            branch=branch,
+            git=git,
+        )
+        for k in api_spec.api_entities.keys()
+    }
 
+
+async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
+    error_events: List[AppgateEventError] = []
     git: GitRepo = get_git_repository(ctx)
-    current_state = get_current_branch_state()
+    current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
 
@@ -192,23 +186,40 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                         event_error.error,
                     )
                 sys.exit(1)
-
             branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
             git.checkout_branch(branch)
             plan = create_appgate_plan(
                 current_state=current_state,
                 expected_state=expected_state,
-                builtin_tags=frozenset(),
-                target_tags=frozenset(),
-                excluded_tags=frozenset(),
+                builtin_tags=BUILTIN_TAGS,
+                target_tags=ctx.target_tags,
+                excluded_tags=None,
             )
-            if not ctx.dry_run:
-                for entity in entities:
-                    dump(ctx, entity)
-
+            if plan.needs_apply:
+                log.info("[git-operator] Applying plan")
+                git_entity_clients = {}
+                if not ctx.dry_run:
+                    git_entity_clients = generate_git_entity_clients(
+                        api_spec=ctx.api_spec,
+                        repository_path=GIT_DUMP_DIR,
+                        branch=branch,
+                        git=git,
+                    )
+                new_plan = await appgate_plan_apply(
+                    appgate_plan=plan,
+                    namespace="git-operator",
+                    operator_name="git-operator",
+                    entity_clients=git_entity_clients,
+                    api_spec=ctx.api_spec,
+                )
+                if len(new_plan.errors) > 0:
+                    log.error("[git-operator] Found errors when applying plan:")
+                    for err in new_plan.errors:
+                        log.error("[git-operator] Error %s:", err)
+                    sys.exit(1)
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
-                git.commit_change(branch)
+                # git.commit_change(branch)
                 git.push_change(branch)
                 git.create_pull_request(branch)
             else:
