@@ -32,6 +32,7 @@ class EnvironmentVariableNotFoundException(Exception):
 def git_dump(entity: Entity_T, api_version: str, dest: Path):
     entity_type = entity.__class__.__qualname__
     entity_file = dest / f"{entity.name.lower().replace(' ', '-')}.yaml"
+    log.info("Dumping entity %s: %s", entity.name, entity_file)
     dumped_entity = dump_entity(EntityWrapper(entity), entity_type, f"v{api_version}")
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
@@ -175,6 +176,11 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
         raise Exception(f"Unknown git vendor type {ctx.git_vendor}")
 
 
+@functools.cache
+def entity_path(repository_path: Path, kind: str) -> Path:
+    return repository_path / kind.lower()
+
+
 @attrs()
 class GitEntityClient(EntityClient):
     version: str = attrib()
@@ -183,15 +189,13 @@ class GitEntityClient(EntityClient):
     git: GitRepo = attrib()
     branch: str = attrib()
 
-    @functools.cache
-    def entity_path(self) -> Path:
-        return self.repository_path / self.kind
-
     async def create(self, e: Entity_T) -> None:
-        git_dump(e, self.version, self.entity_path())
+        p = entity_path(self.repository_path, self.kind)
+        p.mkdir(exist_ok=True)
+        git_dump(e, self.version, p)
 
     async def delete(self, name: str) -> None:
-        p: Path = self.entity_path() / f"{name}.yaml"
+        p: Path = entity_path(self.repository_path, self.kind) / f"{name}.yaml"
         if p.exists():
             p.unlink()
         else:
