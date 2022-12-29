@@ -9,7 +9,7 @@ from apischema.json_schema import deserialization_schema
 from apischema.json_schema.types import JsonType
 from apischema.objects import ObjectField, AliasedStr
 
-from appgate.client import AppgateClient, EntityClient
+from appgate.client import AppgateClient, AppgateEntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
 from appgate.openapi.types import (
@@ -313,8 +313,8 @@ MAGIC_ENTITIES = {
 
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
-) -> Dict[str, EntityClient]:
-    def _entity_client(e_name: str, e: GeneratedEntity) -> EntityClient:
+) -> Dict[str, AppgateEntityClient]:
+    def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
         magic_entities = None
         # We filter the None's in the caller anyway
         assert e.api_path is not None

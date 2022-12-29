@@ -2,21 +2,34 @@
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
-## @section SDP Parameters
-  ## @param sdp.operator.host The hostname of the controller to manage with the operator.
-  ## @param sdp.operator.deviceId The device ID assigned to the operator for authenticating against the controller.
-  ## @param sdp.operator.version The API version of the controller.
-  operator:
+  ## @section SDP Parameters
+   ## @param sdp.operators List of operators to run in the deployment. At least one must be defined. Values can be sdp-operator and git-operator
+  operators:
+    - sdp-operator
+
+  ## @section SDP Parameters
+  ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
+  ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
+  sdpOperator:
     host: ""
     deviceId: ""
-    version: v17
 
-    ## @param sdp.operator.logLevel The log level of the operator.
-    ## @param sdp.operator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
-    ## @param sdp.operator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
-    ## @param sdp.operator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
-    ## @param sdp.operator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
-    ## @param sdp.operator.sslNoVerify Whether to verify the SSL certificate of the controller.
+    ## @section SDP git operator Optional Parameters
+    ## @param sdp.sdpOperator.version The API version of the controller.
+    ## @param sdp.sdpOperator.logLevel The log level of the operator.
+    ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
+    ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
+    ## @param sdp.sdpOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
+    ## @param sdp.sdpOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
+    ## @param sdp.sdpOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
+    ## @param sdp.sdpOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
+    ## @param sdp.sdpOperator.cleanup Whether to delete entities from the controller to sync the entities on the operator.
+    ## @param sdp.sdpOperator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
+    ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
+    ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
+    ## @param sdp.sdpOperator.configMapMt The config map to store metadata for entities.
+    reverseMode: false
+    version: v17
     logLevel: info
     timeout: 30
     builtinTags:
@@ -24,48 +37,55 @@ sdp:
     sslNoVerify: false
     targetTags: []
     excludeTags: []
+    dryRun: true
+    twoWaySync: true
+    cleanup: false
+    fernetKey: ""
+    caCert: ""
+    configMapMt: ""
+    secret: ""
 
-    ## @param sdp.operator.mode The mode of the operator: run (Push configuration to SDP) | git-sync (Sync configuration from SDP to Git)
-    mode: run
-
-  ## Configuration for Run mode
-    ## @param sdp.operator.run.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
-    ## @param sdp.operator.run.cleanup Whether to delete entities from the controller to sync the entities on the operator.
-    ## @param sdp.operator.run.twoWaySync Whether to read the current configuration from the controller before computing the plan.
-    run:
-      dryRun: true
-      twoWaySync: true
-      cleanup: false
-
-  ## Configuration for Git-Sync mode
-    ## @param sdp.operator.gitSync.git.vendor The vendor of the git repository: github
-    ## @param sdp.operator.gitSync.git.baseBranch Base branch of the repository to create pull requests
-    ## @param sdp.operator.gitSync.git.repositoryUrl The url of the git repository (HTTPS only supported)
-    ## @param sdp.operator.gitSync.git.secret The secret to pull and push the git repository
-    ## @param sdp.operator.gitSync.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
-    gitSync:
-      git:
-        vendor: github
-        baseBranch: ""
-        repositoryUrl: ""
-        secret: ""
-      github:
-        repository: ""
-
-## @section SDP Optional Parameters
-    ## @param sdp.operator.image.tag The image tag of the operator.
-    ## @param sdp.operator.image.pullPolicy The image pull policy of the operator.
-    ## @param sdp.operator.image.repository The repository to pull the operator image from.
-    ## @param sdp.operator.image.pullSecrets The secret to access the repository.
+    ## @param sdp.sdpOperator.image.tag The image tag of the operator.
+    ## @param sdp.sdpOperator.image.pullPolicy The image pull policy of the operator.
+    ## @param sdp.sdpOperator.image.repository The repository to pull the operator image from.
+    ## @param sdp.sdpOperator.image.pullSecrets The secret to access the repository.
     image:
       repository: ghcr.io/appgate/sdp-operator
       tag: ""
       pullSecrets: []
       pullPolicy: Always
 
-    ## @param sdp.operator.fernetKey The fernet key to use when decrypting secrets in entities.
-    ## @param sdp.operator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
-    ## @param sdp.operator.configMapMt The config map to store metadata for entities.
-    fernetKey: ""
-    caCert: ""
-    configMapMt: ""
+  ## Configuration for SDP git operator
+  ## @param sdp.gitOperator.version The API version of the controller.
+  ## @param sdp.gitOperator.logLevel The log level of the operator.
+  ## @param sdp.gitOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
+  ## @param sdp.gitOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
+  ## @param sdp.gitOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
+  ## @param sdp.gitOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
+  ## @param sdp.operator.gitOperator.git.vendor The vendor of the git repository: github
+  ## @param sdp.operator.gitOperator.git.baseBranch Base branch of the repository to create pull requests
+  ## @param sdp.operator.gitOperator.git.repositoryUrl The url of the git repository (HTTPS only supported)
+  ## @param sdp.operator.gitOperator.git.secret The secret to pull and push the git repository
+  ## @param sdp.operator.gitOperator.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
+  gitOperator:
+    version: v17
+    logLevel: info
+    timeout: 30
+    targetTags: []
+    dryRun: true
+    secret: ""
+    git:
+      vendor: github
+      baseBranch: ""
+      repository: ""
+
+    ## @section SDP git operator Optional Parameters
+    ## @param sdp.gitOperator.image.tag The image tag of the operator.
+    ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.
+    ## @param sdp.gitOperator.image.repository The repository to pull the operator image from.
+    ## @param sdp.gitOperator.image.pullSecrets The secret to access the repository.
+    image:
+      repository: ghcr.io/appgate/sdp-operator
+      tag: ""
+      pullSecrets: []
+      pullPolicy: Always

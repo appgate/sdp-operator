@@ -3,25 +3,25 @@ import sys
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
-from typing import Optional, Type, Dict, Callable, Any
-import threading
+from typing import Optional, Dict
 
-from kubernetes.client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
-from kubernetes.watch import Watch
 
-from appgate.types import Context, AppgateEventSuccess, AppgateEventError
+from appgate.types import AppgateOperatorContext, AppgateEventError
 from appgate.logger import log
-from appgate.attrs import K8S_LOADER, dump_datetime
-from appgate.client import AppgateClient, K8SConfigMapClient, entity_unique_id
-from appgate.openapi.types import AppgateException, AppgateTypedloadException
+from appgate.client import (
+    AppgateClient,
+    K8SConfigMapClient,
+    K8sEntityClient,
+)
+from appgate.openapi.types import (
+    AppgateException,
+    APISpec,
+)
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
-    Entity_T,
     K8S_APPGATE_VERSION,
     K8S_APPGATE_DOMAIN,
-    APPGATE_METADATA_LATEST_GENERATION_FIELD,
-    APPGATE_METADATA_MODIFICATION_FIELD,
 )
 from appgate.state import (
     AppgateState,
@@ -31,14 +31,16 @@ from appgate.state import (
     entities_conflict_summary,
     resolve_appgate_state,
     exclude_appgate_entity,
+    appgate_state_empty,
 )
-from appgate.types import K8SEvent, AppgateEvent, EntityWrapper, EventObject
+from appgate.types import AppgateEvent, EntityWrapper
 
 
 __all__ = [
-    "main_loop",
+    "appgate_operator",
     "get_current_appgate_state",
-    "start_entity_loop",
+    "get_operator_name",
+    "get_crds",
 ]
 
 
@@ -52,7 +54,14 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-async def get_current_appgate_state(ctx: Context) -> AppgateState:
+def get_operator_name(reverse_mode: bool) -> str:
+    operator_name = "appgate-operator"
+    if reverse_mode:
+        operator_name = "appgate-reverse-operator"
+    return operator_name
+
+
+async def get_current_appgate_state(ctx: AppgateOperatorContext) -> AppgateState:
     """
     Gets the current AppgateState for controller
     """
@@ -100,216 +109,99 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
     return appgate_state
 
 
-def run_entity_loop(
-    ctx: Context,
-    crd: str,
-    loop: asyncio.AbstractEventLoop,
-    queue: Queue[AppgateEvent],
-    load: Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T],
-    entity_type: type,
-    singleton: bool,
-    k8s_configmap_client: K8SConfigMapClient,
-):
-    namespace = ctx.namespace
-    log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
-    watcher = Watch().stream(
-        get_crds().list_namespaced_custom_object,
-        K8S_APPGATE_DOMAIN,
-        K8S_APPGATE_VERSION,
-        namespace,
-        crd,
-    )
-    while True:
-        try:
-            data = next(watcher)
-            data_obj = data["object"]
-            data_mt = data_obj["metadata"]
-            kind = data_obj["kind"]
-            spec = data_obj["spec"]
-            event = EventObject(metadata=data_mt, spec=spec, kind=kind)
-            if singleton:
-                name = "singleton"
-            else:
-                name = event.spec["name"]
-            if event:
-                assert data["type"] in ("ADDED", "DELETED", "MODIFIED")
-                ev = K8SEvent(data["type"], event)
-                try:
-                    # names are not unique between entities, so we need to come up with a unique name now
-                    mt = ev.object.metadata
-                    latest_entity_generation = (
-                        k8s_configmap_client.read_entity_generation(
-                            entity_unique_id(kind, name)
-                        )
-                    )
-                    if latest_entity_generation:
-                        mt[
-                            APPGATE_METADATA_LATEST_GENERATION_FIELD
-                        ] = latest_entity_generation.generation
-                        mt[APPGATE_METADATA_MODIFICATION_FIELD] = dump_datetime(
-                            latest_entity_generation.modified
-                        )
-                    entity = load(ev.object.spec, ev.object.metadata, entity_type)
-                    log.debug(
-                        "[%s/%s] K8SEvent type: %s: %s", crd, namespace, ev.type, entity
-                    )
-                    appgate_event: AppgateEvent = AppgateEventSuccess(
-                        op=ev.type, entity=entity
-                    )
-                except AppgateTypedloadException as e:
-                    log.error(
-                        "[%s/%s] Unable to parse event with name %s of type %s",
-                        crd,
-                        namespace,
-                        event.spec["name"],
-                        event.kind,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error message: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.message,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading from: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.platform_type,
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading type: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.type_.__qualname__ if e.type_ else "Unknown",
-                    )
-                    log.error(
-                        "[%s/%s]%s!!! Error when loading value: %s",
-                        crd,
-                        namespace,
-                        " " * 4,
-                        e.value,
-                    )
-                    appgate_event = AppgateEventError(
-                        name=event.spec["name"], kind=event.kind, error=str(e)
-                    )
-
-                asyncio.run_coroutine_threadsafe(queue.put(appgate_event), loop)
-        except ApiException:
-            log.exception(
-                "[appgate-operator/%s] Error when subscribing events in k8s for %s",
-                namespace,
-                crd,
-            )
-            sys.exit(1)
-        except StopIteration:
-            log.debug(
-                "[appgate-operator/%s] Event loop stopped, re-initializing watchers",
-                namespace,
-            )
-            watcher = Watch().stream(
-                get_crds().list_namespaced_custom_object,
-                K8S_APPGATE_DOMAIN,
-                K8S_APPGATE_VERSION,
-                namespace,
-                crd,
-            )
-        except Exception:
-            log.exception(
-                "[appgate-operator/%s] Unhandled error for %s", namespace, crd
-            )
-            sys.exit(1)
-
-
-async def start_entity_loop(
-    ctx: Context,
-    crd: str,
-    entity_type: Type[Entity_T],
-    singleton: bool,
-    queue: Queue[AppgateEvent],
-    k8s_configmap_client: K8SConfigMapClient,
-) -> None:
-    log.debug(
-        "[%s/%s] Starting loop event for entities on path: %s", crd, ctx.namespace, crd
-    )
-
-    def run(loop: asyncio.AbstractEventLoop) -> None:
-        t = threading.Thread(
-            target=run_entity_loop,
-            args=(
-                ctx,
-                crd,
-                loop,
-                queue,
-                K8S_LOADER.load,
-                entity_type,
-                singleton,
-                k8s_configmap_client,
-            ),
-            daemon=True,
+def generate_k8s_clients(
+    api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi
+) -> Dict[str, K8sEntityClient]:
+    return {
+        k: K8sEntityClient(
+            api=k8s_api,
+            domain=K8S_APPGATE_DOMAIN,
+            version=K8S_APPGATE_VERSION,
+            namespace=namespace,
+            kind=f"{k}-v{api_spec.api_version}",
         )
-        t.start()
+        for k in api_spec.entities.keys()
+    }
 
-    await asyncio.to_thread(run, asyncio.get_event_loop())
 
-
-async def main_loop(
-    queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
+async def appgate_operator(
+    queue: Queue, ctx: AppgateOperatorContext, k8s_configmap_client: K8SConfigMapClient
 ) -> None:
     namespace = ctx.namespace
-    log.info("[appgate-operator/%s] Main loop started:", namespace)
-    log.info("[appgate-operator/%s]   + namespace: %s", namespace, namespace)
-    log.info("[appgate-operator/%s]   + host: %s", namespace, ctx.controller)
-    log.info("[appgate-operator/%s]   + log-level: %s", namespace, log.level)
-    log.info("[appgate-operator/%s]   + timeout: %s", namespace, ctx.timeout)
-    log.info("[appgate-operator/%s]   + dry-run: %s", namespace, ctx.dry_run_mode)
-    log.info("[appgate-operator/%s]   + cleanup: %s", namespace, ctx.cleanup_mode)
-    log.info("[appgate-operator/%s]   + two-way-sync: %s", namespace, ctx.two_way_sync)
+    operator_name = get_operator_name(ctx.reverse_mode)
+    log.info("[%s/%s] Main loop started:", operator_name, namespace)
+    log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
+    log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
+    log.info("[%s/%s]   + reverse mode: %s", operator_name, namespace, ctx.reverse_mode)
+    log.info("[%s/%s]   + log-level: %s", operator_name, namespace, log.level)
+    log.info("[%s/%s]   + timeout: %s", operator_name, namespace, ctx.timeout)
+    log.info("[%s/%s]   + dry-run: %s", operator_name, namespace, ctx.dry_run_mode)
+    log.info("[%s/%s]   + cleanup: %s", operator_name, namespace, ctx.cleanup_mode)
+    log.info("[%s/%s]   + two-way-sync: %s", operator_name, namespace, ctx.two_way_sync)
     log.info(
-        "[appgate-operator/%s]   + builtin tags: %s",
+        "[%s/%s]   + builtin tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.builtin_tags),
     )
     log.info(
-        "[appgate-operator/%s]   + target tags: %s",
+        "[%s/%s]   + target tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.target_tags) if ctx.target_tags else "None",
     )
     log.info(
-        "[appgate-operator/%s]   + exclude tags: %s",
+        "[%s/%s]   + exclude tags: %s",
+        operator_name,
         namespace,
         ",".join(ctx.exclude_tags) if ctx.exclude_tags else "None",
     )
-    log.info("[appgate-operator/%s] Getting current state from controller", namespace)
-    current_appgate_state = await get_current_appgate_state(ctx=ctx)
-    total_appgate_state = deepcopy(current_appgate_state)
-    if ctx.cleanup_mode:
-        tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
-        expected_appgate_state = AppgateState(
-            {
-                k: v.entities_with_tags(tags_in_cleanup)
-                for k, v in current_appgate_state.entities_set.items()
-            }
-        )
-    elif ctx.target_tags:
-        expected_appgate_state = AppgateState(
-            {
-                k: v.entities_with_tags(ctx.target_tags)
-                for k, v in current_appgate_state.entities_set.items()
-            }
-        )
+    log.info("[%s/%s] Getting current state from controller", operator_name, namespace)
+
+    # Get current and total state
+    if ctx.reverse_mode:
+        current_appgate_state = appgate_state_empty(ctx.api_spec)
+        expected_appgate_state = await get_current_appgate_state(ctx=ctx)
+        total_appgate_state = deepcopy(expected_appgate_state)
+        if ctx.target_tags:
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(ctx.target_tags)
+                    for k, v in expected_appgate_state.entities_set.items()
+                }
+            )
+        if ctx.cleanup_mode:
+            log.error("Reverse operator can not run in clean-up mode!")
+            exit(1)
     else:
-        expected_appgate_state = deepcopy(current_appgate_state)
+        current_appgate_state = await get_current_appgate_state(ctx=ctx)
+        total_appgate_state = deepcopy(current_appgate_state)
+        if ctx.target_tags:
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(ctx.target_tags)
+                    for k, v in current_appgate_state.entities_set.items()
+                }
+            )
+        else:
+            expected_appgate_state = deepcopy(current_appgate_state)
+        if ctx.cleanup_mode:
+            tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
+            expected_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(tags_in_cleanup)
+                    for k, v in current_appgate_state.entities_set.items()
+                }
+            )
     log.info(
-        "[appgate-operator/%s] Ready to get new events and compute a new plan",
+        "[%sr/%s] Ready to get new events and compute a new plan",
+        operator_name,
         namespace,
     )
     event_errors = []
     while True:
         try:
-            log.info("[appgate-operator/%s] Waiting for event", namespace)
+            log.info("[%s/%s] Waiting for event", operator_name, namespace)
             event: AppgateEvent = await asyncio.wait_for(
                 queue.get(), timeout=ctx.timeout
             )
@@ -317,24 +209,32 @@ async def main_loop(
                 event_errors.append(event)
             else:
                 log.info(
-                    "[appgate-operator/%s}] Event: %s %s with name %s",
+                    "[%s/%s}] Event: %s %s with name %s",
+                    operator_name,
                     namespace,
                     event.op,
                     event.entity.__class__.__qualname__,
                     event.entity.name,
                 )
-                expected_appgate_state.with_entity(
-                    EntityWrapper(event.entity), event.op, current_appgate_state
-                )
+                if ctx.reverse_mode:
+                    current_appgate_state.with_entity(
+                        EntityWrapper(event.entity), event.op, expected_appgate_state
+                    )
+                else:
+                    expected_appgate_state.with_entity(
+                        EntityWrapper(event.entity), event.op, current_appgate_state
+                    )
         except asyncio.exceptions.TimeoutError:
             if event_errors:
                 log.error(
-                    "[appgate-operator/%s}] Found events with errors, dying now!",
+                    "[%s/%s}] Found events with errors, dying now!",
+                    operator_name,
                     namespace,
                 )
                 for event_error in event_errors:
                     log.error(
-                        "[appgate-operator/%s}] - Entity of type %s with name %s : %s",
+                        "[%s/%s}] - Entity of type %s with name %s : %s",
+                        operator_name,
                         namespace,
                         event_error.name,
                         event_error.kind,
@@ -351,17 +251,18 @@ async def main_loop(
                 }
                 for entity_name, e in expected_entities.items():
                     if not any_expected:
-                        log.info("[appgate-operator/%s] Expected entities:", namespace)
+                        log.info("[%s/%s] Expected entities:", operator_name, namespace)
                         any_expected = True
                     log.info(
-                        "[appgate-operator/%s] %s: %s: %s",
+                        "[%s/%s] %s: %s: %s",
+                        operator_name,
                         namespace,
                         entity_type,
                         entity_name,
                         e.id,
                     )
             if not any_expected:
-                log.warning("[appgate-operator/%s] Not expected any entity", namespace)
+                log.warning("[%s/%s] Not expected any entity", operator_name, namespace)
 
             # Resolve entities now, in order
             # this will be the Topological sort
@@ -373,15 +274,17 @@ async def main_loop(
             )
             if total_conflicts:
                 log.error(
-                    "[appgate-operator/%s] Found errors in expected state and plan can"
+                    "[%s/%s] Found errors in expected state and plan can"
                     " not be applied.",
+                    operator_name,
                     namespace,
                 )
                 entities_conflict_summary(
                     conflicts=total_conflicts, namespace=namespace
                 )
                 log.info(
-                    "[appgate-operator/%s] Waiting for more events that can fix the state.",
+                    "[%s/%s] Waiting for more events that can fix the state.",
+                    operator_name,
                     namespace,
                 )
                 continue
@@ -403,12 +306,14 @@ async def main_loop(
             )
             if plan.needs_apply:
                 log.info(
-                    "[appgate-operator/%s] No more events for a while, creating a plan",
+                    "[%s/%s] No more events for a while, creating a plan",
+                    operator_name,
                     namespace,
                 )
                 async with AsyncExitStack() as exit_stack:
                     appgate_client = None
-                    if not ctx.dry_run_mode:
+                    k8s_api = None
+                    if not ctx.dry_run_mode and not ctx.reverse_mode:
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
                         appgate_client = await exit_stack.enter_async_context(
@@ -423,18 +328,29 @@ async def main_loop(
                                 cafile=ctx.cafile,
                             )
                         )
+                    elif not ctx.dry_run_mode and ctx.reverse_mode:
+                        k8s_api = get_crds()
                     else:
                         log.warning(
-                            "[appgate-operator/%s] Running in dry-mode, nothing will be created",
+                            "[%s/%s] Running in dry-mode, nothing will be created",
+                            operator_name,
                             namespace,
                         )
                     new_plan = await appgate_plan_apply(
                         appgate_plan=plan,
                         namespace=namespace,
-                        entity_clients=generate_api_spec_clients(
+                        operator_name=operator_name,
+                        appgate_entity_clients=generate_api_spec_clients(
                             api_spec=ctx.api_spec, appgate_client=appgate_client
                         )
                         if appgate_client
+                        else {},
+                        k8s_entity_clients=generate_k8s_clients(
+                            api_spec=ctx.api_spec,
+                            namespace=ctx.namespace,
+                            k8s_api=k8s_api,
+                        )
+                        if k8s_api
                         else {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
@@ -442,11 +358,14 @@ async def main_loop(
 
                     if len(new_plan.errors) > 0:
                         log.error(
-                            "[appgate-operator/%s] Found errors when applying plan:",
+                            "[%s/%s] Found errors when applying plan:",
+                            operator_name,
                             namespace,
                         )
                         for err in new_plan.errors:
-                            log.error("[appgate-operator/%s] Error %s:", namespace, err)
+                            log.error(
+                                "[%s/%s] Error %s:", operator_name, namespace, err
+                            )
                         sys.exit(1)
 
                     if appgate_client:
@@ -454,8 +373,21 @@ async def main_loop(
                         expected_appgate_state = (
                             expected_appgate_state.sync_generations()
                         )
+                    elif k8s_api:
+                        current_appgate_state = new_plan.appgate_state
             else:
                 log.info(
-                    "[appgate-operator/%s] Nothing changed! Keeping watching!",
+                    "[%s/%s] Nothing changed! Keeping watching!",
+                    operator_name,
                     namespace,
                 )
+            # In reverse mode always update the state from controller
+            if ctx.reverse_mode:
+                expected_appgate_state = await get_current_appgate_state(ctx=ctx)
+                if ctx.target_tags:
+                    expected_appgate_state = AppgateState(
+                        {
+                            k: v.entities_with_tags(ctx.target_tags)
+                            for k, v in expected_appgate_state.entities_set.items()
+                        }
+                    )

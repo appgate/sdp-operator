@@ -6,16 +6,29 @@
 |  ##     ## ##        ##        ##    ##  ##     ##    ##    ##          ##    ## ##     ## ##          |
 |  ##     ## ##        ##         ######   ##     ##    ##    ########     ######  ########  ##          |
 
-Operator configured with:
 
- - controller host: {{ .Values.sdp.operator.host }}
- - operator device id: {{ .Values.sdp.operator.deviceId }}
+{{- if has "appgate-operator" .Values.sdp.operators }}
+SDP Operator configured with:
+ - controller host: {{ .Values.sdp.appgateOperator.host }}
+ - operator device id: {{ .Values.sdp.appgateOperator.deviceId }}
  - k8s namespace: {{ .Release.Namespace }}
- - target tags: {{ .Values.sdp.operator.targetTags }}
- - exclude tags: {{ .Values.sdp.operator.excludeTags }}
- - builtin tags: {{ .Values.sdp.operator.builtinTags }}
- - dry-run mode: {{ .Values.sdp.operator.dryRun }}
- - cleanup mode: {{ .Values.sdp.operator.cleanup }}
- - two-way-sync mode: {{ .Values.sdp.operator.twoWaySync }}
- - ssl no verify: {{ .Values.sdp.operator.sslNoVerify }}
- - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.operator.configMapMt }}
+ - target tags: {{ .Values.sdp.appgateOperator.targetTags }}
+ - exclude tags: {{ .Values.sdp.appgateOperator.excludeTags }}
+ - builtin tags: {{ .Values.sdp.appgateOperator.builtinTags }}
+ - dry-run mode: {{ .Values.sdp.appgateOperator.dryRun }}
+ - cleanup mode: {{ .Values.sdp.appgateOperator.cleanup }}
+ - two-way-sync mode: {{ .Values.sdp.appgateOperator.twoWaySync }}
+ - ssl no verify: {{ .Values.sdp.appgateOperator.sslNoVerify }}
+ - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.appgateOperator.configMapMt }}
+ - reverse mode: {{ .Values.sdp.appgateOperator.dryRun }}
+{{- end }}
+
+{{- if has "git-operator" .Values.sdp.operators }}
+Git Operator configured with:
+ - k8s namespace: {{ .Release.Namespace }}
+ - target tags: {{ .Values.sdp.gitOperator.targetTags }}
+ - dry-run mode: {{ .Values.sdp.gitOperator.dryRun }}
+ - git vendor: {{ .Values.sdp.gitOperator.dryRun }}
+ - git base branch: {{ .Values.sdp.gitOperator.dryRun }}
+ - git repository: {{ .Values.sdp.gitOperator.dryRun }}
+{{- end }}

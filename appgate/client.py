@@ -1,24 +1,88 @@
 import asyncio
 import datetime
+import functools
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union
+from typing import Dict, Any, Optional, List, Callable
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
-from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
+from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta, CustomObjectsApi
 from kubernetes.client.exceptions import ApiException
+
+from attr import attrib, attrs
 
 from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AppgateException
-from appgate.types import LatestEntityGeneration
+from appgate.types import LatestEntityGeneration, EntityWrapper, dump_entity, k8s_name
+
+__all__ = [
+    "AppgateClient",
+    "AppgateEntityClient",
+    "K8SConfigMapClient",
+    "entity_unique_id",
+    "K8sEntityClient",
+]
 
 
-__all__ = ["AppgateClient", "EntityClient", "K8SConfigMapClient", "entity_unique_id"]
+def get_plural(kind: str) -> str:
+    entity = kind.lower().split("-")
+    name = entity[0]
+    if name.endswith("y"):
+        return f"{name[:-1]}ies-{entity[1]}"
+    else:
+        return f"{name}s-{entity[1]}"
 
 
-class EntityClient:
+@functools.cache
+def plural(kind):
+    return get_plural(kind)
+
+
+@attrs()
+class K8sEntityClient:
+    api: CustomObjectsApi = attrib()
+    domain: str = attrib()
+    version: str = attrib()
+    namespace: str = attrib()
+    kind: str = attrib()
+
+    async def create(self, e: Entity_T) -> None:
+        log.info("Creating k8s entity %s", e.name)
+        data = dump_entity(EntityWrapper(e), self.kind, None)
+        self.api.create_namespaced_custom_object(  # type: ignore
+            self.domain,
+            self.version,
+            self.namespace,
+            plural(self.kind),
+            data,
+        )
+
+    async def delete(self, name: str) -> None:
+        log.info("Deleting k8s entity %s", name)
+        self.api.delete_namespaced_custom_object(
+            self.domain,
+            self.version,
+            self.namespace,
+            plural(self.kind),
+            k8s_name(name),
+        )
+
+    async def modify(self, e: Entity_T) -> None:
+        log.info("Updating k8s entity %s", e.name)
+        data = dump_entity(EntityWrapper(e), self.kind, f"v{self.version}")
+        self.api.patch_namespaced_custom_object(  # type: ignore
+            self.domain,
+            self.version,
+            self.namespace,
+            plural(self.kind),
+            k8s_name(data["name"]),
+            data,
+        )
+
+
+class AppgateEntityClient:
     def __init__(
         self,
         path: str,
@@ -398,9 +462,9 @@ class AppgateClient:
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
-    ) -> EntityClient:
+    ) -> AppgateEntityClient:
         dumper = APPGATE_DUMPER
-        return EntityClient(
+        return AppgateEntityClient(
             appgate_client=self,
             path=f"/admin/{api_path}",
             singleton=singleton,
