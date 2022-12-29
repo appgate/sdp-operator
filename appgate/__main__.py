@@ -60,7 +60,6 @@ from appgate.types import (
     HOST_ENV,
     TIMEOUT_ENV,
     TWO_WAY_SYNC_ENV,
-    DRY_RUN_ENV,
     CLEANUP_ENV,
     APPGATE_SSL_NO_VERIFY,
     SPEC_DIR_ENV,
