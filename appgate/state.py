@@ -232,7 +232,7 @@ class AppgateState:
 
 
 def appgate_state_empty(api_spec: APISpec) -> AppgateState:
-    return AppgateState({k: EntitiesSet() for k in api_spec.entities.keys()})
+    return AppgateState({k: EntitiesSet() for k in api_spec.api_entities.keys()})
 
 
 def entity_sync_generation(entity_wrapper: EntityWrapper) -> EntityWrapper:
