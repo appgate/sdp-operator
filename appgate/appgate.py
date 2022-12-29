@@ -113,7 +113,7 @@ def generate_k8s_clients(
             namespace=namespace,
             kind=f"{k}-v{api_spec.api_version}",
         )
-        for k in api_spec.entities.keys()
+        for k in api_spec.api_entities.keys()
     }
 
 
