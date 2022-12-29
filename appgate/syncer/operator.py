@@ -217,6 +217,9 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     for err in new_plan.errors:
                         log.error("[git-operator] Error %s:", err)
                     sys.exit(1)
+                # This creates a commit for each plan application
+                # TODO: Implement the option of doing commits per entity or per entity_type
+                git.commit_change(branch)
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
                 # git.commit_change(branch)
