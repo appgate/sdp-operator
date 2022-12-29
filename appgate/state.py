@@ -107,10 +107,13 @@ def entities_op(
     if cached_entity:
         entity = entity.with_id(id=cached_entity.id)
     if op == "ADDED":
+        log.info("Added entity %s", entity.name)
         entity_set.add(entity)
     elif op == "DELETED":
+        log.info("Deleted entity %s", entity.name)
         entity_set.delete(entity)
     elif op == "MODIFIED":
+        log.info("Modified entity %s", entity.name)
         entity_set.modify(entity)
 
 
@@ -194,6 +197,15 @@ class AppgateState:
             else:
                 new_entities_set[k] = v
         return AppgateState(new_entities_set)
+
+    def debug(self, header: str | None = None, entity: str | None = None) -> None:
+        if header:
+            log.info("%s", header)
+        for e, es in (
+            {entity: self.entities_set[entity]} if entity else self.entities_set
+        ).items():
+            for n in es.entities_by_name.keys():
+                log.info(" - [%s] %s", e, n)
 
     def dump(
         self,
@@ -618,7 +630,6 @@ def compare_entities(
         if diff:
             modifications_diff[e.name] = diff
     to_share = EntitiesSet(set(filter(_to_share_filter, expected_entities)))
-
     return Plan(
         delete=to_delete,
         not_to_delete=not_to_delete,
