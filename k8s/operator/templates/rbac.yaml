@@ -7,7 +7,7 @@ metadata:
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["v14.sdp.appgate.com", "v15.sdp.appgate.com", "v16.sdp.appgate.com", "v17.sdp.appgate.com", "v18.sdp.appgate.com"]
+  - apiGroups: [ "{{ .Values.sdp.operator.version }}.sdp.appgate.com" ]
     resources:
       - policies
       - entitlements
