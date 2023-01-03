@@ -274,6 +274,7 @@ class AppgateClient:
         self._session = aiohttp.ClientSession()
         self.device_id = device_id
         self._token = None
+        self._expires = None
         self.version = version
         self.no_verify = no_verify
         self.ssl_context = (
@@ -295,6 +296,9 @@ class AppgateClient:
         await self.close()
 
     def auth_header(self) -> Optional[str]:
+        if self._expires and datetime.datetime.now() >= self._expires:
+            log.info("[appgate-client] Renewing auth token")
+            self.login()
         if self._token:
             return f"Bearer {self._token}"
         return None
@@ -387,6 +391,9 @@ class AppgateClient:
         resp = await self.post("admin/login", body=body)
         if resp:
             self._token = resp["token"]
+            self._expiration_time = datetime.datetime.fromisoformat(
+                resp["expires"]
+            ).timestamp() - (10 * 60)
 
     @property
     def authenticated(self) -> bool:

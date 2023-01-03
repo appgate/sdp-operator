@@ -307,6 +307,7 @@ async def main_loop(
         namespace,
     )
     event_errors = []
+    appgate_client = None
     while True:
         try:
             log.info("[appgate-operator/%s] Waiting for event", namespace)
@@ -407,22 +408,22 @@ async def main_loop(
                     namespace,
                 )
                 async with AsyncExitStack() as exit_stack:
-                    appgate_client = None
                     if not ctx.dry_run_mode:
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
-                        appgate_client = await exit_stack.enter_async_context(
-                            AppgateClient(
-                                controller=ctx.controller,
-                                user=ctx.user,
-                                password=ctx.password,
-                                provider=ctx.provider,
-                                device_id=ctx.device_id,
-                                version=ctx.api_spec.api_version,
-                                no_verify=ctx.no_verify,
-                                cafile=ctx.cafile,
+                        if not appgate_client:
+                            appgate_client = await exit_stack.enter_async_context(
+                                AppgateClient(
+                                    controller=ctx.controller,
+                                    user=ctx.user,
+                                    password=ctx.password,
+                                    provider=ctx.provider,
+                                    device_id=ctx.device_id,
+                                    version=ctx.api_spec.api_version,
+                                    no_verify=ctx.no_verify,
+                                    cafile=ctx.cafile,
+                                )
                             )
-                        )
                     else:
                         log.warning(
                             "[appgate-operator/%s] Running in dry-mode, nothing will be created",
