@@ -199,13 +199,14 @@ class AppgateState:
         return AppgateState(new_entities_set)
 
     def debug(self, header: str | None = None, entity: str | None = None) -> None:
-        if header:
-            log.info("%s", header)
-        for e, es in (
-            {entity: self.entities_set[entity]} if entity else self.entities_set
-        ).items():
-            for n in es.entities_by_name.keys():
-                log.info(" - [%s] %s", e, n)
+        if is_debug():
+            if header:
+                log.info("%s", header)
+            for e, es in (
+                {entity: self.entities_set[entity]} if entity else self.entities_set
+            ).items():
+                for n in es.entities_by_name.keys():
+                    log.info(" - [%s] %s", e, n)
 
     def dump(
         self,
@@ -917,4 +918,6 @@ def create_appgate_plan(
         )
         for k, v in expected_state.entities_set.items()
     }
+    expected_state.debug(header="Expected State")
+    current_state.debug(header="Current State")
     return AppgatePlan(entities_plan=entities_plan)
