@@ -21,7 +21,7 @@ from appgate.types import (
     dump_entity,
     EntityWrapper,
     EntitiesSet,
-    EntityClient,
+    EntityClient, GitCommitState,
 )
 
 
@@ -186,24 +186,51 @@ class GitEntityClient(EntityClient):
     version: str = attrib()
     kind: str = attrib()
     repository_path: Path = attrib()
-    git: GitRepo = attrib()
+    git_repo: GitRepo = attrib()
     branch: str = attrib()
+    commits: List[Tuple[Path, GitCommitState]] = attrib()
 
-    async def create(self, e: Entity_T) -> None:
+    def with_commit(self, state: GitCommitState, file: Path) -> "GitEntityClient":
+        self.commits.append((file, state))
+        return evolve(self, commits=self.commits)
+
+    async def init(self) -> EntityClient:
+        self.commits = []
+        return self
+
+    async def create(self, e: Entity_T) -> EntityClient:
         p = entity_path(self.repository_path, self.kind)
+        log.info("Creating file %s for entity %s", p, e.name)
         p.mkdir(exist_ok=True)
-        git_dump(e, self.version, p)
+        file = git_dump(e, self.version, p)
+        self.commits.append((file, "ADD"))
+        return self
 
-    async def delete(self, name: str) -> None:
+    async def delete(self, name: str) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / f"{name}.yaml"
+        self.commits.append((p, "REMOVE"))
+        log.info("Removing file %s for entity %s", p, name)
         if p.exists():
             p.unlink()
         else:
             log.warning("File %s should be deleted but it's not present")
+        return self
 
-    async def modify(self, e: Entity_T) -> None:
+    async def modify(self, e: Entity_T) -> EntityClient:
         await self.delete(e.name)
         await self.create(e)
+        return self
 
-    async def commit(self) -> None:
-        self.git.commit_change(self.branch)
+    async def commit(self) -> EntityClient:
+        if not self.commits:
+            return self
+        log.info("Committing changes for entities %s:", self.kind)
+        for p, o in self.commits:
+            if o == "ADD":
+                log.info(" - New commit: [%s] %s", o, p)
+                self.git_repo.repo.index.add([str(p)])
+            elif o == "REMOVE":
+                log.info(" + New commit: [%s] %s", o, p)
+                self.git_repo.repo.index.remove([str(p)])
+        self.git_repo.repo.index.commit(self.branch)
+        return self
