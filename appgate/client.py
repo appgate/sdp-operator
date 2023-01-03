@@ -54,7 +54,7 @@ class K8sEntityClient(EntityClient):
     namespace: str = attrib()
     kind: str = attrib()
 
-    async def create(self, e: Entity_T) -> None:
+    async def create(self, e: Entity_T) -> EntityClient:
         log.info("Creating k8s entity %s", e.name)
         data = dump_entity(EntityWrapper(e), self.kind, None)
         self.api.create_namespaced_custom_object(  # type: ignore
@@ -64,8 +64,9 @@ class K8sEntityClient(EntityClient):
             plural(self.kind),
             data,
         )
+        return self
 
-    async def delete(self, name: str) -> None:
+    async def delete(self, name: str) -> EntityClient:
         log.info("Deleting k8s entity %s", name)
         self.api.delete_namespaced_custom_object(
             self.domain,
@@ -74,8 +75,9 @@ class K8sEntityClient(EntityClient):
             plural(self.kind),
             k8s_name(name),
         )
+        return self
 
-    async def modify(self, e: Entity_T) -> None:
+    async def modify(self, e: Entity_T) -> EntityClient:
         log.info("Updating k8s entity %s", e.name)
         data = dump_entity(EntityWrapper(e), self.kind, f"v{self.version}")
         self.api.patch_namespaced_custom_object(  # type: ignore
@@ -86,6 +88,7 @@ class K8sEntityClient(EntityClient):
             k8s_name(data["name"]),
             data,
         )
+        return self
 
 
 class AppgateEntityClient(EntityClient):
@@ -127,8 +130,9 @@ class AppgateEntityClient(EntityClient):
             return entities + self.magic_entities
         return entities
 
-    async def create(self, entity: Entity_T) -> None:
+    async def create(self, entity: Entity_T) -> EntityClient:
         await self.post(entity)
+        return self
 
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
@@ -150,8 +154,9 @@ class AppgateEntityClient(EntityClient):
             return None
         return self.load(data)
 
-    async def modify(self, entity: Entity_T) -> None:
+    async def modify(self, entity: Entity_T) -> EntityClient:
         await self.put(entity)
+        return self
 
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
@@ -170,17 +175,16 @@ class AppgateEntityClient(EntityClient):
             return None
         return self.load(data)
 
-    async def delete(self, id: str) -> bool:
+    async def delete(self, id: str) -> EntityClient:
         log.info(
             "[appgate-client/%s] DELETE [%s]",
             self.kind,
             id,
         )
         if self.dry_run:
-            return False
-        if not await self._client.delete(f"{self.path}/{id}"):
-            return False
-        return True
+            return self
+        await self._client.delete(f"{self.path}/{id}")
+        return self
 
 
 def load_latest_entity_generation(key: str, value: str) -> LatestEntityGeneration:
