@@ -3,7 +3,7 @@ import sys
 from asyncio import Queue
 from contextlib import AsyncExitStack
 from copy import deepcopy
-from typing import Optional, Type, Dict, Callable, Any
+from typing import Optional, Type, Dict, Callable, Any, Tuple
 import threading
 
 from kubernetes.client.rest import ApiException
@@ -52,7 +52,9 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-async def get_current_appgate_state(ctx: Context) -> AppgateState:
+async def get_current_appgate_state(
+    ctx: Context, appgate_client: AppgateClient | None = None
+) -> Tuple[AppgateState, AppgateClient]:
     """
     Gets the current AppgateState for controller
     """
@@ -64,17 +66,19 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         log.warning("[appgate-operator/%s] Ignoring SSL certificates!", ctx.namespace)
     if ctx.device_id is None:
         raise AppgateException("No device id specified")
-    async with AppgateClient(
-        controller=ctx.controller,
-        user=ctx.user,
-        password=ctx.password,
-        provider=ctx.provider,
-        device_id=ctx.device_id,
-        version=api_spec.api_version,
-        no_verify=ctx.no_verify,
-        cafile=ctx.cafile,
-        expiration_time_delta=ctx.timeout,
-    ) as appgate_client:
+    if not appgate_client:
+        appgate_client = AppgateClient(
+            controller=ctx.controller,
+            user=ctx.user,
+            password=ctx.password,
+            provider=ctx.provider,
+            device_id=ctx.device_id,
+            version=api_spec.api_version,
+            no_verify=ctx.no_verify,
+            cafile=ctx.cafile,
+            expiration_time_delta=ctx.timeout,
+        )
+    async with appgate_client as appgate_client:
         if not appgate_client.authenticated:
             log.error(
                 "[appgate-operator/%s] Unable to authenticate with controller",
@@ -98,7 +102,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
             raise AppgateException("Error reading current state")
         appgate_state = AppgateState(entities_set=entities_set)
 
-    return appgate_state
+    return appgate_state, appgate_client
 
 
 def run_entity_loop(
@@ -284,7 +288,9 @@ async def main_loop(
         ",".join(ctx.exclude_tags) if ctx.exclude_tags else "None",
     )
     log.info("[appgate-operator/%s] Getting current state from controller", namespace)
-    current_appgate_state = await get_current_appgate_state(ctx=ctx)
+    current_appgate_state, appgate_client = await get_current_appgate_state(
+        ctx=ctx, appgate_client=None
+    )
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
         tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
@@ -308,7 +314,6 @@ async def main_loop(
         namespace,
     )
     event_errors = []
-    appgate_client = None
     while True:
         try:
             log.info("[appgate-operator/%s] Waiting for event", namespace)
@@ -390,7 +395,9 @@ async def main_loop(
 
             if ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
-                current_appgate_state = await get_current_appgate_state(ctx=ctx)
+                current_appgate_state, appgate_client = await get_current_appgate_state(
+                    ctx=ctx, appgate_client=appgate_client
+                )
                 total_appgate_state = deepcopy(current_appgate_state)
 
             # Create a plan

@@ -245,7 +245,7 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(
     ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
-    current_appgate_state = await get_current_appgate_state(ctx)
+    current_appgate_state, _ = await get_current_appgate_state(ctx)
     expected_appgate_state = AppgateState(
         {
             k: v.entities_with_tags(
