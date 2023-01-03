@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: ippools-v14.beta.appgate.com
+  name: ippools.v14.sdp.appgate.com
 spec:
-  group: beta.appgate.com
+  group: v14.sdp.appgate.com
   names:
-    kind: IpPool-v14
-    plural: ippools-v14
+    kind: IpPool
+    plural: ippools
     shortNames:
-    - ipp-v14
-    singular: ippool-v14
+    - ipp
+    singular: ippool
   scope: Namespaced
   versions:
   - name: v1

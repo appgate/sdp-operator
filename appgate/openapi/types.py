@@ -47,7 +47,7 @@ SPEC_ENTITIES = {
     "/service-users": "ServiceUser",
 }
 
-K8S_APPGATE_DOMAIN = "beta.appgate.com"
+K8S_APPGATE_DOMAIN = "sdp.appgate.com"
 K8S_APPGATE_VERSION = "v1"
 ENTITY_METADATA_ATTRIB_NAME = "_entity_metadata"
 APPGATE_METADATA_ATTRIB_NAME = "appgate_metadata"
