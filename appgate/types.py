@@ -105,17 +105,20 @@ GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 
 
 class EntityClient:
-    async def create(self, e: Entity_T) -> None:
+    async def init(self) -> "EntityClient":
+        return self
+
+    async def create(self, e: Entity_T) -> "EntityClient":
         raise NotImplementedError
 
-    async def delete(self, name: str) -> None:
+    async def delete(self, name: str) -> "EntityClient":
         raise NotImplementedError
 
-    async def modify(self, e: Entity_T) -> None:
+    async def modify(self, e: Entity_T) -> "EntityClient":
         raise NotImplementedError
 
-    async def commit(self) -> None:
-        pass
+    async def commit(self) -> "EntityClient":
+        return self
 
 
 @attrs(slots=True, frozen=True)
