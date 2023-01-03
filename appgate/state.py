@@ -460,17 +460,20 @@ async def plan_apply(
         )
 
     has_errors = len(errors) > 0
-    return Plan(
-        create=plan.create,
-        not_to_create=plan.not_to_create,
-        share=plan.share,
-        delete=plan.delete,
-        not_to_delete=plan.not_to_delete,
-        modify=plan.modify,
-        not_to_modify=plan.not_to_modify,
-        modifications_diff=plan.modifications_diff,
-        errors=errors if has_errors else None,
-    ), entity_client
+    return (
+        Plan(
+            create=plan.create,
+            not_to_create=plan.not_to_create,
+            share=plan.share,
+            delete=plan.delete,
+            not_to_delete=plan.not_to_delete,
+            modify=plan.modify,
+            not_to_modify=plan.not_to_modify,
+            modifications_diff=plan.modifications_diff,
+            errors=errors if has_errors else None,
+        ),
+        entity_client,
+    )
 
 
 @attrs
@@ -523,7 +526,9 @@ async def appgate_plan_apply(
         )
         for k, v in appgate_plan.ordered_entities_plan(api_spec)
     }
-    return AppgatePlan(entities_plan={k: v[0] for k, v in entities_plan.items()}), {k: v[1] for k, v in entities_plan.items()}
+    return AppgatePlan(entities_plan={k: v[0] for k, v in entities_plan.items()}), {
+        k: v[1] for k, v in entities_plan.items()
+    }
 
 
 def entities_conflict_summary(
