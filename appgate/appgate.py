@@ -73,6 +73,7 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         version=api_spec.api_version,
         no_verify=ctx.no_verify,
         cafile=ctx.cafile,
+        expiration_time_delta=ctx.timeout,
     ) as appgate_client:
         if not appgate_client.authenticated:
             log.error(
@@ -422,6 +423,7 @@ async def main_loop(
                                     version=ctx.api_spec.api_version,
                                     no_verify=ctx.no_verify,
                                     cafile=ctx.cafile,
+                                    expiration_time_delta=ctx.timeout,
                                 )
                             )
                     else:
