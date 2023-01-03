@@ -347,6 +347,10 @@ class AppgateClient:
                     log.error(
                         "[aggpate-client] %s :: %s: %s", url, resp.status, error_data
                     )
+                    if resp.status == 401:
+                        # Renew the token and retry again
+                        await self.login()
+                        return await self.request(verb=verb, path=path, data=data)
                     raise AppgateException(
                         f"Error: [{method} {url} {resp.status}] {error_data}"
                     )
