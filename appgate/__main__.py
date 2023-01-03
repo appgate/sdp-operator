@@ -261,6 +261,7 @@ async def dump_entities(
                 no_verify=ctx.no_verify,
                 cafile=ctx.cafile,
                 expiration_time_delta=ctx.timeout,
+                dry_run=ctx.dry_run_mode,
             )
         )
         current_appgate_state = await get_current_appgate_state(ctx, appgate_client)

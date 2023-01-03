@@ -451,6 +451,7 @@ async def main_loop(
                 no_verify=ctx.no_verify,
                 cafile=ctx.cafile,
                 expiration_time_delta=ctx.timeout,
+                dry_run=ctx.dry_run_mode,
             )
         )
         await operator(queue, ctx, k8s_configmap_client, appgate_client)

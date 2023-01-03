@@ -279,10 +279,10 @@ class AppgateClient:
         provider: str,
         version: int,
         device_id: str,
+        dry_run: bool,
         expiration_time_delta: int,
         no_verify: bool = False,
         cafile: Optional[Path] = None,
-        dry_run: bool = False,
     ) -> None:
         self.controller = controller
         self.user = user
