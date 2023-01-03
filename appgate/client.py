@@ -309,7 +309,11 @@ class AppgateClient:
         return None
 
     async def request(
-        self, verb: str, path: str, data: Optional[Dict[str, Any]] = None
+        self,
+        verb: str,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        should_retry: bool = True,
     ) -> Optional[Dict[str, Any]]:
         verbs = {
             "POST": self._session.post,
@@ -347,10 +351,13 @@ class AppgateClient:
                     log.error(
                         "[aggpate-client] %s :: %s: %s", url, resp.status, error_data
                     )
-                    if resp.status == 401:
-                        # Renew the token and retry again
-                        await self.login()
-                        return await self.request(verb=verb, path=path, data=data)
+                    if resp.status in [401, 403]:
+                        # Renew the token and retry again if needed
+                        if should_retry:
+                            await self.login()
+                            return await self.request(
+                                verb=verb, path=path, data=data, should_retry=False
+                            )
                     raise AppgateException(
                         f"Error: [{method} {url} {resp.status}] {error_data}"
                     )
