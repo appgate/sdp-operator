@@ -297,13 +297,13 @@ class AppgateClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.close()
 
-    def auth_header(self) -> Optional[str]:
+    async def auth_header(self) -> Optional[str]:
         if (
             self._expiration_time
             and datetime.datetime.now().timestamp() >= self._expiration_time
         ):
             log.info("[appgate-client] Renewing auth token")
-            self.login()
+            await self.login()
         if self._token:
             return f"Bearer {self._token}"
         return None

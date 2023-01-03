@@ -5,6 +5,7 @@ import sys
 import os
 from argparse import ArgumentParser
 from asyncio import Queue
+from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Optional, Dict, List, Callable, FrozenSet, Iterable
 import datetime
@@ -20,7 +21,7 @@ from kubernetes.config import (
     load_incluster_config,
 )
 
-from appgate.client import K8SConfigMapClient
+from appgate.client import K8SConfigMapClient, AppgateClient
 from appgate.logger import set_level, is_debug
 from appgate.appgate import main_loop, get_current_appgate_state, start_entity_loop, log
 from appgate.openapi.openapi import entity_names, generate_crd, SPEC_DIR
@@ -245,36 +246,49 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(
     ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
-    current_appgate_state, _ = await get_current_appgate_state(ctx)
-    expected_appgate_state = AppgateState(
-        {
-            k: v.entities_with_tags(
-                ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
-            )
-            for k, v in current_appgate_state.entities_set.items()
-        }
-    )
-    if is_debug():
-        for entity_name, entity_set in current_appgate_state.entities_set.items():
-            for e in entity_set.entities:
-                log.debug(f"Got entitiy %s: %s [%s]", e.name, e.id, entity_name)
-    total_conflicts = resolve_appgate_state(
-        expected_state=expected_appgate_state,
-        total_appgate_state=current_appgate_state,
-        reverse=True,
-        api_spec=ctx.api_spec,
-    )
-    if total_conflicts:
-        log.error("[dump-entities] Found errors when getting current state")
-        entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
-    else:
-        current_appgate_state.dump(
-            api_version=f"v{ctx.api_spec.api_version}",
-            output_dir=output_dir,
-            stdout=stdout,
-            target_tags=ctx.target_tags,
-            exclude_tags=ctx.exclude_tags,
+    async with AsyncExitStack() as exit_stack:
+        appgate_client = await exit_stack.enter_async_context(
+            AppgateClient(
+                controller=ctx.controller,
+                user=ctx.user,
+                password=ctx.password,
+                provider=ctx.provider,
+                device_id=ctx.device_id,
+                version=ctx.api_spec.api_version,
+                no_verify=ctx.no_verify,
+                cafile=ctx.cafile,
+                expiration_time_delta=ctx.timeout,
+            ))
+        current_appgate_state = await get_current_appgate_state(ctx, appgate_client)
+        expected_appgate_state = AppgateState(
+            {
+                k: v.entities_with_tags(
+                    ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
+                )
+                for k, v in current_appgate_state.entities_set.items()
+            }
         )
+        if is_debug():
+            for entity_name, entity_set in current_appgate_state.entities_set.items():
+                for e in entity_set.entities:
+                    log.debug(f"Got entitiy %s: %s [%s]", e.name, e.id, entity_name)
+        total_conflicts = resolve_appgate_state(
+            expected_state=expected_appgate_state,
+            total_appgate_state=current_appgate_state,
+            reverse=True,
+            api_spec=ctx.api_spec,
+        )
+        if total_conflicts:
+            log.error("[dump-entities] Found errors when getting current state")
+            entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
+        else:
+            current_appgate_state.dump(
+                api_version=f"v{ctx.api_spec.api_version}",
+                output_dir=output_dir,
+                stdout=stdout,
+                target_tags=ctx.target_tags,
+                exclude_tags=ctx.exclude_tags,
+            )
 
 
 def main_dump_entities(
