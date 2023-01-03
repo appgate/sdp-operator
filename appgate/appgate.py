@@ -104,7 +104,7 @@ async def get_current_appgate_state(
 
 def generate_k8s_clients(
     api_spec: APISpec, namespace: str, k8s_api: CustomObjectsApi
-) -> Dict[str, EntityClient]:
+) -> Dict[str, EntityClient | None]:
     return {
         k: K8sEntityClient(
             api=k8s_api,
@@ -195,6 +195,8 @@ async def appgate_operator(
         namespace,
     )
     event_errors = []
+    appgate_client = None
+    entity_clients: Dict[str, EntityClient | None] | None = None
     while True:
         try:
             log.info("[%s/%s] Waiting for event", operator_name, namespace)
@@ -309,10 +311,8 @@ async def appgate_operator(
                     namespace,
                 )
                 async with AsyncExitStack() as exit_stack:
-                    appgate_client = None
-                    entity_clients: Dict[str, EntityClient] | None = None
                     k8s_api = None
-                    if not ctx.dry_run_mode and not ctx.reverse_mode:
+                    if not ctx.dry_run_mode and not ctx.reverse_mode and not entity_clients:
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
                         appgate_client = await exit_stack.enter_async_context(
@@ -344,11 +344,11 @@ async def appgate_operator(
                             namespace,
                         )
 
-                    new_plan = await appgate_plan_apply(
+                    new_plan, entity_clients = await appgate_plan_apply(
                         appgate_plan=plan,
                         namespace=namespace,
                         operator_name=operator_name,
-                        entity_clients=entity_clients,
+                        entity_clients=entity_clients or {},
                         k8s_configmap_client=k8s_configmap_client,
                         api_spec=ctx.api_spec,
                     )

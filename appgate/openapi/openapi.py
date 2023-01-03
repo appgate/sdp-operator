@@ -309,7 +309,7 @@ MAGIC_ENTITIES = {
 
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
-) -> Dict[str, EntityClient]:
+) -> Dict[str, EntityClient | None]:
     def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
         magic_entities = None
         # We filter the None's in the caller anyway

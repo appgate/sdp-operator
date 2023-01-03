@@ -509,7 +509,7 @@ async def appgate_plan_apply(
     operator_name: str,
     namespace: str,
     api_spec: APISpec,
-    entity_clients: Dict[str, EntityClient] | None = None,
+    entity_clients: Dict[str, EntityClient | None] | None = None,
     k8s_configmap_client: K8SConfigMapClient | None = None,
 ) -> Tuple[AppgatePlan, Dict[str, EntityClient | None]]:
     log.info("[%s/%s] AppgatePlan Summary:", operator_name, namespace)

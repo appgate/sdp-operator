@@ -135,7 +135,7 @@ def generate_git_entity_clients(
     repository_path: Path,
     branch: str,
     git: GitRepo,
-) -> Dict[str, EntityClient]:
+) -> Dict[str, EntityClient | None]:
     return {
         k: GitEntityClient(
             version=str(api_spec.api_version),
@@ -152,7 +152,7 @@ def generate_git_entity_clients(
 async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     error_events: List[AppgateEventError] = []
     git: GitRepo = get_git_repository(ctx)
-    log.ingo("Loading current state")
+    log.info("Loading current state")
     current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
@@ -229,7 +229,8 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 # This creates a commit for each plan application
                 # TODO: Implement the option of doing commits per entity or per entity_type
                 for e, c in git_entity_clients.items():
-                    await c.commit()
+                    if c:
+                        await c.commit()
                 git.push_change(branch)
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
@@ -241,7 +242,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     "[git-operator] No changes in the git repository. Sleeping %s seconds",
                     ctx.timeout,
                 )
-            log.ingo("Loading current state")
+            log.info("Loading current state")
             current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
             current_state.debug("Current state after reload")
 
