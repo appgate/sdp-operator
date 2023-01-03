@@ -316,7 +316,11 @@ async def appgate_operator(
                 )
                 async with AsyncExitStack() as exit_stack:
                     k8s_api = None
-                    if not ctx.dry_run_mode and not ctx.reverse_mode and not entity_clients:
+                    if (
+                        not ctx.dry_run_mode
+                        and not ctx.reverse_mode
+                        and not entity_clients
+                    ):
                         if ctx.device_id is None:
                             raise AppgateException("No device id specified")
                         appgate_client = await exit_stack.enter_async_context(
