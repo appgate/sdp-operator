@@ -333,8 +333,10 @@ async def plan_apply(
     operator_name: str,
     k8s_configmap_client: K8SConfigMapClient | None,
     entity_client: EntityClient | None = None,
-) -> Plan:
+) -> Tuple[Plan, EntityClient | None]:
     errors = set()
+    if entity_client:
+        entity_client = await entity_client.init()
     for e in plan.create.entities:
         log.info(
             "[%s/%s] + %s: %s [%s]",
@@ -346,7 +348,7 @@ async def plan_apply(
         )
         if entity_client:
             try:
-                await entity_client.create(e.value)
+                entity_client = await entity_client.create(e.value)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
@@ -387,7 +389,7 @@ async def plan_apply(
                 log.info("%s", d.rstrip())
         if entity_client:
             try:
-                await entity_client.modify(e.value)
+                entity_client = await entity_client.modify(e.value)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
@@ -423,7 +425,7 @@ async def plan_apply(
         )
         if entity_client:
             try:
-                await entity_client.delete(e.id)
+                entity_client = await entity_client.delete(e.id)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)
@@ -468,7 +470,7 @@ async def plan_apply(
         not_to_modify=plan.not_to_modify,
         modifications_diff=plan.modifications_diff,
         errors=errors if has_errors else None,
-    )
+    ), entity_client
 
 
 @attrs
@@ -509,7 +511,7 @@ async def appgate_plan_apply(
     api_spec: APISpec,
     entity_clients: Dict[str, EntityClient] | None = None,
     k8s_configmap_client: K8SConfigMapClient | None = None,
-) -> AppgatePlan:
+) -> Tuple[AppgatePlan, Dict[str, EntityClient | None]]:
     log.info("[%s/%s] AppgatePlan Summary:", operator_name, namespace)
     entities_plan = {
         k: await plan_apply(
@@ -521,7 +523,7 @@ async def appgate_plan_apply(
         )
         for k, v in appgate_plan.ordered_entities_plan(api_spec)
     }
-    return AppgatePlan(entities_plan=entities_plan)
+    return AppgatePlan(entities_plan={k: v[0] for k, v in entities_plan.items()}), {k: v[1] for k, v in entities_plan.items()}
 
 
 def entities_conflict_summary(

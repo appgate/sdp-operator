@@ -1,4 +1,5 @@
 import functools
+from typing import Tuple, List
 
 import yaml
 from git import Repo, GitCommandError
@@ -6,7 +7,7 @@ from github import Github
 from pathlib import Path
 import shutil
 
-from attr import attrib, attrs
+from attr import attrib, attrs, evolve
 
 from appgate.attrs import K8S_LOADER
 from appgate.logger import log
@@ -29,27 +30,28 @@ class EnvironmentVariableNotFoundException(Exception):
     pass
 
 
-def git_dump(entity: Entity_T, api_version: str, dest: Path):
+def git_dump(entity: Entity_T, api_version: str, dest: Path) -> Path:
     entity_type = entity.__class__.__qualname__
     entity_file = dest / f"{entity.name.lower().replace(' ', '-')}.yaml"
     log.info("Dumping entity %s: %s", entity.name, entity_file)
     dumped_entity = dump_entity(EntityWrapper(entity), entity_type, f"v{api_version}")
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
+    return entity_file
 
 
 def git_load(file: Path, entity_type: type) -> Entity_T:
     with file.open("r") as f:
         data = yaml.safe_load(f)
-        return K8S_LOADER.load(data, None, entity_type)
+        return K8S_LOADER.load(data["spec"], None, entity_type)
 
 
 def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
     entities_set = {}
     for e, v in api_spec.api_entities.items():
-        dest = repository_path / e
+        dest = repository_path / e.lower()
         if not dest.is_dir():
-            log.info("Directory for entities %s not found, ignoring", dest)
+            log.debug("Directory for entities %s not found, ignoring", dest)
             entities_set[e] = EntitiesSet()
             continue
         entities_set[e] = EntitiesSet(
@@ -63,7 +65,7 @@ def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> Appgat
 class GitRepo:
     repository: str = attrib()
     repository_path: Path = attrib()
-    git_repo: Repo = attrib()
+    repo: Repo = attrib()
     base_branch: str = attrib()
     vendor: str = attrib()
     dry_run: bool = attrib()
@@ -76,31 +78,31 @@ class GitRepo:
     def checkout_branch(self, branch: str) -> None:
         # Checkout the fork if we are using a forked repository
         log.info(
-            f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
+            f"[git-operator] Checking out new branch {self.repo.remote().name}/{branch}"
         )
         if self.dry_run:
             return
-        self.git_repo.git.branch(branch)
-        self.git_repo.git.checkout(branch)
+        self.repo.git.branch(branch)
+        self.repo.git.checkout(branch)
 
     def needs_pull_request(self) -> bool:
-        self.git_repo.index.add([f"{self.repository_path}/*"])
-        return self.git_repo.is_dirty()
+        self.repo.index.add([f"{self.repository_path}/*"])
+        return self.repo.is_dirty()
 
     def commit_change(self, branch: str) -> None:
         log.info(
-            f"[git-operator] Committing changes to {self.git_repo.remote().name}:{branch}"
+            f"[git-operator] Committing changes to {self.repo.remote().name}:{branch}"
         )
         if not self.dry_run:
-            self.git_repo.index.commit(branch)
+            self.repo.index.commit(branch)
 
     def push_change(self, branch: str) -> None:
         log.info(
-            f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
+            f"[git-operator] Pushing changes to {self.repo.remote().name}:{branch}"
         )
         if not self.dry_run:
-            self.git_repo.git.push(
-                "--set-upstream", self.git_repo.remote().name, branch
+            self.repo.git.push(
+                "--set-upstream", self.repo.remote().name, branch
             )
 
     def create_pull_request(self, branch: str) -> None:
@@ -134,7 +136,7 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         token=token,
         repository=repository,
         repository_fork=ctx.git_repository_fork,
-        git_repo=git_repo,
+        repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
         repository_path=repository_path,

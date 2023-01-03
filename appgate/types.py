@@ -68,6 +68,7 @@ __all__ = [
     "dump_entity",
     "k8s_name",
     "EntityClient",
+    "GitCommitState",
 ]
 
 
@@ -163,6 +164,9 @@ class EventObject:
 class K8SEvent:
     type: Literal["ADDED", "DELETED", "MODIFIED"] = attrib()
     object: EventObject = attrib()
+
+
+GitCommitState = Literal["ADD", "REMOVE"]
 
 
 @attrs(slots=True, frozen=True)
