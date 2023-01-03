@@ -247,6 +247,9 @@ async def dump_entities(
     ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
     async with AsyncExitStack() as exit_stack:
+        if ctx.device_id is None:
+            raise AppgateException("No device id specified")
+
         appgate_client = await exit_stack.enter_async_context(
             AppgateClient(
                 controller=ctx.controller,
@@ -258,7 +261,8 @@ async def dump_entities(
                 no_verify=ctx.no_verify,
                 cafile=ctx.cafile,
                 expiration_time_delta=ctx.timeout,
-            ))
+            )
+        )
         current_appgate_state = await get_current_appgate_state(ctx, appgate_client)
         expected_appgate_state = AppgateState(
             {
@@ -280,7 +284,9 @@ async def dump_entities(
         )
         if total_conflicts:
             log.error("[dump-entities] Found errors when getting current state")
-            entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
+            entities_conflict_summary(
+                conflicts=total_conflicts, namespace=ctx.namespace
+            )
         else:
             current_appgate_state.dump(
                 api_version=f"v{ctx.api_spec.api_version}",

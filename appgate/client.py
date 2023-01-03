@@ -26,7 +26,9 @@ class EntityClient:
         singleton: bool,
         load: Callable[[Dict[str, Any]], Entity_T],
         dump: Callable[[Entity_T], Dict[str, Any]],
+        kind: str,
         magic_entities: Optional[List[Entity_T]] = None,
+        dry_run: bool = False,
     ) -> None:
         self._client = appgate_client
         self.path = path
@@ -34,6 +36,8 @@ class EntityClient:
         self.dump = dump
         self.singleton = singleton
         self.magic_entities = magic_entities
+        self.dry_run = dry_run
+        self.kind = kind
 
     async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
@@ -56,10 +60,12 @@ class EntityClient:
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] POST %s [%s]",
-            entity.__class__.__name__,
+            self.kind,
             entity.name,
             entity.id,
         )
+        if self.dry_run:
+            return None
         body = self.dump(entity)
         body["id"] = entity.id
         data = await self._client.post(self.path, body=body)
@@ -74,10 +80,12 @@ class EntityClient:
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] PUT %s [%s]",
-            entity.__class__.__name__,
+            self.kind,
             entity.name,
             entity.id,
         )
+        if self.dry_run:
+            return None
         path = f"{self.path}/{entity.id}"
         if self.singleton:
             path = self.path
@@ -87,6 +95,13 @@ class EntityClient:
         return self.load(data)
 
     async def delete(self, id: str) -> bool:
+        log.info(
+            "[appgate-client/%s] DELETE [%s]",
+            self.kind,
+            id,
+        )
+        if self.dry_run:
+            return False
         if not await self._client.delete(f"{self.path}/{id}"):
             return False
         return True
@@ -267,6 +282,7 @@ class AppgateClient:
         expiration_time_delta: int,
         no_verify: bool = False,
         cafile: Optional[Path] = None,
+        dry_run: bool = False,
     ) -> None:
         self.controller = controller
         self.user = user
@@ -282,6 +298,7 @@ class AppgateClient:
             ssl.create_default_context(cafile=str(cafile)) if cafile else None
         )
         self._expiration_time_delta = expiration_time_delta
+        self.dry_run = dry_run
 
     async def close(self) -> None:
         await self._session.close()
@@ -328,7 +345,7 @@ class AppgateClient:
             "Accept": f"application/vnd.appgate.peer-v{self.version}+json",
             "Content-Type": "application/json",
         }
-        auth_header = self.auth_header()
+        auth_header = await self.auth_header()
         if auth_header:
             headers["Authorization"] = auth_header
         url = f"{self.controller}/{path}"
@@ -433,4 +450,6 @@ class AppgateClient:
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
             dump=lambda e: dumper.dump(e),
             magic_entities=magic_entities,
+            kind=entity.__class__.__qualname__,
+            dry_run=self.dry_run,
         )
