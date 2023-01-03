@@ -66,29 +66,28 @@ async def get_current_appgate_state(
         log.warning("[appgate-operator/%s] Ignoring SSL certificates!", ctx.namespace)
     if ctx.device_id is None:
         raise AppgateException("No device id specified")
-    async with appgate_client as appgate_client:
-        if not appgate_client.authenticated:
-            log.error(
-                "[appgate-operator/%s] Unable to authenticate with controller",
-                ctx.namespace,
-            )
-            raise AppgateException("Error authenticating")
-
-        entity_clients = generate_api_spec_clients(
-            api_spec=api_spec, appgate_client=appgate_client
+    if not appgate_client.authenticated:
+        log.error(
+            "[appgate-operator/%s] Unable to authenticate with controller",
+            ctx.namespace,
         )
-        entities_set = {}
-        for entity, client in entity_clients.items():
-            entities = await client.get()
-            if entities is not None:
-                entities_set[entity] = EntitiesSet({EntityWrapper(e) for e in entities})
-        if len(entities_set) < len(entity_clients):
-            log.error(
-                "[appgate-operator/%s] Unable to get entities from controller",
-                ctx.namespace,
-            )
-            raise AppgateException("Error reading current state")
-        appgate_state = AppgateState(entities_set=entities_set)
+        raise AppgateException("Error authenticating")
+
+    entity_clients = generate_api_spec_clients(
+        api_spec=api_spec, appgate_client=appgate_client
+    )
+    entities_set = {}
+    for entity, client in entity_clients.items():
+        entities = await client.get()
+        if entities is not None:
+            entities_set[entity] = EntitiesSet({EntityWrapper(e) for e in entities})
+    if len(entities_set) < len(entity_clients):
+        log.error(
+            "[appgate-operator/%s] Unable to get entities from controller",
+            ctx.namespace,
+        )
+        raise AppgateException("Error reading current state")
+    appgate_state = AppgateState(entities_set=entities_set)
 
     return appgate_state
 
