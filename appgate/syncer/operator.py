@@ -34,7 +34,8 @@ from appgate.types import (
     APPGATE_LOG_LEVEL,
     GIT_REPOSITORY_FORK_ENV,
     BUILTIN_TAGS,
-    EntityClient, is_target,
+    EntityClient,
+    is_target,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -43,7 +44,8 @@ from appgate.openapi.types import (
 from appgate.state import (
     appgate_state_empty,
     create_appgate_plan,
-    appgate_plan_apply, AppgateState,
+    appgate_plan_apply,
+    AppgateState,
 )
 from appgate.syncer.git import (
     get_git_repository,
@@ -173,7 +175,9 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 event.entity.__class__.__qualname__,
                 event.entity.name,
             )
-            if ctx.target_tags and is_target(EntityWrapper(event.entity), ctx.target_tags):
+            if ctx.target_tags and is_target(
+                EntityWrapper(event.entity), ctx.target_tags
+            ):
                 expected_state.with_entity(
                     EntityWrapper(event.entity),
                     event.op,
@@ -235,8 +239,8 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
                 # git.commit_change(branch)
-                #git.push_change(branch)
-                #git.create_pull_request(branch)
+                # git.push_change(branch)
+                # git.create_pull_request(branch)
             else:
                 log.info(
                     "[git-operator] No changes in the git repository. Sleeping %s seconds",
@@ -244,7 +248,6 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 )
             log.info("Loading current state")
             current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
-            current_state.debug("Current state after reload")
 
 
 def main_git_operator(args: GitOperatorArguments) -> None:

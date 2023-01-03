@@ -22,7 +22,8 @@ from appgate.types import (
     dump_entity,
     EntityWrapper,
     EntitiesSet,
-    EntityClient, GitCommitState,
+    EntityClient,
+    GitCommitState,
 )
 
 
@@ -101,9 +102,7 @@ class GitRepo:
             f"[git-operator] Pushing changes to {self.repo.remote().name}:{branch}"
         )
         if not self.dry_run:
-            self.repo.git.push(
-                "--set-upstream", self.repo.remote().name, branch
-            )
+            self.repo.git.push("--set-upstream", self.repo.remote().name, branch)
 
     def create_pull_request(self, branch: str) -> None:
         pass
