@@ -34,7 +34,7 @@ from appgate.types import (
     APPGATE_LOG_LEVEL,
     GIT_REPOSITORY_FORK_ENV,
     BUILTIN_TAGS,
-    EntityClient,
+    EntityClient, is_target,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -43,7 +43,7 @@ from appgate.openapi.types import (
 from appgate.state import (
     appgate_state_empty,
     create_appgate_plan,
-    appgate_plan_apply,
+    appgate_plan_apply, AppgateState,
 )
 from appgate.syncer.git import (
     get_git_repository,
@@ -142,7 +142,8 @@ def generate_git_entity_clients(
             kind=k,
             repository_path=repository_path,
             branch=branch,
-            git=git,
+            git_repo=git,
+            commits=[],
         )
         for k in api_spec.api_entities.keys()
     }
@@ -151,10 +152,11 @@ def generate_git_entity_clients(
 async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     error_events: List[AppgateEventError] = []
     git: GitRepo = get_git_repository(ctx)
+    log.ingo("Loading current state")
     current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
-
+    git_entity_clients = None
     while True:
         try:
             event: AppgateEvent = await asyncio.wait_for(
@@ -171,11 +173,19 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 event.entity.__class__.__qualname__,
                 event.entity.name,
             )
-            expected_state.with_entity(
-                EntityWrapper(event.entity),
-                event.op,
-                current_appgate_state=current_state,
-            )
+            if ctx.target_tags and is_target(EntityWrapper(event.entity), ctx.target_tags):
+                expected_state.with_entity(
+                    EntityWrapper(event.entity),
+                    event.op,
+                    current_appgate_state=current_state,
+                )
+            else:
+                log.info(
+                    '[git-operator] Ignoring event: %s entity of type %s "%s"',
+                    event.op,
+                    event.entity.__class__.__qualname__,
+                    event.entity.name,
+                )
         except asyncio.exceptions.TimeoutError:
             if error_events:
                 for event_error in error_events:
@@ -197,15 +207,14 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
             )
             if plan.needs_apply:
                 log.info("[git-operator] Applying plan")
-                git_entity_clients = {}
-                if not ctx.dry_run:
+                if not git_entity_clients:
                     git_entity_clients = generate_git_entity_clients(
                         api_spec=ctx.api_spec,
                         repository_path=GIT_DUMP_DIR,
                         branch=branch,
                         git=git,
                     )
-                new_plan = await appgate_plan_apply(
+                new_plan, git_entity_clients = await appgate_plan_apply(
                     appgate_plan=plan,
                     namespace="git-operator",
                     operator_name="git-operator",
@@ -219,17 +228,22 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     sys.exit(1)
                 # This creates a commit for each plan application
                 # TODO: Implement the option of doing commits per entity or per entity_type
-                git.commit_change(branch)
+                for e, c in git_entity_clients.items():
+                    await c.commit()
+                git.push_change(branch)
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
                 # git.commit_change(branch)
-                git.push_change(branch)
-                git.create_pull_request(branch)
+                #git.push_change(branch)
+                #git.create_pull_request(branch)
             else:
                 log.info(
                     "[git-operator] No changes in the git repository. Sleeping %s seconds",
                     ctx.timeout,
                 )
+            log.ingo("Loading current state")
+            current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
+            current_state.debug("Current state after reload")
 
 
 def main_git_operator(args: GitOperatorArguments) -> None:
