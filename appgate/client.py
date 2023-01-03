@@ -408,7 +408,9 @@ class AppgateClient:
         if resp:
             self._token = resp["token"]
             self._expiration_time = (
-                datetime.datetime.fromisoformat(resp["expires"]).timestamp()
+                datetime.datetime.strptime(
+                    resp["expires"].split(".")[0], "%Y-%m-%dT%H:%M:%S"
+                ).timestamp()
                 - self._expiration_time_delta
             )
 
