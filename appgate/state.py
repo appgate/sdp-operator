@@ -117,7 +117,7 @@ def entities_op(
 
 def dump_entities(
     entities: Iterable[EntityWrapper],
-    version_suffix: str,
+    api_version: int,
     dump_file: Optional[Path],
     entity_type: str,
 ) -> Optional[List[str]]:
@@ -131,7 +131,7 @@ def dump_entities(
     log.info(f"Dumping entities of type %s", entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
-        dumped_entity = dump_entity(e, entity_type, version_suffix)
+        dumped_entity = dump_entity(e, entity_type, api_version)
         if not dumped_entity.get("spec"):
             continue
         appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
@@ -208,7 +208,7 @@ class AppgateState:
 
     def dump(
         self,
-        api_version: str,
+        api_version: int,
         output_dir: Optional[Path] = None,
         stdout: bool = False,
         target_tags: Optional[FrozenSet[str]] = None,

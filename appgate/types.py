@@ -1,4 +1,5 @@
 import datetime
+import functools
 import os
 import re
 from copy import deepcopy
@@ -69,6 +70,7 @@ __all__ = [
     "k8s_name",
     "EntityClient",
     "GitCommitState",
+    "crd_domain",
 ]
 
 
@@ -453,8 +455,13 @@ def k8s_name(name: str) -> str:
     return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
 
 
+@functools.lru_cache
+def crd_domain(api_version: int) -> str:
+    return f"v{api_version}.{K8S_APPGATE_DOMAIN}"
+
+
 def dump_entity(
-    entity: EntityWrapper, entity_type: str, version_suffix: str | None
+    entity: EntityWrapper, entity_type: str, api_version: int
 ) -> Dict[str, Any]:
     """
     name should match this regexp:
@@ -468,12 +475,9 @@ def dump_entity(
             entity.value,
             appgate_metadata=evolve(entity.value.appgate_metadata, uuid=entity.id),
         )
-    kind = entity_type
-    if version_suffix:
-        kind = f"{kind}-{version_suffix}"
     return {
-        "apiVersion": f"{K8S_APPGATE_DOMAIN}/{K8S_APPGATE_VERSION}",
-        "kind": kind,
+        "apiVersion": f"{crd_domain(api_version)}/{K8S_APPGATE_VERSION}",
+        "kind": entity_type,
         "metadata": {
             "name": entity_name if entity.is_singleton() else k8s_name(entity.name)
         },
