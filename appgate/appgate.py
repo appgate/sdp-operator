@@ -1,7 +1,6 @@
 import asyncio
 import sys
 from asyncio import Queue
-from contextlib import AsyncExitStack
 from copy import deepcopy
 from typing import Optional, Type, Dict, Callable, Any
 import threading
@@ -52,7 +51,9 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-async def get_current_appgate_state(ctx: Context) -> AppgateState:
+async def get_current_appgate_state(
+    ctx: Context, appgate_client: AppgateClient
+) -> AppgateState:
     """
     Gets the current AppgateState for controller
     """
@@ -64,38 +65,28 @@ async def get_current_appgate_state(ctx: Context) -> AppgateState:
         log.warning("[appgate-operator/%s] Ignoring SSL certificates!", ctx.namespace)
     if ctx.device_id is None:
         raise AppgateException("No device id specified")
-    async with AppgateClient(
-        controller=ctx.controller,
-        user=ctx.user,
-        password=ctx.password,
-        provider=ctx.provider,
-        device_id=ctx.device_id,
-        version=api_spec.api_version,
-        no_verify=ctx.no_verify,
-        cafile=ctx.cafile,
-    ) as appgate_client:
-        if not appgate_client.authenticated:
-            log.error(
-                "[appgate-operator/%s] Unable to authenticate with controller",
-                ctx.namespace,
-            )
-            raise AppgateException("Error authenticating")
-
-        entity_clients = generate_api_spec_clients(
-            api_spec=api_spec, appgate_client=appgate_client
+    if not appgate_client.authenticated:
+        log.error(
+            "[appgate-operator/%s] Unable to authenticate with controller",
+            ctx.namespace,
         )
-        entities_set = {}
-        for entity, client in entity_clients.items():
-            entities = await client.get()
-            if entities is not None:
-                entities_set[entity] = EntitiesSet({EntityWrapper(e) for e in entities})
-        if len(entities_set) < len(entity_clients):
-            log.error(
-                "[appgate-operator/%s] Unable to get entities from controller",
-                ctx.namespace,
-            )
-            raise AppgateException("Error reading current state")
-        appgate_state = AppgateState(entities_set=entities_set)
+        raise AppgateException("Error authenticating")
+
+    entity_clients = generate_api_spec_clients(
+        api_spec=api_spec, appgate_client=appgate_client
+    )
+    entities_set = {}
+    for entity, client in entity_clients.items():
+        entities = await client.get()
+        if entities is not None:
+            entities_set[entity] = EntitiesSet({EntityWrapper(e) for e in entities})
+    if len(entities_set) < len(entity_clients):
+        log.error(
+            "[appgate-operator/%s] Unable to get entities from controller",
+            ctx.namespace,
+        )
+        raise AppgateException("Error reading current state")
+    appgate_state = AppgateState(entities_set=entities_set)
 
     return appgate_state
 
@@ -255,8 +246,11 @@ async def start_entity_loop(
     await asyncio.to_thread(run, asyncio.get_event_loop())
 
 
-async def main_loop(
-    queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
+async def operator(
+    queue: Queue,
+    ctx: Context,
+    k8s_configmap_client: K8SConfigMapClient,
+    appgate_client: AppgateClient,
 ) -> None:
     namespace = ctx.namespace
     log.info("[appgate-operator/%s] Main loop started:", namespace)
@@ -283,7 +277,9 @@ async def main_loop(
         ",".join(ctx.exclude_tags) if ctx.exclude_tags else "None",
     )
     log.info("[appgate-operator/%s] Getting current state from controller", namespace)
-    current_appgate_state = await get_current_appgate_state(ctx=ctx)
+    current_appgate_state = await get_current_appgate_state(
+        ctx=ctx, appgate_client=appgate_client
+    )
     total_appgate_state = deepcopy(current_appgate_state)
     if ctx.cleanup_mode:
         tags_in_cleanup = ctx.builtin_tags.union(ctx.exclude_tags or frozenset())
@@ -388,7 +384,9 @@ async def main_loop(
 
             if ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
-                current_appgate_state = await get_current_appgate_state(ctx=ctx)
+                current_appgate_state = await get_current_appgate_state(
+                    ctx=ctx, appgate_client=appgate_client
+                )
                 total_appgate_state = deepcopy(current_appgate_state)
 
             # Create a plan
@@ -406,56 +404,51 @@ async def main_loop(
                     "[appgate-operator/%s] No more events for a while, creating a plan",
                     namespace,
                 )
-                async with AsyncExitStack() as exit_stack:
-                    appgate_client = None
-                    if not ctx.dry_run_mode:
-                        if ctx.device_id is None:
-                            raise AppgateException("No device id specified")
-                        appgate_client = await exit_stack.enter_async_context(
-                            AppgateClient(
-                                controller=ctx.controller,
-                                user=ctx.user,
-                                password=ctx.password,
-                                provider=ctx.provider,
-                                device_id=ctx.device_id,
-                                version=ctx.api_spec.api_version,
-                                no_verify=ctx.no_verify,
-                                cafile=ctx.cafile,
-                            )
-                        )
-                    else:
-                        log.warning(
-                            "[appgate-operator/%s] Running in dry-mode, nothing will be created",
-                            namespace,
-                        )
-                    new_plan = await appgate_plan_apply(
-                        appgate_plan=plan,
-                        namespace=namespace,
-                        entity_clients=generate_api_spec_clients(
-                            api_spec=ctx.api_spec, appgate_client=appgate_client
-                        )
-                        if appgate_client
-                        else {},
-                        k8s_configmap_client=k8s_configmap_client,
-                        api_spec=ctx.api_spec,
+                new_plan = await appgate_plan_apply(
+                    appgate_plan=plan,
+                    namespace=namespace,
+                    entity_clients=generate_api_spec_clients(
+                        api_spec=ctx.api_spec, appgate_client=appgate_client
+                    ),
+                    k8s_configmap_client=k8s_configmap_client,
+                    api_spec=ctx.api_spec,
+                )
+
+                if len(new_plan.errors) > 0:
+                    log.error(
+                        "[appgate-operator/%s] Found errors when applying plan:",
+                        namespace,
                     )
+                    for err in new_plan.errors:
+                        log.error("[appgate-operator/%s] Error %s:", namespace, err)
+                    sys.exit(1)
 
-                    if len(new_plan.errors) > 0:
-                        log.error(
-                            "[appgate-operator/%s] Found errors when applying plan:",
-                            namespace,
-                        )
-                        for err in new_plan.errors:
-                            log.error("[appgate-operator/%s] Error %s:", namespace, err)
-                        sys.exit(1)
-
-                    if appgate_client:
-                        current_appgate_state = new_plan.appgate_state
-                        expected_appgate_state = (
-                            expected_appgate_state.sync_generations()
-                        )
+                if not ctx.dry_run_mode:
+                    current_appgate_state = new_plan.appgate_state
+                    expected_appgate_state = expected_appgate_state.sync_generations()
             else:
                 log.info(
                     "[appgate-operator/%s] Nothing changed! Keeping watching!",
                     namespace,
                 )
+
+
+async def main_loop(
+    queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
+) -> None:
+    if ctx.device_id is None:
+        raise AppgateException("No device id specified")
+
+    async with AppgateClient(
+        controller=ctx.controller,
+        user=ctx.user,
+        password=ctx.password,
+        provider=ctx.provider,
+        device_id=ctx.device_id,
+        version=ctx.api_spec.api_version,
+        no_verify=ctx.no_verify,
+        cafile=ctx.cafile,
+        expiration_time_delta=ctx.timeout,
+        dry_run=ctx.dry_run_mode,
+    ) as appgate_client:
+        await operator(queue, ctx, k8s_configmap_client, appgate_client)

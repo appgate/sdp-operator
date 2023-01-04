@@ -3,7 +3,7 @@ import datetime
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union
+from typing import Dict, Any, Optional, List, Callable, Union, Type
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
@@ -26,7 +26,9 @@ class EntityClient:
         singleton: bool,
         load: Callable[[Dict[str, Any]], Entity_T],
         dump: Callable[[Entity_T], Dict[str, Any]],
+        kind: str,
         magic_entities: Optional[List[Entity_T]] = None,
+        dry_run: bool = False,
     ) -> None:
         self._client = appgate_client
         self.path = path
@@ -34,6 +36,8 @@ class EntityClient:
         self.dump = dump
         self.singleton = singleton
         self.magic_entities = magic_entities
+        self.dry_run = dry_run
+        self.kind = kind
 
     async def get(self) -> Optional[List[Entity_T]]:
         data = await self._client.get(self.path)
@@ -56,10 +60,12 @@ class EntityClient:
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] POST %s [%s]",
-            entity.__class__.__name__,
+            self.kind,
             entity.name,
             entity.id,
         )
+        if self.dry_run:
+            return None
         body = self.dump(entity)
         body["id"] = entity.id
         data = await self._client.post(self.path, body=body)
@@ -74,10 +80,12 @@ class EntityClient:
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] PUT %s [%s]",
-            entity.__class__.__name__,
+            self.kind,
             entity.name,
             entity.id,
         )
+        if self.dry_run:
+            return None
         path = f"{self.path}/{entity.id}"
         if self.singleton:
             path = self.path
@@ -87,6 +95,13 @@ class EntityClient:
         return self.load(data)
 
     async def delete(self, id: str) -> bool:
+        log.info(
+            "[appgate-client/%s] DELETE [%s]",
+            self.kind,
+            id,
+        )
+        if self.dry_run:
+            return False
         if not await self._client.delete(f"{self.path}/{id}"):
             return False
         return True
@@ -264,6 +279,8 @@ class AppgateClient:
         provider: str,
         version: int,
         device_id: str,
+        dry_run: bool,
+        expiration_time_delta: int,
         no_verify: bool = False,
         cafile: Optional[Path] = None,
     ) -> None:
@@ -274,11 +291,14 @@ class AppgateClient:
         self._session = aiohttp.ClientSession()
         self.device_id = device_id
         self._token = None
+        self._expiration_time: float | None = None
         self.version = version
         self.no_verify = no_verify
         self.ssl_context = (
             ssl.create_default_context(cafile=str(cafile)) if cafile else None
         )
+        self._expiration_time_delta = expiration_time_delta
+        self.dry_run = dry_run
 
     async def close(self) -> None:
         await self._session.close()
@@ -294,13 +314,23 @@ class AppgateClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.close()
 
-    def auth_header(self) -> Optional[str]:
+    async def auth_header(self) -> Optional[str]:
+        if (
+            self._expiration_time
+            and datetime.datetime.now().timestamp() >= self._expiration_time
+        ):
+            log.info("[appgate-client] Renewing auth token")
+            await self.login()
         if self._token:
             return f"Bearer {self._token}"
         return None
 
     async def request(
-        self, verb: str, path: str, data: Optional[Dict[str, Any]] = None
+        self,
+        verb: str,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        should_retry: bool = True,
     ) -> Optional[Dict[str, Any]]:
         verbs = {
             "POST": self._session.post,
@@ -315,7 +345,7 @@ class AppgateClient:
             "Accept": f"application/vnd.appgate.peer-v{self.version}+json",
             "Content-Type": "application/json",
         }
-        auth_header = self.auth_header()
+        auth_header = await self.auth_header()
         if auth_header:
             headers["Authorization"] = auth_header
         url = f"{self.controller}/{path}"
@@ -338,6 +368,13 @@ class AppgateClient:
                     log.error(
                         "[aggpate-client] %s :: %s: %s", url, resp.status, error_data
                     )
+                    if resp.status in [401, 403]:
+                        # Renew the token and retry again if needed
+                        if should_retry:
+                            await self.login()
+                            return await self.request(
+                                verb=verb, path=path, data=data, should_retry=False
+                            )
                     raise AppgateException(
                         f"Error: [{method} {url} {resp.status}] {error_data}"
                     )
@@ -387,6 +424,12 @@ class AppgateClient:
         resp = await self.post("admin/login", body=body)
         if resp:
             self._token = resp["token"]
+            self._expiration_time = (
+                datetime.datetime.strptime(
+                    resp["expires"].split(".")[0], "%Y-%m-%dT%H:%M:%S"
+                ).timestamp()
+                - self._expiration_time_delta
+            )
 
     @property
     def authenticated(self) -> bool:
@@ -394,7 +437,7 @@ class AppgateClient:
 
     def entity_client(
         self,
-        entity: type,
+        entity: Type[Entity_T],
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
@@ -407,4 +450,6 @@ class AppgateClient:
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
             dump=lambda e: dumper.dump(e),
             magic_entities=magic_entities,
+            kind=entity.__qualname__,
+            dry_run=self.dry_run,
         )
