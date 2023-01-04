@@ -90,3 +90,17 @@ sdp:
       tag: ""
       pullSecrets: []
       pullPolicy: Always
+
+    externalSecret: false
+    externalSecretType: ""
+    externalSecretSource:
+      vault:
+        address: ""
+
+## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
+serviceAccount:
+  create: true
+
+## @param rbac.create Whether to create & use RBAC resources or not
+rbac:
+  create: true
