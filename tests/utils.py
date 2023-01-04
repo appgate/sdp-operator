@@ -39,7 +39,7 @@ TestSpec = {
     "/entity-dep-nested": "EntityDepNested7",
     "/entity-dep-nested-nullable": "EntityDepNestedNullable",
     "/entity-discriminator": "EntityDiscriminator",
-    "/entity-default-value": "EntityDefaultValue",
+    "/entity-array": "EntityArray",
 }
 PEM_TEST = """-----BEGIN CERTIFICATE-----
 MIICEjCCAXsCAg36MA0GCSqGSIb3DQEBBQUAMIGbMQswCQYDVQQGEwJKUDEOMAwG
