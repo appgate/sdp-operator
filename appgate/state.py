@@ -106,14 +106,12 @@ def entities_op(
     cached_entity = current_entities.entities_by_name.get(entity.name)
     if cached_entity:
         entity = entity.with_id(id=cached_entity.id)
+    log.info("%s entity %s", op.title(), entity.name)
     if op == "ADDED":
-        log.info("Added entity %s", entity.name)
         entity_set.add(entity)
     elif op == "DELETED":
-        log.info("Deleted entity %s", entity.name)
         entity_set.delete(entity)
     elif op == "MODIFIED":
-        log.info("Modified entity %s", entity.name)
         entity_set.modify(entity)
 
 
