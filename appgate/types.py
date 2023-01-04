@@ -168,7 +168,7 @@ class K8SEvent:
     object: EventObject = attrib()
 
 
-GitCommitState = Literal["ADD", "REMOVE"]
+GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
 
 
 @attrs(slots=True, frozen=True)
