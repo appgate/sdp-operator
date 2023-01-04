@@ -1,5 +1,5 @@
 import functools
-from typing import Tuple, List
+from typing import Tuple, List, Type
 
 import yaml
 from git import Repo, GitCommandError
@@ -41,7 +41,7 @@ def git_dump(entity: Entity_T, api_version: str, dest: Path) -> Path:
     return entity_file
 
 
-def git_load(file: Path, entity_type: type) -> Entity_T:
+def git_load(file: Path, entity_type: Type[Entity_T]) -> Entity_T:
     with file.open("r") as f:
         data = yaml.safe_load(f)
         return K8S_LOADER.load(data["spec"], None, entity_type)
