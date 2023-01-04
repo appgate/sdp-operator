@@ -35,6 +35,7 @@ from appgate.types import (
     K8SEvent,
     AppgateEventSuccess,
     AppgateEventError,
+    crd_domain,
 )
 
 
@@ -74,6 +75,7 @@ async def start_entity_loop(
     entity_type: Type[Entity_T],
     singleton: bool,
     queue: Queue[AppgateEvent],
+    api_spec: APISpec,
     k8s_configmap_client: K8SConfigMapClient | None,
 ) -> None:
     log.debug(
@@ -91,6 +93,7 @@ async def start_entity_loop(
                 K8S_LOADER.load,
                 entity_type,
                 singleton,
+                api_spec,
                 k8s_configmap_client,
             ),
             daemon=True,
@@ -121,6 +124,7 @@ async def run_k8s(
             crd=entity_names(e.cls, {})[2],
             singleton=e.singleton,
             entity_type=e.cls,
+            api_spec=api_spec,
             k8s_configmap_client=k8s_configmap_client,
         )
         for e in api_spec.entities.values()
@@ -138,12 +142,13 @@ def run_entity_loop(
     load: Callable[[Dict[str, Any], Dict[str, Any] | None, type], Entity_T],
     entity_type: type,
     singleton: bool,
+    api_spec: APISpec,
     k8s_configmap_client: K8SConfigMapClient | None,
 ):
     log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
     watcher = Watch().stream(
         get_crds().list_namespaced_custom_object,
-        K8S_APPGATE_DOMAIN,
+        crd_domain(),
         K8S_APPGATE_VERSION,
         namespace,
         crd,
@@ -230,9 +235,10 @@ def run_entity_loop(
                 asyncio.run_coroutine_threadsafe(queue.put(appgate_event), loop)
         except ApiException:
             log.exception(
-                "[appgate-operator/%s] Error when subscribing events in k8s for %s",
+                "[appgate-operator/%s] Error when subscribing events in k8s for %s [%s]",
                 namespace,
                 crd,
+                crd_domain(),
             )
             sys.exit(1)
         except StopIteration:

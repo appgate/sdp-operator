@@ -31,11 +31,11 @@ class EnvironmentVariableNotFoundException(Exception):
     pass
 
 
-def git_dump(entity: Entity_T, api_version: str, dest: Path) -> Path:
+def git_dump(entity: Entity_T, api_version: int, dest: Path) -> Path:
     entity_type = entity.__class__.__qualname__
     entity_file = dest / f"{entity.name.lower().replace(' ', '-')}.yaml"
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = dump_entity(EntityWrapper(entity), entity_type, f"v{api_version}")
+    dumped_entity = dump_entity(EntityWrapper(entity), entity_type, api_version)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -184,7 +184,7 @@ def entity_path(repository_path: Path, kind: str) -> Path:
 
 @attrs()
 class GitEntityClient(EntityClient):
-    version: str = attrib()
+    api_version: int = attrib()
     kind: str = attrib()
     repository_path: Path = attrib()
     git_repo: GitRepo = attrib()
@@ -203,7 +203,7 @@ class GitEntityClient(EntityClient):
         p = entity_path(self.repository_path, self.kind)
         log.info("Creating file %s for entity %s", p, e.name)
         p.mkdir(exist_ok=True)
-        file = git_dump(e, self.version, p)
+        file = git_dump(e, self.api_version, p)
         self.commits.append((file, "ADD"))
         return self
 

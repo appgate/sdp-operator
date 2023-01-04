@@ -6,7 +6,12 @@ from typing import Optional, Dict
 
 from kubernetes.client import CustomObjectsApi
 
-from appgate.types import AppgateOperatorContext, AppgateEventError, EntityClient
+from appgate.types import (
+    AppgateOperatorContext,
+    AppgateEventError,
+    EntityClient,
+    crd_domain,
+)
 from appgate.logger import log
 from appgate.client import (
     AppgateClient,
@@ -107,11 +112,11 @@ def generate_k8s_clients(
 ) -> Dict[str, EntityClient | None]:
     return {
         k: K8sEntityClient(
-            api=k8s_api,
-            domain=K8S_APPGATE_DOMAIN,
-            version=K8S_APPGATE_VERSION,
+            k8s_api=k8s_api,
+            api_version=api_spec.api_version,
+            crd_version=K8S_APPGATE_VERSION,
             namespace=namespace,
-            kind=f"{k}-v{api_spec.api_version}",
+            kind=k,
         )
         for k in api_spec.api_entities.keys()
     }

@@ -140,7 +140,7 @@ def generate_git_entity_clients(
 ) -> Dict[str, EntityClient | None]:
     return {
         k: GitEntityClient(
-            version=str(api_spec.api_version),
+            api_version=api_spec.api_version,
             kind=k,
             repository_path=repository_path,
             branch=branch,

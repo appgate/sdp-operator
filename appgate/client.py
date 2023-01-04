@@ -21,6 +21,7 @@ from appgate.types import (
     dump_entity,
     k8s_name,
     EntityClient,
+    crd_domain,
 )
 
 __all__ = [
@@ -48,18 +49,18 @@ def plural(kind):
 
 @attrs()
 class K8sEntityClient(EntityClient):
-    api: CustomObjectsApi = attrib()
-    domain: str = attrib()
-    version: str = attrib()
+    k8s_api: CustomObjectsApi = attrib()
+    api_version: int = attrib()
+    crd_version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
 
     async def create(self, e: Entity_T) -> EntityClient:
         log.info("Creating k8s entity %s", e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, None)
-        self.api.create_namespaced_custom_object(  # type: ignore
-            self.domain,
-            self.version,
+        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
+        self.k8s_api.create_namespaced_custom_object(  # type: ignore
+            crd_domain(self.api_version),
+            self.crd_version,
             self.namespace,
             plural(self.kind),
             data,
@@ -68,9 +69,9 @@ class K8sEntityClient(EntityClient):
 
     async def delete(self, name: str) -> EntityClient:
         log.info("Deleting k8s entity %s", name)
-        self.api.delete_namespaced_custom_object(
-            self.domain,
-            self.version,
+        self.k8s_api.delete_namespaced_custom_object(
+            crd_domain(self.api_version),
+            self.crd_version,
             self.namespace,
             plural(self.kind),
             k8s_name(name),
@@ -79,10 +80,10 @@ class K8sEntityClient(EntityClient):
 
     async def modify(self, e: Entity_T) -> EntityClient:
         log.info("Updating k8s entity %s", e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, f"v{self.version}")
-        self.api.patch_namespaced_custom_object(  # type: ignore
-            self.domain,
-            self.version,
+        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
+        self.k8s_api.patch_namespaced_custom_object(  # type: ignore
+            crd_domain(self.api_version),
+            self.crd_version,
             self.namespace,
             plural(self.kind),
             k8s_name(data["name"]),
