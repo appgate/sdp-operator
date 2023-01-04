@@ -144,11 +144,11 @@ def run_entity_loop(
     singleton: bool,
     api_spec: APISpec,
     k8s_configmap_client: K8SConfigMapClient | None,
-):
+) -> None:
     log.info(f"[{crd}/{namespace}] Loop for {crd}/{namespace} started")
     watcher = Watch().stream(
         get_crds().list_namespaced_custom_object,
-        crd_domain(),
+        crd_domain(api_version=api_spec.api_version),
         K8S_APPGATE_VERSION,
         namespace,
         crd,

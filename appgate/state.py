@@ -101,12 +101,16 @@ def entities_op(
     entity: EntityWrapper,
     op: Literal["ADDED", "DELETED", "MODIFIED"],
     current_entities: EntitiesSet,
+    log_prefix: str | None = None,
 ) -> None:
     # Current state should always contain the real id!!
     cached_entity = current_entities.entities_by_name.get(entity.name)
     if cached_entity:
         entity = entity.with_id(id=cached_entity.id)
-    log.info("%s entity %s", op.title(), entity.name)
+    log_str = "%s entity %s [%s] into EntitySet"
+    if log_prefix:
+        log_str = f"[{log_prefix}] {log_str}"
+    log.debug(log_str, op.title(), entity.__class__.__qualname__, entity.name)
     if op == "ADDED":
         entity_set.add(entity)
     elif op == "DELETED":
@@ -166,6 +170,7 @@ class AppgateState:
         entity: EntityWrapper,
         op: Literal["ADDED", "DELETED", "MODIFIED"],
         current_appgate_state: "AppgateState",
+        log_prefix: str | None = None,
     ) -> None:
         """
         Get the entity with op and register in the current state
@@ -177,7 +182,7 @@ class AppgateState:
         if not entities or not current_entities:
             log.error("[appgate-operator] Unknown entity type: %s", type(entity))
             return
-        entities_op(entities, entity, op, current_entities)
+        entities_op(entities, entity, op, current_entities, log_prefix)
 
     def sync_generations(self) -> "AppgateState":
         return AppgateState(
