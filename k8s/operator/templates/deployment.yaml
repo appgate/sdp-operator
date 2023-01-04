@@ -34,6 +34,8 @@ spec:
       containers:
         - name: {{ .Chart.Name }}-sdp
           env:
+            - name: APPGATE_API_VERSION
+              value: {{ .Values.sdp.operator.version }}
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APPGATE_OPERATOR_USER
@@ -85,6 +87,14 @@ spec:
             {{- with .Values.sdp.sdpOperator.fernetKey }}
             - name: APPGATE_OPERATOR_FERNET_KEY
               value: "{{ . }}"
+            {{- end }}
+            {{- if .Values.sdp.operator.externalSecret }}
+            - name: APPGATE_SECRET_SOURCE
+              value: {{ .Values.sdp.operator.externalSecretType }}
+            {{- if eq .Values.sdp.operator.externalSecretType "vault" }}
+            - name: APPGATE_VAULT_ADDRESS
+              value: {{ .Values.sdp.operator.externalSecretSource.vault.address }}
+            {{- end }}
             {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}

@@ -91,26 +91,30 @@ def test_write_only_password_attribute_load():
 
 def test_get_appgate_secret_plain_text():
     value = "aaaaaa"
-    secret = get_appgate_secret(value, None, lambda x: ENCRYPTED_PASSWORD)
+    secret = get_appgate_secret(value, None, lambda x: ENCRYPTED_PASSWORD, "entity1")
     assert isinstance(secret, AppgateSecretPlainText)
 
 
 def test_get_appgate_secret_simple():
     value = "aaaaaa"
-    secret = get_appgate_secret(value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD)
+    secret = get_appgate_secret(
+        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1"
+    )
     assert isinstance(secret, AppgateSecretSimple)
 
 
 def test_get_appgate_secret_k8s_simple():
     value = {"type": "k8s/secret", "password": "secret1"}
-    secret = get_appgate_secret(value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD)
+    secret = get_appgate_secret(
+        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1"
+    )
     assert isinstance(secret, AppgateSecretK8S)
 
 
 def exception():
     value = {"some": "value"}
     with pytest.raises(AppgateSecretException):
-        get_appgate_secret(value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD)
+        get_appgate_secret(value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "")
 
 
 def test_get_appgate_secret_simple_load():
