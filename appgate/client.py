@@ -34,12 +34,11 @@ __all__ = [
 
 
 def get_plural(kind: str) -> str:
-    entity = kind.lower().split("-")
-    name = entity[0]
-    if name.endswith("y"):
-        return f"{name[:-1]}ies-{entity[1]}"
+    entity_name = kind.lower()
+    if entity_name.endswith("y"):
+        return f"{entity_name[:-1]}ies"
     else:
-        return f"{name}s-{entity[1]}"
+        return f"{entity_name}s"
 
 
 @functools.cache

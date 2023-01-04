@@ -154,7 +154,7 @@ def generate_git_entity_clients(
 async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     error_events: List[AppgateEventError] = []
     git: GitRepo = get_git_repository(ctx)
-    log.info("Loading current state")
+    log.info("[git-operator] Loading current state")
     current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
