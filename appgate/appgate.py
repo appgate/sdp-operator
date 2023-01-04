@@ -157,7 +157,9 @@ async def appgate_operator(
     # Get current and total state
     if ctx.reverse_mode:
         current_appgate_state = appgate_state_empty(ctx.api_spec)
-        expected_appgate_state = await get_current_appgate_state(ctx=ctx, appgate_client=appgate_client)
+        expected_appgate_state = await get_current_appgate_state(
+            ctx=ctx, appgate_client=appgate_client
+        )
         total_appgate_state = deepcopy(expected_appgate_state)
         if ctx.target_tags:
             expected_appgate_state = AppgateState(
@@ -170,7 +172,9 @@ async def appgate_operator(
             log.error("Reverse operator can not run in clean-up mode!")
             exit(1)
     else:
-        current_appgate_state = await get_current_appgate_state(ctx=ctx, appgate_client=appgate_client)
+        current_appgate_state = await get_current_appgate_state(
+            ctx=ctx, appgate_client=appgate_client
+        )
         total_appgate_state = deepcopy(current_appgate_state)
         if ctx.target_tags:
             expected_appgate_state = AppgateState(
@@ -195,8 +199,6 @@ async def appgate_operator(
         namespace,
     )
     event_errors = []
-    appgate_client = None
-    entity_clients: Dict[str, EntityClient | None] | None = None
     while True:
         try:
             log.info("[%s/%s] Waiting for event", operator_name, namespace)
@@ -310,72 +312,42 @@ async def appgate_operator(
                     operator_name,
                     namespace,
                 )
-                async with AsyncExitStack() as exit_stack:
-                    k8s_api = None
-                    if (
-                        not ctx.dry_run_mode
-                        and not ctx.reverse_mode
-                        and not entity_clients
-                    ):
-                        if ctx.device_id is None:
-                            raise AppgateException("No device id specified")
-                        appgate_client = await exit_stack.enter_async_context(
-                            AppgateClient(
-                                controller=ctx.controller,
-                                user=ctx.user,
-                                password=ctx.password,
-                                provider=ctx.provider,
-                                device_id=ctx.device_id,
-                                version=ctx.api_spec.api_version,
-                                no_verify=ctx.no_verify,
-                                cafile=ctx.cafile,
-                            )
-                        )
-                        entity_clients = generate_api_spec_clients(
-                            api_spec=ctx.api_spec, appgate_client=appgate_client
-                        )
-                    elif not ctx.dry_run_mode and ctx.reverse_mode:
-                        k8s_api = get_crds()
-                        entity_clients = generate_k8s_clients(
-                            api_spec=ctx.api_spec,
-                            namespace=ctx.namespace,
-                            k8s_api=k8s_api,
-                        )
-                    else:
-                        log.warning(
-                            "[%s/%s] Running in dry-mode, nothing will be created",
-                            operator_name,
-                            namespace,
-                        )
-
-                    new_plan, entity_clients = await appgate_plan_apply(
-                        appgate_plan=plan,
-                        namespace=namespace,
-                        operator_name=operator_name,
-                        entity_clients=entity_clients or {},
-                        k8s_configmap_client=k8s_configmap_client,
+                entity_clients = None
+                if not ctx.dry_run_mode and not ctx.reverse_mode:
+                    entity_clients = generate_api_spec_clients(
+                        api_spec=ctx.api_spec, appgate_client=appgate_client
+                    )
+                if not ctx.dry_run_mode and ctx.reverse_mode:
+                    entity_clients = generate_k8s_clients(
                         api_spec=ctx.api_spec,
+                        namespace=ctx.namespace,
+                        k8s_api=get_crds(),
                     )
 
-                    if len(new_plan.errors) > 0:
-                        log.error(
-                            "[%s/%s] Found errors when applying plan:",
-                            operator_name,
-                            namespace,
-                        )
-                        for err in new_plan.errors:
-                            log.error(
-                                "[%s/%s] Error %s:", operator_name, namespace, err
-                            )
-                        sys.exit(1)
+                new_plan, entity_clients = await appgate_plan_apply(
+                    appgate_plan=plan,
+                    namespace=namespace,
+                    operator_name=operator_name,
+                    entity_clients=entity_clients,
+                    k8s_configmap_client=k8s_configmap_client,
+                    api_spec=ctx.api_spec,
+                )
 
-                    if appgate_client:
-                        current_appgate_state = new_plan.appgate_state
-                        expected_appgate_state = (
-                            expected_appgate_state.sync_generations()
-                        )
-                    elif k8s_api:
-                        current_appgate_state = new_plan.appgate_state
+                if len(new_plan.errors) > 0:
+                    log.error(
+                        "[%s/%s] Found errors when applying plan:",
+                        operator_name,
+                        namespace,
+                    )
+                    for err in new_plan.errors:
+                        log.error("[%s/%s] Error %s:", operator_name, namespace, err)
+                    sys.exit(1)
+
+                if not ctx.dry_run_mode and not ctx.reverse_mode:
+                    current_appgate_state = new_plan.appgate_state
+                    expected_appgate_state = expected_appgate_state.sync_generations()
+                elif not ctx.dry_run_mode and ctx.reverse_mode:
+                    current_appgate_state = new_plan.appgate_state
             else:
                 log.info(
                     "[%s/%s] Nothing changed! Keeping watching!",
@@ -403,4 +375,3 @@ async def main_loop(
         dry_run=ctx.dry_run_mode,
     ) as appgate_client:
         await appgate_operator(queue, ctx, k8s_configmap_client, appgate_client)
-
