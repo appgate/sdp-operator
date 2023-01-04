@@ -215,19 +215,39 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
             ctx.device_id,
         )
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
-    operator = appgate_operator(
-        queue=events_queue, ctx=ctx, k8s_configmap_client=k8s_configmap_client
-    )
-    await run_k8s(
-        queue=events_queue,
-        namespace=ctx.namespace,
-        api_spec=ctx.api_spec,
-        k8s_configmap_client=k8s_configmap_client,
-        operator=operator,
-    )
+    if ctx.device_id is None:
+        raise AppgateException("No device id specified")
+
+    async with AppgateClient(
+        controller=ctx.controller,
+        user=ctx.user,
+        password=ctx.password,
+        provider=ctx.provider,
+        device_id=ctx.device_id,
+        version=ctx.api_spec.api_version,
+        no_verify=ctx.no_verify,
+        cafile=ctx.cafile,
+        expiration_time_delta=ctx.timeout,
+        dry_run=ctx.dry_run_mode,
+    ) as appgate_client:
+        operator = appgate_operator(
+            queue=events_queue,
+            ctx=ctx,
+            k8s_configmap_client=k8s_configmap_client,
+            appgate_client=appgate_client,
+        )
+        await run_k8s(
+            queue=events_queue,
+            namespace=ctx.namespace,
+            api_spec=ctx.api_spec,
+            k8s_configmap_client=k8s_configmap_client,
+            operator=operator,
+        )
 
 
-def main_appgate_operator(args: AppgateOperatorArguments) -> None:
+def main_appgate_operator(
+    args: AppgateOperatorArguments,
+) -> None:
     try:
         asyncio.run(run_appgate_operator(args))
     except AppgateException as e:
@@ -273,7 +293,9 @@ async def dump_entities(
         )
         if total_conflicts:
             log.error("[dump-entities] Found errors when getting current state")
-            entities_conflict_summary(conflicts=total_conflicts, namespace=ctx.namespace)
+            entities_conflict_summary(
+                conflicts=total_conflicts, namespace=ctx.namespace
+            )
         else:
             current_appgate_state.dump(
                 api_version=f"v{ctx.api_spec.api_version}",
