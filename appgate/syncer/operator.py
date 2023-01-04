@@ -238,8 +238,6 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 git.push_change(branch)
             if git.needs_pull_request():
                 log.info("[git-operator] Found changes in the git repository")
-                # git.commit_change(branch)
-                # git.push_change(branch)
                 # git.create_pull_request(branch)
             else:
                 log.info(

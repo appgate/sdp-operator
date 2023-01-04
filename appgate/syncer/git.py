@@ -199,17 +199,21 @@ class GitEntityClient(EntityClient):
         self.commits = []
         return self
 
-    async def create(self, e: Entity_T) -> EntityClient:
+    async def _create(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
         p = entity_path(self.repository_path, self.kind)
         log.info("Creating file %s for entity %s", p, e.name)
         p.mkdir(exist_ok=True)
         file = git_dump(e, self.api_version, p)
-        self.commits.append((file, "ADD"))
+        if register_commit:
+            self.commits.append((file, "ADD"))
         return self
 
-    async def delete(self, name: str) -> EntityClient:
+    async def create(self, e: Entity_T) -> EntityClient:
+        return await self._create(e, register_commit=True)
+
+    async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / f"{name}.yaml"
-        self.commits.append((p, "REMOVE"))
+        self.commits.append((p, "DELETE"))
         log.info("Removing file %s for entity %s", p, name)
         if p.exists():
             p.unlink()
@@ -217,21 +221,34 @@ class GitEntityClient(EntityClient):
             log.warning("File %s should be deleted but it's not present")
         return self
 
+    async def delete(self, name: str) -> EntityClient:
+        return await self._delete(name, register_commit=True)
+
     async def modify(self, e: Entity_T) -> EntityClient:
-        await self.delete(e.name)
-        await self.create(e)
+        p: Path = entity_path(self.repository_path, self.kind) / f"{e.name}.yaml"
+        self.commits.append((p, "MODIFY"))
+        await self._delete(e.name, register_commit=False)
+        await self._create(e, register_commit=False)
         return self
 
     async def commit(self) -> EntityClient:
         if not self.commits:
             return self
         log.info("Committing changes for entities %s:", self.kind)
+        commit_message = f"[{self.branch}] {self.kind} changes\n\nChanges:"
         for p, o in self.commits:
             if o == "ADD":
-                log.info(" - New commit: [%s] %s", o, p)
+                log.info(" + New commit: Added file  %s", p)
+                commit_message += f"\n  - Added file {p.relative_to(GIT_DUMP_DIR)}"
                 self.git_repo.repo.index.add([str(p)])
-            elif o == "REMOVE":
-                log.info(" + New commit: [%s] %s", o, p)
+            elif o == "DELETE":
+                log.info(" - New commit: Deleted file %s", p)
+                commit_message += f"\n  - Deleted file: {p.relative_to(GIT_DUMP_DIR)}"
                 self.git_repo.repo.index.remove([str(p)])
-        self.git_repo.repo.index.commit(self.branch)
+            elif o == "MODIFY":
+                log.info(" * New commit: Modified file %s", o, p)
+                commit_message += f"\n  - Modified file: {p.relative_to(GIT_DUMP_DIR)}"
+                self.git_repo.repo.index.remove([str(p)])
+        self.git_repo.repo.index.commit(message=commit_message)
+        self.commits = []
         return self
