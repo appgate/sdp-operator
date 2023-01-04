@@ -3,7 +3,7 @@ import datetime
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union
+from typing import Dict, Any, Optional, List, Callable, Union, Type
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
@@ -437,7 +437,7 @@ class AppgateClient:
 
     def entity_client(
         self,
-        entity: type,
+        entity: Type[Entity_T],
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
@@ -450,6 +450,6 @@ class AppgateClient:
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
             dump=lambda e: dumper.dump(e),
             magic_entities=magic_entities,
-            kind=entity.__class__.__qualname__,
+            kind=entity.__qualname__,
             dry_run=self.dry_run,
         )
