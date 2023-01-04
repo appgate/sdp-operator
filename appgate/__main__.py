@@ -5,7 +5,6 @@ import sys
 import os
 from argparse import ArgumentParser
 from asyncio import Queue
-from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Optional, Dict, List, Callable, FrozenSet, Iterable
 import datetime
@@ -246,24 +245,21 @@ def main_run(args: OperatorArguments) -> None:
 async def dump_entities(
     ctx: Context, output_dir: Optional[Path], stdout: bool = False
 ) -> None:
-    async with AsyncExitStack() as exit_stack:
-        if ctx.device_id is None:
-            raise AppgateException("No device id specified")
+    if ctx.device_id is None:
+        raise AppgateException("No device id specified")
 
-        appgate_client = await exit_stack.enter_async_context(
-            AppgateClient(
-                controller=ctx.controller,
-                user=ctx.user,
-                password=ctx.password,
-                provider=ctx.provider,
-                device_id=ctx.device_id,
-                version=ctx.api_spec.api_version,
-                no_verify=ctx.no_verify,
-                cafile=ctx.cafile,
-                expiration_time_delta=ctx.timeout,
-                dry_run=ctx.dry_run_mode,
-            )
-        )
+    async with AppgateClient(
+        controller=ctx.controller,
+        user=ctx.user,
+        password=ctx.password,
+        provider=ctx.provider,
+        device_id=ctx.device_id,
+        version=ctx.api_spec.api_version,
+        no_verify=ctx.no_verify,
+        cafile=ctx.cafile,
+        expiration_time_delta=ctx.timeout,
+        dry_run=ctx.dry_run_mode,
+    ) as appgate_client:
         current_appgate_state = await get_current_appgate_state(ctx, appgate_client)
         expected_appgate_state = AppgateState(
             {

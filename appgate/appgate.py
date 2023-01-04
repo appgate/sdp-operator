@@ -1,9 +1,8 @@
 import asyncio
 import sys
 from asyncio import Queue
-from contextlib import AsyncExitStack
 from copy import deepcopy
-from typing import Optional, Type, Dict, Callable, Any, Tuple
+from typing import Optional, Type, Dict, Callable, Any
 import threading
 
 from kubernetes.client.rest import ApiException
@@ -437,21 +436,19 @@ async def operator(
 async def main_loop(
     queue: Queue, ctx: Context, k8s_configmap_client: K8SConfigMapClient
 ) -> None:
-    async with AsyncExitStack() as exit_stack:
-        if ctx.device_id is None:
-            raise AppgateException("No device id specified")
-        appgate_client = await exit_stack.enter_async_context(
-            AppgateClient(
-                controller=ctx.controller,
-                user=ctx.user,
-                password=ctx.password,
-                provider=ctx.provider,
-                device_id=ctx.device_id,
-                version=ctx.api_spec.api_version,
-                no_verify=ctx.no_verify,
-                cafile=ctx.cafile,
-                expiration_time_delta=ctx.timeout,
-                dry_run=ctx.dry_run_mode,
-            )
-        )
+    if ctx.device_id is None:
+        raise AppgateException("No device id specified")
+
+    async with AppgateClient(
+        controller=ctx.controller,
+        user=ctx.user,
+        password=ctx.password,
+        provider=ctx.provider,
+        device_id=ctx.device_id,
+        version=ctx.api_spec.api_version,
+        no_verify=ctx.no_verify,
+        cafile=ctx.cafile,
+        expiration_time_delta=ctx.timeout,
+        dry_run=ctx.dry_run_mode,
+    ) as appgate_client:
         await operator(queue, ctx, k8s_configmap_client, appgate_client)
