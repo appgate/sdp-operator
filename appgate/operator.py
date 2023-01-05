@@ -238,7 +238,7 @@ def run_entity_loop(
                 "[appgate-operator/%s] Error when subscribing events in k8s for %s [%s]",
                 namespace,
                 crd,
-                crd_domain(),
+                crd_domain(api_version=api_spec.api_version),
             )
             sys.exit(1)
         except StopIteration:
