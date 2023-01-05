@@ -55,7 +55,7 @@ class K8sEntityClient(EntityClient):
     kind: str = attrib()
 
     async def create(self, e: Entity_T) -> EntityClient:
-        log.info("Creating k8s entity %s", e.name)
+        log.info("[k8s-entity-client/%s] Creating k8s entity %s", self.kind, e.name)
         data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
         self.k8s_api.create_namespaced_custom_object(  # type: ignore
             crd_domain(self.api_version),
@@ -67,7 +67,7 @@ class K8sEntityClient(EntityClient):
         return self
 
     async def delete(self, e: Entity_T) -> EntityClient:
-        log.info("Deleting k8s entity %s", e.name)
+        log.info("[k8s-entity-client/%s] Deleting k8s entity %s", self.kind, e.name)
         self.k8s_api.delete_namespaced_custom_object(
             crd_domain(self.api_version),
             self.crd_version,
@@ -78,7 +78,7 @@ class K8sEntityClient(EntityClient):
         return self
 
     async def modify(self, e: Entity_T) -> EntityClient:
-        log.info("Updating k8s entity %s", e.name)
+        log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
         data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
         self.k8s_api.patch_namespaced_custom_object(  # type: ignore
             crd_domain(self.api_version),
