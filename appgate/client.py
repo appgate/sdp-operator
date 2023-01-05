@@ -66,14 +66,14 @@ class K8sEntityClient(EntityClient):
         )
         return self
 
-    async def delete(self, name: str) -> EntityClient:
-        log.info("Deleting k8s entity %s", name)
+    async def delete(self, e: Entity_T) -> EntityClient:
+        log.info("Deleting k8s entity %s", e.name)
         self.k8s_api.delete_namespaced_custom_object(
             crd_domain(self.api_version),
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            k8s_name(name),
+            k8s_name(e.name),
         )
         return self
 
@@ -175,15 +175,15 @@ class AppgateEntityClient(EntityClient):
             return None
         return self.load(data)
 
-    async def delete(self, id: str) -> EntityClient:
+    async def delete(self, e: Entity_T) -> EntityClient:
         log.info(
             "[appgate-client/%s] DELETE [%s]",
             self.kind,
-            id,
+            e.id,
         )
         if self.dry_run:
             return self
-        await self._client.delete(f"{self.path}/{id}")
+        await self._client.delete(f"{self.path}/{e.id}")
         return self
 
 

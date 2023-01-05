@@ -1,9 +1,14 @@
 import functools
-from typing import Tuple, List, Type
+import time
+from datetime import date
+from typing import Tuple, List, Type, Dict, Iterable
 
 import yaml
 from git import Repo, GitCommandError
 from github import Github
+from github.Label import Label
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 from pathlib import Path
 import shutil
 
@@ -24,6 +29,9 @@ from appgate.types import (
     EntitiesSet,
     EntityClient,
     GitCommitState,
+    APPGATE_OPERATOR_PR_LABEL_NAME,
+    APPGATE_OPERATOR_PR_LABEL_COLOR,
+    APPGATE_OPERATOR_PR_LABEL_DESC,
 )
 
 
@@ -62,49 +70,46 @@ def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> Appgat
     return AppgateState(entities_set=entities_set)
 
 
+def generate_branch_name() -> str:
+    return f'sdp-operator/{str(date.today())}.{time.strftime("%H-%M-%S")}'
+
+
 @attrs(slots=True, frozen=True)
 class GitRepo:
     repository: str = attrib()
     repository_path: Path = attrib()
-    repo: Repo = attrib()
+    git_repo: Repo = attrib()
     base_branch: str = attrib()
     vendor: str = attrib()
     dry_run: bool = attrib()
     repository_fork: str | None = attrib()
+    main_branch: str = attrib()
 
     @functools.cache
     def user_fork(self) -> str | None:
         return self.repository_fork.split("/")[0] if self.repository_fork else None
 
-    def checkout_branch(self, branch: str) -> None:
-        # Checkout the fork if we are using a forked repository
-        log.info(
-            f"[git-operator] Checking out new branch {self.repo.remote().name}/{branch}"
-        )
-        if self.dry_run:
-            return
-        self.repo.git.branch(branch)
-        self.repo.git.checkout(branch)
+    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+        raise NotImplementedError()
 
     def needs_pull_request(self) -> bool:
-        self.repo.index.add([f"{self.repository_path}/*"])
-        return self.repo.is_dirty()
-
-    def commit_change(self, branch: str) -> None:
-        log.info(
-            f"[git-operator] Committing changes to {self.repo.remote().name}:{branch}"
-        )
-        if not self.dry_run:
-            self.repo.index.commit(branch)
+        return self.git_repo.is_dirty()
 
     def push_change(self, branch: str) -> None:
         log.info(
-            f"[git-operator] Pushing changes to {self.repo.remote().name}:{branch}"
+            f"[git-operator] Pushing changes to {self.git_repo.remote().name}:{branch}"
         )
         if not self.dry_run:
-            self.repo.git.push("--set-upstream", self.repo.remote().name, branch)
+            self.git_repo.git.push(
+                "--set-upstream", self.git_repo.remote().name, branch
+            )
 
-    def create_pull_request(self, branch: str) -> None:
+    def create_or_update_pull_request(
+        self,
+        branch: str,
+        pull_request: PullRequest | None,
+        commits: Dict[str, List[Tuple[str, GitCommitState]]],
+    ) -> PullRequest | None:
         pass
 
 
@@ -131,42 +136,189 @@ def github_repo(ctx: GitOperatorContext, repository_path: Path) -> GitRepo:
         raise AppgateException(f"Unable to clone repository {repository}")
 
     log.info(f"[git-operator] Repository %s cloned", repository)
+    gh = Github(token)
+    gh_repo = gh.get_repo(repository)
     return GitHubRepo(
-        token=token,
+        gh=gh,
+        gh_repo=gh_repo,
         repository=repository,
         repository_fork=ctx.git_repository_fork,
-        repo=git_repo,
+        git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
         repository_path=repository_path,
         dry_run=ctx.dry_run,
+        main_branch=ctx.main_branch,
     )
+
+
+@functools.cache
+def get_spd_gh_label(gh_repo: Repository) -> Label:
+    labels = gh_repo.get_labels()
+    label = next(
+        filter(lambda l: l.name == APPGATE_OPERATOR_PR_LABEL_NAME, labels), None
+    )
+    if not label:
+        label = gh_repo.create_label(
+            name=APPGATE_OPERATOR_PR_LABEL_NAME,
+            color=APPGATE_OPERATOR_PR_LABEL_COLOR,
+            description=APPGATE_OPERATOR_PR_LABEL_DESC,
+        )
+    return label
+
+
+def get_sdp_pull(gh_repo: Repository, number: int | None = None) -> PullRequest | None:
+    sdp_label = get_spd_gh_label(gh_repo)
+    if number:
+        pr: PullRequest | None = gh_repo.get_pull(number)
+    else:
+        prs: Iterable[PullRequest] = gh_repo.get_pulls(
+            state="open", sort="created", direction="desc"
+        )
+        p = next(
+            filter(lambda p: sdp_label.name in map(lambda l: l.name, p.labels), prs),
+            None,
+        )
+        pr = p
+    return pr
+
+
+def get_commit_message(commit_state: GitCommitState, p: Path) -> str | None:
+    if commit_state == "ADD":
+        return f"Added {p.relative_to(GIT_DUMP_DIR)}"
+    elif commit_state == "DELETE":
+        return f"Deleted {p.relative_to(GIT_DUMP_DIR)}"
+    elif commit_state == "MODIFY":
+        return f"Modified {p.relative_to(GIT_DUMP_DIR)}"
+    return
+
+
+def get_pull_request_body(
+    commits: Dict[str, List[Tuple[str, GitCommitState]]], body: str | None
+) -> str:
+    if len(commits) == 0:
+        return body or ""
+    body = (
+        body
+        or f"""# sdp-operator entities updates
+Pull request created automatically by sdp-operator
+
+"""
+    )
+    body += f"\n## Changes on {str(date.today())} at {time.strftime('%H:%M')}"
+    for k, cs in commits.items():
+        if not cs:
+            continue
+        body += f"\n  * {k}"
+        for (p, o) in cs:
+            body += f"\n    - {get_commit_message(o, Path(p))}"
+    return body
 
 
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
-    token: str = attrib()
+    gh: Github = attrib()
+    gh_repo: Repository = attrib()
 
-    def create_pull_request(self, branch: str) -> None:
-        title = f"Merge changes from {branch}"
-        head_branch = branch
-        if self.user_fork():
-            head_branch = f"{self.user_fork()}:{branch}"
-        log.info(
-            f"[git-operator] Creating pull request in GitHub from '%s' to '%s' into repo '%s' with title '%s",
-            head_branch,
-            self.base_branch,
-            self.repository,
-            title,
-        )
-        if self.dry_run:
-            return
-        gh = Github(self.token)
-        gh_repo = gh.get_repo(self.repository)
+    def needs_pull_request(self) -> bool:
+        return self.git_repo.is_dirty()
 
-        gh_repo.create_pull(
-            title=title, body=branch, head=head_branch, base=self.base_branch
+    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+        """
+        Checkout an existing branch for a PullRequest already opened or creates a new branch
+        Return the name of the branch and if it needs to create PullRequest: if the branch is
+        from an already opened PullRequest this will be False
+        """
+        open_pull = get_sdp_pull(self.gh_repo)
+        if open_pull:
+            log.info(
+                "[git-operator] Found opened PullRequest %s [%s]. Using it",
+                open_pull.title,
+                open_pull.number,
+            )
+            branch = open_pull.head.ref
+            log.info(
+                "[git-operator] Fetching and checking out existing branch %s/%s",
+                self.git_repo.remote().name,
+                branch,
+            )
+            if self.dry_run:
+                return branch, open_pull
+            self.git_repo.git.fetch("origin", branch)
+            self.git_repo.git.checkout(branch)
+        else:
+            branch = generate_branch_name()
+            log.info(
+                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
+            )
+            if self.dry_run:
+                return branch, None
+            self.git_repo.git.checkout(self.main_branch)
+            self.git_repo.git.fetch("origin", self.main_branch)
+            self.git_repo.git.branch(branch)
+            self.git_repo.git.checkout(branch)
+        return branch, open_pull
+
+    def create_or_update_pull_request(
+        self,
+        branch: str,
+        pull_request: PullRequest | None,
+        commits: Dict[str, List[Tuple[str, GitCommitState]]],
+    ) -> PullRequest | None:
+        # Try to sync with the opened pull request again here
+        # It could be that someone has merged a PR that was opened before we entered the loop
+        latest_opened_pull = get_sdp_pull(self.gh_repo)
+        current_opened_pull = (
+            get_sdp_pull(self.gh_repo, pull_request.number) if pull_request else None
         )
+        pull_request_to_use = current_opened_pull
+        if (
+            latest_opened_pull
+            and current_opened_pull
+            and latest_opened_pull.number != current_opened_pull.number
+        ):
+            log.warning(
+                "[git-operator] There is a more recent pr for sdp-operator with number %s. Using it",
+                latest_opened_pull.number,
+            )
+            return None
+        elif not current_opened_pull and latest_opened_pull:
+            log.warning(
+                "[git-operator] The previous opened pull request has been closed."
+                " Waiting for the next event loop to create the pull request"
+            )
+            return None
+        if pull_request_to_use:
+            # The pull request we were keeping track did not change, we can use it
+            log.info(
+                "[git-operator] New commits added to pull request %s",
+                pull_request_to_use.title,
+            )
+            body = pull_request_to_use.body
+            pull_request_to_use.edit(
+                body=get_pull_request_body(commits=commits, body=body)
+            )
+        else:
+            # We need to create a new pull request for these changes
+            title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
+            head_branch = branch
+            if self.user_fork():
+                head_branch = f"{self.user_fork()}:{branch}"
+            log.info("[git-operator] Creating pull request in GitHub")
+            log.info("[git-operator] title: %s", title)
+            log.info("[git-operator] head: %s", head_branch)
+            log.info("[git-operator] base: %s", self.base_branch)
+            log.info("[git-operator] repository: %s", self.repository)
+            if self.dry_run:
+                return None
+            pull_request_to_use = self.gh_repo.create_pull(
+                title=title,
+                body=get_pull_request_body(commits=commits, body=None),
+                head=head_branch,
+                base=self.base_branch,
+            )
+            pull_request_to_use.add_to_labels(get_spd_gh_label(self.gh_repo))
+        return pull_request_to_use
 
 
 def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
@@ -201,7 +353,12 @@ class GitEntityClient(EntityClient):
 
     async def _create(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
         p = entity_path(self.repository_path, self.kind)
-        log.info("Creating file %s for entity %s", p, e.name)
+        log.info(
+            "[git-entity-client/%s] Creating file %s for entity %s",
+            self.kind,
+            p,
+            e.name,
+        )
         p.mkdir(exist_ok=True)
         file = git_dump(e, self.api_version, p)
         if register_commit:
@@ -214,15 +371,22 @@ class GitEntityClient(EntityClient):
     async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / f"{name}.yaml"
         self.commits.append((p, "DELETE"))
-        log.info("Removing file %s for entity %s", p, name)
+        log.info(
+            "[git-entity-client/%s] Removing file %s for entity %s", self.kind, p, name
+        )
         if p.exists():
             p.unlink()
         else:
-            log.warning("File %s should be deleted but it's not present")
+            log.warning(
+                "[git-entity-client/%s] File %s for entity %s should be deleted but it's not present",
+                self.kind,
+                p,
+                name,
+            )
         return self
 
-    async def delete(self, name: str) -> EntityClient:
-        return await self._delete(name, register_commit=True)
+    async def delete(self, e: Entity_T) -> EntityClient:
+        return await self._delete(e.name, register_commit=True)
 
     async def modify(self, e: Entity_T) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / f"{e.name}.yaml"
@@ -231,24 +395,32 @@ class GitEntityClient(EntityClient):
         await self._create(e, register_commit=False)
         return self
 
-    async def commit(self) -> EntityClient:
+    async def commit(self) -> Tuple[EntityClient, List[Tuple[str, GitCommitState]]]:
         if not self.commits:
-            return self
-        log.info("Committing changes for entities %s:", self.kind)
+            return self, []
+        log.info("[git-entity-client/%s] Committing changes for entities", self.kind)
         commit_message = f"[{self.branch}] {self.kind} changes\n\nChanges:"
         for p, o in self.commits:
             if o == "ADD":
-                log.info(" + New commit: Added file  %s", p)
-                commit_message += f"\n  - Added file {p.relative_to(GIT_DUMP_DIR)}"
-                self.git_repo.repo.index.add([str(p)])
+                log.info(
+                    "[git-entity-client/%s] + New commit: Added file  %s", self.kind, p
+                )
+                self.git_repo.git_repo.index.add([str(p)])
             elif o == "DELETE":
-                log.info(" - New commit: Deleted file %s", p)
-                commit_message += f"\n  - Deleted file: {p.relative_to(GIT_DUMP_DIR)}"
-                self.git_repo.repo.index.remove([str(p)])
+                log.info(
+                    "[git-entity-client/%s] - New commit: Deleted file %s", self.kind, p
+                )
+                self.git_repo.git_repo.index.remove([str(p)])
             elif o == "MODIFY":
-                log.info(" * New commit: Modified file %s", o, p)
-                commit_message += f"\n  - Modified file: {p.relative_to(GIT_DUMP_DIR)}"
-                self.git_repo.repo.index.remove([str(p)])
-        self.git_repo.repo.index.commit(message=commit_message)
+                log.info(
+                    "[git-entity-client/%s] * New commit: Modified file %s",
+                    self.kind,
+                    o,
+                    p,
+                )
+                self.git_repo.git_repo.index.remove([str(p)])
+            commit_message += f"\n  - {get_commit_message(o, p)}"
+        self.git_repo.git_repo.index.commit(message=commit_message)
+        cs = [(str(k), v) for (k, v) in self.commits]
         self.commits = []
-        return self
+        return self, cs

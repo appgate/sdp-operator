@@ -429,7 +429,7 @@ async def plan_apply(
         )
         if entity_client:
             try:
-                entity_client = await entity_client.delete(e.id)
+                entity_client = await entity_client.delete(e.value)
                 name = (
                     "singleton"
                     if e.value._entity_metadata.get("singleton", False)

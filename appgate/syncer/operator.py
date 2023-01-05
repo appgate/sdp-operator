@@ -5,7 +5,7 @@ import os
 import datetime
 from pathlib import Path
 import sys
-from typing import List, Optional, Callable, Dict
+from typing import List, Optional, Callable, Dict, Tuple
 
 from kubernetes.config import ConfigException
 
@@ -36,6 +36,9 @@ from appgate.types import (
     BUILTIN_TAGS,
     EntityClient,
     is_target,
+    GitCommitState,
+    GIT_REPOSITORY_MAIN_BRANCH_ENV,
+    GIT_REPOSITORY_MAIN_BRANCH,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -45,7 +48,6 @@ from appgate.state import (
     appgate_state_empty,
     create_appgate_plan,
     appgate_plan_apply,
-    AppgateState,
 )
 from appgate.syncer.git import (
     get_git_repository,
@@ -84,6 +86,9 @@ def git_operator_context(
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
         log_level=os.environ.get(APPGATE_LOG_LEVEL, "info"),
         git_repository_fork=os.environ.get(GIT_REPOSITORY_FORK_ENV),
+        main_branch=os.environ.get(
+            GIT_REPOSITORY_MAIN_BRANCH_ENV, GIT_REPOSITORY_MAIN_BRANCH
+        ),
     )
 
 
@@ -155,6 +160,8 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     error_events: List[AppgateEventError] = []
     git: GitRepo = get_git_repository(ctx)
     log.info("[git-operator] Loading current state")
+    # Checkout to existing branch or create a new one if needed and get current state
+    branch, pull_request = git.checkout_branch()
     current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
@@ -200,8 +207,6 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                         event_error.error,
                     )
                 sys.exit(1)
-            branch = f'{str(datetime.date.today())}.{time.strftime("%H-%M-%S")}'
-            git.checkout_branch(branch)
             plan = create_appgate_plan(
                 current_state=current_state,
                 expected_state=expected_state,
@@ -209,6 +214,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 target_tags=ctx.target_tags,
                 excluded_tags=None,
             )
+            commits: Dict[str, List[Tuple[str, GitCommitState]]] = {}
             if plan.needs_apply:
                 log.info("[git-operator] Applying plan")
                 if not git_entity_clients:
@@ -232,19 +238,22 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     sys.exit(1)
                 # This creates a commit for each plan application
                 # TODO: Implement the option of doing commits per entity or per entity_type
+
                 for e, c in git_entity_clients.items():
                     if c:
-                        await c.commit()
+                        _, cs = await c.commit()
+                        commits[e] = cs
+            if len(commits) > 0:
                 git.push_change(branch)
-            if git.needs_pull_request():
-                log.info("[git-operator] Found changes in the git repository")
-                # git.create_pull_request(branch)
+                log.info("[git-operator] New commits it git repository")
+                git.create_or_update_pull_request(branch, pull_request, commits)
             else:
                 log.info(
                     "[git-operator] No changes in the git repository. Sleeping %s seconds",
                     ctx.timeout,
                 )
-            log.info("Loading current state")
+            log.info("[git-operator] Loading current state")
+            branch, pull_request = git.checkout_branch()
             current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
 
 
