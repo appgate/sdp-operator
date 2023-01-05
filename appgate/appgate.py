@@ -26,7 +26,6 @@ from appgate.openapi.types import (
 from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     K8S_APPGATE_VERSION,
-    K8S_APPGATE_DOMAIN,
 )
 from appgate.state import (
     AppgateState,
