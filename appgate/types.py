@@ -4,7 +4,7 @@ import os
 import re
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
+from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union, Tuple
 from attr import attrib, attrs, evolve
 
 from appgate.attrs import K8S_DUMPER
@@ -71,6 +71,11 @@ __all__ = [
     "EntityClient",
     "GitCommitState",
     "crd_domain",
+    "APPGATE_OPERATOR_PR_LABEL_NAME",
+    "APPGATE_OPERATOR_PR_LABEL_COLOR",
+    "APPGATE_OPERATOR_PR_LABEL_DESC",
+    "GIT_REPOSITORY_MAIN_BRANCH",
+    "GIT_REPOSITORY_MAIN_BRANCH_ENV",
 ]
 
 
@@ -95,6 +100,8 @@ APPGATE_EXCLUDE_TAGS_ENV = "APPGATE_OPERATOR_EXCLUDE_TAGS"
 APPGATE_TARGET_TAGS_ENV = "APPGATE_OPERATOR_TARGET_TAGS"
 APPGATE_BUILTIN_TAGS_ENV = "APPGATE_OPERATOR_BUILTIN_TAGS"
 
+GIT_REPOSITORY_MAIN_BRANCH_ENV = "GIT_MAIN_BRANCH"
+GIT_REPOSITORY_MAIN_BRANCH = "master"
 GIT_REPOSITORY_ENV = "GIT_REPOSITORY"
 GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
@@ -106,6 +113,13 @@ GIT_DUMP_DIR: Path = Path("/entities")
 
 GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 
+APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
+APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
+APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
+
+
+GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
+
 
 class EntityClient:
     async def init(self) -> "EntityClient":
@@ -114,14 +128,14 @@ class EntityClient:
     async def create(self, e: Entity_T) -> "EntityClient":
         raise NotImplementedError
 
-    async def delete(self, name: str) -> "EntityClient":
+    async def delete(self, e: Entity_T) -> "EntityClient":
         raise NotImplementedError
 
     async def modify(self, e: Entity_T) -> "EntityClient":
         raise NotImplementedError
 
-    async def commit(self) -> "EntityClient":
-        return self
+    async def commit(self) -> Tuple["EntityClient", List[Tuple[str, GitCommitState]]]:
+        return self, []
 
 
 @attrs(slots=True, frozen=True)
@@ -166,9 +180,6 @@ class EventObject:
 class K8SEvent:
     type: Literal["ADDED", "DELETED", "MODIFIED"] = attrib()
     object: EventObject = attrib()
-
-
-GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
 
 
 @attrs(slots=True, frozen=True)
@@ -395,6 +406,7 @@ class GitOperatorContext:
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
+    main_branch: str = attrib(default=GIT_REPOSITORY_MAIN_BRANCH)
 
 
 @attrs(slots=True, frozen=True)
