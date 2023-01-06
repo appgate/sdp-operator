@@ -96,6 +96,14 @@ sdp:
     externalSecretSource:
       vault:
         address: ""
+      generic:
+        address: ""
+
+    externalFile: false
+    externalFileType: ""
+    externalFileSource:
+      generic:
+        address: ""
 
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
 serviceAccount:
