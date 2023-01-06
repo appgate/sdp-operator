@@ -96,6 +96,14 @@ spec:
               value: {{ .Values.sdp.operator.externalSecretSource.vault.address }}
             {{- end }}
             {{- end }}
+            {{- if .Values.sdp.operator.externalFile }}
+            - name: APPGATE_FILE_SOURCE
+              value: {{ .Values.sdp.operator.externalFileType }}
+            {{- if eq .Values.sdp.operator.externalFileType "generic" }}
+            - name: APPGATE_FILE_GENERIC_ADDRESS
+              value: {{ .Values.sdp.operator.externalFileSource.generic.address }}
+            {{- end }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.sdpOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.sdpOperator.image.tag}}"
