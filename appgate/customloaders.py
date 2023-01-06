@@ -43,6 +43,23 @@ class CustomAttribLoader(CustomLoader):
 
 
 @attrs()
+class FileAttribLoader(CustomAttribLoader):
+    loader: Callable[[Any], Any] = attrib()
+    field: str = attrib()
+    load_external: bool = attrib()
+
+    def load(self, values: AttributesDict) -> AttributesDict:
+        v = values.get(self.field)
+        if not v and self.load_external:
+            # Try loading the s value from the external source if value doesn't exist
+            v = self.loader(values)
+            if not v:
+                return values
+            values[self.field] = v
+        return values
+
+
+@attrs()
 class CustomFieldsEntityLoader(CustomLoader):
     loader: Callable[..., Any] = attrib()
     field: str = attrib()
