@@ -96,6 +96,8 @@ sdp:
     externalSecretSource:
       vault:
         address: ""
+        inCluster: false
+        tokenSecret: ""
       generic:
         address: ""
 
