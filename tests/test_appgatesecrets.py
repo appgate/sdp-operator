@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 import pytest
 
 from appgate.attrs import (
@@ -12,6 +15,7 @@ from appgate.secrets import (
     AppgateSecretK8S,
     AppgateSecretException,
     AppgateSecretPlainText,
+    AppgateVaultSecret,
 )
 from appgate.types import EntityWrapper
 from appgate.openapi.types import AppgateTypedloadException
@@ -444,3 +448,29 @@ def test_compare_entity_without_secrets_and_metadata():
     )
     e2 = EntityWrapper(APPGATE_LOADER.load(data_2, None, EntityTest2WihoutPassword))
     assert e1 == e2
+
+
+@patch.dict(os.environ, {"APPGATE_SECRET_SOURCE": "vault"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_load_vault_secret():
+    EntityTest = (
+        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        .entities["EntityTest2"]
+        .cls
+    )
+
+    data_without_password = {
+        "name": "vault_secret_foo",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is a field",
+    }
+
+    ret = {"data": {"data": {"entitytest2-v18/vault_secret_foo": "1234567890"}}}
+
+    with patch.object(AppgateVaultSecret, "authenticate"):
+        with patch.object(
+            AppgateVaultSecret, "read_secret_from_vault", return_value=ret
+        ) as read_secret_from_vault:
+            e = K8S_LOADER.load(data_without_password, None, EntityTest)
+            read_secret_from_vault.assert_called()
+            assert e.fieldOne == "1234567890"
