@@ -37,22 +37,22 @@ class AppgateFile:
         raise NotImplementedError()
 
 
-class AppgateGenericFile(AppgateFile):
+class AppgateHttpFile(AppgateFile):
     def load_file(self) -> str:
         file_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
-        address = os.getenv("APPGATE_FILE_GENERIC_ADDRESS")
+        address = os.getenv("APPGATE_FILE_HTTP_ADDRESS")
         file_url = f"{address}/{file_key}"
         response = requests.get(file_url)
         return base64.b64encode(response.content).decode()
 
     @staticmethod
     def isinstance() -> bool:
-        return os.getenv("APPGATE_FILE_SOURCE", "") == "generic"
+        return os.getenv("APPGATE_FILE_SOURCE", "") == "http"
 
 
 def get_appgate_file(value: Dict, entity_name: str) -> AppgateFile:
-    if AppgateGenericFile.isinstance():
-        return AppgateGenericFile(value, entity_name)
+    if AppgateHttpFile.isinstance():
+        return AppgateHttpFile(value, entity_name)
     raise AppgateFileException("Unable to create an AppgateFile")
 
 

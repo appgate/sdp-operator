@@ -1812,9 +1812,9 @@ def test_discriminator_entities_updated():
     ]
 
 
-@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "generic"})
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
-def test_load_generic_file():
+def test_load_http_file():
     EntityTestFile = (
         load_test_open_api_spec(secrets_key=None, reload=True)
         .entities["EntityTestFile"]
