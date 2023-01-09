@@ -7,20 +7,20 @@
 |  ##     ## ##        ##         ######   ##     ##    ##    ########     ######  ########  ##          |
 
 
-{{- if has "appgate-operator" .Values.sdp.operators }}
+{{- if has "sdp-operator" .Values.sdp.operators }}
 SDP Operator configured with:
- - controller host: {{ .Values.sdp.appgateOperator.host }}
- - operator device id: {{ .Values.sdp.appgateOperator.deviceId }}
+ - controller host: {{ .Values.sdp.sdpOperator.host }}
+ - operator device id: {{ .Values.sdp.sdpOperator.deviceId }}
  - k8s namespace: {{ .Release.Namespace }}
- - target tags: {{ .Values.sdp.appgateOperator.targetTags }}
- - exclude tags: {{ .Values.sdp.appgateOperator.excludeTags }}
- - builtin tags: {{ .Values.sdp.appgateOperator.builtinTags }}
- - dry-run mode: {{ .Values.sdp.appgateOperator.dryRun }}
- - cleanup mode: {{ .Values.sdp.appgateOperator.cleanup }}
- - two-way-sync mode: {{ .Values.sdp.appgateOperator.twoWaySync }}
- - ssl no verify: {{ .Values.sdp.appgateOperator.sslNoVerify }}
- - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.appgateOperator.configMapMt }}
- - reverse mode: {{ .Values.sdp.appgateOperator.dryRun }}
+ - target tags: {{ .Values.sdp.sdpOperator.targetTags }}
+ - exclude tags: {{ .Values.sdp.sdpOperator.excludeTags }}
+ - builtin tags: {{ .Values.sdp.sdpOperator.builtinTags }}
+ - dry-run mode: {{ .Values.sdp.sdpOperator.dryRun }}
+ - cleanup mode: {{ .Values.sdp.sdpOperator.cleanup }}
+ - two-way-sync mode: {{ .Values.sdp.sdpOperator.twoWaySync }}
+ - ssl no verify: {{ .Values.sdp.sdpOperator.sslNoVerify }}
+ - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.sdpOperator.configMapMt }}
+ - reverse mode: {{ .Values.sdp.sdpOperator.dryRun }}
 {{- end }}
 
 {{- if has "git-operator" .Values.sdp.operators }}
@@ -31,4 +31,5 @@ Git Operator configured with:
  - git vendor: {{ .Values.sdp.gitOperator.dryRun }}
  - git base branch: {{ .Values.sdp.gitOperator.dryRun }}
  - git repository: {{ .Values.sdp.gitOperator.dryRun }}
+ - secret: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
 {{- end }}

@@ -1,4 +1,4 @@
-{{- if has "appgate-operator" .Values.sdp.operators }}
+{{- if has "sdp-operator" .Values.sdp.operators }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -7,7 +7,7 @@ metadata:
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [ "{{ .Values.sdp.operator.version }}.sdp.appgate.com" ]
+  - apiGroups: [ "{{ .Values.sdp.sdpOperator.version }}.sdp.appgate.com" ]
     resources:
       - policies
       - entitlements
@@ -60,28 +60,28 @@ metadata:
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["beta.appgate.com"]
+  - apiGroups: [ "{{ .Values.sdp.gitOperator.version }}.sdp.appgate.com"]
     resources:
-      - policies-{{ .Values.sdp.gitOperator.version }}
-      - entitlements-{{ .Values.sdp.gitOperator.version }}
-      - conditions-{{ .Values.sdp.gitOperator.version }}
-      - ringfencerules-{{ .Values.sdp.gitOperator.version }}
-      - appliances-{{ .Values.sdp.gitOperator.version }}
-      - sites-{{ .Values.sdp.gitOperator.version }}
-      - ippools-{{ .Values.sdp.gitOperator.version }}
-      - identityproviders-{{ .Values.sdp.gitOperator.version }}
-      - localusers-{{ .Values.sdp.gitOperator.version }}
-      - administrativeroles-{{ .Values.sdp.gitOperator.version }}
-      - mfaproviders-{{ .Values.sdp.gitOperator.version }}
-      - adminmfasettingss-{{ .Values.sdp.gitOperator.version }}
-      - trustedcertificates-{{ .Values.sdp.gitOperator.version }}
-      - criteriascriptss-{{ .Values.sdp.gitOperator.version }}
-      - devicescripts-{{ .Values.sdp.gitOperator.version }}
-      - entitlementscripts-{{ .Values.sdp.gitOperator.version }}
-      - appliancecustomizations-{{ .Values.sdp.gitOperator.version }}
-      - globalsettingss-{{ .Values.sdp.gitOperator.version }}
-      - clientconnections-{{ .Values.sdp.gitOperator.version }}
-      - serviceusers-{{ .Values.sdp.gitOperator.version }}
+      - policies
+      - entitlements
+      - conditions
+      - ringfencerules
+      - appliances
+      - sites
+      - ippools
+      - identityproviders
+      - localusers
+      - administrativeroles
+      - mfaproviders
+      - adminmfasettingss
+      - trustedcertificates
+      - criteriascriptss
+      - devicescripts
+      - entitlementscripts
+      - appliancecustomizations
+      - globalsettingss
+      - clientconnections
+      - serviceusers
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
