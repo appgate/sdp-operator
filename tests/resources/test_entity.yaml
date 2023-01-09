@@ -424,7 +424,7 @@ definitions:
     properties:
       fieldOne:
         writeOnly: true
-        format: bytes
+        format: byte
         type: string
       fieldTwo:
         readOnly: true
@@ -446,7 +446,7 @@ definitions:
         format: uuid
       fieldOne:
         writeOnly: true
-        format: bytes
+        format: byte
         type: string
       fieldTwo:
         readOnly: true
