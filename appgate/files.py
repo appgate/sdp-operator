@@ -37,7 +37,7 @@ class AppgateFile:
         raise NotImplementedError()
 
 
-class GenericAppgateFile(AppgateFile):
+class AppgateGenericFile(AppgateFile):
     def load_file(self) -> str:
         file_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
         address = os.getenv("APPGATE_FILE_GENERIC_ADDRESS")
@@ -51,8 +51,8 @@ class GenericAppgateFile(AppgateFile):
 
 
 def get_appgate_file(value: Dict, entity_name: str) -> AppgateFile:
-    if GenericAppgateFile.isinstance():
-        return GenericAppgateFile(value, entity_name)
+    if AppgateGenericFile.isinstance():
+        return AppgateGenericFile(value, entity_name)
     raise AppgateFileException("Unable to create an AppgateFile")
 
 
