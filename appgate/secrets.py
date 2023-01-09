@@ -136,18 +136,23 @@ class AppgateSecretK8S(AppgateSecret):
 
 
 class AppgateVaultSecret(AppgateSecret):
-    def __init__(self, value: PasswordField, entity_name: str) -> None:
+    def __init__(self, value: PasswordField, entity_name: str):
         super().__init__(value)
         self.entity_name = entity_name
         self.api_version = os.getenv("APPGATE_API_VERSION")
+        self.authenticate()
 
+    def authenticate(self):
         address = os.getenv("APPGATE_VAULT_ADDRESS", "localhost")
         jwt = open("/var/run/secrets/kubernetes.io/serviceaccount/token").read()
         self.vault_client = Client(url=address)
         Kubernetes(self.vault_client.adapter).login(role="sdp-operator", jwt=jwt)
 
+    def read_secret_from_vault(self) -> Dict:
+        return self.vault_client.secrets.kv.read_secret_version(path="sdp")
+
     def decrypt(self) -> str:
-        response = self.vault_client.secrets.kv.read_secret_version(path="sdp")
+        response = self.read_secret_from_vault()
 
         if isinstance(self.value, Dict):
             field_name = self.value.get("name")
