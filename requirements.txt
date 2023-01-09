@@ -97,6 +97,10 @@ smmap==5.0.0
     # via gitdb
 typedload==2.12
     # via -r requirements.in
+types-requests==2.28.11.7
+    # via -r requirements.in
+types-urllib3==1.26.25.4
+    # via types-requests
 urllib3==1.26.13
     # via
     #   kubernetes

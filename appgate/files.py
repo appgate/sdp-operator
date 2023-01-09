@@ -1,6 +1,6 @@
 import base64
 import os
-import requests  # type: ignore
+import requests
 from typing import Optional, Dict, List
 
 from appgate.customloaders import FileAttribLoader
