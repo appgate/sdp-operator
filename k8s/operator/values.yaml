@@ -98,13 +98,11 @@ sdp:
         address: ""
         inCluster: false
         tokenSecret: ""
-      generic:
-        address: ""
 
     externalFile: false
     externalFileType: ""
     externalFileSource:
-      generic:
+      http:
         address: ""
 
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods

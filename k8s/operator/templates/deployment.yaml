@@ -106,9 +106,9 @@ spec:
             {{- if .Values.sdp.operator.externalFile }}
             - name: APPGATE_FILE_SOURCE
               value: {{ .Values.sdp.operator.externalFileType }}
-            {{- if eq .Values.sdp.operator.externalFileType "generic" }}
-            - name: APPGATE_FILE_GENERIC_ADDRESS
-              value: {{ .Values.sdp.operator.externalFileSource.generic.address }}
+            {{- if eq .Values.sdp.operator.externalFileType "http" }}
+            - name: APPGATE_FILE_HTTP_ADDRESS
+              value: {{ .Values.sdp.operator.externalFileSource.http.address }}
             {{- end }}
             {{- end }}
           securityContext:
