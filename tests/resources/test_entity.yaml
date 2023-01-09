@@ -24,6 +24,8 @@ paths:
     $ref: '#/entity-test4'
   /entity-test-with-id:
     $ref: '#/entity-test-with-id'
+  /entity-test-file:
+    $ref: '#/entity-test-file'
   /entity-dep-1:
     $ref: '#/entity-dep-1'
   /entity-dep-2:
@@ -166,6 +168,21 @@ entity-test-with-id:
         application/json:
           schema:
             $ref: '#/definitions/EntityTestWithId'
+
+entity-test-file:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTestFile'
 
 entity-dep-1:
   get:
@@ -462,6 +479,14 @@ definitions:
       fieldTwo:
         readOnly: true
         type: string
+  EntityTestFile:
+    type: object
+    properties:
+      filename:
+        type: string
+      file:
+        type: string
+        format: byte
   EntityDep1:
     type: object
     properties:
