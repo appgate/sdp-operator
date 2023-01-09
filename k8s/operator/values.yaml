@@ -6,6 +6,7 @@ sdp:
    ## @param sdp.operators List of operators to run in the deployment. At least one must be defined. Values can be sdp-operator and git-operator
   operators:
     - sdp-operator
+    - git-operator
 
   ## @section SDP Parameters
   ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
@@ -13,7 +14,6 @@ sdp:
   sdpOperator:
     host: ""
     deviceId: ""
-    version: v18
 
     ## @section SDP git operator Optional Parameters
     ## @param sdp.sdpOperator.version The API version of the controller.
@@ -30,7 +30,7 @@ sdp:
     ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
     ## @param sdp.sdpOperator.configMapMt The config map to store metadata for entities.
     reverseMode: false
-    version: v17
+    version: v18
     logLevel: info
     timeout: 30
     builtinTags:
@@ -69,7 +69,7 @@ sdp:
   ## @param sdp.operator.gitOperator.git.secret The secret to pull and push the git repository
   ## @param sdp.operator.gitOperator.github.repository The name of the GitHub repository (e.g. appgate/sdp-operator)
   gitOperator:
-    version: v17
+    version: v18
     logLevel: info
     timeout: 30
     targetTags: []

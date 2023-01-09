@@ -1,4 +1,4 @@
-{{- if has "appgate-operator" .Values.sdp.operators }}
+{{- if has "sdp-operator" .Values.sdp.operators }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -138,9 +138,11 @@ spec:
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
       volumes:
         - name: github-deployment-key
-          items:
-            - key: github-deployment-key
-              path: deployment.key
+          secret:
+            secretName: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+            items:
+              - key: github-deployment-key
+                path: deployment.key
       containers:
         - name: {{ .Chart.Name }}-git
           volumeMounts:
@@ -168,7 +170,7 @@ spec:
                 secretKeyRef:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
                   key: github-username
-            - name: GIT_TOKEN
+            - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
