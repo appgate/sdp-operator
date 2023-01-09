@@ -69,9 +69,11 @@ class FileAttribMaker(AttribMaker):
         instance_maker_config: EntityClassGeneratorConfig,
     ) -> AttributesDict:
         values = super().values(attributes, required_fields, instance_maker_config)
-        values["eq"] = False
         if "metadata" not in values:
             values["metadata"] = {}
+        values["eq"] = (
+            "writeOnly" in values["metadata"] and not values["metadata"]["writeOnly"]
+        )
         values["metadata"][K8S_LOADERS_FIELD_NAME] = [
             FileAttribLoader(
                 loader=lambda v: appgate_file_load(
