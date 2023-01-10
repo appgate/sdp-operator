@@ -193,7 +193,7 @@ class AppgateVaultSecret(AppgateSecret):
         pw_value: str = response["data"]["data"].get(pw_key, "")
 
         if not pw_value:
-            log.warning("Unable to fetch the password from vault for entity %s", pw_key)
+            raise AppgateSecretException("Unable to fetch the password for %s", pw_key)
 
         return pw_value
 
