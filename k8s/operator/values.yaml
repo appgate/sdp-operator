@@ -104,6 +104,10 @@ sdp:
     externalFileSource:
       http:
         address: ""
+      s3:
+        address: ""
+        keySecret: ""
+        sslNoVerify: false
 
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
 serviceAccount:

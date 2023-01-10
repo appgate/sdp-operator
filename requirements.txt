@@ -21,6 +21,7 @@ cachetools==5.2.1
 certifi==2022.12.7
     # via
     #   kubernetes
+    #   minio
     #   requests
 cffi==1.15.1
     # via
@@ -51,6 +52,8 @@ idna==3.4
     #   requests
     #   yarl
 kubernetes==25.3.0
+    # via -r requirements.in
+minio==7.1.13
     # via -r requirements.in
 multidict==6.0.4
     # via
@@ -104,6 +107,7 @@ types-urllib3==1.26.25.4
 urllib3==1.26.13
     # via
     #   kubernetes
+    #   minio
     #   requests
 websocket-client==1.4.2
     # via kubernetes

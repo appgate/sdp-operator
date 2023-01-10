@@ -110,6 +110,22 @@ spec:
             - name: APPGATE_FILE_HTTP_ADDRESS
               value: {{ .Values.sdp.operator.externalFileSource.http.address }}
             {{- end }}
+            {{- if eq .Values.sdp.operator.externalFileType "s3" }}
+            - name: APPGATE_FILE_S3_ADDRESS
+              value: {{ .Values.sdp.operator.externalFileSource.s3.address }}
+            - name: APPGATE_FILE_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.externalFileSource.s3.keySecret }}
+                  key: access-key
+            - name: APPGATE_FILE_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.operator.externalFileSource.s3.keySecret }}
+                  key: secret-key
+            - name: APPGATE_FILE_S3_SSL_VERIFY
+              value: {{ .Values.sdp.operator.externalFileSource.s3.sslNoVerify | quote }}
+            {{- end }}
             {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
