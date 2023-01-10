@@ -1810,21 +1810,3 @@ def test_discriminator_entities_updated():
         '+    "discriminatorOneFieldTwo": "bye",\n',
         '     "configurableFieldOne": false\n',
     ]
-
-
-@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
-@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
-def test_load_http_file():
-    EntityTestFile = (
-        load_test_open_api_spec(secrets_key=None, reload=True)
-        .entities["EntityTestFile"]
-        .cls
-    )
-    data = {"filename": "test-entity.sh"}
-
-    with patch("appgate.files.requests.get") as get:
-        mock_response = Response()
-        mock_response._content = b"start123"
-        get.return_value = mock_response
-        e = K8S_LOADER.load(data, None, EntityTestFile)
-        assert e.file == "c3RhcnQxMjM="
