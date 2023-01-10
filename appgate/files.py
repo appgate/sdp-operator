@@ -3,6 +3,9 @@ import os
 import requests
 from typing import Optional, Dict, List
 
+import urllib3.response
+from minio import Minio  # type: ignore
+
 from appgate.customloaders import FileAttribLoader
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
@@ -50,9 +53,39 @@ class AppgateHttpFile(AppgateFile):
         return os.getenv("APPGATE_FILE_SOURCE", "") == "http"
 
 
+class AppgateS3File(AppgateFile):
+    def load_file(self) -> str:
+        address = os.getenv("APPGATE_FILE_S3_ADDRESS", "localhost")
+        access_key = os.getenv("APPGATE_S3_ACCESS_KEY")
+        secret_key = os.getenv("APPGATE_S3_SECRET_KEY")
+        no_verify_ssl = os.getenv("APPGATE_S3_SSL_NO_VERIFY") == "true"
+
+        client = Minio(
+            endpoint=address,
+            access_key=access_key,
+            secret_key=secret_key,
+            secure=not no_verify_ssl,
+        )
+        bucket = "sdp"
+        object_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
+
+        response = client.get_object(bucket, object_key)
+        try:
+            return base64.b64encode(response.data).decode()
+        finally:
+            response.close()
+            response.release_conn()
+
+    @staticmethod
+    def isinstance() -> bool:
+        return os.getenv("APPGATE_FILE_SOURCE", "") == "s3"
+
+
 def get_appgate_file(value: Dict, entity_name: str) -> AppgateFile:
     if AppgateHttpFile.isinstance():
         return AppgateHttpFile(value, entity_name)
+    elif AppgateS3File.isinstance():
+        return AppgateS3File(value, entity_name)
     raise AppgateFileException("Unable to create an AppgateFile")
 
 
