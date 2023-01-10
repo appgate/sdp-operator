@@ -47,9 +47,13 @@ class EnvironmentVariableNotFoundException(Exception):
     pass
 
 
+def entity_file_name(entity_name: str) -> str:
+    return f"{entity_name.lower().replace(' ', '-')}.yaml"
+
+
 def git_dump(entity: Entity_T, api_version: int, dest: Path) -> Path:
     entity_type = entity.__class__.__qualname__
-    entity_file = dest / f"{entity.name.lower().replace(' ', '-')}.yaml"
+    entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
     dumped_entity = dump_entity(EntityWrapper(entity), entity_type, api_version)
     with entity_file.open("w") as f:
@@ -386,7 +390,7 @@ class GitEntityClient(EntityClient):
         return await self._create(e, register_commit=True)
 
     async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / f"{name}.yaml"
+        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(name)
         self.commits.append((p, "DELETE"))
         log.info(
             "[git-entity-client/%s] Removing file %s for entity %s", self.kind, p, name
