@@ -64,13 +64,13 @@ class AppgateS3File(AppgateFile):
         address = os.getenv("APPGATE_FILE_S3_ADDRESS", "localhost")
         access_key = os.getenv("APPGATE_S3_ACCESS_KEY")
         secret_key = os.getenv("APPGATE_S3_SECRET_KEY")
-        no_verify_ssl = os.getenv("APPGATE_S3_SSL_NO_VERIFY") == "true"
+        secure = os.getenv("APPGATE_S3_SSL_NO_VERIFY") == "false"
 
         client = Minio(
             endpoint=address,
             access_key=access_key,
             secret_key=secret_key,
-            secure=not no_verify_ssl,
+            secure=secure,
         )
         bucket = "sdp"
         object_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"

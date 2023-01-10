@@ -123,7 +123,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.sdp.operator.externalFileSource.s3.keySecret }}
                   key: secret-key
-            - name: APPGATE_FILE_S3_SSL_VERIFY
+            - name: APPGATE_FILE_S3_SSL_NO_VERIFY
               value: {{ .Values.sdp.operator.externalFileSource.s3.sslNoVerify | quote }}
             {{- end }}
             {{- end }}
