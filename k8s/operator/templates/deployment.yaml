@@ -35,7 +35,7 @@ spec:
         - name: {{ .Chart.Name }}-sdp
           env:
             - name: APPGATE_API_VERSION
-              value: {{ .Values.sdp.operator.version }}
+              value: {{ .Values.sdp.sdpOperator.version }}
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APPGATE_OPERATOR_USER
@@ -88,43 +88,43 @@ spec:
             - name: APPGATE_OPERATOR_FERNET_KEY
               value: "{{ . }}"
             {{- end }}
-            {{- if .Values.sdp.operator.externalSecret }}
+            {{- if .Values.sdp.externalSecret }}
             - name: APPGATE_SECRET_SOURCE
-              value: {{ .Values.sdp.operator.externalSecretType }}
-            {{- if eq .Values.sdp.operator.externalSecretType "vault" }}
+              value: {{ .Values.sdp.externalSecretType }}
+            {{- if eq .Values.sdp.externalSecretType "vault" }}
             - name: APPGATE_VAULT_ADDRESS
-              value: {{ .Values.sdp.operator.externalSecretSource.vault.address }}
+              value: {{ .Values.sdp.externalSecretSource.vault.address }}
             - name: APPGATE_INCLUSTER_VAULT
-              value: {{ .Values.sdp.operator.externalSecretSource.vault.inCluster | quote }}
+              value: {{ .Values.sdp.externalSecretSource.vault.inCluster | quote }}
             - name: APPGATE_VAULT_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.sdp.operator.externalSecretSource.vault.tokenSecret }}
+                  name: {{ .Values.sdp.externalSecretSource.vault.tokenSecret }}
                   key: vault-token
             {{- end }}
             {{- end }}
-            {{- if .Values.sdp.operator.externalFile }}
+            {{- if .Values.sdp.externalFile }}
             - name: APPGATE_FILE_SOURCE
-              value: {{ .Values.sdp.operator.externalFileType }}
-            {{- if eq .Values.sdp.operator.externalFileType "http" }}
+              value: {{ .Values.sdp.externalFileType }}
+            {{- if eq .Values.sdp.externalFileType "http" }}
             - name: APPGATE_FILE_HTTP_ADDRESS
-              value: {{ .Values.sdp.operator.externalFileSource.http.address }}
+              value: {{ .Values.sdp.externalFileSource.http.address }}
             {{- end }}
-            {{- if eq .Values.sdp.operator.externalFileType "s3" }}
+            {{- if eq .Values.sdp.externalFileType "s3" }}
             - name: APPGATE_FILE_S3_ADDRESS
-              value: {{ .Values.sdp.operator.externalFileSource.s3.address }}
+              value: {{ .Values.sdp.externalFileSource.s3.address }}
             - name: APPGATE_FILE_S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.sdp.operator.externalFileSource.s3.keySecret }}
+                  name: {{ .Values.sdp.externalFileSource.s3.keySecret }}
                   key: access-key
             - name: APPGATE_FILE_S3_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.sdp.operator.externalFileSource.s3.keySecret }}
+                  name: {{ .Values.sdp.externalFileSource.s3.keySecret }}
                   key: secret-key
             - name: APPGATE_FILE_S3_SSL_NO_VERIFY
-              value: {{ .Values.sdp.operator.externalFileSource.s3.sslNoVerify | quote }}
+              value: {{ .Values.sdp.externalFileSource.s3.sslNoVerify | quote }}
             {{- end }}
             {{- end }}
           securityContext:
