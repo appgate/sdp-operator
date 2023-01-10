@@ -45,8 +45,14 @@ class AppgateHttpFile(AppgateFile):
         file_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
         address = os.getenv("APPGATE_FILE_HTTP_ADDRESS")
         file_url = f"{address}/{file_key}"
-        response = requests.get(file_url)
-        return base64.b64encode(response.content).decode()
+        try:
+            response = requests.get(file_url)
+            response.raise_for_status()
+            return base64.b64encode(response.content).decode()
+        except Exception as e:
+            raise AppgateFileException(
+                "Unable to fetch the file contents for %s: %s", file_url, e
+            )
 
     @staticmethod
     def isinstance() -> bool:
@@ -69,12 +75,20 @@ class AppgateS3File(AppgateFile):
         bucket = "sdp"
         object_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
 
-        response = client.get_object(bucket, object_key)
+        if not client.bucket_exists(bucket):
+            raise AppgateFileException("Bucket sdp does not exist on %s", address)
+
         try:
-            return base64.b64encode(response.data).decode()
-        finally:
-            response.close()
-            response.release_conn()
+            response = client.get_object(bucket, object_key)
+            try:
+                return base64.b64encode(response.data).decode()
+            finally:
+                response.close()
+                response.release_conn()
+        except Exception as e:
+            raise AppgateFileException(
+                "Unable to fetch the file contents for %s: %s", e
+            )
 
     @staticmethod
     def isinstance() -> bool:
