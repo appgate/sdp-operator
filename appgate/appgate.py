@@ -303,6 +303,11 @@ async def appgate_operator(
             # Create a plan
             # Need to copy?
             # Now we use dicts so resolving update the contents of the keys
+            log.info(
+                "[%s/%s] No more events for a while, creating a plan",
+                operator_name,
+                namespace,
+            )
             plan = create_appgate_plan(
                 current_appgate_state,
                 expected_appgate_state,
@@ -311,11 +316,6 @@ async def appgate_operator(
                 ctx.exclude_tags,
             )
             if plan.needs_apply:
-                log.info(
-                    "[%s/%s] No more events for a while, creating a plan",
-                    operator_name,
-                    namespace,
-                )
                 entity_clients = None
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
                     entity_clients = generate_api_spec_clients(
