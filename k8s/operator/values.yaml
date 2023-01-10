@@ -91,23 +91,23 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
-    externalSecret: false
-    externalSecretType: ""
-    externalSecretSource:
-      vault:
-        address: ""
-        inCluster: false
-        tokenSecret: ""
+  externalSecret: false
+  externalSecretType: ""
+  externalSecretSource:
+    vault:
+      address: ""
+      inCluster: false
+      tokenSecret: ""
 
-    externalFile: false
-    externalFileType: ""
-    externalFileSource:
-      http:
-        address: ""
-      s3:
-        address: ""
-        keySecret: ""
-        sslNoVerify: false
+  externalFile: false
+  externalFileType: ""
+  externalFileSource:
+    http:
+      address: ""
+    s3:
+      address: ""
+      keySecret: ""
+      sslNoVerify: false
 
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
 serviceAccount:
