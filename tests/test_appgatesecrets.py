@@ -29,7 +29,7 @@ from tests.utils import (
 
 
 def test_write_only_password_attribute_dump():
-    EntityTest2 = load_test_open_api_spec().entities["EntityTest2"].cls
+    EntityTest2 = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
     e = EntityTest2(
         fieldOne="1234567890",
         fieldTwo="this is write only",
@@ -55,7 +55,7 @@ def test_write_only_password_attribute_load():
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    EntityTest2 = load_test_open_api_spec().entities["EntityTest2"].cls
+    EntityTest2 = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
 
     e = APPGATE_LOADER.load(e_data, None, EntityTest2)
     # writeOnly passwords are not loaded from Appgate
