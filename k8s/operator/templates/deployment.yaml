@@ -4,6 +4,10 @@ kind: Deployment
 metadata:
   name: {{ include "sdp-operator.fullname" . }}-sdp
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.sdp.sdpOperator.deploymentAnnotations }}
+  annotations:
+      {{- toYaml . | nindent 8 }}
+  {{- end }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 spec:
@@ -13,7 +17,7 @@ spec:
       {{- include "sdp-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with .Values.sdp.sdpOperator.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -113,6 +117,10 @@ kind: Deployment
 metadata:
   name: {{ include "sdp-operator.fullname" . }}-git
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.sdp.gitOperator.deploymentAnnotations }}
+  annotations:
+      {{- toYaml . | nindent 8 }}
+  {{- end }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 spec:
@@ -122,7 +130,7 @@ spec:
       {{- include "sdp-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with .Values.sdp.gitOperator.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -139,6 +147,7 @@ spec:
       volumes:
         - name: github-deployment-key
           secret:
+            defaultMode: 0600
             secretName: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
             items:
               - key: github-deployment-key
@@ -165,11 +174,6 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY
               value: {{ .Values.sdp.gitOperator.git.repository }}
-            - name: GIT_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
-                  key: github-username
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
