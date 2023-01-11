@@ -1,9 +1,13 @@
 import datetime
+import re
+
+from attr import evolve
 from dateutil import parser
 from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
 from typedload import dataloader
 from typedload import datadumper
+from typedload.datadumper import Dumper
 from typedload.exceptions import (
     TypedloadException,
     TypedloadValueError,
@@ -16,7 +20,6 @@ from appgate.customloaders import (
     CustomAttribLoader,
     CustomEntityLoader,
 )
-from appgate.logger import log
 from appgate.openapi.types import (
     Entity_T,
     ENTITY_METADATA_ATTRIB_NAME,
@@ -28,6 +31,10 @@ from appgate.openapi.types import (
     EntityDumper,
     AppgateTypedloadException,
     PlatformType,
+    DumperFunc,
+    APISpec,
+    is_singleton,
+    K8S_ID_ANNOTATION,
 )
 
 
@@ -41,7 +48,10 @@ __all__ = [
     "get_dumper",
     "dump_datetime",
     "parse_datetime",
+    "k8s_name",
 ]
+
+from appgate.openapi.utils import has_name, has_id
 
 
 def _attrdump(d, value) -> Dict[str, Any]:
@@ -79,13 +89,64 @@ def dump_datetime(v: datetime.datetime) -> str:
     return v.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def get_dumper(platform_type: PlatformType):
+def k8s_name(name: str) -> str:
+    # This is ugly but we need to go from a bigger set of strings
+    # into a smaller one :(
+    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
+
+
+def k8s_dumper(dumper: Dumper, entity: Entity_T, api_spec: APISpec) -> Dict[str, Any]:
+    entity_kind = entity.__class__.__qualname__
+    if not is_singleton(entity) and has_name(entity):
+        entity = evolve(
+            entity,
+            appgate_metadata=evolve(entity.appgate_metadata, uuid=entity.id),
+        )
+        if has_name(entity):
+            entity_name = k8s_name(entity.name)
+        elif has_id(entity):
+            entity_kind = k8s_name(entity.name)
+        else:
+            raise AppgateTypedloadException(
+                "Unable to dump entity: name/id field is missing",
+                platform_type=PlatformType.K8S,
+            )
+    else:
+        entity_name = k8s_name(entity_kind)
+    spec = dumper.dump(entity)
+    annotations = {}
+    if has_id(entity):
+        annotations[K8S_ID_ANNOTATION] = entity.id
+    return {
+        "apiVersion": f"v{api_spec.api_version}.{entity.appgate_metadata.api_version}",
+        "kind": entity_kind,
+        "metadata": {
+            "name": entity_name,
+            "annotations": annotations,
+        },
+        "spec": spec,
+    }
+
+
+def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
+    def _get_dumper(dumper: Dumper, platform_type: PlatformType) -> DumperFunc:
+        if platform_type == PlatformType.K8S:
+            if api_spec is None:
+                raise AppgateTypedloadException(
+                    "Unable to dump, APISpec is required",
+                    platform_type=PlatformType.K8S,
+                )
+            return lambda e: k8s_dumper(dumper, e, api_spec)
+        else:
+            return lambda e: dumper.dump(e)
+
     def _attrdump(d, value) -> Dict[str, Any]:
         r = {}
         for attr in value.__attrs_attrs__:
             attrval = getattr(value, attr.name)
             read_only = attr.metadata.get("readOnly", False)
             name = attr.metadata.get("name", attr.name)
+            print("FF", attr.name, attrval)
             if platform_type == PlatformType.DIFF and not attr.eq:
                 # DIFF mode we only dump eq fields
                 continue
@@ -117,7 +178,7 @@ def get_dumper(platform_type: PlatformType):
     dumper = datadumper.Dumper(**{})
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
-    return dumper
+    return _get_dumper(dumper, platform_type)
 
 
 def get_loader(
@@ -265,7 +326,9 @@ def get_loader(
 
 
 K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))
-K8S_DUMPER = EntityDumper(dump=get_dumper(PlatformType.K8S).dump)
+K8S_DUMPER = lambda api_spec: EntityDumper(
+    dump=get_dumper(PlatformType.K8S, api_spec=api_spec)
+)
 APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
-APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE).dump)
-DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF).dump)
+APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE))
+DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF))

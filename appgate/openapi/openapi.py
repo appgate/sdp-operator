@@ -91,15 +91,7 @@ def parse_files(
             singleton=singleton,
         )
 
-    # Now parse the API version
-    api_version_str = parser.get_keys(["info", "version"])
-    if not api_version_str:
-        raise OpenApiParserException("Unable to find Appgate API version")
-    try:
-        api_version = api_version_str.split(" ")[2].split(".")[0]
-    except IndexError:
-        raise OpenApiParserException("Unable to find Appgate API version")
-    return APISpec(entities=parser_context.entities, api_version=api_version)
+    return APISpec(entities=parser_context.entities, api_version=parser.api_version())
 
 
 def entity_names(
