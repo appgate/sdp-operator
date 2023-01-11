@@ -112,7 +112,7 @@ def generate_k8s_clients(
     return {
         k: K8sEntityClient(
             k8s_api=k8s_api,
-            api_version=api_spec.api_version,
+            api_spec=api_spec,
             crd_version=K8S_APPGATE_VERSION,
             namespace=namespace,
             kind=k,

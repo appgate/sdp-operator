@@ -301,7 +301,7 @@ async def dump_entities(
             )
         else:
             current_appgate_state.dump(
-                api_version=ctx.api_spec.api_version,
+                api_spec=ctx.api_spec,
                 output_dir=output_dir,
                 stdout=stdout,
                 target_tags=ctx.target_tags,

@@ -65,7 +65,6 @@ __all__ = [
     "GIT_REPOSITORY_FORK_ENV",
     "GITHUB_TOKEN_ENV",
     "GITHUB_DEPLOYMENT_KEY_PATH",
-    "dump_entity",
     "EntityClient",
     "GitCommitState",
     "crd_domain",
@@ -461,23 +460,3 @@ def ensure_env(env_name: str) -> str:
 @functools.lru_cache
 def crd_domain(api_version: int) -> str:
     return f"v{api_version}.{K8S_APPGATE_DOMAIN}"
-
-
-# TODO: Add the api_version to APPGATE_METADATA or ENTITY_METADATA and implement this in K8S_DUMPER
-def dump_entity(
-    entity: EntityWrapper, entity_type: str, api_version: int
-) -> Dict[str, Any]:
-    """
-    name should match this regexp:
-       '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
-    """
-    entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
-
-    return {
-        "apiVersion": f"{crd_domain(api_version)}/{K8S_APPGATE_VERSION}",
-        "kind": entity_type,
-        "metadata": {
-            "name": entity_name if entity.is_singleton() else k8s_name(entity.name)
-        },
-        "spec": K8S_DUMPER.dump(entity.value),
-    }

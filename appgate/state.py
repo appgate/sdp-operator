@@ -23,7 +23,7 @@ import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.logger import is_debug
-from appgate.attrs import DIFF_DUMPER, dump_datetime
+from appgate.attrs import DIFF_DUMPER, dump_datetime, K8S_DUMPER
 from appgate.client import (
     K8SConfigMapClient,
     entity_unique_id,
@@ -44,7 +44,6 @@ from appgate.types import (
     MissingFieldDependencies,
     has_tag,
     is_target,
-    dump_entity,
     EntityClient,
 )
 
@@ -121,7 +120,7 @@ def entities_op(
 
 def dump_entities(
     entities: Iterable[EntityWrapper],
-    api_version: int,
+    api_spec: APISpec,
     dump_file: Optional[Path],
     entity_type: str,
 ) -> Optional[List[str]]:
@@ -135,7 +134,7 @@ def dump_entities(
     log.info(f"Dumping entities of type %s", entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
-        dumped_entity = dump_entity(e, entity_type, api_version)
+        dumped_entity = K8S_DUMPER(api_spec).dump(e.value)
         if not dumped_entity.get("spec"):
             continue
         appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
@@ -213,7 +212,7 @@ class AppgateState:
 
     def dump(
         self,
-        api_version: int,
+        api_spec: APISpec,
         output_dir: Optional[Path] = None,
         stdout: bool = False,
         target_tags: Optional[FrozenSet[str]] = None,
@@ -236,7 +235,7 @@ class AppgateState:
                 target_tags=target_tags,
                 exclude_tags=exclude_tags,
             )
-            entity_password_fields = dump_entities(entities_to_dump, api_version, p, k)
+            entity_password_fields = dump_entities(entities_to_dump, api_spec, p, k)
             if entity_password_fields:
                 password_fields[k] = entity_password_fields
         if len(password_fields) > 0:
