@@ -49,6 +49,7 @@ SPEC_ENTITIES = {
 
 K8S_APPGATE_DOMAIN = "sdp.appgate.com"
 K8S_APPGATE_VERSION = "v1"
+K8S_ID_ANNOTATION = f"{K8S_APPGATE_DOMAIN}/id"
 ENTITY_METADATA_ATTRIB_NAME = "_entity_metadata"
 APPGATE_METADATA_ATTRIB_NAME = "appgate_metadata"
 NAMES_REGEXP = re.compile(r"\w+(\.)\w+")
@@ -158,6 +159,10 @@ class Entity_T:
     appgate_metadata: AppgateMetadata = attrib()
     _entity_metadata: Dict[str, Any] = attrib()
     updated: datetime.datetime = attrib()
+
+
+def is_singleton(entity: Entity_T) -> bool:
+    return entity._entity_metadata.get("singleton", False)
 
 
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]

@@ -7,14 +7,14 @@ from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union, Tuple
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER
+from appgate.attrs import K8S_DUMPER, k8s_name
 from appgate.openapi.types import (
     Entity_T,
     APISpec,
     AppgateException,
-    ENTITY_METADATA_ATTRIB_NAME,
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
+    is_singleton,
 )
 from appgate.openapi.utils import is_entity_t, has_name
 
@@ -66,7 +66,6 @@ __all__ = [
     "GITHUB_TOKEN_ENV",
     "GITHUB_DEPLOYMENT_KEY_PATH",
     "dump_entity",
-    "k8s_name",
     "EntityClient",
     "GitCommitState",
     "crd_domain",
@@ -236,7 +235,7 @@ class EntityWrapper:
         return False
 
     def is_singleton(self) -> bool:
-        return self.value._entity_metadata.get("singleton", False)
+        return is_singleton(self.value)
 
     def has_secrets(self) -> bool:
         # We have passwords use modified/created
@@ -459,17 +458,12 @@ def ensure_env(env_name: str) -> str:
     return v
 
 
-def k8s_name(name: str) -> str:
-    # This is ugly but we need to go from a bigger set of strings
-    # into a smaller one :(
-    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
-
-
 @functools.lru_cache
 def crd_domain(api_version: int) -> str:
     return f"v{api_version}.{K8S_APPGATE_DOMAIN}"
 
 
+# TODO: Add the api_version to APPGATE_METADATA or ENTITY_METADATA and implement this in K8S_DUMPER
 def dump_entity(
     entity: EntityWrapper, entity_type: str, api_version: int
 ) -> Dict[str, Any]:
@@ -478,13 +472,7 @@ def dump_entity(
        '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
     """
     entity_name = k8s_name(entity.name) if has_name(entity) else k8s_name(entity_type)
-    entity_mt = getattr(entity.value, ENTITY_METADATA_ATTRIB_NAME, {})
-    singleton = entity_mt.get("singleton", False)
-    if not singleton:
-        entity.value = evolve(
-            entity.value,
-            appgate_metadata=evolve(entity.value.appgate_metadata, uuid=entity.id),
-        )
+
     return {
         "apiVersion": f"{crd_domain(api_version)}/{K8S_APPGATE_VERSION}",
         "kind": entity_type,

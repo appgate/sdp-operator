@@ -1,4 +1,5 @@
 import datetime
+import functools
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -315,6 +316,17 @@ class Parser:
         self.previous_namespaces: Set[str] = set()
         self.parser_context = parser_context
         self.data: Dict[str, Any] = parser_context.load_namespace(namespace)
+
+    @functools.cache
+    def api_version(self) -> int:
+        api_version_str = self.get_keys(["info", "version"])
+        if not api_version_str:
+            raise OpenApiParserException("Unable to find Appgate API version")
+        try:
+            api_version = api_version_str.split(" ")[2].split(".")[0]
+        except IndexError:
+            raise OpenApiParserException("Unable to find Appgate API version")
+        return api_version
 
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split("#", maxsplit=2)
