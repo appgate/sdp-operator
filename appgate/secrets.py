@@ -1,5 +1,6 @@
 import base64
 import os
+from pathlib import Path
 from typing import Dict, List, Union, Optional, Callable
 
 from attr import evolve
@@ -151,10 +152,12 @@ class AppgateVault:
 
 class AppgateInClusterVault(AppgateVault):
     def __init__(self):
-        jwt = open("/var/run/secrets/kubernetes.io/serviceaccount/token").read()
-        client = Client(url=os.getenv("APPGATE_VAULT_ADDRESS", "localhost"))
-        Kubernetes(client.adapter).login(role="sdp-operator", jwt=jwt)
-        super().__init__(client)
+        with Path(
+            "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        ).read_text() as jwt:
+            client = Client(url=os.getenv("APPGATE_VAULT_ADDRESS", "localhost"))
+            Kubernetes(client.adapter).login(role="sdp-operator", jwt=jwt)
+            super().__init__(client)
 
 
 class AppgateExternalVault(AppgateVault):
