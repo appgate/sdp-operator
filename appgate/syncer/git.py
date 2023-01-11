@@ -14,7 +14,7 @@ import shutil
 
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_LOADER
+from appgate.attrs import K8S_LOADER, K8S_DUMPER
 from appgate.logger import log
 from appgate.openapi.types import AppgateException, APISpec, Entity_T
 from appgate.state import AppgateState
@@ -24,7 +24,6 @@ from appgate.types import (
     GitOperatorContext,
     GIT_DUMP_DIR,
     GITHUB_DEPLOYMENT_KEY_PATH,
-    dump_entity,
     EntityWrapper,
     EntitiesSet,
     EntityClient,
@@ -51,11 +50,11 @@ def entity_file_name(entity_name: str) -> str:
     return f"{entity_name.lower().replace(' ', '-')}.yaml"
 
 
-def git_dump(entity: Entity_T, api_version: int, dest: Path) -> Path:
+def git_dump(entity: Entity_T, api_spec: APISpec, dest: Path) -> Path:
     entity_type = entity.__class__.__qualname__
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = dump_entity(EntityWrapper(entity), entity_type, api_version)
+    dumped_entity = K8S_DUMPER(api_spec).dump(entity)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -357,7 +356,7 @@ def entity_path(repository_path: Path, kind: str) -> Path:
 
 @attrs()
 class GitEntityClient(EntityClient):
-    api_version: int = attrib()
+    api_spec: APISpec = attrib()
     kind: str = attrib()
     repository_path: Path = attrib()
     git_repo: GitRepo = attrib()
@@ -381,7 +380,7 @@ class GitEntityClient(EntityClient):
             e.name,
         )
         p.mkdir(exist_ok=True)
-        file = git_dump(e, self.api_version, p)
+        file = git_dump(e, self.api_spec, p)
         if register_commit:
             self.commits.append((file, "ADD"))
         return self

@@ -136,7 +136,9 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                     "Unable to dump, APISpec is required",
                     platform_type=PlatformType.K8S,
                 )
-            return lambda e: k8s_dumper(dumper, e, api_spec)
+            else:
+                api = api_spec
+                return lambda e: k8s_dumper(dumper, e, api)
         else:
             return lambda e: dumper.dump(e)
 

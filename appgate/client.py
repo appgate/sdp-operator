@@ -12,13 +12,17 @@ from kubernetes.client.exceptions import ApiException
 
 from attr import attrib, attrs
 
-from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
+from appgate.attrs import (
+    APPGATE_DUMPER,
+    APPGATE_LOADER,
+    parse_datetime,
+    dump_datetime,
+    K8S_DUMPER,
+)
 from appgate.logger import log
-from appgate.openapi.types import Entity_T, AppgateException
+from appgate.openapi.types import Entity_T, AppgateException, APISpec, EntityDumper
 from appgate.types import (
     LatestEntityGeneration,
-    EntityWrapper,
-    dump_entity,
     k8s_name,
     EntityClient,
     crd_domain,
@@ -49,27 +53,34 @@ def plural(kind):
 @attrs()
 class K8sEntityClient(EntityClient):
     k8s_api: CustomObjectsApi = attrib()
-    api_version: int = attrib()
+    api_spec: APISpec = attrib()
     crd_version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
 
+    @functools.cache
+    def crd_domain(self) -> str:
+        return crd_domain(self.api_spec.api_version)
+
+    @functools.cache
+    def dumper(self) -> EntityDumper:
+        return K8S_DUMPER(self.api_spec)
+
     async def create(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Creating k8s entity %s", self.kind, e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
         self.k8s_api.create_namespaced_custom_object(  # type: ignore
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            data,
+            self.dumper().dump(e),
         )
         return self
 
     async def delete(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Deleting k8s entity %s", self.kind, e.name)
         self.k8s_api.delete_namespaced_custom_object(
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
@@ -79,14 +90,14 @@ class K8sEntityClient(EntityClient):
 
     async def modify(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
+        data = self.dumper().dump(e)
         self.k8s_api.patch_namespaced_custom_object(  # type: ignore
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
             k8s_name(data["name"]),
-            data,
+            self.dumper().dump(e),
         )
         return self
 
