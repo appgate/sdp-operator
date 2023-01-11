@@ -35,10 +35,6 @@ class AppgateFile:
     def load_file(self) -> str:
         raise NotImplementedError()
 
-    @staticmethod
-    def isinstance() -> bool:
-        raise NotImplementedError()
-
 
 class AppgateHttpFile(AppgateFile):
     def load_file(self) -> str:
@@ -53,10 +49,6 @@ class AppgateHttpFile(AppgateFile):
             raise AppgateFileException(
                 "Unable to fetch the file contents for %s: %s", file_url, e
             )
-
-    @staticmethod
-    def isinstance() -> bool:
-        return os.getenv("APPGATE_FILE_SOURCE", "") == "http"
 
 
 class AppgateS3File(AppgateFile):
@@ -90,17 +82,15 @@ class AppgateS3File(AppgateFile):
                 "Unable to fetch the file contents for %s: %s", e
             )
 
-    @staticmethod
-    def isinstance() -> bool:
-        return os.getenv("APPGATE_FILE_SOURCE", "") == "s3"
-
 
 def get_appgate_file(value: Dict, entity_name: str) -> AppgateFile:
-    if AppgateHttpFile.isinstance():
-        return AppgateHttpFile(value, entity_name)
-    elif AppgateS3File.isinstance():
-        return AppgateS3File(value, entity_name)
-    raise AppgateFileException("Unable to create an AppgateFile")
+    match os.getenv("APPGATE_FILE_SOURCE", ""):
+        case "http":
+            return AppgateHttpFile(value, entity_name)
+        case "s3":
+            return AppgateS3File(value, entity_name)
+        case _:
+            raise AppgateFileException("Unable to create an AppgateFile")
 
 
 def appgate_file_load(value: OpenApiDict, entity_name: str) -> str:
