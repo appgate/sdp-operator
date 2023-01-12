@@ -40,13 +40,13 @@ def test_write_only_password_attribute_dump():
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    assert K8S_DUMPER.dump(e) == e_data
+    assert K8S_DUMPER.dump(e, False) == e_data
     e_data = {
         "fieldOne": "1234567890",
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    assert APPGATE_DUMPER.dump(e) == e_data
+    assert APPGATE_DUMPER.dump(e, False) == e_data
 
 
 def test_write_only_password_attribute_load():
