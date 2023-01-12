@@ -467,10 +467,9 @@ def test_load_vault_secret():
 
     ret = {"data": {"data": {"entitytest2-v18/vault_secret_foo": "1234567890"}}}
 
-    with patch.object(AppgateVaultSecret, "authenticate"):
-        with patch.object(
-            AppgateVaultSecret, "read_secret_from_vault", return_value=ret
-        ) as read_secret_from_vault:
-            e = K8S_LOADER.load(data_without_password, None, EntityTest)
-            read_secret_from_vault.assert_called()
-            assert e.fieldOne == "1234567890"
+    with patch.object(AppgateVaultSecret, "authenticate"), patch.object(
+        AppgateVaultSecret, "read_secret_from_vault", return_value=ret
+    ) as read_secret_from_vault:
+        e = K8S_LOADER.load(data_without_password, None, EntityTest)
+        read_secret_from_vault.assert_called()
+        assert e.fieldOne == "1234567890"

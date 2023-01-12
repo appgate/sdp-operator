@@ -42,12 +42,11 @@ def test_load_s3_file():
     data = {"filename": "test-entity.sh"}
     expected_entity = EntityTestFile(filename="test-entity.sh", file="c3RhcnQxMjM=")
 
-    with patch("appgate.files.Minio.bucket_exists") as bucket_exists:
-        with patch("appgate.files.Minio.get_object") as get_object:
-            bucket_exists.return_value = True
-            get_object.return_value = urllib3.response.HTTPResponse(body=b"start123")
-            e = K8S_LOADER.load(data, None, EntityTestFile)
-            get_object.assert_called_once_with(
-                "sdp", "entitytestfile-v18/test-entity.sh"
-            )
-            assert expected_entity == e
+    with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
+        "appgate.files.Minio.get_object"
+    ) as get_object:
+        bucket_exists.return_value = True
+        get_object.return_value = urllib3.response.HTTPResponse(body=b"start123")
+        e = K8S_LOADER.load(data, None, EntityTestFile)
+        get_object.assert_called_once_with("sdp", "entitytestfile-v18/test-entity.sh")
+        assert expected_entity == e
