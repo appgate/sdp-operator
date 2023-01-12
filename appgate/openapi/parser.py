@@ -17,7 +17,7 @@ from appgate.discriminator import (
     get_discriminator_maker_config,
     DiscriminatorAttribMaker,
 )
-from appgate.files import file_attrib_maker
+from appgate.files import FileAttribMaker
 from appgate.logger import log
 from appgate.openapi.attribmaker import (
     AttribMaker,
@@ -544,7 +544,7 @@ class Parser:
                     definition=attrib_maker_config.definition,
                 )
             elif format == "byte":
-                return file_attrib_maker(
+                return FileAttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
                     base_tpe=TYPES_MAP[tpe],
