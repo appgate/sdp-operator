@@ -785,7 +785,6 @@ def resolve_field_entities(
     """
     resolve entity dependencies for entities in the EntitiesSet e1.
     Dependencies is a list of EntityFieldDependency.
-
     """
     indent_level = 2
     to_remove = set()

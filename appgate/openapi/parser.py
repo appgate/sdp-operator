@@ -68,19 +68,6 @@ DEFAULT_MAP: Dict[str, AttribType] = {
 }
 
 
-class IdAttribMaker(AttribMaker):
-    def values(
-        self,
-        attributes: Dict[str, "AttribMaker"],
-        required_fields: List[str],
-        instance_maker_config: "EntityClassGeneratorConfig",
-    ) -> AttributesDict:
-        values = super().values(attributes, required_fields, instance_maker_config)
-        if "metadata" not in values:
-            values["metadata"] = {}
-        return values
-
-
 class EntityClassGenerator:
     """
     Class used to generate Entity classes dynamically
@@ -576,7 +563,7 @@ class Parser:
                     source_field=attrib_maker_config.definition["x-size-source"],
                 )
             elif attrib_name == "id":
-                return IdAttribMaker(
+                return AttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
                     base_tpe=TYPES_MAP[tpe],
