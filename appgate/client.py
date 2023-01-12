@@ -73,7 +73,7 @@ class K8sEntityClient(EntityClient):
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            self.dumper().dump(e),
+            self.dumper().dump(e, True),
         )
         return self
 
@@ -90,14 +90,14 @@ class K8sEntityClient(EntityClient):
 
     async def modify(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
-        data = self.dumper().dump(e)
+        data = self.dumper().dump(e, True)
         self.k8s_api.patch_namespaced_custom_object(  # type: ignore
             self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
             k8s_name(data["name"]),
-            self.dumper().dump(e),
+            data,
         )
         return self
 
@@ -539,7 +539,7 @@ class AppgateClient:
             path=f"/admin/{api_path}",
             singleton=singleton,
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
-            dump=lambda e: dumper.dump(e),
+            dump=lambda e: dumper.dump(e, True),
             magic_entities=magic_entities,
             kind=entity.__qualname__,
             dry_run=self.dry_run,
