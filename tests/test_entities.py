@@ -13,8 +13,11 @@ from appgate.attrs import (
     APPGATE_DUMPER,
     DIFF_DUMPER,
 )
-from appgate.openapi.openapi import generate_api_spec, SPEC_DIR
-from appgate.openapi.types import AppgateMetadata, AppgateTypedloadException
+from appgate.openapi.openapi import generate_api_spec
+from appgate.openapi.types import (
+    AppgateMetadata,
+    AppgateTypedloadException,
+)
 from tests.utils import (
     load_test_open_api_spec,
     CERTIFICATE_FIELD,
@@ -408,11 +411,8 @@ def test_loader_5():
 
 
 def test_dumper_1():
-    EntityTest1 = (
-        load_test_open_api_spec(secrets_key=None, reload=True)
-        .entities["EntityTest1"]
-        .cls
-    )
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest1 = api_spec.entities["EntityTest1"].cls
     e1 = EntityTest1(
         fieldOne="this is read only",
         fieldTwo="this is write only",
@@ -431,19 +431,24 @@ def test_dumper_1():
         "fieldFour": "this is a field",
         "from": "this is a field with a weird name",
     }
-    e = K8S_DUMPER.dump(e1)
-    assert e == e1_data
+    e = K8S_DUMPER(api_spec).dump(e1, False)
+    assert e == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest1",
+        "metadata": {
+            "name": "entitytest1",
+            "annotations": {},
+        },
+        "spec": e1_data,
+    }
 
 
 def test_dumper_2():
     """
     Test dumper with metadata
     """
-    EntityTest1 = (
-        load_test_open_api_spec(secrets_key=None, reload=True)
-        .entities["EntityTest1"]
-        .cls
-    )
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest1 = api_spec.entities["EntityTest1"].cls
     e1 = EntityTest1(
         fieldOne="this is read only",
         fieldTwo="this is write only",
@@ -457,12 +462,65 @@ def test_dumper_2():
     e = APPGATE_DUMPER.dump(e1)
     assert e == e1_data
 
-    e2_data = {
-        "fieldTwo": "this is write only",
-        "fieldFour": "this is a field",
+    e = K8S_DUMPER(api_spec).dump(e1, False)
+    assert e == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest1",
+        "metadata": {
+            "name": "entitytest1",
+            "annotations": {},
+        },
+        "spec": {
+            "fieldTwo": "this is write only",
+            "fieldFour": "this is a field",
+        },
     }
-    e = K8S_DUMPER.dump(e1)
-    assert e == e2_data
+
+
+def test_dump_k8s_with_id():
+    """
+    Test that id fields are created if missing
+    """
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestWithId = api_spec.entities["EntityTestWithId"].cls
+    entity_1 = {
+        "id": "666-666-666-666-666-777",
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+    }
+    appgate_e = APPGATE_LOADER.load(entity_1, None, EntityTestWithId)
+    k8s_e = K8S_DUMPER(api_spec).dump(appgate_e, False)
+    assert k8s_e == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestWithId",
+        "metadata": {
+            "name": "entitytestwithid",
+            "annotations": {"sdp.appgate.com/id": "666-666-666-666-666-777"},
+        },
+        "spec": {"fieldThree": "this is deprecated"},
+    }
+
+    with patch("appgate.openapi.attribmaker.uuid4") as uuid4:
+        uuid4.return_value = "111-111-111-111-111"
+        entity_2 = {
+            "fieldOne": "this is read only",
+            "fieldTwo": "this is write only",
+            "fieldThree": "this is deprecated",
+        }
+        appgate_e2 = APPGATE_LOADER.load(entity_2, None, EntityTestWithId)
+        k8s_e2 = K8S_DUMPER(api_spec).dump(appgate_e2, False)
+        assert k8s_e2 == {
+            "apiVersion": "v666.sdp.appgate.com/v1",
+            "kind": "EntityTestWithId",
+            "metadata": {
+                "name": "entitytestwithid",
+                "annotations": {
+                    "sdp.appgate.com/id": "111-111-111-111-111",
+                },
+            },
+            "spec": {"fieldThree": "this is deprecated"},
+        }
 
 
 def test_deprecated_entity():
@@ -515,20 +573,24 @@ def test_write_only_attribute_load():
 
 
 def test_appgate_metadata_secrets_dump_from_appgate():
-    EntityTest2 = (
-        load_test_open_api_spec(secrets_key=None, reload=True)
-        .entities["EntityTest2"]
-        .cls
-    )
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest2 = api_spec.entities["EntityTest2"].cls
     e1_data = {
         "fieldThree": "this is a field",
     }
     e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)
-    e2_data = {
-        "fieldThree": "this is a field",
+    d = K8S_DUMPER(api_spec).dump(e1, False)
+    assert d == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest2",
+        "metadata": {
+            "name": "entitytest2",
+            "annotations": {},
+        },
+        "spec": {
+            "fieldThree": "this is a field",
+        },
     }
-    d = K8S_DUMPER.dump(e1)
-    assert d == e2_data
 
 
 def test_read_only_write_only_eq():
@@ -639,11 +701,8 @@ def test_bytes_load():
 
 
 def test_bytes_dump():
-    EntityTest3 = (
-        load_test_open_api_spec(secrets_key=None, reload=True)
-        .entities["EntityTest3"]
-        .cls
-    )
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest3 = api_spec.entities["EntityTest3"].cls
     e = EntityTest3(fieldOne=BASE64_FILE_W0, fieldTwo=SHA256_FILE)
     e_data = {"fieldOne": BASE64_FILE_W0}
     # We don't dump the checksum field associated to bytes to APPGATE
@@ -654,11 +713,16 @@ def test_bytes_dump():
     assert APPGATE_DUMPER.dump(e) == {}
 
     e = EntityTest3(fieldOne=BASE64_FILE_W0, fieldTwo=SHA256_FILE)
-    e_data = {
-        "fieldOne": BASE64_FILE_W0,
-    }
     # We don't dump the checksum field associated to bytes to K8S
-    assert K8S_DUMPER.dump(e) == e_data
+    assert K8S_DUMPER(api_spec).dump(e, False) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest3",
+        "metadata": {
+            "name": "entitytest3",
+            "annotations": {},
+        },
+        "spec": {"fieldOne": BASE64_FILE_W0},
+    }
 
 
 def test_bytes_diff_dump():

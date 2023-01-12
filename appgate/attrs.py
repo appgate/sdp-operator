@@ -95,28 +95,30 @@ def k8s_name(name: str) -> str:
     return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
 
 
-def k8s_dumper(dumper: Dumper, entity: Entity_T, api_spec: APISpec) -> Dict[str, Any]:
+def k8s_dumper(
+    dumper: Dumper, entity: Entity_T, api_spec: APISpec, strict: bool = True
+) -> Dict[str, Any]:
     entity_kind = entity.__class__.__qualname__
-    if not is_singleton(entity) and has_name(entity):
+    annotations = {}
+    if has_id(entity):
+        annotations[K8S_ID_ANNOTATION] = entity.id
         entity = evolve(
             entity,
             appgate_metadata=evolve(entity.appgate_metadata, uuid=entity.id),
         )
-        if has_name(entity):
-            entity_name = k8s_name(entity.name)
-        elif has_id(entity):
-            entity_kind = k8s_name(entity.name)
-        else:
-            raise AppgateTypedloadException(
-                "Unable to dump entity: name/id field is missing",
-                platform_type=PlatformType.K8S,
-            )
+    if is_singleton(entity):
+        entity_name = k8s_name(entity_kind)
+    elif has_name(entity):
+        entity_name = k8s_name(entity.name)
+    elif strict:
+        raise AppgateTypedloadException(
+            "Unable to dump entity: name/id field is missing",
+            platform_type=PlatformType.K8S,
+        )
     else:
         entity_name = k8s_name(entity_kind)
     spec = dumper.dump(entity)
-    annotations = {}
-    if has_id(entity):
-        annotations[K8S_ID_ANNOTATION] = entity.id
+
     return {
         "apiVersion": f"v{api_spec.api_version}.{entity.appgate_metadata.api_version}",
         "kind": entity_kind,
@@ -129,7 +131,7 @@ def k8s_dumper(dumper: Dumper, entity: Entity_T, api_spec: APISpec) -> Dict[str,
 
 
 def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
-    def _get_dumper(dumper: Dumper, platform_type: PlatformType) -> DumperFunc:
+    def __get_dumper(dumper: Dumper, platform_type: PlatformType) -> DumperFunc:
         if platform_type == PlatformType.K8S:
             if api_spec is None:
                 raise AppgateTypedloadException(
@@ -138,9 +140,9 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                 )
             else:
                 api = api_spec
-                return lambda e: k8s_dumper(dumper, e, api)
+                return lambda e, strict: k8s_dumper(dumper, e, api, strict)
         else:
-            return lambda e: dumper.dump(e)
+            return lambda e, _: dumper.dump(e)
 
     def _attrdump(d, value) -> Dict[str, Any]:
         r = {}
@@ -180,7 +182,26 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
     dumper = datadumper.Dumper(**{})
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
-    return _get_dumper(dumper, platform_type)
+
+    if platform_type == PlatformType.K8S:
+        if api_spec is None:
+            raise AppgateTypedloadException(
+                "Unable to dump, APISpec is required",
+                platform_type=PlatformType.K8S,
+            )
+        else:
+            api = api_spec
+
+            def _get_dumper(e: Entity_T, strict: bool = True) -> Dict[str, Any]:
+                return k8s_dumper(dumper, e, api, strict=strict)
+
+            return _get_dumper
+    else:
+
+        def _get_dumper(e: Entity_T, strict: bool = True) -> Dict[str, Any]:
+            return dumper.dump(e)
+
+        return _get_dumper
 
 
 def get_loader(

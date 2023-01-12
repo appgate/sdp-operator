@@ -54,7 +54,7 @@ def git_dump(entity: Entity_T, api_spec: APISpec, dest: Path) -> Path:
     entity_type = entity.__class__.__qualname__
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = K8S_DUMPER(api_spec).dump(entity)
+    dumped_entity = K8S_DUMPER(api_spec).dump(entity, True)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -306,9 +306,10 @@ class GitHubRepo(GitRepo):
                 pull_request_to_use.title,
             )
             body = pull_request_to_use.body
-            pull_request_to_use.edit(
-                body=get_pull_request_body(commits=commits, body=body)
-            )
+            if not self.dry_run:
+                pull_request_to_use.edit(
+                    body=get_pull_request_body(commits=commits, body=body)
+                )
         else:
             # We need to create a new pull request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
