@@ -108,9 +108,6 @@ class FileAttribMaker(AttribMaker):
         values = super().values(attributes, required_fields, instance_maker_config)
         if "metadata" not in values:
             values["metadata"] = {}
-        values["eq"] = (
-            "writeOnly" in values["metadata"] and not values["metadata"]["writeOnly"]
-        )
         values["metadata"][K8S_LOADERS_FIELD_NAME] = [
             FileAttribLoader(
                 loader=lambda v: appgate_file_load(
