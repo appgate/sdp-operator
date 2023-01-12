@@ -150,7 +150,6 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
             attrval = getattr(value, attr.name)
             read_only = attr.metadata.get("readOnly", False)
             name = attr.metadata.get("name", attr.name)
-            print("FF", attr.name, attrval)
             if platform_type == PlatformType.DIFF and not attr.eq:
                 # DIFF mode we only dump eq fields
                 continue
