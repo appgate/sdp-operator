@@ -166,7 +166,7 @@ def is_singleton(entity: Entity_T) -> bool:
 
 
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
-DumperFunc = Callable[[Entity_T], Dict[str, Any]]
+DumperFunc = Callable[[Entity_T, bool], Dict[str, Any]]
 
 
 @attrs()

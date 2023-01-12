@@ -17,6 +17,7 @@ from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import (
     AppgateMetadata,
     AppgateTypedloadException,
+    K8S_ID_ANNOTATION,
 )
 from tests.utils import (
     load_test_open_api_spec,
@@ -262,7 +263,9 @@ def test_loader_1():
 
 def test_loader_2():
     """
-    Test that id fields are created if missing
+    Test that id fields are created if missing.
+    This test the code in parser.py injecting the uuid from metadata
+    That's deprecated. Now the metadata in k8s is loaded from the annotations
     """
     EntityTestWithId = (
         load_test_open_api_spec(secrets_key=None, reload=True)
@@ -286,7 +289,7 @@ def test_loader_2():
         entity_2["appgate_metadata"] = appgate_metadata
         # If we have in metadata we use it
         e = K8S_LOADER.load(entity_2, None, EntityTestWithId)
-        assert e.id == "666-666-666-666-666-777"
+        assert e.id == "111-111-111-111-111"
 
 
 def test_loader_3():
@@ -408,6 +411,36 @@ def test_loader_5():
             }
         ),
     )
+
+
+def test_loader_6():
+    """
+    Test that we can get data in k8s from the annotations.
+    """
+    EntityTestWithId = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTestWithId"]
+        .cls
+    )
+    entity_1 = {
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+        "fieldFour": "this is a field",
+    }
+
+    e = K8S_LOADER.load(
+        entity_1, {K8S_ID_ANNOTATION: "666-666-777-666-666"}, EntityTestWithId
+    )
+    # Normally we create a new uuid value for id if it's not present
+    assert e.id == "666-666-777-666-666"
+
+    with patch("appgate.openapi.attribmaker.uuid4") as uuid4:
+        uuid4.return_value = "111-111-111-111-111"
+        entity_2 = entity_1
+        # If we have in metadata we use it
+        e = K8S_LOADER.load(entity_2, None, EntityTestWithId)
+        assert e.id == "111-111-111-111-111"
 
 
 def test_dumper_1():

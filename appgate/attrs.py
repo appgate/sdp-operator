@@ -315,7 +315,7 @@ def get_loader(
     loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
 
     def load(
-        data: Dict[str, Any], metadata: Optional[Dict[str, Any]], entity: type
+        data: Dict[str, Any], metadata: Optional[Dict[str, Any]], entity: Type
     ) -> Entity_T:
         metadata = metadata or {}
         if APPGATE_METADATA_ATTRIB_NAME in data:
@@ -329,7 +329,13 @@ def get_loader(
             appgate_mt["fromAppgate"] = True
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         try:
-            return loader.load(data, entity)
+            loaded_entity = loader.load(data, entity)
+            if metadata:
+                if K8S_ID_ANNOTATION in metadata:
+                    loaded_entity = evolve(
+                        loaded_entity, id=metadata[K8S_ID_ANNOTATION]
+                    )
+            return loaded_entity
         except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
             raise AppgateTypedloadException(
                 platform_type=platform_type,

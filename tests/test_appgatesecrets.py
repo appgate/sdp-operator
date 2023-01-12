@@ -29,7 +29,8 @@ from tests.utils import (
 
 
 def test_write_only_password_attribute_dump():
-    EntityTest2 = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
+    api_spec = load_test_open_api_spec(reload=True)
+    EntityTest2 = api_spec.entities["EntityTest2"].cls
     e = EntityTest2(
         fieldOne="1234567890",
         fieldTwo="this is write only",
@@ -40,7 +41,7 @@ def test_write_only_password_attribute_dump():
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
-    assert K8S_DUMPER.dump(e, False) == e_data
+    assert K8S_DUMPER(api_spec).dump(e, False) == e_data
     e_data = {
         "fieldOne": "1234567890",
         "fieldTwo": "this is write only",

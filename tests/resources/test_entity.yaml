@@ -479,6 +479,8 @@ definitions:
       fieldTwo:
         readOnly: true
         type: string
+      fieldThree:
+        type: string
   EntityTestFile:
     type: object
     properties:

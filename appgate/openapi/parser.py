@@ -68,10 +68,6 @@ DEFAULT_MAP: Dict[str, AttribType] = {
 }
 
 
-def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
-    return appgate_metadata.uuid or current_id
-
-
 class IdAttribMaker(AttribMaker):
     def values(
         self,
@@ -82,14 +78,6 @@ class IdAttribMaker(AttribMaker):
         values = super().values(attributes, required_fields, instance_maker_config)
         if "metadata" not in values:
             values["metadata"] = {}
-        # sets entity.id from entity.appgate_metadata.id or current id
-        values["metadata"][K8S_LOADERS_FIELD_NAME] = [
-            CustomFieldsEntityLoader(
-                loader=set_id_from_metadata,
-                dependencies=["appgate_metadata"],
-                field=self.name,
-            )
-        ]
         return values
 
 
