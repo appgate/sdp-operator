@@ -118,21 +118,3 @@ class FileAttribMaker(AttribMaker):
             )
         ]
         return values
-
-
-def file_attrib_maker(
-    name: str,
-    tpe: type,
-    base_tpe: type,
-    default: Optional[AttribType],
-    factory: Optional[type],
-    definition: OpenApiDict,
-) -> FileAttribMaker:
-    return FileAttribMaker(
-        name,
-        tpe,
-        base_tpe,
-        default,
-        factory,
-        definition,
-    )
