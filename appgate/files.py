@@ -1,13 +1,9 @@
-import asyncio
 import base64
 import os
-
-import aiohttp
 import requests
 from typing import Optional, Dict, List
 
 import urllib3.response
-from aiohttp import ClientSession
 from minio import Minio  # type: ignore
 
 from appgate.customloaders import FileAttribLoader
@@ -45,13 +41,14 @@ class AppgateHttpFile(AppgateFile):
         file_key = f"{self.entity_name.lower()}-{self.api_version}/{self.value.get('filename')}"
         address = os.getenv("APPGATE_FILE_HTTP_ADDRESS")
         file_url = f"{address}/{file_key}"
-
-        async def get(url: str) -> str:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    return base64.b64encode(await response.read()).decode()
-
-        return asyncio.run(get(file_url))
+        try:
+            response = requests.get(file_url)
+            response.raise_for_status()
+            return base64.b64encode(response.content).decode()
+        except Exception as e:
+            raise AppgateFileException(
+                "Unable to fetch the file contents for %s: %s", file_url, e
+            )
 
 
 class AppgateS3File(AppgateFile):
