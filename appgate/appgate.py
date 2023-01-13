@@ -316,6 +316,11 @@ async def appgate_operator(
                 ctx.exclude_tags,
             )
             if plan.needs_apply:
+                log.info(
+                    "[%s/%s] New plan contains changes, applying it.",
+                    operator_name,
+                    namespace,
+                )
                 entity_clients = None
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
                     entity_clients = generate_api_spec_clients(
