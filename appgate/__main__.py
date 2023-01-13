@@ -345,7 +345,7 @@ def main_dump_crd(
     api_spec = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None
     )
-    f: Union[TextIO | TextIOWrapper]
+    f: TextIO | TextIOWrapper
     output_path = None
     if not stdout:
         output_file_format = (
