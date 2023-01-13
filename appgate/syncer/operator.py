@@ -43,6 +43,7 @@ from appgate.types import (
 from appgate.openapi.types import (
     AppgateException,
     APISpec,
+    MissingFieldDependencies,
 )
 from appgate.state import (
     appgate_state_empty,
@@ -144,6 +145,7 @@ def generate_git_entity_clients(
     repository_path: Path,
     branch: str,
     git: GitRepo,
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]],
 ) -> Dict[str, EntityClient | None]:
     return {
         k: GitEntityClient(
@@ -153,6 +155,7 @@ def generate_git_entity_clients(
             branch=branch,
             git_repo=git,
             commits=[],
+            resolution_conflicts=resolution_conflicts,
         )
         for k in api_spec.api_entities.keys()
     }
@@ -232,6 +235,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 entities_conflict_summary(
                     conflicts=total_conflicts, namespace=ctx.namespace
                 )
+
             if plan.needs_apply:
                 log.info("[git-operator] Applying plan")
                 if not git_entity_clients:
@@ -240,6 +244,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                         repository_path=GIT_DUMP_DIR,
                         branch=branch,
                         git=git,
+                        resolution_conflicts=total_conflicts,
                     )
                 new_plan, git_entity_clients = await appgate_plan_apply(
                     appgate_plan=plan,
@@ -253,9 +258,9 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     for err in new_plan.errors:
                         log.error("[git-operator] Error %s:", err)
                     sys.exit(1)
+
                 # This creates a commit for each plan application
                 # TODO: Implement the option of doing commits per entity or per entity_type
-
                 for e, c in git_entity_clients.items():
                     if c:
                         _, cs = await c.commit()

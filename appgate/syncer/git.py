@@ -16,7 +16,12 @@ from attr import attrib, attrs, evolve
 
 from appgate.attrs import K8S_LOADER, K8S_DUMPER
 from appgate.logger import log
-from appgate.openapi.types import AppgateException, APISpec, Entity_T
+from appgate.openapi.types import (
+    AppgateException,
+    APISpec,
+    Entity_T,
+    MissingFieldDependencies,
+)
 from appgate.state import AppgateState
 from appgate.types import (
     ensure_env,
@@ -50,10 +55,15 @@ def entity_file_name(entity_name: str) -> str:
     return f"{entity_name.lower().replace(' ', '-')}.yaml"
 
 
-def git_dump(entity: Entity_T, api_spec: APISpec, dest: Path) -> Path:
+def git_dump(
+    entity: Entity_T,
+    api_spec: APISpec,
+    dest: Path,
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None,
+) -> Path:
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = K8S_DUMPER(api_spec).dump(entity, True)
+    dumped_entity = K8S_DUMPER(api_spec).dump(entity, True, resolution_conflicts)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -362,6 +372,7 @@ class GitEntityClient(EntityClient):
     git_repo: GitRepo = attrib()
     branch: str = attrib()
     commits: List[Tuple[Path, GitCommitState]] = attrib()
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = attrib()
 
     def with_commit(self, state: GitCommitState, file: Path) -> "GitEntityClient":
         self.commits.append((file, state))
@@ -380,7 +391,7 @@ class GitEntityClient(EntityClient):
             e.name,
         )
         p.mkdir(exist_ok=True)
-        file = git_dump(e, self.api_spec, p)
+        file = git_dump(e, self.api_spec, p, self.resolution_conflicts)
         if register_commit:
             self.commits.append((file, "ADD"))
         return self

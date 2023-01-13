@@ -19,6 +19,8 @@ Policy = entities["Policy"].cls
 Entitlement = entities["Entitlement"].cls
 Condition = entities["Condition"].cls
 IdentityProvider = entities["IdentityProvider"].cls
+Site = entities["Site"].cls
+
 TestOpenAPI = None
 TestSpec = {
     "/entity-test0": "EntityTest0",
@@ -133,6 +135,11 @@ def entitlement(
 @typing.no_type_check
 def condition(name: str, id: str = None, expression: Optional[str] = None) -> Condition:
     return Condition(id=id, name=name, expression=expression or "expression-test")
+
+
+@typing.no_type_check
+def site(name: str, id: str = None) -> Condition:
+    return Site(id=id, name=name)
 
 
 @typing.no_type_check
