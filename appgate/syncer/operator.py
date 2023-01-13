@@ -48,6 +48,8 @@ from appgate.state import (
     appgate_state_empty,
     create_appgate_plan,
     appgate_plan_apply,
+    resolve_appgate_state,
+    entities_conflict_summary,
 )
 from appgate.syncer.git import (
     get_git_repository,
@@ -215,6 +217,21 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 excluded_tags=None,
             )
             commits: Dict[str, List[Tuple[str, GitCommitState]]] = {}
+            total_conflicts = resolve_appgate_state(
+                expected_state,
+                expected_state.copy(expected_state.entities_set),
+                ctx.api_spec,
+                reverse=True,
+            )
+            if total_conflicts:
+                log.warning(
+                    "[git-operator/%s] Found errors when resolving dependencies in entities."
+                    " Some reference ids in entities won't be resolved to their respective names.",
+                    ctx.namespace,
+                )
+                entities_conflict_summary(
+                    conflicts=total_conflicts, namespace=ctx.namespace
+                )
             if plan.needs_apply:
                 log.info("[git-operator] Applying plan")
                 if not git_entity_clients:

@@ -50,10 +50,10 @@ def plural(kind):
     return get_plural(kind)
 
 
-@attrs()
+@attrs(frozen=True)
 class K8sEntityClient(EntityClient):
     k8s_api: CustomObjectsApi = attrib()
-    api_spec: APISpec = attrib()
+    api_spec: APISpec = attrib(hash=False)
     crd_version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
