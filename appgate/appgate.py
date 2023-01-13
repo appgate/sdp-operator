@@ -293,7 +293,7 @@ async def appgate_operator(
                 )
                 continue
 
-            if ctx.two_way_sync:
+            if not ctx.reverse_mode and ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
                 current_appgate_state = await get_current_appgate_state(
                     ctx=ctx, appgate_client=appgate_client
