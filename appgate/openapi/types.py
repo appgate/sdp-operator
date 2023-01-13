@@ -49,7 +49,7 @@ SPEC_ENTITIES = {
 K8S_APPGATE_DOMAIN = "sdp.appgate.com"
 K8S_APPGATE_VERSION = "v1"
 K8S_ID_ANNOTATION = f"{K8S_APPGATE_DOMAIN}/id"
-K8S_FIELD_MISSING_ANNOTATION = f"{K8S_APPGATE_DOMAIN}/field-uuids"
+K8S_FIELD_WITH_IDS_ANNOTATION = f"{K8S_APPGATE_DOMAIN}/fields-with-id"
 ENTITY_METADATA_ATTRIB_NAME = "_entity_metadata"
 APPGATE_METADATA_ATTRIB_NAME = "appgate_metadata"
 NAMES_REGEXP = re.compile(r"\w+(\.)\w+")
@@ -136,6 +136,9 @@ class AppgateMetadata:
     passwords: Optional[Dict[str, Union[str, Dict[str, str]]]] = attrib(default=None)
     password_fields: Optional[FrozenSet[str]] = attrib(
         default=None, metadata={"name": "passwordFields"}
+    )
+    fields_with_id: Optional[FrozenSet[str]] = attrib(
+        default=None, metadata={"name": "uuidFields"}
     )
     from_appgate: Optional[bool] = attrib(
         default=None, repr=False, metadata={"name": "fromAppgate"}
