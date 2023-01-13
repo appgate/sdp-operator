@@ -213,7 +213,7 @@ async def appgate_operator(
                 event_errors.append(event)
             else:
                 log.info(
-                    "[%s/%s}] Event: %s %s with name %s",
+                    "[%s/%s] Event: %s %s with name %s",
                     operator_name,
                     namespace,
                     event.op,
@@ -231,13 +231,13 @@ async def appgate_operator(
         except asyncio.exceptions.TimeoutError:
             if event_errors:
                 log.error(
-                    "[%s/%s}] Found events with errors, dying now!",
+                    "[%s/%s] Found events with errors, dying now!",
                     operator_name,
                     namespace,
                 )
                 for event_error in event_errors:
                     log.error(
-                        "[%s/%s}] - Entity of type %s with name %s : %s",
+                        "[%s/%s] - Entity of type %s with name %s : %s",
                         operator_name,
                         namespace,
                         event_error.name,
