@@ -834,6 +834,157 @@ def test_normalize_entitlements_3():
     }
 
 
+def test_resolve_dependencies_reverse_1():
+    """
+    This resolve dependencies replacing ids with names
+    """
+    entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    id="e01",
+                    name="entitlement-1",
+                    conditions=["c01", "c02", "c03"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    id="e02",
+                    name="entitlement-2",
+                    conditions=[
+                        "c01",
+                        "c04",
+                        "c05",
+                    ],
+                )
+            ),
+        }
+    )
+    conditions = EntitiesSet(
+        {
+            EntityWrapper(condition(id="c01", name="condition1")),
+            EntityWrapper(condition(id="c02", name="condition2")),
+            EntityWrapper(condition(id="c03", name="condition3")),
+        }
+    )
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [
+            EntityFieldDependency(
+                entity_name="Conditions",
+                field_path="conditions",
+                known_entities=conditions,
+            )
+        ],
+        reverse=True,
+    )
+    resolved_entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    id="e01",
+                    name="entitlement-1",
+                    conditions=["condition1", "condition2", "condition3"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    id="e02",
+                    name="entitlement-2",
+                    conditions=[
+                        "c01",
+                        "c04",
+                        "c05",
+                    ],
+                )
+            ),
+        }
+    )
+    assert conflicts == {
+        "entitlement-2": [
+            MissingFieldDependencies(
+                parent_name="entitlement-2",
+                parent_type="Entitlement",
+                field_path="conditions",
+                dependencies=frozenset({"c04", "c05"}),
+            )
+        ]
+    }
+    assert entitlements_set.entities == resolved_entitlements.entities
+
+
+def test_resolve_dependencies_reverse_2():
+    """
+    This resolve dependencies replacing ids with names
+    """
+    entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    id="e01",
+                    name="entitlement-1",
+                    conditions=["c01", "c02", "c03"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    id="e02",
+                    name="entitlement-2",
+                    conditions=[
+                        "c01",
+                        "c04",
+                        "c05",
+                    ],
+                )
+            ),
+        }
+    )
+    conditions = EntitiesSet(
+        {
+            EntityWrapper(condition(id="c01", name="condition1")),
+            EntityWrapper(condition(id="c02", name="condition2")),
+            EntityWrapper(condition(id="c03", name="condition3")),
+            EntityWrapper(condition(id="c04", name="condition4")),
+            EntityWrapper(condition(id="c05", name="condition5")),
+        }
+    )
+    entitlements_set, conflicts = resolve_field_entities(
+        entitlements,
+        [
+            EntityFieldDependency(
+                entity_name="Conditions",
+                field_path="conditions",
+                known_entities=conditions,
+            )
+        ],
+        reverse=True,
+    )
+    resolved_entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    id="e01",
+                    name="entitlement-1",
+                    conditions=["condition1", "condition2", "condition3"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    id="e02",
+                    name="entitlement-2",
+                    conditions=[
+                        "condition1",
+                        "condition4",
+                        "condition5",
+                    ],
+                )
+            ),
+        }
+    )
+    assert conflicts is None
+    assert entitlements_set.entities == resolved_entitlements.entities
+
+
 def test_normalize_policies_0():
     policies = EntitiesSet()
     entitlements = EntitiesSet()

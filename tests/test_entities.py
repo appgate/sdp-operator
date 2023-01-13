@@ -264,8 +264,6 @@ def test_loader_1():
 def test_loader_2():
     """
     Test that id fields are created if missing.
-    This test the code in parser.py injecting the uuid from metadata
-    That's deprecated. Now the metadata in k8s is loaded from the annotations
     """
     EntityTestWithId = (
         load_test_open_api_spec(secrets_key=None, reload=True)

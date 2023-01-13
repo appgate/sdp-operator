@@ -51,7 +51,6 @@ def entity_file_name(entity_name: str) -> str:
 
 
 def git_dump(entity: Entity_T, api_spec: APISpec, dest: Path) -> Path:
-    entity_type = entity.__class__.__qualname__
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
     dumped_entity = K8S_DUMPER(api_spec).dump(entity, True)
