@@ -18,12 +18,12 @@ from appgate.attrs import (
     parse_datetime,
     dump_datetime,
     K8S_DUMPER,
+    k8s_name,
 )
 from appgate.logger import log
 from appgate.openapi.types import Entity_T, AppgateException, APISpec, EntityDumper
 from appgate.types import (
     LatestEntityGeneration,
-    k8s_name,
     EntityClient,
     crd_domain,
 )
@@ -73,7 +73,7 @@ class K8sEntityClient(EntityClient):
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            self.dumper().dump(e, True),
+            self.dumper().dump(e, True, None),
         )
         return self
 
@@ -90,7 +90,7 @@ class K8sEntityClient(EntityClient):
 
     async def modify(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
-        data = self.dumper().dump(e, True)
+        data = self.dumper().dump(e, True, None)
         self.k8s_api.patch_namespaced_custom_object(  # type: ignore
             self.crd_domain(),
             self.crd_version,
@@ -539,7 +539,7 @@ class AppgateClient:
             path=f"/admin/{api_path}",
             singleton=singleton,
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
-            dump=lambda e: dumper.dump(e, True),
+            dump=lambda e: dumper.dump(e, True, None),
             magic_entities=magic_entities,
             kind=entity.__qualname__,
             dry_run=self.dry_run,

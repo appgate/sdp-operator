@@ -18,9 +18,8 @@ from appgate.types import (
     EntityWrapper,
     BUILTIN_TAGS,
     EntityFieldDependency,
-    MissingFieldDependencies,
 )
-from appgate.openapi.types import AppgateException
+from appgate.openapi.types import AppgateException, MissingFieldDependencies
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import (
     entitlement,
@@ -35,6 +34,8 @@ from tests.utils import (
     CERTIFICATE_FIELD,
     PUBKEY_FIELD,
     _k8s_get_secret,
+    site,
+    api_spec,
 )
 
 
@@ -983,6 +984,84 @@ def test_resolve_dependencies_reverse_2():
     )
     assert conflicts is None
     assert entitlements_set.entities == resolved_entitlements.entities
+
+
+def test_resolve_appgate_state_1():
+    """
+    Test when we have 2 fields with dependencies but only one can be resolved
+    """
+    entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    id="e01",
+                    name="entitlement-1",
+                    conditions=["c01", "c02", "c03"],
+                    site="s01",
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    id="e02",
+                    name="entitlement-2",
+                    conditions=[
+                        "c01",
+                        "c04",
+                        "c05",
+                    ],
+                    site="s02",
+                )
+            ),
+        }
+    )
+    conditions = EntitiesSet(
+        {
+            EntityWrapper(condition(id="c01", name="condition1")),
+            EntityWrapper(condition(id="c02", name="condition2")),
+            EntityWrapper(condition(id="c03", name="condition3")),
+            EntityWrapper(condition(id="c04", name="condition4")),
+            EntityWrapper(condition(id="c05", name="condition5")),
+        }
+    )
+    sites = EntitiesSet({EntityWrapper(site(id="s02", name="Example Site"))})
+    expected_state = AppgateState(
+        entities_set={
+            "Condition": conditions,
+            "Site": sites,
+            "Entitlement": entitlements,
+        }
+    )
+    conflicts = resolve_appgate_state(
+        expected_state,
+        expected_state.copy(expected_state.entities_set),
+        reverse=True,
+        api_spec=api_spec,
+    )
+    assert conflicts == {
+        "entitlement-1": [
+            MissingFieldDependencies(
+                parent_name="entitlement-1",
+                parent_type="Entitlement",
+                field_path="site",
+                dependencies=frozenset({"s01"}),
+            )
+        ]
+    }
+    resolved_entitlements = expected_state.entities_set["Entitlement"].entities_by_name
+    assert resolved_entitlements["entitlement-1"].value.conditions == {
+        "condition1",
+        "condition2",
+        "condition3",
+    }
+    assert resolved_entitlements["entitlement-1"].value.site == "s01"
+
+    resolved_entitlements = expected_state.entities_set["Entitlement"].entities_by_name
+    assert resolved_entitlements["entitlement-2"].value.conditions == {
+        "condition1",
+        "condition4",
+        "condition5",
+    }
+    assert resolved_entitlements["entitlement-2"].value.site == "Example Site"
 
 
 def test_normalize_policies_0():

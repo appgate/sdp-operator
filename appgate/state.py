@@ -36,12 +36,12 @@ from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
     AppgateException,
+    MissingFieldDependencies,
 )
 from appgate.types import (
     EntityWrapper,
     EntitiesSet,
     EntityFieldDependency,
-    MissingFieldDependencies,
     has_tag,
     is_target,
     EntityClient,
@@ -134,7 +134,8 @@ def dump_entities(
     log.info(f"Dumping entities of type %s", entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
-        dumped_entity = K8S_DUMPER(api_spec).dump(e.value, True)
+        # TODO: Add fields with conflicts here as well
+        dumped_entity = K8S_DUMPER(api_spec).dump(e.value, True, None)
         if not dumped_entity.get("spec"):
             continue
         appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
@@ -559,8 +560,8 @@ def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
     e1 is current entity
     e2 is expected entity
     """
-    e1_dump = DIFF_DUMPER.dump(e1.value, True)
-    e2_dump = DIFF_DUMPER.dump(e2.value, True)
+    e1_dump = DIFF_DUMPER.dump(e1.value, True, None)
+    e2_dump = DIFF_DUMPER.dump(e2.value, True, None)
     if e2.has_secrets() and e2.changed_generation():
         e1_dump["generation"] = e2.value.appgate_metadata.latest_generation
         e2_dump["generation"] = e2.value.appgate_metadata.current_generation

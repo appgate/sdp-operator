@@ -18,6 +18,7 @@ from appgate.openapi.types import (
     AppgateMetadata,
     AppgateTypedloadException,
     K8S_ID_ANNOTATION,
+    MissingFieldDependencies,
 )
 from tests.utils import (
     load_test_open_api_spec,
@@ -515,6 +516,7 @@ def test_dump_k8s_with_id():
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
     EntityTestWithId = api_spec.entities["EntityTestWithId"].cls
     entity_1 = {
+        "name": "Some test 1",
         "id": "666-666-666-666-666-777",
         "fieldOne": "this is read only",
         "fieldTwo": "this is write only",
@@ -529,12 +531,13 @@ def test_dump_k8s_with_id():
             "name": "entitytestwithid",
             "annotations": {"sdp.appgate.com/id": "666-666-666-666-666-777"},
         },
-        "spec": {"fieldThree": "this is deprecated"},
+        "spec": {"name": "Some test 1", "fieldThree": "this is deprecated"},
     }
 
     with patch("appgate.openapi.attribmaker.uuid4") as uuid4:
         uuid4.return_value = "111-111-111-111-111"
         entity_2 = {
+            "name": "Some test 1",
             "fieldOne": "this is read only",
             "fieldTwo": "this is write only",
             "fieldThree": "this is deprecated",
@@ -550,8 +553,78 @@ def test_dump_k8s_with_id():
                     "sdp.appgate.com/id": "111-111-111-111-111",
                 },
             },
-            "spec": {"fieldThree": "this is deprecated"},
+            "spec": {"name": "Some test 1", "fieldThree": "this is deprecated"},
         }
+
+
+def test_dump_k8s_with_id_and_conflicts():
+    """
+    Test that id fields are created if missing
+    """
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestWithId = api_spec.entities["EntityTestWithId"].cls
+    entity_1 = {
+        "name": "Some test 1",
+        "id": "666-666-666-666-666-777",
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+    }
+    conflicts = {
+        "Some test 1": [
+            MissingFieldDependencies(
+                parent_name="Some test 1",
+                parent_type="EntityTestWithId",
+                field_path="fieldThree",
+                dependencies=frozenset({"some-value"}),
+            )
+        ],
+    }
+    appgate_e = APPGATE_LOADER.load(entity_1, None, EntityTestWithId)
+    k8s_e = K8S_DUMPER(api_spec).dump(appgate_e, False, conflicts)
+    assert k8s_e == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestWithId",
+        "metadata": {
+            "name": "some-test-1",
+            "annotations": {
+                "sdp.appgate.com/field-uuids": "fieldThree",
+                "sdp.appgate.com/id": "666-666-666-666-666-777",
+            },
+        },
+        "spec": {"name": "Some test 1", "fieldThree": "this is deprecated"},
+    }
+
+    conflicts = {
+        "Some test 1": [
+            MissingFieldDependencies(
+                parent_name="Some test 1",
+                parent_type="EntityTestWithId",
+                field_path="fieldThree",
+                dependencies=frozenset({"some-value"}),
+            ),
+            MissingFieldDependencies(
+                parent_name="Some test 1",
+                parent_type="EntityTestWithId",
+                field_path="fieldFour",
+                dependencies=frozenset({"some-value"}),
+            ),
+        ],
+    }
+    appgate_e = APPGATE_LOADER.load(entity_1, None, EntityTestWithId)
+    k8s_e = K8S_DUMPER(api_spec).dump(appgate_e, False, conflicts)
+    assert k8s_e == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestWithId",
+        "metadata": {
+            "name": "some-test-1",
+            "annotations": {
+                "sdp.appgate.com/field-uuids": "fieldThree;fieldFour",
+                "sdp.appgate.com/id": "666-666-666-666-666-777",
+            },
+        },
+        "spec": {"name": "Some test 1", "fieldThree": "this is deprecated"},
+    }
 
 
 def test_deprecated_entity():

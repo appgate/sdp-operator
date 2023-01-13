@@ -1,22 +1,19 @@
 import datetime
 import functools
 import os
-import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union, Tuple
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_DUMPER, k8s_name
 from appgate.openapi.types import (
     Entity_T,
     APISpec,
     AppgateException,
     K8S_APPGATE_DOMAIN,
-    K8S_APPGATE_VERSION,
     is_singleton,
 )
-from appgate.openapi.utils import is_entity_t, has_name
+from appgate.openapi.utils import is_entity_t
 
 __all__ = [
     "K8SEvent",
@@ -35,7 +32,6 @@ __all__ = [
     "GitOperatorContext",
     "BUILTIN_TAGS",
     "EntityFieldDependency",
-    "MissingFieldDependencies",
     "APPGATE_LOG_LEVEL",
     "USER_ENV",
     "PASSWORD_ENV",
@@ -420,14 +416,6 @@ class EntityFieldDependency:
     entity_name: str = attrib()
     field_path: str = attrib()
     known_entities: EntitiesSet = attrib(factory=EntitiesSet)
-
-
-@attrs(slots=True, frozen=True)
-class MissingFieldDependencies:
-    parent_name: str = attrib()
-    parent_type: str = attrib()
-    field_path: str = attrib()
-    dependencies: FrozenSet[str] = attrib(factory=frozenset)
 
 
 def get_tags(tags: List[str], env_tags: str | None) -> FrozenSet[str]:

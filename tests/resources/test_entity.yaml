@@ -473,6 +473,8 @@ definitions:
       id:
         type: string
         format: uuid
+      name:
+        type: string
       fieldOne:
         writeOnly: true
         type: string
