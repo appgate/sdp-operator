@@ -1244,6 +1244,128 @@ def test_normalize_policies_3():
     }
 
 
+def test_resolve_dependencies_mixed_names_and_ids_good():
+    conditions = EntitiesSet(
+        {
+            EntityWrapper(condition(id="c1", name="condition1")),
+            EntityWrapper(condition(id="c2", name="condition2")),
+            EntityWrapper(condition(id="c3", name="condition3")),
+            EntityWrapper(condition(id="c4", name="condition4")),
+            EntityWrapper(condition(id="c5", name="condition5")),
+        }
+    )
+    sites = EntitiesSet(
+        {
+            EntityWrapper(site(id="s01", name="site1")),
+            EntityWrapper(site(id="s02", name="site2")),
+        }
+    )
+    entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    name="entitlement-1",
+                    site="s01",
+                    conditions=["condition1", "condition2", "condition3"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    name="entitlement-2",
+                    conditions=[
+                        "c1",
+                        "c2",
+                        "c5",
+                    ],
+                    site="site1",
+                )
+            ),
+        }
+    )
+    expected_state = AppgateState(
+        entities_set={
+            "Condition": conditions,
+            "Site": sites,
+            "Entitlement": entitlements,
+        }
+    )
+    conflicts = resolve_appgate_state(
+        expected_state,
+        expected_state.copy(expected_state.entities_set),
+        reverse=True,
+        api_spec=api_spec,
+    )
+    assert conflicts == {}
+
+
+def test_resolve_dependencies_mixed_names_and_ids_failure():
+    conditions = EntitiesSet()
+    sites = EntitiesSet(
+        {
+            EntityWrapper(site(id="s01", name="site1")),
+        }
+    )
+    entitlements = EntitiesSet(
+        {
+            EntityWrapper(
+                entitlement(
+                    name="entitlement-1",
+                    site="s01",
+                    conditions=["condition1", "condition2", "condition3"],
+                )
+            ),
+            EntityWrapper(
+                entitlement(
+                    name="entitlement-2",
+                    conditions=[
+                        "c1",
+                        "c2",
+                        "c5",
+                    ],
+                    site="site2",
+                )
+            ),
+        }
+    )
+    expected_state = AppgateState(
+        entities_set={
+            "Condition": conditions,
+            "Site": sites,
+            "Entitlement": entitlements,
+        }
+    )
+    conflicts = resolve_appgate_state(
+        expected_state,
+        expected_state.copy(expected_state.entities_set),
+        reverse=True,
+        api_spec=api_spec,
+    )
+    assert conflicts == {
+        "entitlement-1": [
+            MissingFieldDependencies(
+                parent_name="entitlement-1",
+                parent_type="Entitlement",
+                field_path="conditions",
+                dependencies=frozenset({"condition1", "condition2", "condition3"}),
+            )
+        ],
+        "entitlement-2": [
+            MissingFieldDependencies(
+                parent_name="entitlement-2",
+                parent_type="Entitlement",
+                field_path="site",
+                dependencies=frozenset({"site2"}),
+            ),
+            MissingFieldDependencies(
+                parent_name="entitlement-2",
+                parent_type="Entitlement",
+                field_path="conditions",
+                dependencies=frozenset({"c1", "c5", "c2"}),
+            ),
+        ],
+    }
+
+
 def test_dependencies_1():
     """
     One dependency

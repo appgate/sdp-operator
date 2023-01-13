@@ -19,6 +19,7 @@ from appgate.openapi.types import (
     AppgateTypedloadException,
     K8S_ID_ANNOTATION,
     MissingFieldDependencies,
+    K8S_FIELD_WITH_IDS_ANNOTATION,
 )
 from tests.utils import (
     load_test_open_api_spec,
@@ -414,7 +415,7 @@ def test_loader_5():
 
 def test_loader_6():
     """
-    Test that we can get data in k8s from the annotations.
+    Test that we can get data in k8s from the annotations: K8S_ID_ANNOTATION
     """
     EntityTestWithId = (
         load_test_open_api_spec(secrets_key=None, reload=True)
@@ -429,7 +430,9 @@ def test_loader_6():
     }
 
     e = K8S_LOADER.load(
-        entity_1, {K8S_ID_ANNOTATION: "666-666-777-666-666"}, EntityTestWithId
+        entity_1,
+        {"annotations": {K8S_ID_ANNOTATION: "666-666-777-666-666"}},
+        EntityTestWithId,
     )
     # Normally we create a new uuid value for id if it's not present
     assert e.id == "666-666-777-666-666"
@@ -440,6 +443,30 @@ def test_loader_6():
         # If we have in metadata we use it
         e = K8S_LOADER.load(entity_2, None, EntityTestWithId)
         assert e.id == "111-111-111-111-111"
+
+
+def test_loader_7():
+    """
+    Test that we can get data in k8s from the annotations: K8S_FIELD_WITH_IDS_ANNOTATION
+    """
+    EntityTestWithId = (
+        load_test_open_api_spec(secrets_key=None, reload=True)
+        .entities["EntityTestWithId"]
+        .cls
+    )
+    entity_1 = {
+        "fieldOne": "this is read only",
+        "fieldTwo": "this is write only",
+        "fieldThree": "this is deprecated",
+        "fieldFour": "this is a field",
+    }
+
+    e = K8S_LOADER.load(
+        entity_1,
+        {"annotations": {K8S_FIELD_WITH_IDS_ANNOTATION: "fieldOne;fieldTwo"}},
+        EntityTestWithId,
+    )
+    assert e.appgate_metadata.fields_with_id == frozenset({"fieldOne", "fieldTwo"})
 
 
 def test_dumper_1():
@@ -588,7 +615,7 @@ def test_dump_k8s_with_id_and_conflicts():
         "metadata": {
             "name": "some-test-1",
             "annotations": {
-                "sdp.appgate.com/field-uuids": "fieldThree",
+                "sdp.appgate.com/fields-with-id": "fieldThree",
                 "sdp.appgate.com/id": "666-666-666-666-666-777",
             },
         },
@@ -619,7 +646,7 @@ def test_dump_k8s_with_id_and_conflicts():
         "metadata": {
             "name": "some-test-1",
             "annotations": {
-                "sdp.appgate.com/field-uuids": "fieldThree;fieldFour",
+                "sdp.appgate.com/fields-with-id": "fieldThree;fieldFour",
                 "sdp.appgate.com/id": "666-666-666-666-666-777",
             },
         },
