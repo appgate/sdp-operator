@@ -202,7 +202,8 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
         def _get_dumper(
             e: Entity_T,
             strict: bool = True,
-            resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
+            resolution_conflicts: Dict[str, List[MissingFieldDependencies]]
+            | None = None,
         ) -> Dict[str, Any]:
             return dumper.dump(e)
 
@@ -287,9 +288,7 @@ def get_loader(
                     and "k8s_loader" in attribute.metadata
                 ):
                     # cls: Iterable[CustomLoader]
-                    cls = attribute.metadata[
-                        K8S_LOADERS_FIELD_NAME
-                    ]
+                    cls = attribute.metadata[K8S_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
@@ -298,9 +297,7 @@ def get_loader(
                     and "appgate_loader" in attribute.metadata
                 ):
                     # cls: Iterable[CustomLoader]
-                    cls = attribute.metadata[
-                        APPGATE_LOADERS_FIELD_NAME
-                    ]
+                    cls = attribute.metadata[APPGATE_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
