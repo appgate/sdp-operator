@@ -555,7 +555,7 @@ def test_dump_k8s_with_id():
         "apiVersion": "v666.sdp.appgate.com/v1",
         "kind": "EntityTestWithId",
         "metadata": {
-            "name": "entitytestwithid",
+            "name": "some-test-1",
             "annotations": {"sdp.appgate.com/id": "666-666-666-666-666-777"},
         },
         "spec": {"name": "Some test 1", "fieldThree": "this is deprecated"},
@@ -575,7 +575,7 @@ def test_dump_k8s_with_id():
             "apiVersion": "v666.sdp.appgate.com/v1",
             "kind": "EntityTestWithId",
             "metadata": {
-                "name": "entitytestwithid",
+                "name": "some-test-1",
                 "annotations": {
                     "sdp.appgate.com/id": "111-111-111-111-111",
                 },
