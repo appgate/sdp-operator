@@ -112,7 +112,7 @@ class GitRepo:
         return self.repository_fork.split("/")[0] if self.repository_fork else None
 
     def checkout_branch(
-        self, previous_branch: str | None
+        self, previous_branch: str | None, previous_pr: PullRequest | None
     ) -> Tuple[str, PullRequest | None]:
         raise NotImplementedError()
 
@@ -267,6 +267,7 @@ class PullRequestLike(Protocol):
 
 def github_checkout_branch(
     previous_branch: str | None,
+    previous_pr: PullRequestLike | None,
     open_pull: PullRequestLike | None,
 ) -> Tuple[str, BranchOp]:
     if open_pull and previous_branch != open_pull.head.ref:
@@ -275,7 +276,7 @@ def github_checkout_branch(
     elif open_pull:
         # We found an open pr but we are currently usign it
         return open_pull.head.ref, BranchOp.NOP
-    elif previous_branch:
+    elif previous_branch and not previous_pr:
         # We have created a branch but still not pr, keep using it
         return previous_branch, BranchOp.NOP
     else:
@@ -292,7 +293,7 @@ class GitHubRepo(GitRepo):
         return self.git_repo.is_dirty()
 
     def checkout_branch(
-        self, previous_branch: str | None
+        self, previous_branch: str | None, previous_pr: PullRequest | None
     ) -> Tuple[str, PullRequest | None]:
         """
         Checkout an existing branch for a PullRequest already opened or creates a new branch
@@ -300,8 +301,10 @@ class GitHubRepo(GitRepo):
         from an already opened PullRequest this will be False
         """
         open_pull = get_sdp_pull(self.gh_repo)
-        pr_branch, branch_op = github_checkout_branch(previous_branch, open_pull)
-        if branch_op == BranchOp.CREATE_AND_CHECKOUT and open_pull:
+        pr_branch, branch_op = github_checkout_branch(
+            previous_branch, previous_pr, open_pull
+        )
+        if branch_op == BranchOp.CHECKOUT and open_pull:
             log.info(
                 "[git-operator] Found opened PullRequest %s [%s]. Using it",
                 open_pull.title,
@@ -316,7 +319,7 @@ class GitHubRepo(GitRepo):
                 self.git_repo.git.fetch("origin", pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, open_pull
-        elif branch_op == BranchOp.CHECKOUT:
+        elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
             )
@@ -326,10 +329,12 @@ class GitHubRepo(GitRepo):
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif BranchOp.NOP and previous_branch:
-            return previous_branch, open_pull
+        elif branch_op == BranchOp.NOP and pr_branch:
+            return pr_branch, open_pull
         else:
-            raise AppgateException("Unknown BranchOp operation")
+            raise AppgateException(
+                f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
+            )
 
     def create_or_update_pull_request(
         self,
