@@ -208,8 +208,8 @@ class AppgateState:
             for e, es in (
                 {entity: self.entities_set[entity]} if entity else self.entities_set
             ).items():
-                for n in es.entities_by_name.keys():
-                    log.info(" - [%s] %s", e, n)
+                for n in es.entities_by_name.values():
+                    log.info(" - [%s] %s | %s", e, n.name, n.id)
 
     def dump(
         self,
