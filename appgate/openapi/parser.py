@@ -604,7 +604,6 @@ class Parser:
                     definition_map=definition_map,
                     config_map=config_map,
                 )
-
             else:
                 return AttribMaker(
                     name=attrib_name,
