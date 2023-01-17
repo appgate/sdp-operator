@@ -105,12 +105,6 @@ def k8s_dumper(
 ) -> Dict[str, Any]:
     entity_kind = entity.__class__.__qualname__
     annotations = {}
-    # Check if entity has some resolution conflicts
-    fs = ";".join(
-        f.field_path for f in (resolution_conflicts or {}).get(entity.name, [])
-    )
-    if fs:
-        annotations[K8S_FIELD_WITH_IDS_ANNOTATION] = fs
     if has_id(entity):
         annotations[K8S_ID_ANNOTATION] = entity.id
         entity = evolve(
@@ -121,6 +115,12 @@ def k8s_dumper(
         entity_name = k8s_name(entity_kind)
     elif has_name(entity):
         entity_name = k8s_name(entity.name)
+        # Check if entity has some resolution conflicts
+        fs = ";".join(
+            f.field_path for f in (resolution_conflicts or {}).get(entity.name, [])
+        )
+        if fs:
+            annotations[K8S_FIELD_WITH_IDS_ANNOTATION] = fs
     elif strict:
         raise AppgateTypedloadException(
             "Unable to dump entity: name/id field is missing",
