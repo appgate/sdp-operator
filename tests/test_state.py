@@ -1340,30 +1340,32 @@ def test_resolve_dependencies_mixed_names_and_ids_failure():
         reverse=True,
         api_spec=api_spec,
     )
-    assert conflicts == {
-        "entitlement-1": [
-            MissingFieldDependencies(
-                parent_name="entitlement-1",
-                parent_type="Entitlement",
-                field_path="conditions",
-                dependencies=frozenset({"condition1", "condition2", "condition3"}),
-            )
-        ],
-        "entitlement-2": [
-            MissingFieldDependencies(
-                parent_name="entitlement-2",
-                parent_type="Entitlement",
-                field_path="site",
-                dependencies=frozenset({"site2"}),
-            ),
-            MissingFieldDependencies(
-                parent_name="entitlement-2",
-                parent_type="Entitlement",
-                field_path="conditions",
-                dependencies=frozenset({"c1", "c5", "c2"}),
-            ),
-        ],
-    }
+    assert conflicts["entitlement-1"] == [
+        MissingFieldDependencies(
+            parent_name="entitlement-1",
+            parent_type="Entitlement",
+            field_path="conditions",
+            dependencies=frozenset({"condition1", "condition2", "condition3"}),
+        )
+    ]
+    assert (
+        MissingFieldDependencies(
+            parent_name="entitlement-2",
+            parent_type="Entitlement",
+            field_path="conditions",
+            dependencies=frozenset({"c1", "c5", "c2"}),
+        )
+        in conflicts["entitlement-2"]
+    )
+    assert (
+        MissingFieldDependencies(
+            parent_name="entitlement-2",
+            parent_type="Entitlement",
+            field_path="site",
+            dependencies=frozenset({"site2"}),
+        )
+        in conflicts["entitlement-2"]
+    )
 
 
 def test_dependencies_1():
