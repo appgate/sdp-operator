@@ -35,7 +35,6 @@ from appgate.openapi.types import (
     APISpec,
     is_singleton,
     K8S_ID_ANNOTATION,
-    K8S_FIELD_WITH_IDS_ANNOTATION,
     MissingFieldDependencies,
 )
 from appgate.openapi.utils import has_name, has_id
@@ -116,12 +115,6 @@ def k8s_dumper(
         entity_name = k8s_name(entity_kind)
     elif has_name(entity):
         entity_name = k8s_name(entity.name)
-        # Check if entity has some resolution conflicts
-        fs = ";".join(
-            f.field_path for f in (resolution_conflicts or {}).get(entity.name, [])
-        )
-        if fs:
-            annotations[K8S_FIELD_WITH_IDS_ANNOTATION] = fs
     elif strict:
         raise AppgateTypedloadException(
             "Unable to dump entity: name/id field is missing",
@@ -353,20 +346,6 @@ def get_loader(
                         loaded_entity.name,
                         annotations[K8S_ID_ANNOTATION],
                     )
-                if K8S_FIELD_WITH_IDS_ANNOTATION in annotations:
-                    try:
-                        fields = annotations[K8S_FIELD_WITH_IDS_ANNOTATION].split(";")
-                        loaded_entity = evolve(
-                            loaded_entity,
-                            appgate_metadata=evolve(
-                                loaded_entity.appgate_metadata,
-                                fields_with_id=frozenset(fields),
-                            ),
-                        )
-                    except Exception as e:
-                        log.error(
-                            "Unable to parse %s: %s", K8S_FIELD_WITH_IDS_ANNOTATION, e
-                        )
             return loaded_entity
         except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
             raise AppgateTypedloadException(
