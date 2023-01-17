@@ -72,7 +72,8 @@ def git_dump(
 def git_load(file: Path, entity_type: Type[Entity_T]) -> Entity_T:
     with file.open("r") as f:
         data = yaml.safe_load(f)
-        return K8S_LOADER.load(data["spec"], None, entity_type)
+        mt = data.get("metadata")
+        return K8S_LOADER.load(data["spec"], mt, entity_type)
 
 
 def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
