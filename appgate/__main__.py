@@ -5,6 +5,7 @@ import sys
 import os
 from argparse import ArgumentParser
 from asyncio import Queue
+from io import TextIOWrapper
 from pathlib import Path
 from typing import (
     Optional,
@@ -13,6 +14,8 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
+    Union,
+    TextIO,
 )
 import datetime
 import time
@@ -342,6 +345,7 @@ def main_dump_crd(
     api_spec = generate_api_spec(
         spec_directory=Path(spec_directory) if spec_directory else None
     )
+    f: TextIO | TextIOWrapper
     output_path = None
     if not stdout:
         output_file_format = (

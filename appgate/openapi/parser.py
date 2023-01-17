@@ -17,6 +17,7 @@ from appgate.discriminator import (
     get_discriminator_maker_config,
     DiscriminatorAttribMaker,
 )
+from appgate.files import FileAttribMaker
 from appgate.logger import log
 from appgate.openapi.attribmaker import (
     AttribMaker,
@@ -538,6 +539,15 @@ class Parser:
                     name=attrib_name,
                     tpe=datetime.datetime,
                     base_tpe=datetime.datetime,
+                    default=None,
+                    factory=None,
+                    definition=attrib_maker_config.definition,
+                )
+            elif format == "byte":
+                return FileAttribMaker(
+                    name=attrib_name,
+                    tpe=TYPES_MAP[tpe],
+                    base_tpe=TYPES_MAP[tpe],
                     default=None,
                     factory=None,
                     definition=attrib_maker_config.definition,

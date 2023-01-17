@@ -1,4 +1,8 @@
+import os
+from unittest.mock import patch
+
 import pytest
+from requests import Response
 
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import (

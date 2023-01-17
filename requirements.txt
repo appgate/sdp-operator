@@ -12,15 +12,16 @@ apischema==0.18.0
     # via -r requirements.in
 async-timeout==4.0.2
     # via aiohttp
-attrs==22.1.0
+attrs==22.2.0
     # via
     #   -r requirements.in
     #   aiohttp
-cachetools==5.2.0
+cachetools==5.2.1
     # via google-auth
 certifi==2022.12.7
     # via
     #   kubernetes
+    #   minio
     #   requests
 cffi==1.15.1
     # via
@@ -30,7 +31,7 @@ charset-normalizer==2.1.1
     # via
     #   aiohttp
     #   requests
-cryptography==38.0.4
+cryptography==39.0.0
     # via -r requirements.in
 deprecated==1.2.13
     # via pygithub
@@ -38,19 +39,23 @@ frozenlist==1.3.3
     # via
     #   aiohttp
     #   aiosignal
-gitdb==4.0.9
+gitdb==4.0.10
     # via gitpython
-gitpython==3.1.29
+gitpython==3.1.30
     # via -r requirements.in
-google-auth==2.15.0
+google-auth==2.16.0
     # via kubernetes
+hvac==1.0.2
+    # via -r requirements.in
 idna==3.4
     # via
     #   requests
     #   yarl
 kubernetes==25.3.0
     # via -r requirements.in
-multidict==6.0.3
+minio==7.1.13
+    # via -r requirements.in
+multidict==6.0.4
     # via
     #   aiohttp
     #   yarl
@@ -66,6 +71,8 @@ pycparser==2.21
     # via cffi
 pygithub==1.57
     # via -r requirements.in
+pyhcl==0.4.4
+    # via hvac
 pyjwt==2.6.0
     # via pygithub
 pynacl==1.5.0
@@ -76,6 +83,7 @@ pyyaml==6.0
     # via kubernetes
 requests==2.28.1
     # via
+    #   hvac
     #   kubernetes
     #   pygithub
     #   requests-oauthlib
@@ -92,9 +100,14 @@ smmap==5.0.0
     # via gitdb
 typedload==2.12
     # via -r requirements.in
+types-requests==2.28.11.7
+    # via -r requirements.in
+types-urllib3==1.26.25.4
+    # via types-requests
 urllib3==1.26.13
     # via
     #   kubernetes
+    #   minio
     #   requests
 websocket-client==1.4.2
     # via kubernetes
