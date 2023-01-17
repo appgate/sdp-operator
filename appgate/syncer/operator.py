@@ -210,14 +210,6 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                         event_error.error,
                     )
                 sys.exit(1)
-            plan = create_appgate_plan(
-                current_state=current_state,
-                expected_state=expected_state,
-                builtin_tags=BUILTIN_TAGS,
-                target_tags=ctx.target_tags,
-                excluded_tags=None,
-            )
-            commits: Dict[str, List[Tuple[str, GitCommitState]]] = {}
             total_conflicts = resolve_appgate_state(
                 expected_state,
                 expected_state.copy(expected_state.entities_set),
@@ -233,7 +225,14 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 entities_conflict_summary(
                     conflicts=total_conflicts, namespace=ctx.namespace
                 )
-
+            plan = create_appgate_plan(
+                current_state=current_state,
+                expected_state=expected_state,
+                builtin_tags=BUILTIN_TAGS,
+                target_tags=ctx.target_tags,
+                excluded_tags=None,
+            )
+            commits: Dict[str, List[Tuple[str, GitCommitState]]] = {}
             if plan.needs_apply:
                 log.info("[git-operator] Applying plan")
                 if not git_entity_clients:
