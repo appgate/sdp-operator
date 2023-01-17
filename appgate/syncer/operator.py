@@ -191,7 +191,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 expected_state.with_entity(
                     EntityWrapper(event.entity),
                     event.op,
-                    current_appgate_state=current_state,
+                    current_appgate_state=expected_state,
                 )
             else:
                 log.info(
