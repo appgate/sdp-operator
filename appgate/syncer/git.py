@@ -402,7 +402,8 @@ class GitEntityClient(EntityClient):
 
     async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(name)
-        self.commits.append((p, "DELETE"))
+        if register_commit:
+            self.commits.append((p, "DELETE"))
         log.info(
             "[git-entity-client/%s] Removing file %s for entity %s", self.kind, p, name
         )
@@ -421,7 +422,9 @@ class GitEntityClient(EntityClient):
         return await self._delete(e.name, register_commit=True)
 
     async def modify(self, e: Entity_T) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / f"{e.name}.yaml"
+        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
+            e.name
+        )
         self.commits.append((p, "MODIFY"))
         await self._delete(e.name, register_commit=False)
         await self._create(e, register_commit=False)
@@ -447,10 +450,9 @@ class GitEntityClient(EntityClient):
                 log.info(
                     "[git-entity-client/%s] * New commit: Modified file %s",
                     self.kind,
-                    o,
                     p,
                 )
-                self.git_repo.git_repo.index.remove([str(p)])
+                self.git_repo.git_repo.index.add([str(p)])
             commit_message += f"\n  - {get_commit_message(o, p)}"
         self.git_repo.git_repo.index.commit(message=commit_message)
         cs = [(str(k), v) for (k, v) in self.commits]
