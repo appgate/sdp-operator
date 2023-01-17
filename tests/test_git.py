@@ -43,34 +43,41 @@ class TestPR(PullRequestLike):
 def test_checkout_branch() -> None:
     with patch("appgate.syncer.git.generate_branch_name") as generate_branch_name:
         generate_branch_name.return_value = "my-new-branch"
+        previous_pr = TestPR(
+            333, "previous-pr", TestPRHead(ref="branch-in-previous-pr")
+        )
         open_pr = TestPR(666, "already-open-pr", TestPRHead(ref="branch-in-pr"))
-        assert github_checkout_branch(None, None) == (
+        assert github_checkout_branch(None, None, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
         )
-        assert github_checkout_branch("already-created-branch", None) == (
+        assert github_checkout_branch("already-created-branch", None, None) == (
             "already-created-branch",
             BranchOp.NOP,
         )
-        assert github_checkout_branch(None, open_pr) == (
+        assert github_checkout_branch("already-created-branch", previous_pr, None) == (
+            "my-new-branch",
+            BranchOp.CREATE_AND_CHECKOUT,
+        )
+        assert github_checkout_branch(None, None, open_pr) == (
             "branch-in-pr",
             BranchOp.CHECKOUT,
         )
         # If we have an open pr always use it
-        assert github_checkout_branch("some-other-pr", open_pr) == (
+        assert github_checkout_branch("some-other-pr", None, open_pr) == (
             "branch-in-pr",
             BranchOp.CHECKOUT,
         )
-        assert github_checkout_branch("some-other-pr", open_pr) == (
+        assert github_checkout_branch("some-other-pr", None, open_pr) == (
             "branch-in-pr",
             BranchOp.CHECKOUT,
         )
-        assert github_checkout_branch(None, open_pr) == (
+        assert github_checkout_branch(None, None, open_pr) == (
             "branch-in-pr",
             BranchOp.CHECKOUT,
         )
         # Create a new branch if we don't have a current one
-        assert github_checkout_branch(None, None) == (
+        assert github_checkout_branch(None, None, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
         )
