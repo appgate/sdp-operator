@@ -347,6 +347,11 @@ def get_loader(
                     loaded_entity = evolve(
                         loaded_entity, id=annotations[K8S_ID_ANNOTATION]
                     )
+                    log.info(
+                        "[k8s-loader] Recovering id identity: %s | %s",
+                        loaded_entity.name,
+                        annotations[K8S_ID_ANNOTATION],
+                    )
                 if K8S_FIELD_WITH_IDS_ANNOTATION in annotations:
                     try:
                         fields = annotations[K8S_FIELD_WITH_IDS_ANNOTATION].split(";")
