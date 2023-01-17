@@ -91,9 +91,10 @@ def dump_datetime(v: datetime.datetime) -> str:
 
 
 def k8s_name(name: str) -> str:
+    # TODO: We need to think how to deal with potential conflicts here
     # This is ugly but we need to go from a bigger set of strings
     # into a smaller one :(
-    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())
+    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())[:64]
 
 
 def k8s_dumper(
