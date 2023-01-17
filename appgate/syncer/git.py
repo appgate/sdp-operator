@@ -1,7 +1,8 @@
+import enum
 import functools
 import time
 from datetime import date
-from typing import Tuple, List, Type, Dict, Iterable
+from typing import Tuple, List, Type, Dict, Iterable, Protocol
 
 import yaml
 from git import Repo, GitCommandError
@@ -110,7 +111,9 @@ class GitRepo:
     def user_fork(self) -> str | None:
         return self.repository_fork.split("/")[0] if self.repository_fork else None
 
-    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+    def checkout_branch(
+        self, previous_branch: str | None
+    ) -> Tuple[str, PullRequest | None]:
         raise NotImplementedError()
 
     def needs_pull_request(self) -> bool:
@@ -236,6 +239,50 @@ Pull request created automatically by sdp-operator
     return body
 
 
+class BranchOp(enum.Enum):
+    CREATE_AND_CHECKOUT = enum.auto()
+    CHECKOUT = enum.auto()
+    NOP = enum.auto()
+
+
+class PullRequestHeadLike(Protocol):
+    @property
+    def ref(self) -> str:
+        ...
+
+
+class PullRequestLike(Protocol):
+    @property
+    def title(self) -> str:
+        ...
+
+    @property
+    def number(self) -> int:
+        ...
+
+    @property
+    def head(self) -> PullRequestHeadLike:
+        ...
+
+
+def github_checkout_branch(
+    previous_branch: str | None,
+    open_pull: PullRequestLike | None,
+) -> Tuple[str, BranchOp]:
+    if open_pull and previous_branch != open_pull.head.ref:
+        # We found an open pr, use it and checkout branch
+        return open_pull.head.ref, BranchOp.CHECKOUT
+    elif open_pull:
+        # We found an open pr but we are currently usign it
+        return open_pull.head.ref, BranchOp.NOP
+    elif previous_branch:
+        # We have created a branch but still not pr, keep using it
+        return previous_branch, BranchOp.NOP
+    else:
+        # In any other case create a new branch
+        return generate_branch_name(), BranchOp.CREATE_AND_CHECKOUT
+
+
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
     gh: Github = attrib()
@@ -244,41 +291,45 @@ class GitHubRepo(GitRepo):
     def needs_pull_request(self) -> bool:
         return self.git_repo.is_dirty()
 
-    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+    def checkout_branch(
+        self, previous_branch: str | None
+    ) -> Tuple[str, PullRequest | None]:
         """
         Checkout an existing branch for a PullRequest already opened or creates a new branch
         Return the name of the branch and if it needs to create PullRequest: if the branch is
         from an already opened PullRequest this will be False
         """
         open_pull = get_sdp_pull(self.gh_repo)
-        if open_pull:
+        pr_branch, branch_op = github_checkout_branch(previous_branch, open_pull)
+        if branch_op == BranchOp.CREATE_AND_CHECKOUT and open_pull:
             log.info(
                 "[git-operator] Found opened PullRequest %s [%s]. Using it",
                 open_pull.title,
                 open_pull.number,
             )
-            branch = open_pull.head.ref
             log.info(
                 "[git-operator] Fetching and checking out existing branch %s/%s",
                 self.git_repo.remote().name,
-                branch,
+                pr_branch,
             )
-            if self.dry_run:
-                return branch, open_pull
-            self.git_repo.git.fetch("origin", branch)
-            self.git_repo.git.checkout(branch)
-        else:
-            branch = generate_branch_name()
+            if not self.dry_run:
+                self.git_repo.git.fetch("origin", pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, open_pull
+        elif branch_op == BranchOp.CHECKOUT:
             log.info(
-                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
+                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
             )
-            if self.dry_run:
-                return branch, None
-            self.git_repo.git.checkout(self.main_branch)
-            self.git_repo.git.fetch("origin", self.main_branch)
-            self.git_repo.git.branch(branch)
-            self.git_repo.git.checkout(branch)
-        return branch, open_pull
+            if not self.dry_run:
+                self.git_repo.git.checkout(self.main_branch)
+                self.git_repo.git.fetch("origin", self.main_branch)
+                self.git_repo.git.branch(pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, None
+        elif BranchOp.NOP and previous_branch:
+            return previous_branch, open_pull
+        else:
+            raise AppgateException("Unknown BranchOp operation")
 
     def create_or_update_pull_request(
         self,
