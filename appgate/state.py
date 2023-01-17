@@ -23,7 +23,7 @@ import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.logger import is_debug
-from appgate.attrs import DIFF_DUMPER, dump_datetime
+from appgate.attrs import DIFF_DUMPER, dump_datetime, K8S_DUMPER
 from appgate.client import (
     K8SConfigMapClient,
     entity_unique_id,
@@ -36,15 +36,14 @@ from appgate.openapi.types import (
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATA_PASSWORD_FIELDS_FIELD,
     AppgateException,
+    MissingFieldDependencies,
 )
 from appgate.types import (
     EntityWrapper,
     EntitiesSet,
     EntityFieldDependency,
-    MissingFieldDependencies,
     has_tag,
     is_target,
-    dump_entity,
     EntityClient,
 )
 
@@ -121,7 +120,7 @@ def entities_op(
 
 def dump_entities(
     entities: Iterable[EntityWrapper],
-    api_version: int,
+    api_spec: APISpec,
     dump_file: Optional[Path],
     entity_type: str,
 ) -> Optional[List[str]]:
@@ -135,7 +134,8 @@ def dump_entities(
     log.info(f"Dumping entities of type %s", entity_type)
     dumped_entities: List[str] = []
     for i, e in enumerate(entities):
-        dumped_entity = dump_entity(e, entity_type, api_version)
+        # TODO: Add fields with conflicts here as well
+        dumped_entity = K8S_DUMPER(api_spec).dump(e.value, True, None)
         if not dumped_entity.get("spec"):
             continue
         appgate_metadata = dumped_entity["spec"].get(APPGATE_METADATA_ATTRIB_NAME)
@@ -208,12 +208,12 @@ class AppgateState:
             for e, es in (
                 {entity: self.entities_set[entity]} if entity else self.entities_set
             ).items():
-                for n in es.entities_by_name.keys():
-                    log.info(" - [%s] %s", e, n)
+                for n in es.entities_by_name.values():
+                    log.info(" - [%s] %s | %s", e, n.name, n.id)
 
     def dump(
         self,
-        api_version: int,
+        api_spec: APISpec,
         output_dir: Optional[Path] = None,
         stdout: bool = False,
         target_tags: Optional[FrozenSet[str]] = None,
@@ -236,7 +236,7 @@ class AppgateState:
                 target_tags=target_tags,
                 exclude_tags=exclude_tags,
             )
-            entity_password_fields = dump_entities(entities_to_dump, api_version, p, k)
+            entity_password_fields = dump_entities(entities_to_dump, api_spec, p, k)
             if entity_password_fields:
                 password_fields[k] = entity_password_fields
         if len(password_fields) > 0:
@@ -560,8 +560,8 @@ def compute_diff(e1: EntityWrapper, e2: EntityWrapper) -> List[str]:
     e1 is current entity
     e2 is expected entity
     """
-    e1_dump = DIFF_DUMPER.dump(e1.value)
-    e2_dump = DIFF_DUMPER.dump(e2.value)
+    e1_dump = DIFF_DUMPER.dump(e1.value, True, None)
+    e2_dump = DIFF_DUMPER.dump(e2.value, True, None)
     if e2.has_secrets() and e2.changed_generation():
         e1_dump["generation"] = e2.value.appgate_metadata.latest_generation
         e2_dump["generation"] = e2.value.appgate_metadata.current_generation
@@ -785,8 +785,6 @@ def resolve_field_entities(
 ) -> Tuple[EntitiesSet, Optional[Dict[str, List[MissingFieldDependencies]]]]:
     """
     resolve entity dependencies for entities in the EntitiesSet e1.
-    Dependencies is a list of EntityFieldDependency.
-
     """
     indent_level = 2
     to_remove = set()

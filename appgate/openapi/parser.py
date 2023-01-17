@@ -1,4 +1,5 @@
 import datetime
+import functools
 from pathlib import Path
 from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
 
@@ -65,31 +66,6 @@ DEFAULT_MAP: Dict[str, AttribType] = {
     "string": "",
     "array": frozenset,
 }
-
-
-def set_id_from_metadata(current_id: str, appgate_metadata: AppgateMetadata) -> str:
-    return appgate_metadata.uuid or current_id
-
-
-class IdAttribMaker(AttribMaker):
-    def values(
-        self,
-        attributes: Dict[str, "AttribMaker"],
-        required_fields: List[str],
-        instance_maker_config: "EntityClassGeneratorConfig",
-    ) -> AttributesDict:
-        values = super().values(attributes, required_fields, instance_maker_config)
-        if "metadata" not in values:
-            values["metadata"] = {}
-        # sets entity.id from entity.appgate_metadata.id or current id
-        values["metadata"][K8S_LOADERS_FIELD_NAME] = [
-            CustomFieldsEntityLoader(
-                loader=set_id_from_metadata,
-                dependencies=["appgate_metadata"],
-                field=self.name,
-            )
-        ]
-        return values
 
 
 class EntityClassGenerator:
@@ -315,6 +291,17 @@ class Parser:
         self.previous_namespaces: Set[str] = set()
         self.parser_context = parser_context
         self.data: Dict[str, Any] = parser_context.load_namespace(namespace)
+
+    @functools.cache
+    def api_version(self) -> int:
+        api_version_str = self.get_keys(["info", "version"])
+        if not api_version_str:
+            raise OpenApiParserException("Unable to find Appgate API version")
+        try:
+            api_version = api_version_str.split(" ")[2].split(".")[0]
+        except IndexError:
+            raise OpenApiParserException("Unable to find Appgate API version")
+        return api_version
 
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split("#", maxsplit=2)
@@ -576,7 +563,7 @@ class Parser:
                     source_field=attrib_maker_config.definition["x-size-source"],
                 )
             elif attrib_name == "id":
-                return IdAttribMaker(
+                return AttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
                     base_tpe=TYPES_MAP[tpe],
@@ -617,7 +604,6 @@ class Parser:
                     definition_map=definition_map,
                     config_map=config_map,
                 )
-
             else:
                 return AttribMaker(
                     name=attrib_name,

@@ -112,7 +112,7 @@ def generate_k8s_clients(
     return {
         k: K8sEntityClient(
             k8s_api=k8s_api,
-            api_version=api_spec.api_version,
+            api_spec=api_spec,
             crd_version=K8S_APPGATE_VERSION,
             namespace=namespace,
             kind=k,
@@ -213,7 +213,7 @@ async def appgate_operator(
                 event_errors.append(event)
             else:
                 log.info(
-                    "[%s/%s}] Event: %s %s with name %s",
+                    "[%s/%s] Event: %s %s with name %s",
                     operator_name,
                     namespace,
                     event.op,
@@ -231,13 +231,13 @@ async def appgate_operator(
         except asyncio.exceptions.TimeoutError:
             if event_errors:
                 log.error(
-                    "[%s/%s}] Found events with errors, dying now!",
+                    "[%s/%s] Found events with errors, dying now!",
                     operator_name,
                     namespace,
                 )
                 for event_error in event_errors:
                     log.error(
-                        "[%s/%s}] - Entity of type %s with name %s : %s",
+                        "[%s/%s] - Entity of type %s with name %s : %s",
                         operator_name,
                         namespace,
                         event_error.name,
@@ -293,7 +293,7 @@ async def appgate_operator(
                 )
                 continue
 
-            if ctx.two_way_sync:
+            if not ctx.reverse_mode and ctx.two_way_sync:
                 # use current appgate state from controller instead of from memory
                 current_appgate_state = await get_current_appgate_state(
                     ctx=ctx, appgate_client=appgate_client
@@ -316,6 +316,11 @@ async def appgate_operator(
                 ctx.exclude_tags,
             )
             if plan.needs_apply:
+                log.info(
+                    "[%s/%s] New plan contains changes, applying it.",
+                    operator_name,
+                    namespace,
+                )
                 entity_clients = None
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
                     entity_clients = generate_api_spec_clients(

@@ -473,11 +473,15 @@ definitions:
       id:
         type: string
         format: uuid
+      name:
+        type: string
       fieldOne:
         writeOnly: true
         type: string
       fieldTwo:
         readOnly: true
+        type: string
+      fieldThree:
         type: string
   EntityTestFile:
     type: object

@@ -1,9 +1,13 @@
 import datetime
+import re
+
+from attr import evolve
 from dateutil import parser
 from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
 
 from typedload import dataloader
 from typedload import datadumper
+from typedload.datadumper import Dumper
 from typedload.exceptions import (
     TypedloadException,
     TypedloadValueError,
@@ -28,7 +32,12 @@ from appgate.openapi.types import (
     EntityDumper,
     AppgateTypedloadException,
     PlatformType,
+    APISpec,
+    is_singleton,
+    K8S_ID_ANNOTATION,
+    MissingFieldDependencies,
 )
+from appgate.openapi.utils import has_name, has_id
 
 
 __all__ = [
@@ -41,6 +50,7 @@ __all__ = [
     "get_dumper",
     "dump_datetime",
     "parse_datetime",
+    "k8s_name",
 ]
 
 
@@ -79,7 +89,52 @@ def dump_datetime(v: datetime.datetime) -> str:
     return v.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def get_dumper(platform_type: PlatformType):
+def k8s_name(name: str) -> str:
+    # TODO: We need to think how to deal with potential conflicts here
+    # This is ugly but we need to go from a bigger set of strings
+    # into a smaller one :(
+    return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())[:64]
+
+
+def k8s_dumper(
+    dumper: Dumper,
+    entity: Entity_T,
+    api_spec: APISpec,
+    strict: bool = True,
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
+) -> Dict[str, Any]:
+    entity_kind = entity.__class__.__qualname__
+    annotations = {}
+    if has_id(entity):
+        annotations[K8S_ID_ANNOTATION] = entity.id
+        entity = evolve(
+            entity,
+            appgate_metadata=evolve(entity.appgate_metadata, uuid=entity.id),
+        )
+    if is_singleton(entity):
+        entity_name = k8s_name(entity_kind)
+    elif has_name(entity):
+        entity_name = k8s_name(entity.name)
+    elif strict:
+        raise AppgateTypedloadException(
+            "Unable to dump entity: name/id field is missing",
+            platform_type=PlatformType.K8S,
+        )
+    else:
+        entity_name = k8s_name(entity_kind)
+    spec = dumper.dump(entity)
+    return {
+        "apiVersion": f"v{api_spec.api_version}.{entity.appgate_metadata.api_version}",
+        "kind": entity_kind,
+        "metadata": {
+            "name": entity_name,
+            "annotations": annotations,
+        },
+        "spec": spec,
+    }
+
+
+def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
     def _attrdump(d, value) -> Dict[str, Any]:
         r = {}
         for attr in value.__attrs_attrs__:
@@ -117,7 +172,42 @@ def get_dumper(platform_type: PlatformType):
     dumper = datadumper.Dumper(**{})
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
-    return dumper
+
+    if platform_type == PlatformType.K8S:
+        if api_spec is None:
+            raise AppgateTypedloadException(
+                "Unable to dump, APISpec is required",
+                platform_type=PlatformType.K8S,
+            )
+        else:
+            api = api_spec
+
+            def _get_dumper(
+                e: Entity_T,
+                strict: bool = True,
+                resolution_conflicts: Dict[str, List[MissingFieldDependencies]]
+                | None = None,
+            ) -> Dict[str, Any]:
+                return k8s_dumper(
+                    dumper,
+                    e,
+                    api,
+                    strict=strict,
+                    resolution_conflicts=resolution_conflicts,
+                )
+
+            return _get_dumper
+    else:
+
+        def _get_dumper(
+            e: Entity_T,
+            strict: bool = True,
+            resolution_conflicts: Dict[str, List[MissingFieldDependencies]]
+            | None = None,
+        ) -> Dict[str, Any]:
+            return dumper.dump(e)
+
+        return _get_dumper
 
 
 def get_loader(
@@ -197,9 +287,8 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and "k8s_loader" in attribute.metadata
                 ):
-                    cls: Iterable[CustomLoader] = attribute.metadata[
-                        K8S_LOADERS_FIELD_NAME
-                    ]
+                    # cls: Iterable[CustomLoader]
+                    cls = attribute.metadata[K8S_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
@@ -207,9 +296,8 @@ def get_loader(
                     platform_type == PlatformType.APPGATE
                     and "appgate_loader" in attribute.metadata
                 ):
-                    cls: Iterable[CustomLoader] = attribute.metadata[
-                        APPGATE_LOADERS_FIELD_NAME
-                    ]
+                    # cls: Iterable[CustomLoader]
+                    cls = attribute.metadata[APPGATE_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
@@ -231,7 +319,7 @@ def get_loader(
     loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
 
     def load(
-        data: Dict[str, Any], metadata: Optional[Dict[str, Any]], entity: type
+        data: Dict[str, Any], metadata: Optional[Dict[str, Any]], entity: Type
     ) -> Entity_T:
         metadata = metadata or {}
         if APPGATE_METADATA_ATTRIB_NAME in data:
@@ -245,7 +333,19 @@ def get_loader(
             appgate_mt["fromAppgate"] = True
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         try:
-            return loader.load(data, entity)
+            loaded_entity = loader.load(data, entity)
+            if metadata:
+                annotations = metadata.get("annotations", {})
+                if K8S_ID_ANNOTATION in annotations:
+                    loaded_entity = evolve(
+                        loaded_entity, id=annotations[K8S_ID_ANNOTATION]
+                    )
+                    log.info(
+                        "[k8s-loader] Recovering id identity: %s | %s",
+                        loaded_entity.name,
+                        annotations[K8S_ID_ANNOTATION],
+                    )
+            return loaded_entity
         except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
             raise AppgateTypedloadException(
                 platform_type=platform_type,
@@ -265,7 +365,9 @@ def get_loader(
 
 
 K8S_LOADER = EntityLoader(load=get_loader(PlatformType.K8S))
-K8S_DUMPER = EntityDumper(dump=get_dumper(PlatformType.K8S).dump)
+K8S_DUMPER = lambda api_spec: EntityDumper(
+    dump=get_dumper(PlatformType.K8S, api_spec=api_spec)
+)
 APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
-APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE).dump)
-DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF).dump)
+APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE))
+DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF))

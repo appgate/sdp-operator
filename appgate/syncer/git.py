@@ -1,7 +1,8 @@
+import enum
 import functools
 import time
 from datetime import date
-from typing import Tuple, List, Type, Dict, Iterable
+from typing import Tuple, List, Type, Dict, Iterable, Protocol
 
 import yaml
 from git import Repo, GitCommandError
@@ -14,9 +15,14 @@ import shutil
 
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_LOADER
+from appgate.attrs import K8S_LOADER, K8S_DUMPER
 from appgate.logger import log
-from appgate.openapi.types import AppgateException, APISpec, Entity_T
+from appgate.openapi.types import (
+    AppgateException,
+    APISpec,
+    Entity_T,
+    MissingFieldDependencies,
+)
 from appgate.state import AppgateState
 from appgate.types import (
     ensure_env,
@@ -24,7 +30,6 @@ from appgate.types import (
     GitOperatorContext,
     GIT_DUMP_DIR,
     GITHUB_DEPLOYMENT_KEY_PATH,
-    dump_entity,
     EntityWrapper,
     EntitiesSet,
     EntityClient,
@@ -51,11 +56,15 @@ def entity_file_name(entity_name: str) -> str:
     return f"{entity_name.lower().replace(' ', '-')}.yaml"
 
 
-def git_dump(entity: Entity_T, api_version: int, dest: Path) -> Path:
-    entity_type = entity.__class__.__qualname__
+def git_dump(
+    entity: Entity_T,
+    api_spec: APISpec,
+    dest: Path,
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None,
+) -> Path:
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = dump_entity(EntityWrapper(entity), entity_type, api_version)
+    dumped_entity = K8S_DUMPER(api_spec).dump(entity, True, resolution_conflicts)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -64,7 +73,8 @@ def git_dump(entity: Entity_T, api_version: int, dest: Path) -> Path:
 def git_load(file: Path, entity_type: Type[Entity_T]) -> Entity_T:
     with file.open("r") as f:
         data = yaml.safe_load(f)
-        return K8S_LOADER.load(data["spec"], None, entity_type)
+        mt = data.get("metadata")
+        return K8S_LOADER.load(data["spec"], mt, entity_type)
 
 
 def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
@@ -101,7 +111,9 @@ class GitRepo:
     def user_fork(self) -> str | None:
         return self.repository_fork.split("/")[0] if self.repository_fork else None
 
-    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+    def checkout_branch(
+        self, previous_branch: str | None, previous_pr: PullRequest | None
+    ) -> Tuple[str, PullRequest | None]:
         raise NotImplementedError()
 
     def needs_pull_request(self) -> bool:
@@ -227,6 +239,51 @@ Pull request created automatically by sdp-operator
     return body
 
 
+class BranchOp(enum.Enum):
+    CREATE_AND_CHECKOUT = enum.auto()
+    CHECKOUT = enum.auto()
+    NOP = enum.auto()
+
+
+class PullRequestHeadLike(Protocol):
+    @property
+    def ref(self) -> str:
+        ...
+
+
+class PullRequestLike(Protocol):
+    @property
+    def title(self) -> str:
+        ...
+
+    @property
+    def number(self) -> int:
+        ...
+
+    @property
+    def head(self) -> PullRequestHeadLike:
+        ...
+
+
+def github_checkout_branch(
+    previous_branch: str | None,
+    previous_pr: PullRequestLike | None,
+    open_pull: PullRequestLike | None,
+) -> Tuple[str, BranchOp]:
+    if open_pull and previous_branch != open_pull.head.ref:
+        # We found an open pr, use it and checkout branch
+        return open_pull.head.ref, BranchOp.CHECKOUT
+    elif open_pull:
+        # We found an open pr but we are currently usign it
+        return open_pull.head.ref, BranchOp.NOP
+    elif previous_branch and not previous_pr:
+        # We have created a branch but still not pr, keep using it
+        return previous_branch, BranchOp.NOP
+    else:
+        # In any other case create a new branch
+        return generate_branch_name(), BranchOp.CREATE_AND_CHECKOUT
+
+
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
     gh: Github = attrib()
@@ -235,41 +292,49 @@ class GitHubRepo(GitRepo):
     def needs_pull_request(self) -> bool:
         return self.git_repo.is_dirty()
 
-    def checkout_branch(self) -> Tuple[str, PullRequest | None]:
+    def checkout_branch(
+        self, previous_branch: str | None, previous_pr: PullRequest | None
+    ) -> Tuple[str, PullRequest | None]:
         """
         Checkout an existing branch for a PullRequest already opened or creates a new branch
         Return the name of the branch and if it needs to create PullRequest: if the branch is
         from an already opened PullRequest this will be False
         """
         open_pull = get_sdp_pull(self.gh_repo)
-        if open_pull:
+        pr_branch, branch_op = github_checkout_branch(
+            previous_branch, previous_pr, open_pull
+        )
+        if branch_op == BranchOp.CHECKOUT and open_pull:
             log.info(
                 "[git-operator] Found opened PullRequest %s [%s]. Using it",
                 open_pull.title,
                 open_pull.number,
             )
-            branch = open_pull.head.ref
             log.info(
                 "[git-operator] Fetching and checking out existing branch %s/%s",
                 self.git_repo.remote().name,
-                branch,
+                pr_branch,
             )
-            if self.dry_run:
-                return branch, open_pull
-            self.git_repo.git.fetch("origin", branch)
-            self.git_repo.git.checkout(branch)
-        else:
-            branch = generate_branch_name()
+            if not self.dry_run:
+                self.git_repo.git.fetch("origin", pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, open_pull
+        elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
-                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{branch}"
+                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
             )
-            if self.dry_run:
-                return branch, None
-            self.git_repo.git.checkout(self.main_branch)
-            self.git_repo.git.fetch("origin", self.main_branch)
-            self.git_repo.git.branch(branch)
-            self.git_repo.git.checkout(branch)
-        return branch, open_pull
+            if not self.dry_run:
+                self.git_repo.git.checkout(self.main_branch)
+                self.git_repo.git.fetch("origin", self.main_branch)
+                self.git_repo.git.branch(pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, None
+        elif branch_op == BranchOp.NOP and pr_branch:
+            return pr_branch, open_pull
+        else:
+            raise AppgateException(
+                f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
+            )
 
     def create_or_update_pull_request(
         self,
@@ -307,9 +372,10 @@ class GitHubRepo(GitRepo):
                 pull_request_to_use.title,
             )
             body = pull_request_to_use.body
-            pull_request_to_use.edit(
-                body=get_pull_request_body(commits=commits, body=body)
-            )
+            if not self.dry_run:
+                pull_request_to_use.edit(
+                    body=get_pull_request_body(commits=commits, body=body)
+                )
         else:
             # We need to create a new pull request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
@@ -357,12 +423,13 @@ def entity_path(repository_path: Path, kind: str) -> Path:
 
 @attrs()
 class GitEntityClient(EntityClient):
-    api_version: int = attrib()
+    api_spec: APISpec = attrib()
     kind: str = attrib()
     repository_path: Path = attrib()
     git_repo: GitRepo = attrib()
     branch: str = attrib()
     commits: List[Tuple[Path, GitCommitState]] = attrib()
+    resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = attrib()
 
     def with_commit(self, state: GitCommitState, file: Path) -> "GitEntityClient":
         self.commits.append((file, state))
@@ -381,7 +448,7 @@ class GitEntityClient(EntityClient):
             e.name,
         )
         p.mkdir(exist_ok=True)
-        file = git_dump(e, self.api_version, p)
+        file = git_dump(e, self.api_spec, p, self.resolution_conflicts)
         if register_commit:
             self.commits.append((file, "ADD"))
         return self
@@ -391,7 +458,8 @@ class GitEntityClient(EntityClient):
 
     async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(name)
-        self.commits.append((p, "DELETE"))
+        if register_commit:
+            self.commits.append((p, "DELETE"))
         log.info(
             "[git-entity-client/%s] Removing file %s for entity %s", self.kind, p, name
         )
@@ -410,7 +478,9 @@ class GitEntityClient(EntityClient):
         return await self._delete(e.name, register_commit=True)
 
     async def modify(self, e: Entity_T) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / f"{e.name}.yaml"
+        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
+            e.name
+        )
         self.commits.append((p, "MODIFY"))
         await self._delete(e.name, register_commit=False)
         await self._create(e, register_commit=False)
@@ -436,10 +506,9 @@ class GitEntityClient(EntityClient):
                 log.info(
                     "[git-entity-client/%s] * New commit: Modified file %s",
                     self.kind,
-                    o,
                     p,
                 )
-                self.git_repo.git_repo.index.remove([str(p)])
+                self.git_repo.git_repo.index.add([str(p)])
             commit_message += f"\n  - {get_commit_message(o, p)}"
         self.git_repo.git_repo.index.commit(message=commit_message)
         cs = [(str(k), v) for (k, v) in self.commits]

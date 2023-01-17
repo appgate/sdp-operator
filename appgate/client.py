@@ -12,14 +12,18 @@ from kubernetes.client.exceptions import ApiException
 
 from attr import attrib, attrs
 
-from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
+from appgate.attrs import (
+    APPGATE_DUMPER,
+    APPGATE_LOADER,
+    parse_datetime,
+    dump_datetime,
+    K8S_DUMPER,
+    k8s_name,
+)
 from appgate.logger import log
-from appgate.openapi.types import Entity_T, AppgateException
+from appgate.openapi.types import Entity_T, AppgateException, APISpec, EntityDumper
 from appgate.types import (
     LatestEntityGeneration,
-    EntityWrapper,
-    dump_entity,
-    k8s_name,
     EntityClient,
     crd_domain,
 )
@@ -46,30 +50,37 @@ def plural(kind):
     return get_plural(kind)
 
 
-@attrs()
+@attrs(frozen=True)
 class K8sEntityClient(EntityClient):
     k8s_api: CustomObjectsApi = attrib()
-    api_version: int = attrib()
+    api_spec: APISpec = attrib(hash=False)
     crd_version: str = attrib()
     namespace: str = attrib()
     kind: str = attrib()
 
+    @functools.cache
+    def crd_domain(self) -> str:
+        return crd_domain(self.api_spec.api_version)
+
+    @functools.cache
+    def dumper(self) -> EntityDumper:
+        return K8S_DUMPER(self.api_spec)
+
     async def create(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Creating k8s entity %s", self.kind, e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
         self.k8s_api.create_namespaced_custom_object(  # type: ignore
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            data,
+            self.dumper().dump(e, True, None),
         )
         return self
 
     async def delete(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Deleting k8s entity %s", self.kind, e.name)
         self.k8s_api.delete_namespaced_custom_object(
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
@@ -79,9 +90,9 @@ class K8sEntityClient(EntityClient):
 
     async def modify(self, e: Entity_T) -> EntityClient:
         log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
-        data = dump_entity(EntityWrapper(e), self.kind, self.api_version)
+        data = self.dumper().dump(e, True, None)
         self.k8s_api.patch_namespaced_custom_object(  # type: ignore
-            crd_domain(self.api_version),
+            self.crd_domain(),
             self.crd_version,
             self.namespace,
             plural(self.kind),
@@ -528,7 +539,7 @@ class AppgateClient:
             path=f"/admin/{api_path}",
             singleton=singleton,
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
-            dump=lambda e: dumper.dump(e),
+            dump=lambda e: dumper.dump(e, True, None),
             magic_entities=magic_entities,
             kind=entity.__qualname__,
             dry_run=self.dry_run,
