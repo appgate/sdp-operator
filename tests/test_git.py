@@ -12,6 +12,7 @@ from appgate.syncer.git import (
 
 @attrs
 class TestPRHead(PullRequestHeadLike):
+    __test__ = False
     _ref: str = attrib()
 
     @property
@@ -21,6 +22,7 @@ class TestPRHead(PullRequestHeadLike):
 
 @attrs
 class TestPR(PullRequestLike):
+    __test__ = False
     _number: int = attrib()
     _title: str = attrib()
     _head: TestPRHead = attrib()
