@@ -29,7 +29,11 @@ rules:
       - globalsettingss
       - clientconnections
       - serviceusers
+{{- if .Values.sdp.sdpOperator.reverseMode }}
+    verbs: ["get", "create", "patch", "watch", "list", "delete"]
+{{- else }}
     verbs: ["get", "create", "patch", "watch", "list"]
+{{- end }}
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
     verbs: ["get", "watch", "list", "update", "patch"]
