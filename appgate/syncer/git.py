@@ -325,7 +325,8 @@ class GitHubRepo(GitRepo):
             )
             if not self.dry_run:
                 self.git_repo.git.checkout(self.main_branch)
-                self.git_repo.git.fetch("origin", self.main_branch)
+                self.git_repo.git.pull("origin", self.main_branch)
+                self.git_repo.head.reset(index=True, working_tree=True)
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
