@@ -96,7 +96,7 @@ class K8sEntityClient(EntityClient):
             self.crd_version,
             self.namespace,
             plural(self.kind),
-            k8s_name(data["name"]),
+            k8s_name(e.name),
             data,
         )
         return self
