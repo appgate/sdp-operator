@@ -150,7 +150,7 @@ class AppgateVaultSecret(AppgateSecret):
         client = Client(url=address, token=token, verify=verify)
 
         if client.is_authenticated():
-            log.info("Successfully authenticated Vault client to %s", client.url)
+            log.debug("Successfully authenticated Vault client to %s", client.url)
         else:
             log.error("Failed to authenticated Vault client against %s", client.url)
 
