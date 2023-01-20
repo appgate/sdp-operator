@@ -222,6 +222,45 @@ spec:
                   key: github-token
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
+            {{- if .Values.sdp.externalSecret.enabled }}
+            - name: APPGATE_SECRET_SOURCE
+              value: {{ .Values.sdp.externalSecret.type }}
+            {{- if eq .Values.sdp.externalSecret.type "vault" }}
+            - name: APPGATE_VAULT_ADDRESS
+              value: {{ .Values.sdp.externalSecret.source.vault.address }}
+            - name: APPGATE_VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalSecret.source.vault.tokenSecret }}
+                  key: vault-token
+            - name: APPGATE_VAULT_SSL_NO_VERIFY
+              value: {{ .Values.sdp.externalSecret.source.vault.sslNoVerify | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.sdp.externalFile.enabled }}
+            - name: APPGATE_FILE_SOURCE
+              value: {{ .Values.sdp.externalFile.type }}
+            {{- if eq .Values.sdp.externalFile.type "http" }}
+            - name: APPGATE_FILE_HTTP_ADDRESS
+              value: {{ .Values.sdp.externalFile.source.http.address }}
+            {{- end }}
+            {{- if eq .Values.sdp.externalFile.type "s3" }}
+            - name: APPGATE_FILE_S3_ADDRESS
+              value: {{ .Values.sdp.externalFile.source.s3.address }}
+            - name: APPGATE_FILE_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalFile.source.s3.keySecret }}
+                  key: access-key
+            - name: APPGATE_FILE_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalFile.source.s3.keySecret }}
+                  key: secret-key
+            - name: APPGATE_FILE_S3_SSL_NO_VERIFY
+              value: {{ .Values.sdp.externalFile.source.s3.sslNoVerify | quote }}
+            {{- end }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.gitOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.gitOperator.image.tag}}"
