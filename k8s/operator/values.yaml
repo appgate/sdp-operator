@@ -97,8 +97,8 @@ sdp:
     source:
       vault:
         address: ""
-        inCluster: false
         tokenSecret: ""
+        sslNoVerify: false
 
   externalFile:
     enabled: false
