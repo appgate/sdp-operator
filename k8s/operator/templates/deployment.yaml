@@ -94,15 +94,13 @@ spec:
             {{- if eq .Values.sdp.externalSecret.type "vault" }}
             - name: APPGATE_VAULT_ADDRESS
               value: {{ .Values.sdp.externalSecret.source.vault.address }}
-            - name: APPGATE_INCLUSTER_VAULT
-              value: {{ .Values.sdp.externalSecret.source.vault.inCluster | quote }}
-            {{- if not .Values.sdp.externalSecret.source.vault.inCluster }}
             - name: APPGATE_VAULT_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.sdp.externalSecret.source.vault.tokenSecret }}
                   key: vault-token
-            {{- end }}
+            - name: APPGATE_VAULT_SSL_NO_VERIFY
+              value: {{ .Values.sdp.externalSecret.source.vault.sslNoVerify | quote }}
             {{- end }}
             {{- end }}
             {{- if .Values.sdp.externalFile.enabled }}

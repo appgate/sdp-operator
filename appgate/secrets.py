@@ -136,37 +136,6 @@ class AppgateSecretK8S(AppgateSecret):
         return isinstance(value, dict) and value.get("type") == "k8s/secret"
 
 
-class AppgateVault:
-    def __init__(self, client: Client):
-        self.client = client
-
-    def authenticate(self):
-        if self.client.is_authenticated():
-            log.info("Successfully authenticated Vault client to %s", self.client.url)
-        else:
-            log.error(
-                "Failed to authenticated Vault client against %s", self.client.url
-            )
-        return self.client
-
-
-class AppgateInClusterVault(AppgateVault):
-    def __init__(self):
-        with Path(
-            "/var/run/secrets/kubernetes.io/serviceaccount/token"
-        ).read_text() as jwt:
-            client = Client(url=os.getenv("APPGATE_VAULT_ADDRESS", "localhost"))
-            Kubernetes(client.adapter).login(role="sdp-operator", jwt=jwt)
-            super().__init__(client)
-
-
-class AppgateExternalVault(AppgateVault):
-    def __init__(self):
-        address = os.getenv("APPGATE_VAULT_ADDRESS", "localhost")
-        token = os.getenv("APPGATE_VAULT_TOKEN")
-        super().__init__(Client(url=address, token=token))
-
-
 class AppgateVaultSecret(AppgateSecret):
     def __init__(self, value: PasswordField, entity_name: str):
         super().__init__(value)
@@ -175,10 +144,19 @@ class AppgateVaultSecret(AppgateSecret):
         self.client = self.authenticate()
 
     def authenticate(self) -> Client:
-        if os.getenv("APPGATE_INCLUSTER_VAULT") == "true":
-            return AppgateInClusterVault().authenticate()
+        address = os.getenv("APPGATE_VAULT_ADDRESS", "localhost")
+        token = os.getenv("APPGATE_VAULT_TOKEN")
+        verify = os.getenv("APPGATE_VAULT_SSL_NO_VERIFY") == "false"
+        Client(url=address, token=token, verify=verify)
+
+        if self.client.is_authenticated():
+            log.info("Successfully authenticated Vault client to %s", self.client.url)
         else:
-            return AppgateExternalVault().authenticate()
+            log.error(
+                "Failed to authenticated Vault client against %s", self.client.url
+            )
+
+        return self.client
 
     def read_secret_from_vault(self) -> Dict:
         return self.client.secrets.kv.read_secret_version(path="sdp")
