@@ -147,16 +147,14 @@ class AppgateVaultSecret(AppgateSecret):
         address = os.getenv("APPGATE_VAULT_ADDRESS", "localhost")
         token = os.getenv("APPGATE_VAULT_TOKEN")
         verify = os.getenv("APPGATE_VAULT_SSL_NO_VERIFY") == "false"
-        Client(url=address, token=token, verify=verify)
+        client = Client(url=address, token=token, verify=verify)
 
-        if self.client.is_authenticated():
-            log.info("Successfully authenticated Vault client to %s", self.client.url)
+        if client.is_authenticated():
+            log.info("Successfully authenticated Vault client to %s", client.url)
         else:
-            log.error(
-                "Failed to authenticated Vault client against %s", self.client.url
-            )
+            log.error("Failed to authenticated Vault client against %s", client.url)
 
-        return self.client
+        return client
 
     def read_secret_from_vault(self) -> Dict:
         return self.client.secrets.kv.read_secret_version(path="sdp")
