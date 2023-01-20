@@ -199,6 +199,8 @@ spec:
             - mountPath: /opt/git-operator/k8s
               name: github-deployment-key
           env:
+            - name: APPGATE_API_VERSION
+              value: {{ .Values.sdp.sdpOperator.version }}
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APPGATE_OPERATOR_LOG_LEVEL
