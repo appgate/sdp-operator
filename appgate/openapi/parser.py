@@ -247,6 +247,7 @@ class ParserContext:
         spec_api_path: Path,
         secrets_key: Optional[str],
         k8s_get_secret: Optional[Callable[[str, str], str]],
+        operator_mode: str,
     ) -> None:
         self.secrets_cipher = Fernet(secrets_key.encode()) if secrets_key else None
         self.entities: Dict[str, GeneratedEntity] = {}
@@ -257,6 +258,7 @@ class ParserContext:
             v: k for k, v in spec_entities.items()
         }
         self.k8s_get_secret = k8s_get_secret
+        self.operator_mode = operator_mode
 
     def get_entity_path(self, entity_name: str) -> Optional[str]:
         return self.entity_path_by_name.get(entity_name)
@@ -520,6 +522,7 @@ class Parser:
                     definition=attrib_maker_config.definition,
                     secrets_cipher=self.parser_context.secrets_cipher,
                     k8s_get_client=self.parser_context.k8s_get_secret,
+                    operator_mode=self.parser_context.operator_mode,
                 )
             elif format == "date-time":
                 return AttribMaker(

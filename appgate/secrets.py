@@ -233,10 +233,12 @@ class PasswordAttribMaker(AttribMaker):
         definition: OpenApiDict,
         secrets_cipher: Optional[Fernet],
         k8s_get_client: Optional[Callable[[str, str], str]],
+        operator_mode: str,
     ) -> None:
         super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.secrets_cipher = secrets_cipher
         self.k8s_get_client = k8s_get_client
+        self.operator_mode = operator_mode
 
     def values(
         self,

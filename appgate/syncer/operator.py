@@ -70,6 +70,7 @@ def git_operator_context(
         spec_directory=Path(spec_directory) if spec_directory else None,
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode="git-operator",
     )
     if not namespace:
         raise AppgateException(
