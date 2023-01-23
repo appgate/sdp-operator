@@ -168,9 +168,7 @@ def appgate_operator_context(
         spec_directory=Path(spec_directory) if spec_directory else None,
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
-        operator_mode="appgate-reverse-operator"
-        if args.reverse_mode
-        else "appgate-operator",
+        operator_mode=get_operator_name(args.reverse_mode),
     )
 
     return AppgateOperatorContext(
