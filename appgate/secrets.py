@@ -222,6 +222,10 @@ def appgate_secret_load(
     return appgate_secret.decrypt()
 
 
+def should_load_secret(operator_mode: str):
+    return "APPGATE_SECRET_SOURCE" in os.environ and operator_mode == "appgate-operator"
+
+
 class PasswordAttribMaker(AttribMaker):
     def __init__(
         self,
@@ -276,7 +280,7 @@ class PasswordAttribMaker(AttribMaker):
                     instance_maker_config.entity_name,
                 ),
                 field=self.name,
-                load_external="APPGATE_SECRET_SOURCE" in os.environ,
+                load_external=should_load_secret(self.operator_mode),
             ),
             CustomEntityLoader(loader=set_appgate_password_metadata),
         ]
