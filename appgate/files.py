@@ -98,7 +98,24 @@ def appgate_file_load(value: OpenApiDict, entity_name: str) -> str:
     return appgate_file.load_file()
 
 
+def should_load_file(operator_mode: str) -> bool:
+    return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
+
+
 class FileAttribMaker(AttribMaker):
+    def __init__(
+        self,
+        name: str,
+        tpe: type,
+        base_tpe: type,
+        default: Optional[AttribType],
+        factory: Optional[type],
+        definition: OpenApiDict,
+        operator_mode: str,
+    ) -> None:
+        super().__init__(name, tpe, base_tpe, default, factory, definition)
+        self.operator_mode = operator_mode
+
     def values(
         self,
         attributes: Dict[str, "AttribMaker"],
@@ -114,7 +131,7 @@ class FileAttribMaker(AttribMaker):
                     v, instance_maker_config.entity_name
                 ),
                 field=self.name,
-                load_external="APPGATE_FILE_SOURCE" in os.environ,
+                load_external=should_load_file(self.operator_mode),
             )
         ]
         return values

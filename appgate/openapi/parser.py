@@ -541,6 +541,7 @@ class Parser:
                     default=None,
                     factory=None,
                     definition=attrib_maker_config.definition,
+                    operator_mode=self.parser_context.operator_mode,
                 )
             elif (
                 format == "checksum"
