@@ -113,6 +113,7 @@ def load_test_open_api_spec(
             spec_file="test_entity.yaml",
             secrets_key=secrets_key,
             k8s_get_secret=k8s_get_secret,
+            operator_mode="appgate-operator",
         )
     return TestOpenAPI
 

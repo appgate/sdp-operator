@@ -43,6 +43,7 @@ LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"
 
 def parse_files(
     spec_entities: Dict[str, str],
+    operator_mode: str,
     spec_directory: Optional[Path] = None,
     spec_file: str = "api_specs.yml",
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
@@ -53,6 +54,7 @@ def parse_files(
         spec_api_path=spec_directory or Path(SPEC_DIR),
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode=operator_mode,
     )
     parser = Parser(parser_context, spec_file)
     # First parse those paths we are interested in
@@ -275,6 +277,7 @@ def generate_api_spec(
     spec_directory: Optional[Path] = None,
     secrets_key: Optional[str] = None,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+    operator_mode: str = "appgate-operator",
 ) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
@@ -284,6 +287,7 @@ def generate_api_spec(
         spec_directory=spec_directory,
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode=operator_mode,
     )
 
 
