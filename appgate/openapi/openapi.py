@@ -9,6 +9,7 @@ from apischema.json_schema import deserialization_schema
 from apischema.json_schema.types import JsonType
 from apischema.objects import ObjectField, AliasedStr
 
+from appgate.appgate import OperatorMode
 from appgate.client import AppgateClient, AppgateEntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
@@ -43,7 +44,7 @@ LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"
 
 def parse_files(
     spec_entities: Dict[str, str],
-    operator_mode: str,
+    operator_mode: OperatorMode,
     spec_directory: Optional[Path] = None,
     spec_file: str = "api_specs.yml",
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
@@ -277,7 +278,7 @@ def generate_api_spec(
     spec_directory: Optional[Path] = None,
     secrets_key: Optional[str] = None,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
-    operator_mode: str = "appgate-operator",
+    operator_mode: OperatorMode = "appgate-operator",
 ) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
