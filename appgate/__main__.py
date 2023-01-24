@@ -14,7 +14,6 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
-    Union,
     TextIO,
 )
 import datetime

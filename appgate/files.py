@@ -3,7 +3,6 @@ import os
 import requests
 from typing import Optional, Dict, List
 
-import urllib3.response
 from minio import Minio  # type: ignore
 
 from appgate.appgate import OperatorMode
