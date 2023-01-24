@@ -6,6 +6,7 @@ from typing import Optional, Dict, TypeAlias, Literal
 
 from kubernetes.client import CustomObjectsApi
 
+from appgate.openapi import openapi
 from appgate.types import (
     AppgateOperatorContext,
     AppgateEventError,
@@ -23,7 +24,6 @@ from appgate.openapi.types import (
     AppgateException,
     APISpec,
 )
-from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     K8S_APPGATE_VERSION,
 )
@@ -90,7 +90,7 @@ async def get_current_appgate_state(
         )
         raise AppgateException("Error authenticating")
 
-    entity_clients = generate_api_spec_clients(
+    entity_clients = openapi.generate_api_spec_clients(
         api_spec=api_spec, appgate_client=appgate_client
     )
     entities_set = {}
@@ -327,7 +327,7 @@ async def appgate_operator(
                 )
                 entity_clients = None
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
-                    entity_clients = generate_api_spec_clients(
+                    entity_clients = openapi.generate_api_spec_clients(
                         api_spec=ctx.api_spec, appgate_client=appgate_client
                     )
                 if not ctx.dry_run_mode and ctx.reverse_mode:
