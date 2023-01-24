@@ -10,6 +10,7 @@ from hvac import Client  # type: ignore
 from hvac.api.auth_methods import Kubernetes  # type: ignore
 from kubernetes.client import CoreV1Api
 
+from appgate.appgate import OperatorMode
 from appgate.customloaders import (
     CustomEntityLoader,
     CustomAttribLoader,
@@ -222,7 +223,7 @@ def appgate_secret_load(
     return appgate_secret.decrypt()
 
 
-def should_load_secret(operator_mode: str):
+def should_load_secret(operator_mode: OperatorMode):
     return "APPGATE_SECRET_SOURCE" in os.environ and operator_mode == "appgate-operator"
 
 
@@ -237,7 +238,7 @@ class PasswordAttribMaker(AttribMaker):
         definition: OpenApiDict,
         secrets_cipher: Optional[Fernet],
         k8s_get_client: Optional[Callable[[str, str], str]],
-        operator_mode: str,
+        operator_mode: OperatorMode,
     ) -> None:
         super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.secrets_cipher = secrets_cipher

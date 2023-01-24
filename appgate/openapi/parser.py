@@ -7,6 +7,7 @@ import yaml
 from attr import attrib, make_class
 from cryptography.fernet import Fernet
 
+from appgate.appgate import OperatorMode
 from appgate.attrs import K8S_LOADER
 from appgate.bytes import (
     size_attrib_maker,
@@ -247,7 +248,7 @@ class ParserContext:
         spec_api_path: Path,
         secrets_key: Optional[str],
         k8s_get_secret: Optional[Callable[[str, str], str]],
-        operator_mode: str,
+        operator_mode: OperatorMode,
     ) -> None:
         self.secrets_cipher = Fernet(secrets_key.encode()) if secrets_key else None
         self.entities: Dict[str, GeneratedEntity] = {}
