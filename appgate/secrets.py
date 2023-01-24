@@ -9,7 +9,6 @@ from hvac import Client  # type: ignore
 from hvac.api.auth_methods import Kubernetes  # type: ignore
 from kubernetes.client import CoreV1Api
 
-from appgate.appgate import OperatorMode
 from appgate.customloaders import (
     CustomEntityLoader,
     CustomAttribLoader,
@@ -38,6 +37,7 @@ __all__ = [
     "k8s_get_secret",
 ]
 
+from appgate.types import OperatorMode
 
 PasswordField = Union[str, OpenApiDict]
 

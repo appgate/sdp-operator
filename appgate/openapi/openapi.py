@@ -9,7 +9,6 @@ from apischema.json_schema import deserialization_schema
 from apischema.json_schema.types import JsonType
 from apischema.objects import ObjectField, AliasedStr
 
-from appgate.appgate import OperatorMode
 from appgate.client import AppgateClient, AppgateEntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
@@ -33,7 +32,7 @@ __all__ = [
     "generate_api_spec_clients",
 ]
 
-from appgate.types import EntityClient
+from appgate.types import EntityClient, OperatorMode
 
 # Always set the default API version to latest released version
 SPEC_DIR = "api_specs/v18"

@@ -5,7 +5,6 @@ from typing import Optional, Dict, List
 
 from minio import Minio  # type: ignore
 
-from appgate.appgate import OperatorMode
 from appgate.customloaders import FileAttribLoader
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
@@ -15,6 +14,7 @@ from appgate.openapi.types import (
     AttributesDict,
     K8S_LOADERS_FIELD_NAME,
 )
+from appgate.types import OperatorMode
 
 
 class AppgateFileException(Exception):
