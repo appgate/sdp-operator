@@ -3,7 +3,18 @@ import functools
 import os
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union, Tuple
+from typing import (
+    Dict,
+    Any,
+    FrozenSet,
+    Optional,
+    List,
+    Set,
+    Literal,
+    Union,
+    Tuple,
+    TypeAlias,
+)
 from attr import attrib, attrs, evolve
 
 from appgate.openapi.types import (
@@ -448,3 +459,15 @@ def ensure_env(env_name: str) -> str:
 @functools.lru_cache
 def crd_domain(api_version: int) -> str:
     return f"v{api_version}.{K8S_APPGATE_DOMAIN}"
+
+
+OperatorMode: TypeAlias = Literal[
+    "appgate-operator", "appgate-reverse-operator", "git-operator"
+]
+
+
+def get_operator_mode(reverse_mode: bool) -> OperatorMode:
+    if reverse_mode:
+        return "appgate-reverse-operator"
+    else:
+        return "appgate-operator"

@@ -11,6 +11,8 @@ from appgate.types import (
     AppgateOperatorContext,
     AppgateEventError,
     EntityClient,
+    OperatorMode,
+    get_operator_mode,
 )
 from appgate.logger import log
 from appgate.client import (
@@ -42,16 +44,11 @@ from appgate.types import AppgateEvent, EntityWrapper
 __all__ = [
     "appgate_operator",
     "get_current_appgate_state",
-    "get_operator_mode",
     "get_crds",
 ]
 
 
 crds: Optional[CustomObjectsApi] = None
-
-OperatorMode: TypeAlias = Literal[
-    "appgate-operator", "appgate-reverse-operator", "git-operator"
-]
 
 
 def get_crds() -> CustomObjectsApi:
@@ -59,13 +56,6 @@ def get_crds() -> CustomObjectsApi:
     if not crds:
         crds = CustomObjectsApi()
     return crds
-
-
-def get_operator_mode(reverse_mode: bool) -> OperatorMode:
-    if reverse_mode:
-        return "appgate-reverse-operator"
-    else:
-        return "appgate-operator"
 
 
 async def get_current_appgate_state(

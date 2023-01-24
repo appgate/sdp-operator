@@ -7,7 +7,6 @@ import yaml
 from attr import attrib, make_class
 from cryptography.fernet import Fernet
 
-from appgate.appgate import OperatorMode
 from appgate.attrs import K8S_LOADER
 from appgate.bytes import (
     size_attrib_maker,
@@ -54,7 +53,7 @@ from appgate.openapi.utils import (
     is_discriminator,
 )
 from appgate.secrets import PasswordAttribMaker
-from appgate.types import BUILTIN_TAGS
+from appgate.types import BUILTIN_TAGS, OperatorMode
 
 TYPES_MAP: Dict[str, Type] = {
     "string": str,
