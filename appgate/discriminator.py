@@ -1,7 +1,4 @@
-import pprint
 from typing import List, Optional, Dict
-
-from attr import evolve
 
 from appgate.customloaders import CustomEntityLoader
 from appgate.logger import log

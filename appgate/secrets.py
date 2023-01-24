@@ -1,6 +1,5 @@
 import base64
 import os
-from pathlib import Path
 from typing import Dict, List, Union, Optional, Callable
 
 from attr import evolve

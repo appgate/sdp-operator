@@ -33,7 +33,6 @@ from appgate.openapi.types import (
     OpenApiParserException,
     GeneratedEntityFieldDependency,
     GeneratedEntity,
-    AttributesDict,
     AttribType,
     EntityClassGeneratorConfig,
     AttribMakerConfig,

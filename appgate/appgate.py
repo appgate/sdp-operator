@@ -11,7 +11,6 @@ from appgate.types import (
     AppgateOperatorContext,
     AppgateEventError,
     EntityClient,
-    crd_domain,
 )
 from appgate.logger import log
 from appgate.client import (
