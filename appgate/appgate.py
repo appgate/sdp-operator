@@ -2,7 +2,7 @@ import asyncio
 import sys
 from asyncio import Queue
 from copy import deepcopy
-from typing import Optional, Dict
+from typing import Optional, Dict, TypeAlias, Literal
 
 from kubernetes.client import CustomObjectsApi
 
@@ -43,7 +43,7 @@ from appgate.types import AppgateEvent, EntityWrapper
 __all__ = [
     "appgate_operator",
     "get_current_appgate_state",
-    "get_operator_name",
+    "get_operator_mode",
     "get_crds",
 ]
 
@@ -58,7 +58,7 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-def get_operator_name(reverse_mode: bool) -> str:
+def get_operator_mode(reverse_mode: bool) -> str:
     operator_name = "appgate-operator"
     if reverse_mode:
         operator_name = "appgate-reverse-operator"
@@ -128,7 +128,7 @@ async def appgate_operator(
     appgate_client: AppgateClient,
 ) -> None:
     namespace = ctx.namespace
-    operator_name = get_operator_name(ctx.reverse_mode)
+    operator_name = get_operator_mode(ctx.reverse_mode)
     log.info("[%s/%s] Main loop started:", operator_name, namespace)
     log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
     log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
