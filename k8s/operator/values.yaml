@@ -28,7 +28,6 @@ sdp:
     ## @param sdp.sdpOperator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
     ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
     ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
-    ## @param sdp.sdpOperator.configMapMt The config map to store metadata for entities.
     reverseMode: false
     version: v18
     logLevel: info
@@ -43,7 +42,6 @@ sdp:
     cleanup: false
     fernetKey: ""
     caCert: ""
-    configMapMt: ""
     secret: ""
 
     ## @param sdp.sdpOperator.image.tag The image tag of the operator.

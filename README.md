@@ -90,7 +90,6 @@ Browse the available charts versions in the [SDP Operator GitHub Container Regis
 | `sdp.operator.image.pullSecrets` | The secret to access the repository.                                                              | `[]`                           |
 | `sdp.operator.fernetKey`         | The fernet key to use when decrypting secrets in entities.                                        | `""`                           |
 | `sdp.operator.caCert`            | The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is. | `""`                           |
-| `sdp.operator.configMapMt`       | The config map to store metadata for entities.                                                    | `""`                           |
 
 
 This table above was generated using [readme-generator-for-helm](https://github.com/bitnami-labs/readme-generator-for-helm)

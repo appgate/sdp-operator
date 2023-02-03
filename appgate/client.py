@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable, Type
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
-from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta, CustomObjectsApi
+from kubernetes.client import (
+    CoreV1Api,
+    V1ConfigMap,
+    V1ObjectMeta,
+    CustomObjectsApi,
+)
 from kubernetes.client.exceptions import ApiException
 
 from attr import attrib, attrs
@@ -238,12 +243,38 @@ class K8SConfigMapClient:
             self.namespace,
             self.name,
         )
+
+        def get_configmap() -> Optional[V1ConfigMap]:
+            try:
+                return self._v1.read_namespaced_config_map(
+                    name=self.name, namespace=self.namespace
+                )
+            except ApiException as e:
+                if e.status == 404:  # type: ignore
+                    return None
+                raise e
+
+        def initialize_configmap() -> V1ConfigMap:
+            configmap = get_configmap()
+            if configmap is None:
+                body = V1ConfigMap(
+                    api_version="v1",
+                    kind="ConfigMap",
+                    metadata=V1ObjectMeta(name=self.name, namespace=self.namespace),  # type: ignore
+                    data={},
+                )
+                log.info(
+                    "[k8s-configmap-client/%s] Creating configmap %s",
+                    self.namespace,
+                    self.name,
+                )
+                return self._v1.create_namespaced_config_map(  # type: ignore
+                    body=body, namespace=self.namespace
+                )
+            return configmap
+
         try:
-            configmap = await asyncio.to_thread(
-                self._v1.read_namespaced_config_map,
-                name=self.name,
-                namespace=self.namespace,
-            )
+            configmap = await asyncio.to_thread(initialize_configmap)
             self._configmap_mt = configmap.metadata
             self._data = configmap.data or {}
         except ApiException as e:
