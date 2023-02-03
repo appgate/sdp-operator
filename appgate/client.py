@@ -244,24 +244,19 @@ class K8SConfigMapClient:
             self.name,
         )
 
-        def configmap_exists() -> bool:
-            configmaps = self._v1.list_namespaced_config_map(namespace=self.namespace)  # type: ignore
-            for configmap in configmaps.items:
-                if configmap.metadata.name == self.name:
-                    return True
-            return False
-
-        def initialize_configmap() -> V1ConfigMap:
-            if configmap_exists():
-                log.info(
-                    "[k8s-configmap-client/%s] Using existing configmap %s",
-                    self.namespace,
-                    self.name,
-                )
+        def get_configmap() -> Optional[V1ConfigMap]:
+            try:
                 return self._v1.read_namespaced_config_map(
                     name=self.name, namespace=self.namespace
                 )
-            else:
+            except ApiException as e:
+                if e.status == 404:  # type: ignore
+                    return None
+                raise e
+
+        def initialize_configmap() -> V1ConfigMap:
+            configmap = get_configmap()
+            if configmap is None:
                 body = V1ConfigMap(
                     api_version="v1",
                     kind="ConfigMap",
@@ -276,6 +271,7 @@ class K8SConfigMapClient:
                 return self._v1.create_namespaced_config_map(  # type: ignore
                     body=body, namespace=self.namespace
                 )
+            return configmap
 
         try:
             configmap = await asyncio.to_thread(initialize_configmap)
