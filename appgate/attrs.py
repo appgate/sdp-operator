@@ -3,7 +3,7 @@ import re
 
 from attr import evolve
 from dateutil import parser
-from typing import Dict, Any, List, Callable, Optional, Iterable, Union, Type
+from typing import Dict, Any, List, Callable, Optional, Union, Type
 
 from typedload import dataloader
 from typedload import datadumper
@@ -16,7 +16,6 @@ from typedload.exceptions import (
 
 from appgate.customloaders import (
     CustomFieldsEntityLoader,
-    CustomLoader,
     CustomAttribLoader,
     CustomEntityLoader,
 )

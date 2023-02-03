@@ -3,7 +3,6 @@ import os
 import requests
 from typing import Optional, Dict, List
 
-import urllib3.response
 from minio import Minio  # type: ignore
 
 from appgate.customloaders import FileAttribLoader
@@ -15,6 +14,7 @@ from appgate.openapi.types import (
     AttributesDict,
     K8S_LOADERS_FIELD_NAME,
 )
+from appgate.types import OperatorMode
 
 
 class AppgateFileException(Exception):
@@ -98,7 +98,24 @@ def appgate_file_load(value: OpenApiDict, entity_name: str) -> str:
     return appgate_file.load_file()
 
 
+def should_load_file(operator_mode: OperatorMode) -> bool:
+    return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
+
+
 class FileAttribMaker(AttribMaker):
+    def __init__(
+        self,
+        name: str,
+        tpe: type,
+        base_tpe: type,
+        default: Optional[AttribType],
+        factory: Optional[type],
+        definition: OpenApiDict,
+        operator_mode: OperatorMode,
+    ) -> None:
+        super().__init__(name, tpe, base_tpe, default, factory, definition)
+        self.operator_mode = operator_mode
+
     def values(
         self,
         attributes: Dict[str, "AttribMaker"],
@@ -114,7 +131,7 @@ class FileAttribMaker(AttribMaker):
                     v, instance_maker_config.entity_name
                 ),
                 field=self.name,
-                load_external="APPGATE_FILE_SOURCE" in os.environ,
+                load_external=should_load_file(self.operator_mode),
             )
         ]
         return values

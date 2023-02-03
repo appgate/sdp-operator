@@ -22,7 +22,6 @@ from appgate.openapi.types import (
     AppgateException,
     Entity_T,
     APISpec,
-    K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
     APPGATE_METADATA_LATEST_GENERATION_FIELD,
     APPGATE_METADATA_MODIFICATION_FIELD,

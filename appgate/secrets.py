@@ -1,6 +1,5 @@
 import base64
 import os
-from pathlib import Path
 from typing import Dict, List, Union, Optional, Callable
 
 from attr import evolve
@@ -38,6 +37,7 @@ __all__ = [
     "k8s_get_secret",
 ]
 
+from appgate.types import OperatorMode
 
 PasswordField = Union[str, OpenApiDict]
 
@@ -222,6 +222,10 @@ def appgate_secret_load(
     return appgate_secret.decrypt()
 
 
+def should_load_secret(operator_mode: OperatorMode):
+    return "APPGATE_SECRET_SOURCE" in os.environ and operator_mode == "appgate-operator"
+
+
 class PasswordAttribMaker(AttribMaker):
     def __init__(
         self,
@@ -233,10 +237,12 @@ class PasswordAttribMaker(AttribMaker):
         definition: OpenApiDict,
         secrets_cipher: Optional[Fernet],
         k8s_get_client: Optional[Callable[[str, str], str]],
+        operator_mode: OperatorMode,
     ) -> None:
         super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.secrets_cipher = secrets_cipher
         self.k8s_get_client = k8s_get_client
+        self.operator_mode = operator_mode
 
     def values(
         self,
@@ -274,7 +280,7 @@ class PasswordAttribMaker(AttribMaker):
                     instance_maker_config.entity_name,
                 ),
                 field=self.name,
-                load_external="APPGATE_SECRET_SOURCE" in os.environ,
+                load_external=should_load_secret(self.operator_mode),
             ),
             CustomEntityLoader(loader=set_appgate_password_metadata),
         ]

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Callable, Any, List, Dict
 
 from attr import attrs, attrib, evolve
@@ -50,12 +49,16 @@ class FileAttribLoader(CustomAttribLoader):
 
     def load(self, values: AttributesDict) -> AttributesDict:
         v = values.get(self.field)
-        if not v and self.load_external:
-            # Try loading the s value from the external source if value doesn't exist
-            v = self.loader(values)
-            if not v:
-                return values
-            values[self.field] = v
+        if not v:
+            if self.load_external:
+                # Try loading the s value from the external source if value doesn't exist
+                v = self.loader(values)
+                if not v:
+                    return values
+                values[self.field] = v
+            else:
+                # Return empty string, otherwise the loader will complain if we return None
+                values[self.field] = ""
         return values
 
 

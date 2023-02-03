@@ -14,7 +14,6 @@ from typing import (
     Callable,
     FrozenSet,
     Iterable,
-    Union,
     TextIO,
 )
 import datetime
@@ -32,7 +31,7 @@ from appgate.logger import set_level, is_debug, log
 from appgate.appgate import (
     appgate_operator,
     get_current_appgate_state,
-    get_operator_name,
+    get_operator_mode,
 )
 from appgate.openapi.openapi import (
     generate_crd,
@@ -168,6 +167,7 @@ def appgate_operator_context(
         spec_directory=Path(spec_directory) if spec_directory else None,
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode=get_operator_mode(args.reverse_mode),
     )
 
     return AppgateOperatorContext(
@@ -208,7 +208,7 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
         namespace=ctx.namespace, name=ctx.metadata_configmap
     )
     await k8s_configmap_client.init()
-    operator_name = get_operator_name(ctx.reverse_mode)
+    operator_name = get_operator_mode(ctx.reverse_mode)
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
         log.info(
@@ -254,7 +254,7 @@ def main_appgate_operator(
     try:
         asyncio.run(run_appgate_operator(args))
     except AppgateException as e:
-        log.error("[%s] Fatal error: %s", get_operator_name(args.reverse_mode), e)
+        log.error("[%s] Fatal error: %s", get_operator_mode(args.reverse_mode), e)
 
 
 async def dump_entities(

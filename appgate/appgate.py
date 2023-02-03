@@ -2,15 +2,17 @@ import asyncio
 import sys
 from asyncio import Queue
 from copy import deepcopy
-from typing import Optional, Dict
+from typing import Optional, Dict, TypeAlias, Literal
 
 from kubernetes.client import CustomObjectsApi
 
+from appgate.openapi import openapi
 from appgate.types import (
     AppgateOperatorContext,
     AppgateEventError,
     EntityClient,
-    crd_domain,
+    OperatorMode,
+    get_operator_mode,
 )
 from appgate.logger import log
 from appgate.client import (
@@ -23,7 +25,6 @@ from appgate.openapi.types import (
     AppgateException,
     APISpec,
 )
-from appgate.openapi.openapi import generate_api_spec_clients
 from appgate.openapi.types import (
     K8S_APPGATE_VERSION,
 )
@@ -43,7 +44,6 @@ from appgate.types import AppgateEvent, EntityWrapper
 __all__ = [
     "appgate_operator",
     "get_current_appgate_state",
-    "get_operator_name",
     "get_crds",
 ]
 
@@ -56,13 +56,6 @@ def get_crds() -> CustomObjectsApi:
     if not crds:
         crds = CustomObjectsApi()
     return crds
-
-
-def get_operator_name(reverse_mode: bool) -> str:
-    operator_name = "appgate-operator"
-    if reverse_mode:
-        operator_name = "appgate-reverse-operator"
-    return operator_name
 
 
 async def get_current_appgate_state(
@@ -86,7 +79,7 @@ async def get_current_appgate_state(
         )
         raise AppgateException("Error authenticating")
 
-    entity_clients = generate_api_spec_clients(
+    entity_clients = openapi.generate_api_spec_clients(
         api_spec=api_spec, appgate_client=appgate_client
     )
     entities_set = {}
@@ -128,7 +121,7 @@ async def appgate_operator(
     appgate_client: AppgateClient,
 ) -> None:
     namespace = ctx.namespace
-    operator_name = get_operator_name(ctx.reverse_mode)
+    operator_name: OperatorMode = get_operator_mode(ctx.reverse_mode)
     log.info("[%s/%s] Main loop started:", operator_name, namespace)
     log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
     log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
@@ -323,7 +316,7 @@ async def appgate_operator(
                 )
                 entity_clients = None
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
-                    entity_clients = generate_api_spec_clients(
+                    entity_clients = openapi.generate_api_spec_clients(
                         api_spec=ctx.api_spec, appgate_client=appgate_client
                     )
                 if not ctx.dry_run_mode and ctx.reverse_mode:

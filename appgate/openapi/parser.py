@@ -32,7 +32,6 @@ from appgate.openapi.types import (
     OpenApiParserException,
     GeneratedEntityFieldDependency,
     GeneratedEntity,
-    AttributesDict,
     AttribType,
     EntityClassGeneratorConfig,
     AttribMakerConfig,
@@ -54,7 +53,7 @@ from appgate.openapi.utils import (
     is_discriminator,
 )
 from appgate.secrets import PasswordAttribMaker
-from appgate.types import BUILTIN_TAGS
+from appgate.types import BUILTIN_TAGS, OperatorMode
 
 TYPES_MAP: Dict[str, Type] = {
     "string": str,
@@ -247,6 +246,7 @@ class ParserContext:
         spec_api_path: Path,
         secrets_key: Optional[str],
         k8s_get_secret: Optional[Callable[[str, str], str]],
+        operator_mode: OperatorMode,
     ) -> None:
         self.secrets_cipher = Fernet(secrets_key.encode()) if secrets_key else None
         self.entities: Dict[str, GeneratedEntity] = {}
@@ -257,6 +257,7 @@ class ParserContext:
             v: k for k, v in spec_entities.items()
         }
         self.k8s_get_secret = k8s_get_secret
+        self.operator_mode = operator_mode
 
     def get_entity_path(self, entity_name: str) -> Optional[str]:
         return self.entity_path_by_name.get(entity_name)
@@ -520,6 +521,7 @@ class Parser:
                     definition=attrib_maker_config.definition,
                     secrets_cipher=self.parser_context.secrets_cipher,
                     k8s_get_client=self.parser_context.k8s_get_secret,
+                    operator_mode=self.parser_context.operator_mode,
                 )
             elif format == "date-time":
                 return AttribMaker(
@@ -538,6 +540,7 @@ class Parser:
                     default=None,
                     factory=None,
                     definition=attrib_maker_config.definition,
+                    operator_mode=self.parser_context.operator_mode,
                 )
             elif (
                 format == "checksum"
