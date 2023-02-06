@@ -1,0 +1,3 @@
+owner: appgate
+git-repo: sdp-operator
+release-name-template: "v{{ .Version }}-{{ .Name }}"
