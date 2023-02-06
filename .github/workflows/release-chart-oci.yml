@@ -2,7 +2,7 @@ name: Release Chart OCI
 
 on:
   workflow_run:
-    workflow: [ "Build and Push Image" ]
+    workflows: [ "Build and Push Image" ]
     branches: [ "main" ]
     types:
       - completed
