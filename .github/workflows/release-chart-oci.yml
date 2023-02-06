@@ -19,7 +19,7 @@ jobs:
       - name: Read operator chart version
         run: |
           echo "chart_version=$(grep version: k8s/operator/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
-      - uses: azure/setup-helm@v1
+      - uses: azure/setup-helm@v3
         with:
           version: 3.7.2
       - name: Login to GitHub Container Registry
@@ -70,7 +70,7 @@ jobs:
       - name: Read crd chart version
         run: |
           echo "chart_version=$(grep version: k8s/crd/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
-      - uses: azure/setup-helm@v1
+      - uses: azure/setup-helm@v3
         with:
           version: 3.7.2
       - name: Login to GitHub Container Registry
