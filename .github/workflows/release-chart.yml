@@ -8,8 +8,8 @@ on:
       - completed
 
 jobs:
-  if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
   release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
