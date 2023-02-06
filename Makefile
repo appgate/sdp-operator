@@ -34,13 +34,11 @@ docker-shell: docker-build-image
 clean-cache:
 	find appgate -name "__pycache__" -print | xargs rm -r $1
 
-.PHONY: freeze
-freeze:
-	rm -rf freezer
-	${PYTHON3} -m venv freezer
-	./freezer/bin/pip install -r requirements.in
-	./freezer/bin/pip freeze > requirements.txt
-	rm -rf freezer
+.PHONY: pip-compile
+pip-compile:
+	rm -rf venv
+	${PYTHON3} -m venv venv
+	. venv/bin/activate && ${PYTHON3} -m pip install pip-tools && pip-compile requirements.in
 
 clean:
 	rm -rf api_specs
