@@ -1,12 +1,15 @@
 name: Release Chart OCI
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflow: [ "Build and Push Image" ]
+    branches: [ "main" ]
+    types:
+      - completed
 
 jobs:
   operator:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     needs: build-push-image
     runs-on: ubuntu-latest
     env:
@@ -26,9 +29,11 @@ jobs:
       - name: Package chart
         run: helm package k8s/operator
       - name: Push chart
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
   crd:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     needs: build-push-image
     runs-on: ubuntu-latest
     env:

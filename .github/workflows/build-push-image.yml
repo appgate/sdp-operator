@@ -1,14 +1,14 @@
 name: Build and Push Image
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_run:
+    workflow: [ "Build" ]
+    branches: [ "main" ]
+    types:
+      - completed
 
 jobs:
+  if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
   build-push-image:
     needs: build
     runs-on: ubuntu-latest
