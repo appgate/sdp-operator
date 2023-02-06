@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  get-specs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install wget tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget
+      - name: Get openspec API
+        run: ./bin/get-open-spec.sh
+        shell: bash
+      - uses: actions/upload-artifact@v2
+        with:
+          name: openspecs
+          path: /tmp/openspec-*.zip
+
+  build:
+    needs: get-specs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: openspecs
+          path: /tmp
+      - name: install unzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install unzip
+      - name: Get openspec API
+        run: ./bin/unzip-open-spec.sh
+        shell: bash
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+      - name: Lint with mypy
+        run: |
+          MYPYPATH=mypy-stubs mypy appgate
+      - name: Test with pytest
+        run: |
+          PYTHONPATH=. pytest tests
+      - name: Check formatting with black
+        run: |
+          black --check --diff appgate tests
+      - name: Get Operator chart version
+        id: operatorChartVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.version' k8s/operator/Chart.yaml
+      - name: Get CRD chart version
+        id: crdChartVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.version' k8s/crd/Chart.yaml
+      - name: Compare Operator vs CRD chart version
+        run: |
+          [ "${{ steps.operatorChartVersion.outputs.result }}" == "${{ steps.crdChartVersion.outputs.result }}" ] || (echo "Operator and CRD chart version must match." && exit 1)
