@@ -71,7 +71,7 @@ __all__ = [
     "GIT_DUMP_DIR",
     "GIT_REPOSITORY_FORK_ENV",
     "GITHUB_TOKEN_ENV",
-    "GITHUB_DEPLOYMENT_KEY_PATH",
+    "GIT_SSH_KEY_PATH",
     "EntityClient",
     "GitCommitState",
     "crd_domain",
@@ -82,6 +82,7 @@ __all__ = [
     "GIT_REPOSITORY_MAIN_BRANCH_ENV",
 ]
 
+from appgate.syncer.git import GitVendor
 
 BUILTIN_TAGS = frozenset({"builtin"})
 APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
@@ -111,10 +112,11 @@ GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
 GIT_VENDOR_ENV = "GIT_VENDOR"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/entities")
 
-GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
+GIT_SSH_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
@@ -405,7 +407,7 @@ class GitOperatorContext:
     log_level: str = attrib()
     git_repository: str = attrib()
     git_repository_fork: str | None = attrib()
-    git_vendor: str = attrib()
+    git_vendor: GitVendor = attrib()
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
