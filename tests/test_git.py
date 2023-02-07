@@ -55,7 +55,9 @@ def test_checkout_branch() -> None:
             "already-created-branch",
             BranchOp.NOP,
         )
-        assert github_checkout_branch("already-created-branch", previous_pr, None) == (
+        assert github_checkout_branch(
+            "already-created-branch", previous_pr.number, None
+        ) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
         )

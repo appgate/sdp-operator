@@ -119,8 +119,8 @@ class GitRepo:
     def checkout_branch(
         self,
         previous_branch: str | None,
-        previous_pr: PullRequest | ProjectMergeRequest | None,
-    ) -> Tuple[str, PullRequest | ProjectMergeRequest | None]:
+        previous_pr: int | None,
+    ) -> Tuple[str, int | None]:
         raise NotImplementedError()
 
     def needs_pull_request(self) -> bool:
@@ -138,9 +138,9 @@ class GitRepo:
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request: PullRequest | None,
+        pull_request: int | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> PullRequest | None:
+    ) -> int | None:
         raise NotImplementedError()
 
 
@@ -338,7 +338,7 @@ class PullRequestLike(Protocol):
 
 def github_checkout_branch(
     previous_branch: str | None,
-    previous_pr: PullRequestLike | None,
+    previous_pr: int | None,
     open_pull: PullRequestLike | None,
 ) -> Tuple[str, BranchOp]:
     if open_pull and previous_branch != open_pull.head.ref:
@@ -357,7 +357,7 @@ def github_checkout_branch(
 
 def gitlab_checkout_branch(
     previous_branch: str | None,
-    previous_pr: ProjectMergeRequest | None,
+    previous_pr: int | None,
     open_merge: ProjectMergeRequest | None,
 ) -> Tuple[str, BranchOp]:
     if open_merge and previous_branch != open_merge.head.ref:
@@ -380,8 +380,8 @@ class GitLabRepo(GitRepo):
     gl_project: Project = attrib()
 
     def checkout_branch(
-        self, previous_branch: str | None, previous_pr: ProjectMergeRequest | None
-    ) -> Tuple[str, ProjectMergeRequest | None]:
+        self, previous_branch: str | None, previous_pr: int | None
+    ) -> Tuple[str, int | None]:
         open_merge = get_sdp_gl_merge_request(self.gl_project)
         pr_branch, branch_op = gitlab_checkout_branch(
             previous_branch, previous_pr, open_merge
@@ -400,7 +400,7 @@ class GitLabRepo(GitRepo):
             if not self.dry_run:
                 self.git_repo.git.fetch("origin", pr_branch)
                 self.git_repo.git.checkout(pr_branch)
-            return pr_branch, open_merge
+            return pr_branch, open_merge.iid
         elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
@@ -412,8 +412,8 @@ class GitLabRepo(GitRepo):
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch:
-            return pr_branch, open_merge
+        elif branch_op == BranchOp.NOP and pr_branch and open_merge:
+            return pr_branch, open_merge.iid
         else:
             raise AppgateException(
                 f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
@@ -422,9 +422,9 @@ class GitLabRepo(GitRepo):
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request: PullRequest | None,
+        pull_request_id: int | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> PullRequest | None:
+    ) -> int | None:
         pass
 
 
@@ -437,8 +437,8 @@ class GitHubRepo(GitRepo):
         return self.git_repo.is_dirty()
 
     def checkout_branch(
-        self, previous_branch: str | None, previous_pr: PullRequest | None
-    ) -> Tuple[str, PullRequest | None]:
+        self, previous_branch: str | None, previous_pr: int | None
+    ) -> Tuple[str, int | None]:
         """
         Checkout an existing branch for a PullRequest already opened or creates a new branch
         Return the name of the branch and if it needs to create PullRequest: if the branch is
@@ -462,7 +462,7 @@ class GitHubRepo(GitRepo):
             if not self.dry_run:
                 self.git_repo.git.fetch("origin", pr_branch)
                 self.git_repo.git.checkout(pr_branch)
-            return pr_branch, open_pull
+            return pr_branch, open_pull.number
         elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
@@ -474,8 +474,8 @@ class GitHubRepo(GitRepo):
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch:
-            return pr_branch, open_pull
+        elif branch_op == BranchOp.NOP and pr_branch and open_pull:
+            return pr_branch, open_pull.number
         else:
             raise AppgateException(
                 f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
@@ -484,15 +484,15 @@ class GitHubRepo(GitRepo):
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request: PullRequest | None,
+        pull_request_id: int | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> PullRequest | None:
+    ) -> int | None:
         # Try to sync with the opened pull request again here
         # It could be that someone has merged a PR that was opened before we entered the loop
         latest_opened_pull = get_sdp_pull_request(self.gh_repo)
         current_opened_pull = (
-            get_sdp_pull_request(self.gh_repo, pull_request.number)
-            if pull_request
+            get_sdp_pull_request(self.gh_repo, pull_request_id)
+            if pull_request_id
             else None
         )
         pull_request_to_use = current_opened_pull
@@ -543,7 +543,7 @@ class GitHubRepo(GitRepo):
                 base=self.base_branch,
             )
             pull_request_to_use.add_to_labels(get_sdp_gh_label(self.gh_repo))
-        return pull_request_to_use
+        return pull_request_to_use.number
 
 
 def get_git_repository(ctx: GitOperatorContext) -> GitRepo:

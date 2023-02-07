@@ -407,7 +407,7 @@ class GitOperatorContext:
     log_level: str = attrib()
     git_repository: str = attrib()
     git_repository_fork: str | None = attrib()
-    git_vendor: GitVendor = attrib()
+    git_vendor: str = attrib()
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
