@@ -392,10 +392,24 @@ def github_checkout_branch(
         return generate_branch_name(), BranchOp.CREATE_AND_CHECKOUT
 
 
+class MergeRequestLike(Protocol):
+    @property
+    def title(self) -> str:
+        ...
+
+    @property
+    def iid(self) -> int:
+        ...
+
+    @property
+    def source_branch(self) -> str:
+        ...
+
+
 def gitlab_checkout_branch(
     previous_branch: str | None,
     previous_pr: int | None,
-    open_merge: ProjectMergeRequest | None,
+    open_merge: MergeRequestLike | None,
 ) -> Tuple[str, BranchOp]:
     if open_merge and previous_branch != open_merge.source_branch:
         # We found an open pr, use it and checkout branch
