@@ -451,7 +451,67 @@ class GitLabRepo(GitRepo):
         pull_request_id: int | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
     ) -> int | None:
-        pass
+        # Try to sync with the opened pull request again here
+        # It could be that someone has merged a PR that was opened before we entered the loop
+        latest_opened_pull = get_sdp_gl_merge_request(self.gl_project)
+        current_opened_pull = (
+            get_sdp_gl_merge_request(self.gl_project, pull_request_id)
+            if pull_request_id
+            else None
+        )
+        pull_request_to_use = current_opened_pull
+        if (
+            latest_opened_pull
+            and current_opened_pull
+            and latest_opened_pull.iid != current_opened_pull.iid
+        ):
+            log.warning(
+                "[git-operator] There is a more recent merge request for sdp-operator with id %s. Using it",
+                latest_opened_pull.iid,
+            )
+            return None
+        elif not current_opened_pull and latest_opened_pull:
+            log.warning(
+                "[git-operator] The previous opened merge request has been closed."
+                " Waiting for the next event loop to create the merge request"
+            )
+            return None
+        if pull_request_to_use:
+            # The pull request we were keeping track did not change, we can use it
+            log.info(
+                "[git-operator] New commits added to merge request %s",
+                pull_request_to_use.title,
+            )
+            body = pull_request_to_use.body
+            if not self.dry_run:
+                pull_request_to_use.description = get_pull_request_body(
+                    commits=commits, body=body
+                )
+                pull_request_to_use.save()
+        else:
+            # We need to create a new merge request for these changes
+            title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
+            head_branch = branch
+            if self.user_fork():
+                head_branch = f"{self.user_fork()}:{branch}"
+            log.info("[git-operator] Creating merge request in GitLab")
+            log.info("[git-operator] title: %s", title)
+            log.info("[git-operator] source_branch: %s", head_branch)
+            log.info("[git-operator] target_branch: %s", self.base_branch)
+            log.info("[git-operator] repository: %s", self.repository)
+            if self.dry_run:
+                return None
+            pull_request_details = {
+                "source_branch": head_branch,
+                "target_branch": self.base_branch,
+                "title": title,
+                "description": get_pull_request_body(commits=commits, body=None),
+                "labels": [APPGATE_OPERATOR_PR_LABEL_NAME],
+            }
+            mr = self.gl_project.mergerequests.create(pull_request_details)
+            pull_request_to_use = self.gl_project.mergerequests.get(mr.iid)
+
+        return pull_request_to_use.iid
 
 
 @attrs(slots=True, frozen=True)
