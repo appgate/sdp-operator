@@ -82,8 +82,6 @@ __all__ = [
     "GIT_REPOSITORY_MAIN_BRANCH_ENV",
 ]
 
-from appgate.syncer.git import GitVendor
-
 BUILTIN_TAGS = frozenset({"builtin"})
 APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
 USER_ENV = "APPGATE_OPERATOR_USER"
