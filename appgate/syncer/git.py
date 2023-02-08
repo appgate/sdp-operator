@@ -265,7 +265,7 @@ def get_sdp_gl_label(gl_project: Project) -> ProjectLabel:
         gl_project.labels.create(
             {
                 "name": APPGATE_OPERATOR_PR_LABEL_NAME,
-                "color": APPGATE_OPERATOR_PR_LABEL_COLOR,
+                "color": f"#{APPGATE_OPERATOR_PR_LABEL_COLOR}",
                 "description": APPGATE_OPERATOR_PR_LABEL_DESC,
             }
         )
