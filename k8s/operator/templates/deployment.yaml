@@ -186,18 +186,18 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
       volumes:
-        - name: github-deployment-key
+        - name: git-ssh-key
           secret:
             defaultMode: 0600
             secretName: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
             items:
-              - key: github-deployment-key
+              - key: git-ssh-key
                 path: deployment.key
       containers:
         - name: {{ .Chart.Name }}-git
           volumeMounts:
             - mountPath: /opt/git-operator/k8s
-              name: github-deployment-key
+              name: git-ssh-key
           env:
             - name: APPGATE_API_VERSION
               value: {{ .Values.sdp.sdpOperator.version }}
@@ -217,11 +217,20 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY
               value: {{ .Values.sdp.gitOperator.git.repository }}
+            {{- if eq .Values.sdp.gitOperator.git.vendor "github" }}
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
                   key: github-token
+            {{- end }}
+            {{- if eq .Values.sdp.gitOperator.git.vendor "gitlab" }}
+            - name: GITLAB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+                  key: gitlab-token
+            {{- end }}
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
             {{- if .Values.sdp.externalSecret.enabled }}
