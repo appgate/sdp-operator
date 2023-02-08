@@ -114,7 +114,6 @@ class GitRepo:
     vendor: str = attrib()
     dry_run: bool = attrib()
     repository_fork: str | None = attrib()
-    main_branch: str = attrib()
 
     @functools.cache
     def user_fork(self) -> str | None:
@@ -175,8 +174,8 @@ class GitRepo:
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
             )
             if not self.dry_run:
-                self.git_repo.git.checkout(self.main_branch)
-                self.git_repo.git.pull("origin", self.main_branch)
+                self.git_repo.git.checkout(self.base_branch)
+                self.git_repo.git.pull("origin", self.base_branch)
                 self.git_repo.head.reset(index=True, working_tree=True)
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
@@ -228,7 +227,6 @@ def gitlab_repo(
         vendor=ctx.git_vendor,
         repository_path=repository_path,
         dry_run=ctx.dry_run,
-        main_branch=ctx.main_branch,
     )
 
 
@@ -250,7 +248,6 @@ def github_repo(
         vendor=ctx.git_vendor,
         repository_path=repository_path,
         dry_run=ctx.dry_run,
-        main_branch=ctx.main_branch,
     )
 
 

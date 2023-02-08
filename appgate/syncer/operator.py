@@ -35,8 +35,6 @@ from appgate.types import (
     EntityClient,
     is_target,
     GitCommitState,
-    GIT_REPOSITORY_MAIN_BRANCH_ENV,
-    GIT_REPOSITORY_MAIN_BRANCH,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -88,9 +86,6 @@ def git_operator_context(
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
         log_level=os.environ.get(APPGATE_LOG_LEVEL, "info"),
         git_repository_fork=os.environ.get(GIT_REPOSITORY_FORK_ENV),
-        main_branch=os.environ.get(
-            GIT_REPOSITORY_MAIN_BRANCH_ENV, GIT_REPOSITORY_MAIN_BRANCH
-        ),
     )
 
 
