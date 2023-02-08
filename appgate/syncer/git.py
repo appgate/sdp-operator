@@ -184,7 +184,7 @@ class GitRepo:
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch and open_merge:
+        elif branch_op == BranchOp.NOP and pr_branch:
             return pr_branch, pr_id
         else:
             raise AppgateException(
@@ -278,15 +278,16 @@ def get_sdp_gl_merge_request(
 ) -> ProjectMergeRequest | None:
     sdp_label = get_sdp_gl_label(gl_project)
     if number:
-        mr: ProjectMergeRequest = gl_project.mergerequests.get(number)
-    else:
-        mrs = gl_project.mergerequests.list(
-            state="opened", order_by="created_at", sort="desc"
-        )
-        for m in mrs:
-            if sdp_label.name in m.labels:
-                mr = gl_project.mergerequests.get(m.iid)
-    return mr
+        return gl_project.mergerequests.get(number)
+
+    mrs = gl_project.mergerequests.list(
+        state="opened", order_by="created_at", sort="desc"
+    )
+    for m in mrs:
+        if sdp_label.name in m.labels:
+            return gl_project.mergerequests.get(m.iid)
+
+    return None
 
 
 @functools.cache
