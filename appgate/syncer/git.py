@@ -484,10 +484,9 @@ class GitLabRepo(GitRepo):
                 "[git-operator] New commits added to merge request %s",
                 pull_request_to_use.title,
             )
-            body = pull_request_to_use.body
             if not self.dry_run:
                 pull_request_to_use.description = get_pull_request_body(
-                    commits=commits, body=body
+                    commits=commits, body=pull_request_to_use.description
                 )
                 pull_request_to_use.save()
         else:
