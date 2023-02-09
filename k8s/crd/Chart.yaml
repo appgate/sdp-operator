@@ -1,6 +1,6 @@
 apiVersion: v2
 name: sdp-operator-crd
-description: A Helm chart for SDP Operator CRD
+description: Helm chart for the Appgate SDP Operator CRD
 
 # A chart can be either an 'application' or a 'library' chart.
 #
