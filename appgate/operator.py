@@ -239,7 +239,13 @@ def run_entity_loop(
                 crd,
                 crd_domain(api_version=api_spec.api_version),
             )
-            sys.exit(1)
+            watcher = Watch().stream(
+                get_crds().list_namespaced_custom_object,
+                crd_domain(api_version=api_spec.api_version),
+                K8S_APPGATE_VERSION,
+                namespace,
+                crd,
+            )
         except StopIteration:
             log.debug(
                 "[appgate-operator/%s] Event loop stopped, re-initializing watchers",
