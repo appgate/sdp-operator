@@ -31,7 +31,7 @@ charset-normalizer==2.1.1
     # via
     #   aiohttp
     #   requests
-cryptography==39.0.0
+cryptography==39.0.1
     # via -r requirements.in
 deprecated==1.2.13
     # via pygithub
@@ -100,10 +100,6 @@ smmap==5.0.0
     # via gitdb
 typedload==2.12
     # via -r requirements.in
-types-requests==2.28.11.7
-    # via -r requirements.in
-types-urllib3==1.26.25.4
-    # via types-requests
 urllib3==1.26.13
     # via
     #   kubernetes
