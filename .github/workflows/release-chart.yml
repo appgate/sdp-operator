@@ -28,12 +28,10 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
-        with:
-          charts_dir: k8s
-          config: .chart-releaser/config.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_OWNER: "appgate"
           CR_GIT_REPO: "sdp-operator"
+          CR_CHARTS_DIR: "k8s"
           CR_SKIP_EXISTING: true
           CR_RELEASE_NAME_TEMPLATE: "v{{ .Version }}-{{ .Name }}"
