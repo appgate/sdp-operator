@@ -8,13 +8,15 @@ on:
       - completed
 
 jobs:
-  operator:
+  release:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -27,31 +29,7 @@ jobs:
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
         with:
-          charts_dir: k8s/operator
-          config: .chart-releaser/config.yaml
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
-  crd:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Configure Git
-        run: |
-          git config user.name "Appgate Cybersecurity"
-          git config user.email "noreply@appgate.com"
-
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.5.0
-        with:
-          charts_dir: k8s/crd
+          charts_dir: k8s
           config: .chart-releaser/config.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
