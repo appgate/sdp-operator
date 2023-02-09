@@ -50,3 +50,4 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
             ghcr.io/${{ github.repository }}/sdp-operator:${{ steps.operatorAppVersion.outputs.result }}
+            ghcr.io/${{ github.repository }}/sdp-operator:latest
