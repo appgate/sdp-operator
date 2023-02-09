@@ -38,6 +38,13 @@ jobs:
       HELM_EXPERIMENTAL_OCI: 1
     steps:
       - uses: actions/checkout@v2
+      - name: Get openspec API
+        run: ./bin/get-open-spec.sh
+        shell: bash
+      - uses: actions/upload-artifact@v2
+        with:
+          name: openspecs
+          path: /tmp/openspec-*.zip
       - uses: actions/download-artifact@v2
         with:
           name: openspecs
