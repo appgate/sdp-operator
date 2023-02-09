@@ -1,0 +1,83 @@
+name: Release Chart OCI
+
+on:
+  workflow_run:
+    workflows: [ "Build and Push Image" ]
+    branches: [ "main" ]
+    types:
+      - completed
+
+jobs:
+  operator:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
+    needs: build-push-image
+    runs-on: ubuntu-latest
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - uses: actions/checkout@v2
+      - name: Read operator chart version
+        run: |
+          echo "chart_version=$(grep version: k8s/operator/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+      - uses: azure/setup-helm@v3
+        with:
+          version: 3.7.2
+      - name: Login to GitHub Container Registry
+        run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint chart
+        run: helm lint k8s/operator
+      - name: Package chart
+        run: helm package k8s/operator
+      - name: Push chart
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
+
+  crd:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
+    needs: build-push-image
+    runs-on: ubuntu-latest
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: openspecs
+          path: /tmp
+      - name: Install unzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install unzip
+      - name: Get OpenAPI specs
+        run: ./bin/unzip-open-spec.sh
+        shell: bash
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+      - name: Compare CRDs
+        run: |
+          for version in $(seq 14 18); do
+            python3 -m appgate --spec-directory api_specs/v${version} dump-crd --file ${version}.yml
+            echo '{{ if eq .Values.version '\"v"${version}"\"' }}' | cat - ${version}.yml > v${version}.yaml
+            echo '{{ end }}' >> v${version}.yaml
+            cmp k8s/crd/templates/v${version}.yaml v${version}.yaml || (echo "Generated CRDs and checked-in CRDs do not match. Please download the latest API specs, generate and check-in the updated CRDs under k8s/crd/templates." && exit 1)
+          done
+      - name: Read crd chart version
+        run: |
+          echo "chart_version=$(grep version: k8s/crd/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
+      - uses: azure/setup-helm@v3
+        with:
+          version: 3.7.2
+      - name: Login to GitHub Container Registry
+        run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint chart
+        run: helm lint k8s/crd
+      - name: Package chart
+        run: helm package k8s/crd
+      - name: Push chart
+        run: helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
