@@ -9,7 +9,7 @@ from apischema.json_schema import deserialization_schema
 from apischema.json_schema.types import JsonType
 from apischema.objects import ObjectField, AliasedStr
 
-from appgate.client import AppgateClient, EntityClient
+from appgate.client import AppgateClient, AppgateEntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
 from appgate.openapi.types import (
@@ -32,6 +32,7 @@ __all__ = [
     "generate_api_spec_clients",
 ]
 
+from appgate.types import EntityClient, OperatorMode
 
 # Always set the default API version to latest released version
 SPEC_DIR = "api_specs/v18"
@@ -42,6 +43,7 @@ LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"
 
 def parse_files(
     spec_entities: Dict[str, str],
+    operator_mode: OperatorMode,
     spec_directory: Optional[Path] = None,
     spec_file: str = "api_specs.yml",
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
@@ -52,6 +54,7 @@ def parse_files(
         spec_api_path=spec_directory or Path(SPEC_DIR),
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode=operator_mode,
     )
     parser = Parser(parser_context, spec_file)
     # First parse those paths we are interested in
@@ -90,15 +93,7 @@ def parse_files(
             singleton=singleton,
         )
 
-    # Now parse the API version
-    api_version_str = parser.get_keys(["info", "version"])
-    if not api_version_str:
-        raise OpenApiParserException("Unable to find Appgate API version")
-    try:
-        api_version = api_version_str.split(" ")[2].split(".")[0]
-    except IndexError:
-        raise OpenApiParserException("Unable to find Appgate API version")
-    return APISpec(entities=parser_context.entities, api_version=api_version)
+    return APISpec(entities=parser_context.entities, api_version=parser.api_version())
 
 
 def entity_names(
@@ -282,6 +277,7 @@ def generate_api_spec(
     spec_directory: Optional[Path] = None,
     secrets_key: Optional[str] = None,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
+    operator_mode: OperatorMode = "appgate-operator",
 ) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
@@ -291,6 +287,7 @@ def generate_api_spec(
         spec_directory=spec_directory,
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
+        operator_mode=operator_mode,
     )
 
 
@@ -308,8 +305,8 @@ MAGIC_ENTITIES = {
 
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
-) -> Dict[str, EntityClient]:
-    def _entity_client(e_name: str, e: GeneratedEntity) -> EntityClient:
+) -> Dict[str, EntityClient | None]:
+    def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
         magic_entities = None
         # We filter the None's in the caller anyway
         assert e.api_path is not None

@@ -24,6 +24,8 @@ paths:
     $ref: '#/entity-test4'
   /entity-test-with-id:
     $ref: '#/entity-test-with-id'
+  /entity-test-file:
+    $ref: '#/entity-test-file'
   /entity-dep-1:
     $ref: '#/entity-dep-1'
   /entity-dep-2:
@@ -136,7 +138,7 @@ entity-test3-appgate:
         application/json:
           schema:
             $ref: '#/definitions/EntityTest3Appgate'
-            
+
 entity-test4:
   get:
     responses:
@@ -167,6 +169,21 @@ entity-test-with-id:
           schema:
             $ref: '#/definitions/EntityTestWithId'
 
+entity-test-file:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTestFile'
+
 entity-dep-1:
   get:
     responses:
@@ -196,7 +213,7 @@ entity-dep-2:
         application/json:
           schema:
             $ref: '#/definitions/EntityDep2'
-            
+
 entity-dep-3:
   get:
     responses:
@@ -407,7 +424,7 @@ definitions:
     properties:
       fieldOne:
         writeOnly: true
-        format: bytes
+        format: byte
         type: string
       fieldTwo:
         readOnly: true
@@ -429,7 +446,7 @@ definitions:
         format: uuid
       fieldOne:
         writeOnly: true
-        format: bytes
+        format: byte
         type: string
       fieldTwo:
         readOnly: true
@@ -456,12 +473,24 @@ definitions:
       id:
         type: string
         format: uuid
+      name:
+        type: string
       fieldOne:
         writeOnly: true
         type: string
       fieldTwo:
         readOnly: true
         type: string
+      fieldThree:
+        type: string
+  EntityTestFile:
+    type: object
+    properties:
+      filename:
+        type: string
+      file:
+        type: string
+        format: byte
   EntityDep1:
     type: object
     properties:

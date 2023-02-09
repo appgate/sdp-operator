@@ -550,10 +550,8 @@ spec:
                         default: ''
                         type: string
                       backgroundImage:
-                        default: ''
                         type: string
                       logo:
-                        default: ''
                         type: string
                       text:
                         default: ''

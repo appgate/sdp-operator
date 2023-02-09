@@ -6,16 +6,30 @@
 |  ##     ## ##        ##        ##    ##  ##     ##    ##    ##          ##    ## ##     ## ##          |
 |  ##     ## ##        ##         ######   ##     ##    ##    ########     ######  ########  ##          |
 
-Operator configured with:
 
- - controller host: {{ .Values.sdp.operator.host }}
- - operator device id: {{ .Values.sdp.operator.deviceId }}
+{{- if has "sdp-operator" .Values.sdp.operators }}
+SDP Operator configured with:
+ - controller host: {{ .Values.sdp.sdpOperator.host }}
+ - operator device id: {{ .Values.sdp.sdpOperator.deviceId }}
  - k8s namespace: {{ .Release.Namespace }}
- - target tags: {{ .Values.sdp.operator.targetTags }}
- - exclude tags: {{ .Values.sdp.operator.excludeTags }}
- - builtin tags: {{ .Values.sdp.operator.builtinTags }}
- - dry-run mode: {{ .Values.sdp.operator.dryRun }}
- - cleanup mode: {{ .Values.sdp.operator.cleanup }}
- - two-way-sync mode: {{ .Values.sdp.operator.twoWaySync }}
- - ssl no verify: {{ .Values.sdp.operator.sslNoVerify }}
- - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.operator.configMapMt }}
+ - target tags: {{ .Values.sdp.sdpOperator.targetTags }}
+ - exclude tags: {{ .Values.sdp.sdpOperator.excludeTags }}
+ - builtin tags: {{ .Values.sdp.sdpOperator.builtinTags }}
+ - dry-run mode: {{ .Values.sdp.sdpOperator.dryRun }}
+ - cleanup mode: {{ .Values.sdp.sdpOperator.cleanup }}
+ - two-way-sync mode: {{ .Values.sdp.sdpOperator.twoWaySync }}
+ - ssl no verify: {{ .Values.sdp.sdpOperator.sslNoVerify }}
+ - meta-configmap: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.sdpOperator.configMapMt }}
+ - reverse mode: {{ .Values.sdp.sdpOperator.dryRun }}
+{{- end }}
+
+{{- if has "git-operator" .Values.sdp.operators }}
+Git Operator configured with:
+ - k8s namespace: {{ .Release.Namespace }}
+ - target tags: {{ .Values.sdp.gitOperator.targetTags }}
+ - dry-run mode: {{ .Values.sdp.gitOperator.dryRun }}
+ - git vendor: {{ .Values.sdp.gitOperator.dryRun }}
+ - git base branch: {{ .Values.sdp.gitOperator.dryRun }}
+ - git repository: {{ .Values.sdp.gitOperator.dryRun }}
+ - secret: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+{{- end }}

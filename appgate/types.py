@@ -1,13 +1,30 @@
 import datetime
-import enum
+import functools
+import os
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Any, FrozenSet, Optional, List, Set, Literal, Union
+from typing import (
+    Dict,
+    Any,
+    FrozenSet,
+    Optional,
+    List,
+    Set,
+    Literal,
+    Union,
+    Tuple,
+    TypeAlias,
+)
 from attr import attrib, attrs, evolve
 
-from appgate.openapi.types import Entity_T, APISpec
+from appgate.openapi.types import (
+    Entity_T,
+    APISpec,
+    AppgateException,
+    K8S_APPGATE_DOMAIN,
+    is_singleton,
+)
 from appgate.openapi.utils import is_entity_t
-
 
 __all__ = [
     "K8SEvent",
@@ -20,19 +37,112 @@ __all__ = [
     "is_target",
     "EntitiesSet",
     "LatestEntityGeneration",
-    "OperatorArguments",
-    "Context",
+    "AppgateOperatorArguments",
+    "GitOperatorArguments",
+    "AppgateOperatorContext",
+    "GitOperatorContext",
     "BUILTIN_TAGS",
     "EntityFieldDependency",
-    "MissingFieldDependencies",
+    "APPGATE_LOG_LEVEL",
+    "USER_ENV",
+    "PASSWORD_ENV",
+    "PROVIDER_ENV",
+    "DEVICE_ID_ENV",
+    "TIMEOUT_ENV",
+    "HOST_ENV",
+    "DRY_RUN_ENV",
+    "CLEANUP_ENV",
+    "NAMESPACE_ENV",
+    "TWO_WAY_SYNC_ENV",
+    "SPEC_DIR_ENV",
+    "APPGATE_SECRETS_KEY",
+    "APPGATE_MT_CONFIGMAP_ENV",
+    "APPGATE_SSL_CACERT",
+    "APPGATE_SSL_NO_VERIFY",
+    "APPGATE_EXCLUDE_TAGS_ENV",
+    "APPGATE_TARGET_TAGS_ENV",
+    "APPGATE_BUILTIN_TAGS_ENV",
+    "get_tags",
+    "get_dry_run",
+    "ensure_env",
+    "GIT_REPOSITORY_ENV",
+    "GIT_VENDOR_ENV",
+    "GIT_BASE_BRANCH_ENV",
+    "GIT_DUMP_DIR",
+    "GIT_REPOSITORY_FORK_ENV",
+    "GITHUB_TOKEN_ENV",
+    "GITHUB_DEPLOYMENT_KEY_PATH",
+    "EntityClient",
+    "GitCommitState",
+    "crd_domain",
+    "APPGATE_OPERATOR_PR_LABEL_NAME",
+    "APPGATE_OPERATOR_PR_LABEL_COLOR",
+    "APPGATE_OPERATOR_PR_LABEL_DESC",
+    "GIT_REPOSITORY_MAIN_BRANCH",
+    "GIT_REPOSITORY_MAIN_BRANCH_ENV",
 ]
 
 
 BUILTIN_TAGS = frozenset({"builtin"})
+APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
+USER_ENV = "APPGATE_OPERATOR_USER"
+PASSWORD_ENV = "APPGATE_OPERATOR_PASSWORD"
+PROVIDER_ENV = "APPGATE_OPERATOR_PROVIDER"
+DEVICE_ID_ENV = "APPGATE_OPERATOR_DEVICE_ID"
+TIMEOUT_ENV = "APPGATE_OPERATOR_TIMEOUT"
+HOST_ENV = "APPGATE_OPERATOR_HOST"
+DRY_RUN_ENV = "APPGATE_OPERATOR_DRY_RUN"
+CLEANUP_ENV = "APPGATE_OPERATOR_CLEANUP"
+NAMESPACE_ENV = "APPGATE_OPERATOR_NAMESPACE"
+TWO_WAY_SYNC_ENV = "APPGATE_OPERATOR_TWO_WAY_SYNC"
+SPEC_DIR_ENV = "APPGATE_OPERATOR_SPEC_DIRECTORY"
+APPGATE_SECRETS_KEY = "APPGATE_OPERATOR_FERNET_KEY"
+APPGATE_MT_CONFIGMAP_ENV = "APPGATE_OPERATOR_CONFIG_MAP"
+APPGATE_SSL_NO_VERIFY = "APPGATE_OPERATOR_SSL_NO_VERIFY"
+APPGATE_SSL_CACERT = "APPGATE_OPERATOR_CACERT"
+APPGATE_EXCLUDE_TAGS_ENV = "APPGATE_OPERATOR_EXCLUDE_TAGS"
+APPGATE_TARGET_TAGS_ENV = "APPGATE_OPERATOR_TARGET_TAGS"
+APPGATE_BUILTIN_TAGS_ENV = "APPGATE_OPERATOR_BUILTIN_TAGS"
+
+GIT_REPOSITORY_MAIN_BRANCH_ENV = "GIT_MAIN_BRANCH"
+GIT_REPOSITORY_MAIN_BRANCH = "master"
+GIT_REPOSITORY_ENV = "GIT_REPOSITORY"
+GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
+GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
+GIT_VENDOR_ENV = "GIT_VENDOR"
+GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+
+GIT_DUMP_DIR: Path = Path("/entities")
+
+GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
+
+APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
+APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
+APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
+
+
+GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
+
+
+class EntityClient:
+    async def init(self) -> "EntityClient":
+        return self
+
+    async def create(self, e: Entity_T) -> "EntityClient":
+        raise NotImplementedError
+
+    async def delete(self, e: Entity_T) -> "EntityClient":
+        raise NotImplementedError
+
+    async def modify(self, e: Entity_T) -> "EntityClient":
+        raise NotImplementedError
+
+    async def commit(self) -> Tuple["EntityClient", List[Tuple[str, GitCommitState]]]:
+        return self, []
 
 
 @attrs(slots=True, frozen=True)
-class OperatorArguments:
+class AppgateOperatorArguments:
     namespace: Optional[str] = attrib(default=None)
     spec_directory: Optional[str] = attrib(default=None)
     no_dry_run: bool = attrib(default=False)
@@ -50,6 +160,16 @@ class OperatorArguments:
     no_verify: bool = attrib(default=False)
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
+    reverse_mode: bool = attrib(default=False)
+
+
+@attrs(slots=True, frozen=True)
+class GitOperatorArguments:
+    namespace: Optional[str] = attrib(default=None)
+    spec_directory: Optional[str] = attrib(default=None)
+    no_dry_run: bool = attrib(default=False)
+    timeout: str = attrib(default="30")
+    target_tags: List[str] = attrib(factory=list)
 
 
 @attrs(slots=True, frozen=True)
@@ -121,7 +241,7 @@ class EntityWrapper:
         return False
 
     def is_singleton(self) -> bool:
-        return self.value._entity_metadata.get("singleton", False)
+        return is_singleton(self.value)
 
     def has_secrets(self) -> bool:
         # We have passwords use modified/created
@@ -253,7 +373,7 @@ class LatestEntityGeneration:
 
 
 @attrs()
-class Context:
+class AppgateOperatorContext:
     namespace: str = attrib()
     user: str = attrib()
     password: str = attrib()
@@ -265,6 +385,7 @@ class Context:
     cleanup_mode: bool = attrib()
     api_spec: APISpec = attrib()
     metadata_configmap: str = attrib()
+    reverse_mode: bool = attrib()
     # target tags if specified tells which entities do we want to work on
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
     # builtin tags are the entities that we consider builtin
@@ -274,6 +395,21 @@ class Context:
     no_verify: bool = attrib(default=True)
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
+
+
+@attrs()
+class GitOperatorContext:
+    namespace: str = attrib()
+    api_spec: APISpec = attrib()
+    timeout: int = attrib()
+    log_level: str = attrib()
+    git_repository: str = attrib()
+    git_repository_fork: str | None = attrib()
+    git_vendor: str = attrib()
+    git_base_branch: str = attrib()
+    target_tags: FrozenSet[str] | None = attrib(default=None)
+    dry_run: bool = attrib(default=True)
+    main_branch: str = attrib(default=GIT_REPOSITORY_MAIN_BRANCH)
 
 
 @attrs(slots=True, frozen=True)
@@ -293,9 +429,45 @@ class EntityFieldDependency:
     known_entities: EntitiesSet = attrib(factory=EntitiesSet)
 
 
-@attrs(slots=True, frozen=True)
-class MissingFieldDependencies:
-    parent_name: str = attrib()
-    parent_type: str = attrib()
-    field_path: str = attrib()
-    dependencies: FrozenSet[str] = attrib(factory=frozenset)
+def get_tags(tags: List[str], env_tags: str | None) -> FrozenSet[str]:
+    xs = frozenset(tags)
+    if env_tags:
+        return xs.union(env_tags.split(","))
+    return xs
+
+
+def get_dry_run(no_dry_run_arg: bool) -> bool:
+    env_dry_run = os.getenv(DRY_RUN_ENV)
+    return to_bool(env_dry_run) if env_dry_run is not None else not no_dry_run_arg
+
+
+def to_bool(value: Optional[str]) -> bool:
+    if value:
+        # Helm JSON schema validation ensures that the input is true/false string
+        bool_map = {"true": True, "false": False}
+        return bool_map[value.lower()]
+    return False
+
+
+def ensure_env(env_name: str) -> str:
+    v = os.getenv(env_name)
+    if not v:
+        raise AppgateException(f"Environment Variable {env_name} is not defined!")
+    return v
+
+
+@functools.lru_cache
+def crd_domain(api_version: int) -> str:
+    return f"v{api_version}.{K8S_APPGATE_DOMAIN}"
+
+
+OperatorMode: TypeAlias = Literal[
+    "appgate-operator", "appgate-reverse-operator", "git-operator"
+]
+
+
+def get_operator_mode(reverse_mode: bool) -> OperatorMode:
+    if reverse_mode:
+        return "appgate-reverse-operator"
+    else:
+        return "appgate-operator"

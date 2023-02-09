@@ -19,6 +19,8 @@ Policy = entities["Policy"].cls
 Entitlement = entities["Entitlement"].cls
 Condition = entities["Condition"].cls
 IdentityProvider = entities["IdentityProvider"].cls
+Site = entities["Site"].cls
+
 TestOpenAPI = None
 TestSpec = {
     "/entity-test0": "EntityTest0",
@@ -29,6 +31,7 @@ TestSpec = {
     "/entity-test3-appgate": "EntityTest3Appgate",
     "/entity-test4": "EntityTest4",
     "/entity-test-with-id": "EntityTestWithId",
+    "/entity-test-file": "EntityTestFile",
     "/entity-dep-1": "EntityDep1",
     "/entity-dep-2": "EntityDep2",
     "/entity-dep-3": "EntityDep3",
@@ -110,6 +113,7 @@ def load_test_open_api_spec(
             spec_file="test_entity.yaml",
             secrets_key=secrets_key,
             k8s_get_secret=k8s_get_secret,
+            operator_mode="appgate-operator",
         )
     return TestOpenAPI
 
@@ -132,6 +136,11 @@ def entitlement(
 @typing.no_type_check
 def condition(name: str, id: str = None, expression: Optional[str] = None) -> Condition:
     return Condition(id=id, name=name, expression=expression or "expression-test")
+
+
+@typing.no_type_check
+def site(name: str, id: str = None) -> Condition:
+    return Site(id=id, name=name)
 
 
 @typing.no_type_check

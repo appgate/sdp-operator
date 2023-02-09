@@ -54,18 +54,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 ServiceAccount
 */}}
 {{- define "sdp-operator.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "sdp-operator.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
+{{- include "sdp-operator.fullname" . }}
 {{- end }}
 
 {{/*
 Operator Secrets
 */}}
 {{- define "sdp-operator.secret" -}}
-{{- printf "sdp-operator-secret-%s" .Release.Name }}
+{{- printf "sdp-operator-%s-secret" .Release.Name }}
 {{- end }}
 
 {{/*

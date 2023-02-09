@@ -1,24 +1,113 @@
 import asyncio
 import datetime
+import functools
 import ssl
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union, Type
+from typing import Dict, Any, Optional, List, Callable, Type
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
-from kubernetes.client import CoreV1Api, V1ConfigMap, V1ObjectMeta
+from kubernetes.client import (
+    CoreV1Api,
+    V1ConfigMap,
+    V1ObjectMeta,
+    CustomObjectsApi,
+)
 from kubernetes.client.exceptions import ApiException
 
-from appgate.attrs import APPGATE_DUMPER, APPGATE_LOADER, parse_datetime, dump_datetime
+from attr import attrib, attrs
+
+from appgate.attrs import (
+    APPGATE_DUMPER,
+    APPGATE_LOADER,
+    parse_datetime,
+    dump_datetime,
+    K8S_DUMPER,
+    k8s_name,
+)
 from appgate.logger import log
-from appgate.openapi.types import Entity_T, AppgateException
-from appgate.types import LatestEntityGeneration
+from appgate.openapi.types import Entity_T, AppgateException, APISpec, EntityDumper
+from appgate.types import (
+    LatestEntityGeneration,
+    EntityClient,
+    crd_domain,
+)
+
+__all__ = [
+    "AppgateClient",
+    "AppgateEntityClient",
+    "K8SConfigMapClient",
+    "entity_unique_id",
+    "K8sEntityClient",
+]
 
 
-__all__ = ["AppgateClient", "EntityClient", "K8SConfigMapClient", "entity_unique_id"]
+def get_plural(kind: str) -> str:
+    entity_name = kind.lower()
+    if entity_name.endswith("y"):
+        return f"{entity_name[:-1]}ies"
+    else:
+        return f"{entity_name}s"
 
 
-class EntityClient:
+@functools.cache
+def plural(kind):
+    return get_plural(kind)
+
+
+@attrs(frozen=True)
+class K8sEntityClient(EntityClient):
+    k8s_api: CustomObjectsApi = attrib()
+    api_spec: APISpec = attrib(hash=False)
+    crd_version: str = attrib()
+    namespace: str = attrib()
+    kind: str = attrib()
+
+    @functools.cache
+    def crd_domain(self) -> str:
+        return crd_domain(self.api_spec.api_version)
+
+    @functools.cache
+    def dumper(self) -> EntityDumper:
+        return K8S_DUMPER(self.api_spec)
+
+    async def create(self, e: Entity_T) -> EntityClient:
+        log.info("[k8s-entity-client/%s] Creating k8s entity %s", self.kind, e.name)
+        self.k8s_api.create_namespaced_custom_object(  # type: ignore
+            self.crd_domain(),
+            self.crd_version,
+            self.namespace,
+            plural(self.kind),
+            self.dumper().dump(e, True, None),
+        )
+        return self
+
+    async def delete(self, e: Entity_T) -> EntityClient:
+        log.info("[k8s-entity-client/%s] Deleting k8s entity %s", self.kind, e.name)
+        self.k8s_api.delete_namespaced_custom_object(
+            self.crd_domain(),
+            self.crd_version,
+            self.namespace,
+            plural(self.kind),
+            k8s_name(e.name),
+        )
+        return self
+
+    async def modify(self, e: Entity_T) -> EntityClient:
+        log.info("[k8s-entity-client/%s] Updating k8s entity %s", self.kind, e.name)
+        data = self.dumper().dump(e, True, None)
+        self.k8s_api.patch_namespaced_custom_object(  # type: ignore
+            self.crd_domain(),
+            self.crd_version,
+            self.namespace,
+            plural(self.kind),
+            k8s_name(e.name),
+            data,
+        )
+        return self
+
+
+class AppgateEntityClient(EntityClient):
     def __init__(
         self,
         path: str,
@@ -57,6 +146,10 @@ class EntityClient:
             return entities + self.magic_entities
         return entities
 
+    async def create(self, entity: Entity_T) -> EntityClient:
+        await self.post(entity)
+        return self
+
     async def post(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] POST %s [%s]",
@@ -77,6 +170,10 @@ class EntityClient:
             return None
         return self.load(data)
 
+    async def modify(self, entity: Entity_T) -> EntityClient:
+        await self.put(entity)
+        return self
+
     async def put(self, entity: Entity_T) -> Optional[Entity_T]:
         log.info(
             "[appgate-client/%s] PUT %s [%s]",
@@ -94,17 +191,16 @@ class EntityClient:
             return None
         return self.load(data)
 
-    async def delete(self, id: str) -> bool:
+    async def delete(self, e: Entity_T) -> EntityClient:
         log.info(
             "[appgate-client/%s] DELETE [%s]",
             self.kind,
-            id,
+            e.id,
         )
         if self.dry_run:
-            return False
-        if not await self._client.delete(f"{self.path}/{id}"):
-            return False
-        return True
+            return self
+        await self._client.delete(f"{self.path}/{e.id}")
+        return self
 
 
 def load_latest_entity_generation(key: str, value: str) -> LatestEntityGeneration:
@@ -147,12 +243,38 @@ class K8SConfigMapClient:
             self.namespace,
             self.name,
         )
+
+        def get_configmap() -> Optional[V1ConfigMap]:
+            try:
+                return self._v1.read_namespaced_config_map(
+                    name=self.name, namespace=self.namespace
+                )
+            except ApiException as e:
+                if e.status == 404:  # type: ignore
+                    return None
+                raise e
+
+        def initialize_configmap() -> V1ConfigMap:
+            configmap = get_configmap()
+            if configmap is None:
+                body = V1ConfigMap(
+                    api_version="v1",
+                    kind="ConfigMap",
+                    metadata=V1ObjectMeta(name=self.name, namespace=self.namespace),  # type: ignore
+                    data={},
+                )
+                log.info(
+                    "[k8s-configmap-client/%s] Creating configmap %s",
+                    self.namespace,
+                    self.name,
+                )
+                return self._v1.create_namespaced_config_map(  # type: ignore
+                    body=body, namespace=self.namespace
+                )
+            return configmap
+
         try:
-            configmap = await asyncio.to_thread(
-                self._v1.read_namespaced_config_map,
-                name=self.name,
-                namespace=self.namespace,
-            )
+            configmap = await asyncio.to_thread(initialize_configmap)
             self._configmap_mt = configmap.metadata
             self._data = configmap.data or {}
         except ApiException as e:
@@ -441,14 +563,14 @@ class AppgateClient:
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
-    ) -> EntityClient:
+    ) -> AppgateEntityClient:
         dumper = APPGATE_DUMPER
-        return EntityClient(
+        return AppgateEntityClient(
             appgate_client=self,
             path=f"/admin/{api_path}",
             singleton=singleton,
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
-            dump=lambda e: dumper.dump(e),
+            dump=lambda e: dumper.dump(e, True, None),
             magic_entities=magic_entities,
             kind=entity.__qualname__,
             dry_run=self.dry_run,

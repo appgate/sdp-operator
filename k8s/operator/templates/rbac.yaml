@@ -1,13 +1,70 @@
-{{- if .Values.rbac.create}}
+{{- if has "sdp-operator" .Values.sdp.operators }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}
+  name: {{ include "sdp-operator.fullname" . }}-sdp
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [ "{{ .Values.sdp.operator.version }}.sdp.appgate.com" ]
+  - apiGroups: [ "{{ .Values.sdp.sdpOperator.version }}.sdp.appgate.com" ]
+    resources:
+      - policies
+      - entitlements
+      - conditions
+      - ringfencerules
+      - appliances
+      - sites
+      - ippools
+      - identityproviders
+      - localusers
+      - administrativeroles
+      - mfaproviders
+      - adminmfasettingss
+      - trustedcertificates
+      - criteriascriptss
+      - devicescripts
+      - entitlementscripts
+      - appliancecustomizations
+      - globalsettingss
+      - clientconnections
+      - serviceusers
+{{- if .Values.sdp.sdpOperator.reverseMode }}
+    verbs: ["get", "create", "patch", "watch", "list", "delete"]
+{{- else }}
+    verbs: ["get", "create", "patch", "watch", "list"]
+{{- end }}
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "sdp-operator.fullname" . }}-sdp
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "sdp-operator.serviceAccountName" . }}-sdp
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "sdp-operator.fullname" . }}-sdp
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+---
+{{- if has "git-operator" .Values.sdp.operators }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "sdp-operator.name" . }}-git
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [ "{{ .Values.sdp.gitOperator.version }}.sdp.appgate.com"]
     resources:
       - policies
       - entitlements
@@ -31,22 +88,22 @@ rules:
       - serviceusers
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
-    resources: ["configmaps", "secrets"]
-    verbs: ["get", "watch", "list", "update", "patch"]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}
+  name: {{ include "sdp-operator.name" . }}-git
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}
+    name: {{ include "sdp-operator.serviceAccountName" . }}-git
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.fullname" . }}
+  name: {{ include "sdp-operator.name" . }}-git
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

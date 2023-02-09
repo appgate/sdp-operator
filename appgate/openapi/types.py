@@ -23,7 +23,6 @@ from attr import attrib, attrs, Attribute, evolve
 
 from appgate.logger import log
 
-
 SPEC_ENTITIES = {
     "/sites": "Site",
     "/ip-pools": "IpPool",
@@ -49,6 +48,7 @@ SPEC_ENTITIES = {
 
 K8S_APPGATE_DOMAIN = "sdp.appgate.com"
 K8S_APPGATE_VERSION = "v1"
+K8S_ID_ANNOTATION = f"{K8S_APPGATE_DOMAIN}/id"
 ENTITY_METADATA_ATTRIB_NAME = "_entity_metadata"
 APPGATE_METADATA_ATTRIB_NAME = "appgate_metadata"
 NAMES_REGEXP = re.compile(r"\w+(\.)\w+")
@@ -160,8 +160,22 @@ class Entity_T:
     updated: datetime.datetime = attrib()
 
 
+def is_singleton(entity: Entity_T) -> bool:
+    return entity._entity_metadata.get("singleton", False)
+
+
+@attrs(slots=True, frozen=True)
+class MissingFieldDependencies:
+    parent_name: str = attrib()
+    parent_type: str = attrib()
+    field_path: str = attrib()
+    dependencies: FrozenSet[str] = attrib(factory=frozenset)
+
+
 LoaderFunc = Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]
-DumperFunc = Callable[[Entity_T], Dict[str, Any]]
+DumperFunc = Callable[
+    [Entity_T, bool, Dict[str, List[MissingFieldDependencies]] | None], Dict[str, Any]
+]
 
 
 @attrs()

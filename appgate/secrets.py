@@ -1,13 +1,19 @@
-import asyncio
 import base64
+import os
 from typing import Dict, List, Union, Optional, Callable
 
 from attr import evolve
 
 from cryptography.fernet import Fernet
+from hvac import Client  # type: ignore
+from hvac.api.auth_methods import Kubernetes  # type: ignore
 from kubernetes.client import CoreV1Api
 
-from appgate.customloaders import CustomAttribLoader, CustomEntityLoader
+from appgate.customloaders import (
+    CustomEntityLoader,
+    CustomAttribLoader,
+)
+from appgate.logger import log
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
     AttribType,
@@ -31,8 +37,11 @@ __all__ = [
     "k8s_get_secret",
 ]
 
+from appgate.types import OperatorMode
 
 PasswordField = Union[str, OpenApiDict]
+
+APPGATE_SECRET_SOURCE_ENV = "APPGATE_SECRET_SOURCE"
 
 
 class AppgateSecretException(Exception):
@@ -127,10 +136,56 @@ class AppgateSecretK8S(AppgateSecret):
         return isinstance(value, dict) and value.get("type") == "k8s/secret"
 
 
+class AppgateVaultSecret(AppgateSecret):
+    def __init__(self, value: PasswordField, entity_name: str):
+        super().__init__(value)
+        self.entity_name = entity_name
+        self.api_version = os.getenv("APPGATE_API_VERSION")
+        self.client = self.authenticate()
+
+    def authenticate(self) -> Client:
+        address = os.getenv("APPGATE_VAULT_ADDRESS", "localhost")
+        token = os.getenv("APPGATE_VAULT_TOKEN")
+        verify = os.getenv("APPGATE_VAULT_SSL_NO_VERIFY") == "false"
+        client = Client(url=address, token=token, verify=verify)
+
+        if client.is_authenticated():
+            log.debug("Successfully authenticated Vault client to %s", client.url)
+        else:
+            log.error("Failed to authenticated Vault client against %s", client.url)
+
+        return client
+
+    def read_secret_from_vault(self) -> Dict:
+        return self.client.secrets.kv.read_secret_version(path="sdp")
+
+    def decrypt(self) -> str:
+        response = self.read_secret_from_vault()
+
+        if isinstance(self.value, Dict):
+            field_name = self.value.get("name")
+        else:
+            log.warning("Unable to get the field name from the values: %s", self.value)
+            return ""
+
+        pw_key = f"{self.entity_name.lower()}-{self.api_version}/{field_name}"
+        pw_value: str = response["data"]["data"].get(pw_key, "")
+
+        if not pw_value:
+            raise AppgateSecretException("Unable to fetch the password for %s", pw_key)
+
+        return pw_value
+
+    @staticmethod
+    def isinstance(_: PasswordField) -> bool:
+        return os.getenv(APPGATE_SECRET_SOURCE_ENV, "") == "vault"
+
+
 def get_appgate_secret(
     value: PasswordField,
     secrets_cipher: Optional[Fernet],
     k8s_get_client: Optional[Callable[[str, str], str]],
+    entity_name: str,
 ) -> AppgateSecret:
     """
     Retuns an AppgateSecret from a password field value.
@@ -150,6 +205,8 @@ def get_appgate_secret(
         return AppgateSecretSimple(value, secrets_cipher)
     elif AppgateSecretSimple.isinstance(value):
         return AppgateSecretPlainText(value)
+    elif AppgateVaultSecret.isinstance(value):
+        return AppgateVaultSecret(value, entity_name)
     raise AppgateSecretException("Unable to create an AppgateSecret from %s.", value)
 
 
@@ -157,11 +214,16 @@ def appgate_secret_load(
     value: OpenApiDict,
     secrets_cipher: Optional[Fernet],
     k8s_get_client: Optional[Callable[[str, str], str]],
+    entity_name: str,
 ) -> str:
     appgate_secret = get_appgate_secret(
-        value, secrets_cipher, k8s_get_client=k8s_get_client
+        value, secrets_cipher, k8s_get_client, entity_name
     )
     return appgate_secret.decrypt()
+
+
+def should_load_secret(operator_mode: OperatorMode):
+    return "APPGATE_SECRET_SOURCE" in os.environ and operator_mode == "appgate-operator"
 
 
 class PasswordAttribMaker(AttribMaker):
@@ -175,10 +237,12 @@ class PasswordAttribMaker(AttribMaker):
         definition: OpenApiDict,
         secrets_cipher: Optional[Fernet],
         k8s_get_client: Optional[Callable[[str, str], str]],
+        operator_mode: OperatorMode,
     ) -> None:
         super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.secrets_cipher = secrets_cipher
         self.k8s_get_client = k8s_get_client
+        self.operator_mode = operator_mode
 
     def values(
         self,
@@ -210,9 +274,13 @@ class PasswordAttribMaker(AttribMaker):
         values["metadata"][K8S_LOADERS_FIELD_NAME] = [
             CustomAttribLoader(
                 loader=lambda v: appgate_secret_load(
-                    v, self.secrets_cipher, self.k8s_get_client
+                    v,
+                    self.secrets_cipher,
+                    self.k8s_get_client,
+                    instance_maker_config.entity_name,
                 ),
                 field=self.name,
+                load_external=should_load_secret(self.operator_mode),
             ),
             CustomEntityLoader(loader=set_appgate_password_metadata),
         ]
