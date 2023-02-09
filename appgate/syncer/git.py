@@ -54,6 +54,8 @@ gitlab.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAA
 gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
 """
 
+GitVendor: TypeAlias = Literal["gitlab", "github"]
+
 
 class EnvironmentVariableNotFoundException(Exception):
     pass
@@ -115,7 +117,7 @@ class GitRepo:
     repository_path: Path = attrib()
     git_repo: Repo = attrib()
     base_branch: str = attrib()
-    vendor: str = attrib()
+    vendor: GitVendor = attrib()
     dry_run: bool = attrib()
     repository_fork: str | None = attrib()
 

@@ -35,6 +35,7 @@ from appgate.types import (
     EntityClient,
     is_target,
     GitCommitState,
+    get_git_vendor,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -81,7 +82,7 @@ def git_operator_context(
         timeout=int(os.getenv(TIMEOUT_ENV) or args.timeout),
         target_tags=get_tags(args.target_tags, os.getenv(APPGATE_TARGET_TAGS_ENV)),
         dry_run=dry_run_mode,
-        git_vendor=ensure_env(GIT_VENDOR_ENV),
+        git_vendor=get_git_vendor(ensure_env(GIT_VENDOR_ENV)),
         git_repository=ensure_env(GIT_REPOSITORY_ENV),
         git_base_branch=ensure_env(GIT_BASE_BRANCH_ENV),
         log_level=os.environ.get(APPGATE_LOG_LEVEL, "info"),

@@ -14,6 +14,7 @@ from typing import (
     Union,
     Tuple,
     TypeAlias,
+    cast,
 )
 from attr import attrib, attrs, evolve
 
@@ -79,6 +80,8 @@ __all__ = [
     "APPGATE_OPERATOR_PR_LABEL_COLOR",
     "APPGATE_OPERATOR_PR_LABEL_DESC",
 ]
+
+from appgate.syncer.git import GitVendor
 
 BUILTIN_TAGS = frozenset({"builtin"})
 APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
@@ -401,7 +404,7 @@ class GitOperatorContext:
     log_level: str = attrib()
     git_repository: str = attrib()
     git_repository_fork: str | None = attrib()
-    git_vendor: str = attrib()
+    git_vendor: GitVendor = attrib()
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
@@ -434,6 +437,14 @@ def get_tags(tags: List[str], env_tags: str | None) -> FrozenSet[str]:
 def get_dry_run(no_dry_run_arg: bool) -> bool:
     env_dry_run = os.getenv(DRY_RUN_ENV)
     return to_bool(env_dry_run) if env_dry_run is not None else not no_dry_run_arg
+
+
+def get_git_vendor(vendor: str) -> GitVendor:
+    if vendor != "gitlab" or vendor != "github":
+        raise AppgateException(
+            f"Environment variable {GIT_VENDOR_ENV} must be 'github' or 'gitlab'"
+        )
+    return cast(GitVendor, vendor)
 
 
 def to_bool(value: Optional[str]) -> bool:
