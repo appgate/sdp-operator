@@ -33,3 +33,7 @@ jobs:
           config: .chart-releaser/config.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_OWNER: "appgate"
+          CR_GIT_REPO: "sdp-operator"
+          CR_SKIP_EXISTING: true
+          CR_RELEASE_NAME_TEMPLATE: "v{{ .Version }}-{{ .Name }}"
