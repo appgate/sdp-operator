@@ -81,8 +81,6 @@ __all__ = [
     "APPGATE_OPERATOR_PR_LABEL_DESC",
 ]
 
-from appgate.syncer.git import GitVendor
-
 BUILTIN_TAGS = frozenset({"builtin"})
 APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
 USER_ENV = "APPGATE_OPERATOR_USER"
@@ -121,6 +119,8 @@ APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 
 
 GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
+
+GitVendor: TypeAlias = Literal["gitlab", "github"]
 
 
 class EntityClient:

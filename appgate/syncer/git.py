@@ -2,7 +2,7 @@ import enum
 import functools
 import time
 from datetime import date
-from typing import Tuple, List, Type, Dict, Iterable, Protocol, Literal, TypeAlias
+from typing import Tuple, List, Type, Dict, Iterable, Protocol
 
 import yaml
 from git import Repo, GitCommandError
@@ -40,6 +40,7 @@ from appgate.types import (
     APPGATE_OPERATOR_PR_LABEL_COLOR,
     APPGATE_OPERATOR_PR_LABEL_DESC,
     GITLAB_TOKEN_ENV,
+    GitVendor,
 )
 
 
@@ -53,8 +54,6 @@ GITLAB_SSH_FINGERPRINT = """gitlab.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsj
 gitlab.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFSMqzJeV9rUzU4kWitGjeR4PWSa29SPqJ1fVkhtj3Hw9xjLVXVYrU9QlYWrOLXBpQ6KWjbjTDTdDkoohFzgbEY=
 gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
 """
-
-GitVendor: TypeAlias = Literal["gitlab", "github"]
 
 
 class EnvironmentVariableNotFoundException(Exception):
