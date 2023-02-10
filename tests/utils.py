@@ -38,6 +38,7 @@ TestSpec = {
     "/entity-test4": "EntityTest4",
     "/entity-test-with-id": "EntityTestWithId",
     "/entity-test-file": "EntityTestFile",
+    "/entity-test-file-complex": "EntityTestFileComplex",
     "/entity-dep-1": "EntityDep1",
     "/entity-dep-2": "EntityDep2",
     "/entity-dep-3": "EntityDep3",
@@ -115,7 +116,7 @@ def load_test_open_api_spec(
     if not TestOpenAPI or reload:
         TestOpenAPI = parse_files(
             spec_entities=TestSpec,
-            spec_directory=Path("__file__").parent / "resources",
+            spec_directory=Path(__file__).parent / "resources",
             spec_file="test_entity.yaml",
             secrets_key=secrets_key,
             k8s_get_secret=k8s_get_secret,

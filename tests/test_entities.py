@@ -12,6 +12,7 @@ from appgate.attrs import (
     K8S_DUMPER,
     APPGATE_DUMPER,
     DIFF_DUMPER,
+    GIT_DUMPER,
 )
 from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import (
@@ -1000,4 +1001,89 @@ def test_discriminator_dump():
         "discriminatorTwoFieldOne": True,
         "discriminatorTwoFieldTwo": False,
         "configurableFieldOne": False,
+    }
+
+
+def test_git_dumper_checksum() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityTestFileComplex(filename="file1.sh", checksum="123456")
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestFileComplex",
+        "metadata": {
+            "name": "entitytestfilecomplex",
+            "annotations": {},
+        },
+        "spec": {
+            "filename": "file1.sh",
+            "checksum": "123456",
+        },
+    }
+
+
+def test_git_dumper_size() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest3 = api_spec.entities["EntityTest3"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityTest3(fieldTwo="12345", fieldThree="67890")
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest3",
+        "metadata": {
+            "name": "entitytest3",
+            "annotations": {},
+        },
+        "spec": {
+            "fieldTwo": "12345",
+            "fieldThree": "67890",
+        },
+    }
+
+
+def test_git_dumper_certificate() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityCert = api_spec.entities["EntityCert"].cls
+    EntityCert_Fieldtwo = api_spec.entities["EntityCert_Fieldtwo"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityCert(
+        id="myid",
+        name="myname",
+        fieldOne="PEMFILE",
+        fieldTwo=EntityCert_Fieldtwo(
+            version="666",
+            serial="serial",
+            issuer="issuer",
+            subject="subject",
+            validFrom="1",
+            validTo="2",
+            fingerprint="123",
+            certificate="123",
+            subjectPublicKey="1234",
+        ),
+    )
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityCert",
+        "metadata": {
+            "name": "myname",
+            "annotations": {"sdp.appgate.com/id": "myid"},
+        },
+        "spec": {
+            "id": "myid",
+            "name": "myname",
+            "fieldOne": "PEMFILE",
+            "fieldTwo": {
+                "certificate": "123",
+                "fingerprint": "123",
+                "issuer": "issuer",
+                "serial": "serial",
+                "subject": "subject",
+                "subjectPublicKey": "1234",
+                "validFrom": "1",
+                "validTo": "2",
+                "version": "666",
+            },
+        },
     }
