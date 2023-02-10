@@ -45,6 +45,7 @@ __all__ = [
     "K8S_LOADER",
     "APPGATE_LOADER",
     "DIFF_DUMPER",
+    "GIT_DUMPER",
     "get_loader",
     "get_dumper",
     "dump_datetime",
@@ -148,7 +149,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                     continue
                 if name == APPGATE_METADATA_ATTRIB_NAME:
                     continue
-                if read_only:
+                if read_only and platform_type not in {PlatformType.GIT}:
                     continue
             if d.hidedefault:
                 if name == "_entity_metadata":
@@ -172,7 +173,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
     dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
     dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
 
-    if platform_type == PlatformType.K8S:
+    if platform_type in {PlatformType.K8S, PlatformType.GIT}:
         if api_spec is None:
             raise AppgateTypedloadException(
                 "Unable to dump, APISpec is required",
@@ -369,4 +370,9 @@ K8S_DUMPER = lambda api_spec: EntityDumper(
 )
 APPGATE_LOADER = EntityLoader(load=get_loader(PlatformType.APPGATE))
 APPGATE_DUMPER = EntityDumper(dump=get_dumper(PlatformType.APPGATE))
+
 DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF))
+
+GIT_DUMPER = lambda api_spec: EntityDumper(
+    dump=get_dumper(PlatformType.GIT, api_spec=api_spec)
+)

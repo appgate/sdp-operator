@@ -86,9 +86,10 @@ def normalize_attrib_name(name: str) -> str:
 
 
 class PlatformType(enum.Enum):
-    K8S = 1
-    APPGATE = 2
-    DIFF = 3
+    K8S = enum.auto()
+    APPGATE = enum.auto()
+    DIFF = enum.auto()
+    GIT = enum.auto()
 
 
 class AppgateException(Exception):
