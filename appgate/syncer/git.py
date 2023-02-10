@@ -151,47 +151,6 @@ class GitRepo:
     ) -> int | None:
         raise NotImplementedError()
 
-    def checkout(
-        self,
-        pr_branch: str,
-        branch_op: BranchOp,
-        open_merge: bool,
-        pr_title: str,
-        pr_id: int,
-    ) -> Tuple[str, int | None]:
-        if branch_op == BranchOp.CHECKOUT and open_merge:
-            log.info(
-                "[git-operator] Found opened Pull Request %s [%s]. Using it",
-                pr_title,
-                pr_id,
-            )
-            log.info(
-                "[git-operator] Fetching and checking out existing branch %s/%s",
-                self.git_repo.remote().name,
-                pr_branch,
-            )
-            if not self.dry_run:
-                self.git_repo.git.fetch("origin", pr_branch)
-                self.git_repo.git.checkout(pr_branch)
-            return pr_branch, pr_id
-        elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
-            log.info(
-                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
-            )
-            if not self.dry_run:
-                self.git_repo.git.checkout(self.base_branch)
-                self.git_repo.git.pull("origin", self.base_branch)
-                self.git_repo.head.reset(index=True, working_tree=True)
-                self.git_repo.git.branch(pr_branch)
-                self.git_repo.git.checkout(pr_branch)
-            return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch:
-            return pr_branch, pr_id
-        else:
-            raise AppgateException(
-                f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
-            )
-
 
 def clone_repo(ctx: GitOperatorContext, vendor: str, repository_path: Path) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
@@ -436,17 +395,42 @@ class GitLabRepo(GitRepo):
     def checkout_branch(
         self, previous_branch: str | None, previous_pr: int | None
     ) -> Tuple[str, int | None]:
-        open_merge = get_sdp_gl_merge_request(self.gl_project)
+        open_pull = get_sdp_gl_merge_request(self.gl_project)
         pr_branch, branch_op = gitlab_checkout_branch(
-            previous_branch, previous_pr, open_merge
+            previous_branch, previous_pr, open_pull
         )
-        return self.checkout(
-            pr_branch,
-            branch_op,
-            open_merge is not None,
-            open_merge.title if open_merge is not None else "",
-            open_merge.iid if open_merge is not None else 0,
-        )
+        if branch_op == BranchOp.CHECKOUT and open_pull:
+            log.info(
+                "[git-operator] Found opened Pull Request %s [%s]. Using it",
+                open_pull.title,
+                open_pull.iid,
+            )
+            log.info(
+                "[git-operator] Fetching and checking out existing branch %s/%s",
+                self.git_repo.remote().name,
+                pr_branch,
+            )
+            if not self.dry_run:
+                self.git_repo.git.fetch("origin", pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, open_pull.iid
+        elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
+            log.info(
+                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
+            )
+            if not self.dry_run:
+                self.git_repo.git.checkout(self.base_branch)
+                self.git_repo.git.pull("origin", self.base_branch)
+                self.git_repo.head.reset(index=True, working_tree=True)
+                self.git_repo.git.branch(pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, None
+        elif branch_op == BranchOp.NOP and pr_branch and open_pull:
+            return pr_branch, open_pull.iid
+        else:
+            raise AppgateException(
+                f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
+            )
 
     def create_or_update_pull_request(
         self,
@@ -536,13 +520,38 @@ class GitHubRepo(GitRepo):
         pr_branch, branch_op = github_checkout_branch(
             previous_branch, previous_pr, open_pull
         )
-        return self.checkout(
-            pr_branch,
-            branch_op,
-            open_pull is not None,
-            open_pull.title if open_pull is not None else "",
-            open_pull.number if open_pull is not None else 0,
-        )
+        if branch_op == BranchOp.CHECKOUT and open_pull:
+            log.info(
+                "[git-operator] Found opened Pull Request %s [%s]. Using it",
+                open_pull.title,
+                open_pull.number,
+            )
+            log.info(
+                "[git-operator] Fetching and checking out existing branch %s/%s",
+                self.git_repo.remote().name,
+                pr_branch,
+            )
+            if not self.dry_run:
+                self.git_repo.git.fetch("origin", pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, open_pull.number
+        elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
+            log.info(
+                f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
+            )
+            if not self.dry_run:
+                self.git_repo.git.checkout(self.base_branch)
+                self.git_repo.git.pull("origin", self.base_branch)
+                self.git_repo.head.reset(index=True, working_tree=True)
+                self.git_repo.git.branch(pr_branch)
+                self.git_repo.git.checkout(pr_branch)
+            return pr_branch, None
+        elif branch_op == BranchOp.NOP and pr_branch and open_pull:
+            return pr_branch, open_pull.number
+        else:
+            raise AppgateException(
+                f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
+            )
 
     def create_or_update_pull_request(
         self,
