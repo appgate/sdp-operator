@@ -46,6 +46,7 @@ __all__ = [
     "APPGATE_LOADER",
     "DIFF_DUMPER",
     "GIT_DUMPER",
+    "GIT_LOADER",
     "get_loader",
     "get_dumper",
     "dump_datetime",
@@ -213,6 +214,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
 def get_loader(
     platform_type: PlatformType,
 ) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]:
+    # TODO: Implement GIT_LOADERS_FIELD_NAME
     def _namedtupleload_wrapper(orig_values, l, value, t):
         entity = dataloader._namedtupleload(l, value, t)
         try:
@@ -263,7 +265,10 @@ def get_loader(
                 # Don't load attribute from K8S in read only mode even if
                 # it's defined
                 continue
-            elif write_only and platform_type == PlatformType.APPGATE:
+            elif write_only and platform_type in {
+                PlatformType.APPGATE,
+                PlatformType.GIT,
+            }:
                 # Don't load attribute from APPGATE in read only mode even if
                 # it's defined
                 continue
@@ -280,7 +285,6 @@ def get_loader(
                     tmp = value[dataname]
                     del value[dataname]
                     value[pyname] = tmp
-
             # Custom loading values
             try:
                 if (
@@ -376,3 +380,4 @@ DIFF_DUMPER = EntityDumper(dump=get_dumper(PlatformType.DIFF))
 GIT_DUMPER = lambda api_spec: EntityDumper(
     dump=get_dumper(PlatformType.GIT, api_spec=api_spec)
 )
+GIT_LOADER = EntityLoader(load=get_loader(PlatformType.GIT))

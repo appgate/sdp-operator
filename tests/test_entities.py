@@ -13,6 +13,7 @@ from appgate.attrs import (
     APPGATE_DUMPER,
     DIFF_DUMPER,
     GIT_DUMPER,
+    GIT_LOADER,
 )
 from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import (
@@ -1087,3 +1088,23 @@ def test_git_dumper_certificate() -> None:
             },
         },
     }
+
+
+def test_loader_git_0():
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
+    data = {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest3",
+        "metadata": {
+            "name": "entitytest3",
+            "annotations": {},
+        },
+        "spec": {
+            "file": "somefilecontent",  # This is ignored
+            "filename": "somename",
+            "checksum": "somechecksum",
+        },
+    }
+    e = GIT_LOADER.load(data["spec"], None, EntityTestFileComplex)
+    assert e == EntityTestFileComplex(filename="somename", checksum="somechecksum")

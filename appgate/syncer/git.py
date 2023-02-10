@@ -15,7 +15,7 @@ import shutil
 
 from attr import attrib, attrs, evolve
 
-from appgate.attrs import K8S_LOADER, K8S_DUMPER
+from appgate.attrs import GIT_DUMPER, GIT_LOADER
 from appgate.logger import log
 from appgate.openapi.types import (
     AppgateException,
@@ -64,7 +64,7 @@ def git_dump(
 ) -> Path:
     entity_file = dest / entity_file_name(entity.name)
     log.info("Dumping entity %s: %s", entity.name, entity_file)
-    dumped_entity = K8S_DUMPER(api_spec).dump(entity, True, resolution_conflicts)
+    dumped_entity = GIT_DUMPER(api_spec).dump(entity, True, resolution_conflicts)
     with entity_file.open("w") as f:
         f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
     return entity_file
@@ -74,7 +74,7 @@ def git_load(file: Path, entity_type: Type[Entity_T]) -> Entity_T:
     with file.open("r") as f:
         data = yaml.safe_load(f)
         mt = data.get("metadata")
-        return K8S_LOADER.load(data["spec"], mt, entity_type)
+        return GIT_LOADER.load(data["spec"], mt, entity_type)
 
 
 def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
