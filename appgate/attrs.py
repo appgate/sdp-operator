@@ -269,7 +269,7 @@ def get_loader(
                 PlatformType.APPGATE,
                 PlatformType.GIT,
             }:
-                # Don't load attribute from APPGATE in read only mode even if
+                # Don't load attribute from APPGATE or GIT in write only mode even if
                 # it's defined
                 continue
             names.append(attribute.name)

@@ -26,7 +26,6 @@ def test_load_http_file_0():
         mock_response.status_code = 200
         get.return_value = mock_response
         e = K8S_LOADER.load(data, None, EntityTestFile)
-        print(get.call_args)
         get.assert_called_once_with("localhost:8000/entitytestfile-v18/test-entity.sh")
         assert expected_entity == e
 
