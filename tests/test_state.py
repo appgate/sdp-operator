@@ -1,8 +1,7 @@
-import os
-from unittest.mock import patch
+import typing
+from typing import Optional, List
 
 import pytest
-from requests import Response
 
 from appgate.attrs import K8S_LOADER, APPGATE_LOADER
 from appgate.state import (
@@ -22,10 +21,6 @@ from appgate.types import (
 from appgate.openapi.types import AppgateException, MissingFieldDependencies
 from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
 from tests.utils import (
-    entitlement,
-    condition,
-    policy,
-    Policy,
     load_test_open_api_spec,
     PEM_TEST,
     join_string,
@@ -34,9 +29,53 @@ from tests.utils import (
     CERTIFICATE_FIELD,
     PUBKEY_FIELD,
     _k8s_get_secret,
-    site,
-    api_spec,
+    api_spec, entities,
 )
+
+
+Policy = entities()["Policy"].cls
+Entitlement = entities()["Entitlement"].cls
+Condition = entities()["Condition"].cls
+IdentityProvider = entities()["IdentityProvider"].cls
+Site = entities()["Site"].cls
+
+
+
+@typing.no_type_check
+def entitlement(
+    name: str,
+    id: str = None,
+    site: str = "site-example",
+    conditions: Optional[List[str]] = None,
+) -> Entitlement:
+    return Entitlement(
+        id=id,
+        name=name,
+        site=site,
+        conditions=frozenset(conditions) if conditions else frozenset(),
+    )
+
+
+@typing.no_type_check
+def condition(name: str, id: str = None, expression: Optional[str] = None) -> Condition:
+    return Condition(id=id, name=name, expression=expression or "expression-test")
+
+
+@typing.no_type_check
+def site(name: str, id: str = None) -> Condition:
+    return Site(id=id, name=name)
+
+
+@typing.no_type_check
+def policy(
+    name: str, id: str = None, entitlements: Optional[List[str]] = None
+) -> Policy:
+    return Policy(
+        name=name,
+        id=id,
+        entitlements=frozenset(entitlements) if entitlements else frozenset(),
+        expression="expression-test",
+    )
 
 
 def test_filter_appgate_entities():
@@ -1035,7 +1074,7 @@ def test_resolve_appgate_state_1():
         expected_state,
         expected_state.copy(expected_state.entities_set),
         reverse=True,
-        api_spec=api_spec,
+        api_spec=api_spec(),
     )
     assert conflicts == {
         "entitlement-1": [
@@ -1293,7 +1332,7 @@ def test_resolve_dependencies_mixed_names_and_ids_good():
         expected_state,
         expected_state.copy(expected_state.entities_set),
         reverse=True,
-        api_spec=api_spec,
+        api_spec=api_spec(),
     )
     assert conflicts == {}
 
@@ -1338,7 +1377,7 @@ def test_resolve_dependencies_mixed_names_and_ids_failure():
         expected_state,
         expected_state.copy(expected_state.entities_set),
         reverse=True,
-        api_spec=api_spec,
+        api_spec=api_spec(),
     )
     assert conflicts["entitlement-1"] == [
         MissingFieldDependencies(
