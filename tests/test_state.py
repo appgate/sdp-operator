@@ -29,7 +29,8 @@ from tests.utils import (
     CERTIFICATE_FIELD,
     PUBKEY_FIELD,
     _k8s_get_secret,
-    api_spec, entities,
+    api_spec,
+    entities,
 )
 
 
@@ -38,7 +39,6 @@ Entitlement = entities()["Entitlement"].cls
 Condition = entities()["Condition"].cls
 IdentityProvider = entities()["IdentityProvider"].cls
 Site = entities()["Site"].cls
-
 
 
 @typing.no_type_check
