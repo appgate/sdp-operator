@@ -31,6 +31,8 @@ def test_load_http_file_0():
         assert expected_entity == e
 
 
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
 def test_load_http_file_1():
     EntityTestFileComplex = (
@@ -40,7 +42,9 @@ def test_load_http_file_1():
     )
     data = {"filename": "test-entity.sh"}
     expected_entity = EntityTestFileComplex(
-        filename="test-entity.sh", file="c3RhcnQxMjM="
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )
 
     with patch("appgate.files.requests.get") as get:
@@ -64,7 +68,10 @@ def test_load_s3_file_0():
         .cls
     )
     data = {"filename": "test-entity.sh"}
-    expected_entity = EntityTestFile(filename="test-entity.sh", file="c3RhcnQxMjM=")
+    expected_entity = EntityTestFile(
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+    )
 
     with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
         "appgate.files.Minio.get_object"
@@ -86,7 +93,9 @@ def test_load_s3_file_1():
     )
     data = {"filename": "test-entity.sh"}
     expected_entity = EntityTestFileComplex(
-        filename="test-entity.sh", file="c3RhcnQxMjM="
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )
 
     with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
