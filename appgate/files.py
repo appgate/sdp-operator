@@ -37,7 +37,7 @@ class AppgateFile:
         raise NotImplementedError()
 
 
-def file_path(value: Dict, field_name: str, entity_name: str) -> str:
+def url_file_path(value: Dict, field_name: str, entity_name: str) -> str:
     v = value.get(field_name)
     if v:
         return v
@@ -53,7 +53,7 @@ def file_path(value: Dict, field_name: str, entity_name: str) -> str:
 
 class AppgateHttpFile(AppgateFile):
     def load_file(self) -> str:
-        contents_field = file_path(self.value, self.field_name, self.entity_name)
+        contents_field = url_file_path(self.value, self.field_name, self.entity_name)
         file_key = f"{self.entity_name.lower()}-{self.api_version}/{contents_field}"
         address = os.getenv("APPGATE_FILE_HTTP_ADDRESS")
         file_url = f"{address}/{file_key}"
@@ -81,7 +81,7 @@ class AppgateS3File(AppgateFile):
             secure=secure,
         )
         bucket = "sdp"
-        contents_field = file_path(self.value, self.field_name, self.entity_name)
+        contents_field = url_file_path(self.value, self.field_name, self.entity_name)
         object_key = f"{self.entity_name.lower()}-{self.api_version}/{contents_field}"
 
         if not client.bucket_exists(bucket):
