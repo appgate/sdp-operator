@@ -98,7 +98,9 @@ def test_load_http_file_2():
     with pytest.raises(AppgateTypedloadException) as exc:
         _ = K8S_LOADER.load(data, None, EntityTestFileComplex)
     assert exc.value.platform_type == PlatformType.K8S
-    assert exc.value.args == ("Unable to load field file with value test-entity.sh\nPath: .",)
+    assert exc.value.args == (
+        "Unable to load field file with value test-entity.sh\nPath: .",
+    )
 
 
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "s3"})
@@ -143,7 +145,6 @@ def test_load_s3_file_1():
         .cls
     )
 
-
     with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
         "appgate.files.Minio.get_object"
     ) as get_object:
@@ -187,8 +188,12 @@ def test_load_s3_file_2():
         .entities["EntityTestFileComplex"]
         .cls
     )
-    data = {"filename": "test-entity.sh",}
+    data = {
+        "filename": "test-entity.sh",
+    }
     with pytest.raises(AppgateTypedloadException) as exc:
         _ = K8S_LOADER.load(data, None, EntityTestFileComplex)
         assert exc.value.platform_type == PlatformType.K8S
-        assert exc.value.args == ("Unable to load field file with value test-entity.sh\nPath: .",)
+        assert exc.value.args == (
+            "Unable to load field file with value test-entity.sh\nPath: .",
+        )
