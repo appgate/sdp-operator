@@ -48,17 +48,16 @@ class FileAttribLoader(CustomAttribLoader):
     load_external: bool = attrib()
 
     def load(self, values: AttributesDict) -> AttributesDict:
-        v = values.get(self.field)
-        if not v:
-            if self.load_external:
-                # Try loading the s value from the external source if value doesn't exist
-                v = self.loader(values)
-                if not v:
-                    return values
-                values[self.field] = v
-            else:
-                # Return empty string, otherwise the loader will complain if we return None
-                values[self.field] = ""
+        # Always load from the external source, ignore the value specified
+        # TODO: Maybe we want a flag to override this
+        if self.load_external:
+            v = self.loader(values)
+            if not v:
+                return values
+            values[self.field] = v
+        else:
+            # Return empty string, otherwise the loader will complain if we return None
+            values[self.field] = ""
         return values
 
 

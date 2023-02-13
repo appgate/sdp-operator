@@ -75,6 +75,7 @@ def test_load_http_file_1():
             file="c3RhcnQxMjM=",
             checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
         )
+        get.call_count = 0
         e = K8S_LOADER.load(data, None, EntityTestFileComplex)
         get.assert_called_once_with(
             "localhost:8000/entitytestfilecomplex-v18/test-entity.sh"
@@ -170,6 +171,7 @@ def test_load_s3_file_1():
             file="c3RhcnQxMjM=",
             checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
         )
+        get_object.call_count = 0
         e = K8S_LOADER.load(data, None, EntityTestFileComplex)
         get_object.assert_called_once_with(
             "sdp", "entitytestfilecomplex-v18/test-entity.sh"
