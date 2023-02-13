@@ -141,6 +141,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
         for attr in value.__attrs_attrs__:
             attrval = getattr(value, attr.name)
             read_only = attr.metadata.get("readOnly", False)
+            write_only = attr.metadata.get("writeOnly", False)
             name = attr.metadata.get("name", attr.name)
             if platform_type == PlatformType.DIFF and not attr.eq:
                 # DIFF mode we only dump eq fields
@@ -151,6 +152,8 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                 if name == APPGATE_METADATA_ATTRIB_NAME:
                     continue
                 if read_only and platform_type not in {PlatformType.GIT}:
+                    continue
+                if write_only and platform_type in {PlatformType.GIT}:
                     continue
             if d.hidedefault:
                 if name == "_entity_metadata":
