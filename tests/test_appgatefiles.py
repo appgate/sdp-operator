@@ -1,10 +1,12 @@
 import os
 from unittest.mock import patch
 
+import pytest
 import urllib3.response
 from requests import Response
 
 from appgate.attrs import K8S_LOADER
+from appgate.openapi.types import AppgateTypedloadException, PlatformType
 from tests.utils import load_test_open_api_spec
 
 
@@ -93,13 +95,10 @@ def test_load_http_file_2():
         .cls
     )
     data = {"filename": "test-entity.sh"}
-    expected_entity = EntityTestFileComplex(
-        filename="test-entity.sh",
-        file="c3RhcnQxMjM=",
-        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
-    )
-    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
-    assert expected_entity == e
+    with pytest.raises(AppgateTypedloadException) as exc:
+        _ = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    assert exc.value.platform_type == PlatformType.K8S
+    assert exc.value.args == ("Unable to load field file with value test-entity.sh\nPath: .",)
 
 
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "s3"})
@@ -189,10 +188,7 @@ def test_load_s3_file_2():
         .cls
     )
     data = {"filename": "test-entity.sh",}
-    expected_entity = EntityTestFileComplex(
-        filename="test-entity.sh",
-        file="c3RhcnQxMjM=",
-        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
-    )
-    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
-    assert expected_entity == e
+    with pytest.raises(AppgateTypedloadException) as exc:
+        _ = K8S_LOADER.load(data, None, EntityTestFileComplex)
+        assert exc.value.platform_type == PlatformType.K8S
+        assert exc.value.args == ("Unable to load field file with value test-entity.sh\nPath: .",)

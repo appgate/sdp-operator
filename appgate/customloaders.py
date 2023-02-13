@@ -44,20 +44,20 @@ class CustomAttribLoader(CustomLoader):
 @attrs()
 class FileAttribLoader(CustomAttribLoader):
     loader: Callable[[Any], Any] = attrib()
+    error: Callable[[Any], Exception] = attrib()
     field: str = attrib()
     load_external: bool = attrib()
 
     def load(self, values: AttributesDict) -> AttributesDict:
         # Always load from the external source, ignore the value specified
         # TODO: Maybe we want a flag to override this
+        if not self.load_external:
+            raise self.error(values)
         if self.load_external:
             v = self.loader(values)
             if not v:
                 return values
             values[self.field] = v
-        else:
-            # Return empty string, otherwise the loader will complain if we return None
-            values[self.field] = ""
         return values
 
 

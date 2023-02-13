@@ -130,6 +130,9 @@ class FileAttribMaker(AttribMaker):
                 loader=lambda v: appgate_file_load(
                     v, instance_maker_config.entity_name
                 ),
+                error=lambda v: AppgateFileException(
+                    f"Unable to load field {self.name} with value {v.get('filename') or 'unknown value'}"
+                ),
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
             )
