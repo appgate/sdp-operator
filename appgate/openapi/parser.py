@@ -533,6 +533,8 @@ class Parser:
                     definition=attrib_maker_config.definition,
                 )
             elif format == "byte":
+                filename = attrib_maker_config.definition.get("x-filename")
+                checksum = filename or attrib_maker_config.definition.get("x-checksum")
                 return FileAttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
@@ -540,6 +542,7 @@ class Parser:
                     default=None,
                     factory=None,
                     definition=attrib_maker_config.definition,
+                    target_field=filename or checksum,
                     operator_mode=self.parser_context.operator_mode,
                 )
             elif (
