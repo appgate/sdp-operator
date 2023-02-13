@@ -1,7 +1,10 @@
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict
+from unittest.mock import patch
 
 from cryptography.fernet import Fernet
+from requests import Response
 
 from appgate.client import AppgateClient
 from appgate.logger import set_level
@@ -134,3 +137,22 @@ def _k8s_get_secret(name: str, key: str) -> str:
     if name in k8s_secrets and key in k8s_secrets[name]:
         return k8s_secrets[name][key]
     raise Exception(f"Unable to get secret: {name}.{key}")
+
+
+@contextmanager
+def new_http_file_source(
+    contents: Optional[Dict[str, bytes]] = None, default: Optional[bytes] = None
+):
+    def _response(v: str) -> Response:
+        mock_response = Response()
+        data = (contents or {}).get(v) or default
+        if data:
+            mock_response._content = data
+            mock_response.status_code = 200
+        else:
+            mock_response.status_code = 404
+        return mock_response
+
+    with patch("appgate.files.requests.get") as get:
+        get.side_effect = _response
+        yield get
