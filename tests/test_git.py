@@ -5,21 +5,9 @@ from attr import attrib, attrs
 from appgate.syncer.git import (
     github_checkout_branch,
     PullRequestLike,
-    PullRequestHeadLike,
     BranchOp,
     gitlab_checkout_branch,
-    MergeRequestLike,
 )
-
-
-@attrs
-class TestPRHead(PullRequestHeadLike):
-    __test__ = False
-    _ref: str = attrib()
-
-    @property
-    def ref(self) -> str:
-        return self._ref
 
 
 @attrs
@@ -27,7 +15,7 @@ class TestPR(PullRequestLike):
     __test__ = False
     _number: int = attrib()
     _title: str = attrib()
-    _head: TestPRHead = attrib()
+    _source: str = attrib()
 
     @property
     def number(self) -> int:
@@ -38,17 +26,15 @@ class TestPR(PullRequestLike):
         return self._title
 
     @property
-    def head(self) -> TestPRHead:
-        return self._head
+    def source(self) -> str:
+        return self._source
 
 
 def test_github_checkout_branch() -> None:
     with patch("appgate.syncer.git.generate_branch_name") as generate_branch_name:
         generate_branch_name.return_value = "my-new-branch"
-        previous_pr = TestPR(
-            333, "previous-pr", TestPRHead(ref="branch-in-previous-pr")
-        )
-        open_pr = TestPR(666, "already-open-pr", TestPRHead(ref="branch-in-pr"))
+        previous_pr = TestPR(333, "previous-pr", "branch-in-previous-pr")
+        open_pr = TestPR(666, "already-open-pr", "branch-in-pr")
         assert github_checkout_branch(None, None, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
@@ -57,9 +43,7 @@ def test_github_checkout_branch() -> None:
             "already-created-branch",
             BranchOp.NOP,
         )
-        assert github_checkout_branch(
-            "already-created-branch", previous_pr.number, None
-        ) == (
+        assert github_checkout_branch("already-created-branch", previous_pr, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
         )
@@ -87,33 +71,11 @@ def test_github_checkout_branch() -> None:
         )
 
 
-@attrs
-class TestGitLabMergeRequest(MergeRequestLike):
-    __test__ = False
-    _iid: int = attrib()
-    _title: str = attrib()
-    _source_branch: str = attrib()
-
-    @property
-    def iid(self) -> int:
-        return self._iid
-
-    @property
-    def title(self) -> str:
-        return self._title
-
-    @property
-    def source_branch(self) -> str:
-        return self._source_branch
-
-
 def test_gitlab_checkout_branch() -> None:
     with patch("appgate.syncer.git.generate_branch_name") as generate_branch_name:
         generate_branch_name.return_value = "my-new-branch"
-        previous_pr = TestGitLabMergeRequest(
-            333, "previous-pr", "branch-in-previous-pr"
-        )
-        open_pr = TestGitLabMergeRequest(666, "already-open-pr", "branch-in-pr")
+        previous_pr = TestPR(333, "previous-pr", "branch-in-previous-pr")
+        open_pr = TestPR(666, "already-open-pr", "branch-in-pr")
         assert gitlab_checkout_branch(None, None, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
@@ -122,9 +84,7 @@ def test_gitlab_checkout_branch() -> None:
             "already-created-branch",
             BranchOp.NOP,
         )
-        assert gitlab_checkout_branch(
-            "already-created-branch", previous_pr.iid, None
-        ) == (
+        assert gitlab_checkout_branch("already-created-branch", previous_pr, None) == (
             "my-new-branch",
             BranchOp.CREATE_AND_CHECKOUT,
         )

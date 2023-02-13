@@ -161,9 +161,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     git: GitRepo = get_git_repository(ctx)
     log.info("[git-operator] Loading current state")
     # Checkout to existing branch or create a new one if needed and get current state
-    branch, pull_request_id = git.checkout_branch(
-        previous_branch=None, previous_pr=None
-    )
+    branch, pull_request = git.checkout_branch(previous_branch=None, previous_pr=None)
     current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
@@ -264,7 +262,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
             if len(commits) > 0:
                 git.push_change(branch)
                 log.info("[git-operator] New commits it git repository")
-                git.create_or_update_pull_request(branch, pull_request_id, commits)
+                git.create_or_update_pull_request(branch, pull_request, commits)
             else:
                 log.info(
                     "[git-operator] No changes in the git repository. Sleeping %s seconds",
@@ -272,8 +270,8 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 )
             log.info("[git-operator] Loading current state")
             current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
-            branch, pull_request_id = git.checkout_branch(
-                previous_branch=branch, previous_pr=pull_request_id
+            branch, pull_request = git.checkout_branch(
+                previous_branch=branch, previous_pr=pull_request
             )
 
 

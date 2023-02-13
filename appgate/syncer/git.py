@@ -110,6 +110,54 @@ class BranchOp(enum.Enum):
     NOP = enum.auto()
 
 
+class PullRequestLike(Protocol):
+    @property
+    def title(self) -> str:
+        ...
+
+    @property
+    def number(self) -> int:
+        ...
+
+    @property
+    def source(self) -> str:
+        ...
+
+
+@attrs(frozen=True)
+class GitHubPullRequest:
+    pr: PullRequest = attrib()
+
+    @property
+    def title(self) -> str:
+        return self.pr.title
+
+    @property
+    def number(self) -> int:
+        return self.pr.number
+
+    @property
+    def source(self) -> str:
+        return self.pr.head.ref
+
+
+@attrs(frozen=True)
+class GitLabPullRequest:
+    mr: ProjectMergeRequest = attrib()
+
+    @property
+    def title(self) -> str:
+        return self.mr.title
+
+    @property
+    def number(self) -> int:
+        return self.mr.iid
+
+    @property
+    def source(self) -> str:
+        return self.mr.source_branch
+
+
 @attrs(slots=True, frozen=True)
 class GitRepo:
     repository: str = attrib()
@@ -127,8 +175,8 @@ class GitRepo:
     def checkout_branch(
         self,
         previous_branch: str | None,
-        previous_pr: int | None,
-    ) -> Tuple[str, int | None]:
+        previous_pr: PullRequestLike | None,
+    ) -> Tuple[str, PullRequestLike | None]:
         raise NotImplementedError()
 
     def needs_pull_request(self) -> bool:
@@ -146,9 +194,9 @@ class GitRepo:
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request: int | None,
+        pull_request: PullRequestLike | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> int | None:
+    ) -> PullRequestLike | None:
         raise NotImplementedError()
 
 
@@ -235,17 +283,17 @@ def get_sdp_gl_label(gl_project: Project) -> ProjectLabel:
 
 def get_sdp_gl_merge_request(
     gl_project: Project, number: int | None = None
-) -> ProjectMergeRequest | None:
+) -> GitLabPullRequest | None:
     sdp_label = get_sdp_gl_label(gl_project)
     if number:
-        return gl_project.mergerequests.get(number)
+        return GitLabPullRequest(gl_project.mergerequests.get(number))
 
     mrs = gl_project.mergerequests.list(
         state="opened", order_by="created_at", sort="desc"
     )
     for m in mrs:
         if sdp_label.name in m.labels:
-            return gl_project.mergerequests.get(m.iid)
+            return GitLabPullRequest(gl_project.mergerequests.get(m.iid))
 
     return None
 
@@ -267,8 +315,9 @@ def get_sdp_gh_label(gh_repo: Repository) -> Label:
 
 def get_sdp_pull_request(
     gh_repo: Repository, number: int | None = None
-) -> PullRequest | None:
+) -> GitHubPullRequest | None:
     sdp_label = get_sdp_gh_label(gh_repo)
+
     if number:
         pr: PullRequest | None = gh_repo.get_pull(number)
     else:
@@ -280,7 +329,7 @@ def get_sdp_pull_request(
             None,
         )
         pr = p
-    return pr
+    return GitHubPullRequest(pr) if pr else None
 
 
 def get_commit_message(commit_state: GitCommitState, p: Path) -> str | None:
@@ -315,37 +364,17 @@ Pull request created automatically by sdp-operator
     return body
 
 
-class PullRequestHeadLike(Protocol):
-    @property
-    def ref(self) -> str:
-        ...
-
-
-class PullRequestLike(Protocol):
-    @property
-    def title(self) -> str:
-        ...
-
-    @property
-    def number(self) -> int:
-        ...
-
-    @property
-    def head(self) -> PullRequestHeadLike:
-        ...
-
-
 def github_checkout_branch(
     previous_branch: str | None,
-    previous_pr: int | None,
+    previous_pr: PullRequestLike | None,
     open_pull: PullRequestLike | None,
 ) -> Tuple[str, BranchOp]:
-    if open_pull and previous_branch != open_pull.head.ref:
+    if open_pull and previous_branch != open_pull.source:
         # We found an open pr, use it and checkout branch
-        return open_pull.head.ref, BranchOp.CHECKOUT
+        return open_pull.source, BranchOp.CHECKOUT
     elif open_pull:
-        # We found an open pr but we are currently usign it
-        return open_pull.head.ref, BranchOp.NOP
+        # We found an open pr, but we are currently using it
+        return open_pull.source, BranchOp.NOP
     elif previous_branch and not previous_pr:
         # We have created a branch but still not pr, keep using it
         return previous_branch, BranchOp.NOP
@@ -354,31 +383,17 @@ def github_checkout_branch(
         return generate_branch_name(), BranchOp.CREATE_AND_CHECKOUT
 
 
-class MergeRequestLike(Protocol):
-    @property
-    def title(self) -> str:
-        ...
-
-    @property
-    def iid(self) -> int:
-        ...
-
-    @property
-    def source_branch(self) -> str:
-        ...
-
-
 def gitlab_checkout_branch(
     previous_branch: str | None,
-    previous_pr: int | None,
-    open_merge: MergeRequestLike | None,
+    previous_pr: PullRequestLike | None,
+    open_merge: PullRequestLike | None,
 ) -> Tuple[str, BranchOp]:
-    if open_merge and previous_branch != open_merge.source_branch:
+    if open_merge and previous_branch != open_merge.source:
         # We found an open pr, use it and checkout branch
-        return open_merge.source_branch, BranchOp.CHECKOUT
+        return open_merge.source, BranchOp.CHECKOUT
     elif open_merge:
         # We found an open pr, but we are currently using it
-        return open_merge.source_branch, BranchOp.NOP
+        return open_merge.source, BranchOp.NOP
     elif previous_branch and not previous_pr:
         # We have created a branch but still not pr, keep using it
         return previous_branch, BranchOp.NOP
@@ -393,8 +408,8 @@ class GitLabRepo(GitRepo):
     gl_project: Project = attrib()
 
     def checkout_branch(
-        self, previous_branch: str | None, previous_pr: int | None
-    ) -> Tuple[str, int | None]:
+        self, previous_branch: str | None, previous_pr: PullRequestLike | None
+    ) -> Tuple[str, PullRequestLike | None]:
         open_pull = get_sdp_gl_merge_request(self.gl_project)
         pr_branch, branch_op = gitlab_checkout_branch(
             previous_branch, previous_pr, open_pull
@@ -403,7 +418,7 @@ class GitLabRepo(GitRepo):
             log.info(
                 "[git-operator] Found opened Pull Request %s [%s]. Using it",
                 open_pull.title,
-                open_pull.iid,
+                open_pull.number,
             )
             log.info(
                 "[git-operator] Fetching and checking out existing branch %s/%s",
@@ -413,7 +428,7 @@ class GitLabRepo(GitRepo):
             if not self.dry_run:
                 self.git_repo.git.fetch("origin", pr_branch)
                 self.git_repo.git.checkout(pr_branch)
-            return pr_branch, open_pull.iid
+            return pr_branch, open_pull
         elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
@@ -425,8 +440,8 @@ class GitLabRepo(GitRepo):
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch and open_pull:
-            return pr_branch, open_pull.iid
+        elif branch_op == BranchOp.NOP and pr_branch:
+            return pr_branch, open_pull
         else:
             raise AppgateException(
                 f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
@@ -435,26 +450,26 @@ class GitLabRepo(GitRepo):
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request_id: int | None,
+        pull_request: PullRequestLike | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> int | None:
+    ) -> PullRequestLike | None:
         # Try to sync with the opened pull request again here
         # It could be that someone has merged a PR that was opened before we entered the loop
         latest_opened_pull = get_sdp_gl_merge_request(self.gl_project)
         current_opened_pull = (
-            get_sdp_gl_merge_request(self.gl_project, pull_request_id)
-            if pull_request_id
+            get_sdp_gl_merge_request(self.gl_project, pull_request.number)
+            if pull_request
             else None
         )
         pull_request_to_use = current_opened_pull
         if (
             latest_opened_pull
             and current_opened_pull
-            and latest_opened_pull.iid != current_opened_pull.iid
+            and latest_opened_pull.number != current_opened_pull.number
         ):
             log.warning(
                 "[git-operator] There is a more recent merge request for sdp-operator with id %s. Using it",
-                latest_opened_pull.iid,
+                latest_opened_pull.number,
             )
             return None
         elif not current_opened_pull and latest_opened_pull:
@@ -470,10 +485,10 @@ class GitLabRepo(GitRepo):
                 pull_request_to_use.title,
             )
             if not self.dry_run:
-                pull_request_to_use.description = get_pull_request_body(
-                    commits=commits, body=pull_request_to_use.description
+                pull_request_to_use.mr.description = get_pull_request_body(
+                    commits=commits, body=pull_request_to_use.mr.description
                 )
-                pull_request_to_use.save()
+                pull_request_to_use.mr.save()
         else:
             # We need to create a new merge request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
@@ -494,10 +509,11 @@ class GitLabRepo(GitRepo):
                 "description": get_pull_request_body(commits=commits, body=None),
                 "labels": [APPGATE_OPERATOR_PR_LABEL_NAME],
             }
-            mr = self.gl_project.mergerequests.create(pull_request_details)
-            pull_request_to_use = self.gl_project.mergerequests.get(mr.iid)
+            pr = self.gl_project.mergerequests.create(pull_request_details)
+            if isinstance(pr, ProjectMergeRequest):
+                pull_request_to_use = GitLabPullRequest(pr)
 
-        return pull_request_to_use.iid
+        return pull_request_to_use
 
 
 @attrs(slots=True, frozen=True)
@@ -509,8 +525,8 @@ class GitHubRepo(GitRepo):
         return self.git_repo.is_dirty()
 
     def checkout_branch(
-        self, previous_branch: str | None, previous_pr: int | None
-    ) -> Tuple[str, int | None]:
+        self, previous_branch: str | None, previous_pr: PullRequestLike | None
+    ) -> Tuple[str, PullRequestLike | None]:
         """
         Checkout an existing branch for a PullRequest already opened or creates a new branch
         Return the name of the branch and if it needs to create PullRequest: if the branch is
@@ -534,7 +550,7 @@ class GitHubRepo(GitRepo):
             if not self.dry_run:
                 self.git_repo.git.fetch("origin", pr_branch)
                 self.git_repo.git.checkout(pr_branch)
-            return pr_branch, open_pull.number
+            return pr_branch, open_pull
         elif branch_op == BranchOp.CREATE_AND_CHECKOUT:
             log.info(
                 f"[git-operator] Checking out new branch {self.git_repo.remote().name}/{pr_branch}"
@@ -546,8 +562,8 @@ class GitHubRepo(GitRepo):
                 self.git_repo.git.branch(pr_branch)
                 self.git_repo.git.checkout(pr_branch)
             return pr_branch, None
-        elif branch_op == BranchOp.NOP and pr_branch and open_pull:
-            return pr_branch, open_pull.number
+        elif branch_op == BranchOp.NOP and pr_branch:
+            return pr_branch, open_pull
         else:
             raise AppgateException(
                 f"Unknown BranchOp operation: {branch_op} | {pr_branch}"
@@ -556,15 +572,15 @@ class GitHubRepo(GitRepo):
     def create_or_update_pull_request(
         self,
         branch: str,
-        pull_request_id: int | None,
+        pull_request: PullRequestLike | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
-    ) -> int | None:
+    ) -> PullRequestLike | None:
         # Try to sync with the opened pull request again here
         # It could be that someone has merged a PR that was opened before we entered the loop
         latest_opened_pull = get_sdp_pull_request(self.gh_repo)
         current_opened_pull = (
-            get_sdp_pull_request(self.gh_repo, pull_request_id)
-            if pull_request_id
+            get_sdp_pull_request(self.gh_repo, pull_request.number)
+            if pull_request
             else None
         )
         pull_request_to_use = current_opened_pull
@@ -590,9 +606,9 @@ class GitHubRepo(GitRepo):
                 "[git-operator] New commits added to pull request %s",
                 pull_request_to_use.title,
             )
-            body = pull_request_to_use.body
+            body = pull_request_to_use.pr.body
             if not self.dry_run:
-                pull_request_to_use.edit(
+                pull_request_to_use.pr.edit(
                     body=get_pull_request_body(commits=commits, body=body)
                 )
         else:
@@ -608,14 +624,16 @@ class GitHubRepo(GitRepo):
             log.info("[git-operator] repository: %s", self.repository)
             if self.dry_run:
                 return None
-            pull_request_to_use = self.gh_repo.create_pull(
-                title=title,
-                body=get_pull_request_body(commits=commits, body=None),
-                head=head_branch,
-                base=self.base_branch,
+            pull_request_to_use = GitHubPullRequest(
+                self.gh_repo.create_pull(
+                    title=title,
+                    body=get_pull_request_body(commits=commits, body=None),
+                    head=head_branch,
+                    base=self.base_branch,
+                )
             )
-            pull_request_to_use.add_to_labels(get_sdp_gh_label(self.gh_repo))
-        return pull_request_to_use.number
+            pull_request_to_use.pr.add_to_labels(get_sdp_gh_label(self.gh_repo))
+        return pull_request_to_use
 
 
 def create_ssh_fingerprint(fingerprint: str) -> None:
