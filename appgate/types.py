@@ -121,6 +121,7 @@ APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
 
 GitVendor: TypeAlias = Literal["gitlab", "github"]
+SUPPORTED_GIT_VENDORS: List[GitVendor] = ["gitlab", "github"]
 
 
 class EntityClient:
@@ -440,9 +441,9 @@ def get_dry_run(no_dry_run_arg: bool) -> bool:
 
 
 def get_git_vendor(vendor: str) -> GitVendor:
-    if vendor != "gitlab" or vendor != "github":
+    if vendor not in SUPPORTED_GIT_VENDORS:
         raise AppgateException(
-            f"Environment variable {GIT_VENDOR_ENV} must be 'github' or 'gitlab'"
+            f"Environment variable {GIT_VENDOR_ENV}={vendor} must be 'github' or 'gitlab'"
         )
     return cast(GitVendor, vendor)
 
