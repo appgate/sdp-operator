@@ -532,7 +532,10 @@ class Parser:
                     factory=None,
                     definition=attrib_maker_config.definition,
                 )
-            elif format == "byte":
+            elif (
+                format == "byte"
+                and attrib_maker_config.definition.get("writeOnly") is True
+            ):
                 filename = attrib_maker_config.definition.get("x-filename")
                 checksum = filename or attrib_maker_config.definition.get("x-checksum")
                 return FileAttribMaker(
