@@ -1,5 +1,7 @@
 import base64
 import os
+import re
+
 import requests
 from typing import Optional, Dict, List, Any
 
@@ -15,6 +17,10 @@ from appgate.openapi.types import (
     K8S_LOADERS_FIELD_NAME,
 )
 from appgate.types import OperatorMode
+
+
+FILE_NAME_REPLACE_REGEX_0 = re.compile(r"\s+")
+FILE_NAME_REPLACE_REGEX_1 = re.compile(r"-+")
 
 
 class AppgateFileException(Exception):
@@ -44,6 +50,12 @@ class AppgateFile:
         raise NotImplementedError()
 
 
+def normalize_url_file_path(url_path: str) -> str:
+    return FILE_NAME_REPLACE_REGEX_1.sub(
+        "-", FILE_NAME_REPLACE_REGEX_0.sub("-", url_path).replace("-+", "-")
+    ).lower()
+
+
 def url_file_path(
     value: Dict, field_name: str, entity_name: str, target_field: Optional[str]
 ) -> str:
@@ -57,11 +69,11 @@ def url_file_path(
     5. else raise an exception
     """
     if (v := value.get(field_name)) is not None:
-        return v
+        return normalize_url_file_path(v)
     elif target_field is not None and (v := value.get(target_field)) is not None:
         return v
     elif value.get("name"):
-        return f"{value['name']}/{field_name}"
+        return f"{normalize_url_file_path(value['name'])}/{field_name}"
     elif value.get("id"):
         return f"{value['id']}/{field_name}"
     else:

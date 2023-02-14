@@ -87,6 +87,7 @@ def sdp_http_file_source():
         {
             # file referenced via name/field (test test_bytes_diff_dump)
             "localhost:8000/devicescript-v18/crowdstrike_data_macos.sh": DEVICE_SCRIPT_CONTENTS,
+            "localhost:8000/devicescript-v18/crowdstrike-get-risk-data-from-macos/file": DEVICE_SCRIPT_CONTENTS,
         }
     ) as s:
         yield s
