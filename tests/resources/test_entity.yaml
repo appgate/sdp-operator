@@ -443,6 +443,7 @@ definitions:
         writeOnly: true
         format: byte
         type: string
+        x-checksum: fieldTwo
       fieldTwo:
         readOnly: true
         type: string

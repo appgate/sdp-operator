@@ -48,6 +48,50 @@ def load_entities(version: str) -> None:
                 assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
 
 
+DEVICE_SCRIPT_CONTENTS = """YXBpVmVyc2lvbjogYmV0YS5hcHBnYXRlLmNvbS92MQpraW5kOiBDb25kaXRpb24KbWV0YWRhdGE6
+CiAgbmFtZTogY29uZGl0aW9uLTIKc3BlYzoKICBleHByZXNzaW9uOiAnIHZhciByZXN1bHQgPSBm
+YWxzZTsgLypwYXNzd29yZCovIGlmIChjbGFpbXMudXNlci5oYXNQYXNzd29yZCgnJ2NvbmRpdGlv
+bi0yJycsCiAgICA2MCkpIHsgcmV0dXJuIHRydWU7IH0gLyplbmQgcGFzc3dvcmQqLyByZXR1cm4g
+cmVzdWx0OyAnCiAgaWQ6IDEwMWY3OTYzLTczYjYtNDg3Mi04NTU1LWViMTVmZDk1YTYxMwogIG5h
+bWU6IGNvbmRpdGlvbi0yCiAgcmVtZWR5TWV0aG9kczoKICAtIGNsYWltU3VmZml4OiB0ZXN0CiAg
+ICBtZXNzYWdlOiB0ZXN0CiAgICB0eXBlOiBQYXNzd29yZEF1dGhlbnRpY2F0aW9uCiAgcmVwZWF0
+U2NoZWR1bGVzOgogIC0gMWgKICAtICcxMzozMicKICB0YWdzOgogIC0gYXBpLWNyZWF0ZWQKICAt
+IGF1dG9tYXRlZAogIC0gazhzCi0tLQphcGlWZXJzaW9uOiBiZXRhLmFwcGdhdGUuY29tL3YxCmtp
+bmQ6IENvbmRpdGlvbgptZXRhZGF0YToKICBuYW1lOiBBbHdheXMKc3BlYzoKICBleHByZXNzaW9u
+OiByZXR1cm4gdHJ1ZTsKICBpZDogZWU3YjdlNmYtZTkwNC00YjRmLWE1ZWMtYjNiZWYwNDA2NDNl
+CiAgbmFtZTogQWx3YXlzCiAgbm90ZXM6IENvbmRpdGlvbiBmb3IgYnVpbHQtaW4gdXNhZ2UuCiAg
+cmVtZWR5TWV0aG9kczogW10KICByZXBlYXRTY2hlZHVsZXM6IFtdCiAgdGFnczoKICAtIGJ1aWx0
+aW4KLS0tCmFwaVZlcnNpb246IGJldGEuYXBwZ2F0ZS5jb20vdjEKa2luZDogQ29uZGl0aW9uCm1l
+dGFkYXRhOgogIG5hbWU6IGNvbmRpdGlvbi0zCnNwZWM6CiAgZXhwcmVzc2lvbjogJyB2YXIgcmVz
+dWx0ID0gZmFsc2U7IC8qcGFzc3dvcmQqLyBpZiAoY2xhaW1zLnVzZXIuaGFzUGFzc3dvcmQoJydj
+b25kaXRpb24tMycnLAogICAgNjApKSB7IHJldHVybiB0cnVlOyB9IC8qZW5kIHBhc3N3b3JkKi8g
+cmV0dXJuIHJlc3VsdDsgJwogIGlkOiAwOTY3MWNhNi0wNGM4LTRjMWYtOTVjMS1jZDQ3Y2VkMTI4
+ZjcKICBuYW1lOiBjb25kaXRpb24tMwogIHJlbWVkeU1ldGhvZHM6IFtdCiAgcmVwZWF0U2NoZWR1
+bGVzOgogIC0gMWgKICAtICcxMzozMicKICB0YWdzOgogIC0gYXBpLWNyZWF0ZWQKICAtIGF1dG9t
+YXRlZAogIC0gazhzCi0tLQphcGlWZXJzaW9uOiBiZXRhLmFwcGdhdGUuY29tL3YxCmtpbmQ6IENv
+bmRpdGlvbgptZXRhZGF0YToKICBuYW1lOiBjb25kaXRpb24tMQpzcGVjOgogIGV4cHJlc3Npb246
+ICcgdmFyIHJlc3VsdCA9IGZhbHNlOyAvKnBhc3N3b3JkKi8gaWYgKGNsYWltcy51c2VyLmhhc1Bh
+c3N3b3JkKCcnY29uZGl0aW9uLTEnJywKICAgIDYwKSkgeyByZXR1cm4gdHJ1ZTsgfSAvKmVuZCBw
+YXNzd29yZCovIHJldHVybiByZXN1bHQ7ICcKICBpZDogZDQwODNkMTAtNzRkOC00OTc5LThhMGEt
+ZTE5M2Q1MmQ3OThjCiAgbmFtZTogY29uZGl0aW9uLTEKICByZW1lZHlNZXRob2RzOiBbXQogIHJl
+cGVhdFNjaGVkdWxlczoKICAtIDFoCiAgLSAnMTM6MzInCiAgdGFnczoKICAtIGFwaS1jcmVhdGVk
+CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
+""".replace(
+    "\n", ""
+).encode()
+
+
+@pytest.fixture
+def sdp_http_file_source():
+    with new_http_file_source(
+        {
+            # file referenced via name/field (test test_bytes_diff_dump)
+            "localhost:8000/devicescript-v18/crowdstrike_data_macos.sh": DEVICE_SCRIPT_CONTENTS,
+        }
+    ) as s:
+        yield s
+
+
 @pytest.mark.skip("SDP v5.1 is unsupported")
 def test_load_entities_v12():
     load_entities("v12")
@@ -73,14 +117,14 @@ def test_load_entities_v16():
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
-def test_load_entities_v17():
+def test_load_entities_v17(sdp_http_file_source):
     load_entities("v17")
 
 
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
-def test_load_entities_v18():
+def test_load_entities_v18(sdp_http_file_source):
     load_entities("v18")
 
 
@@ -776,9 +820,14 @@ SIZE_FILE = 1563
 def http_file_source():
     with new_http_file_source(
         {
+            # file referenced via name/field (test test_bytes_diff_dump)
             "localhost:8000/entitytest3appgate-v18/entity1/fieldOne": base64.b64decode(
                 BASE64_FILE
-            )
+            ),
+            # File referenced via checksum (test test_bytes_load)
+            "localhost:8000/entitytest3-v18/0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e": base64.b64decode(
+                BASE64_FILE
+            ),
         }
     ) as s:
         yield s
@@ -809,8 +858,9 @@ def test_bytes_load(http_file_source):
     # readOnly associated to writeOnly bytes is compared
     assert e != EntityTest3(fieldOne="Some value", fieldTwo="22222")
 
+    # We use fieldTwo to reference where to get the contents of fieldOne
     e_data = {
-        "fieldTwo": None,
+        "fieldTwo": SHA256_FILE,
     }
     e = K8S_LOADER.load(e_data, None, EntityTest3)
     # When reading from K8S the checksum field associated to bytes is computed
@@ -881,6 +931,9 @@ def test_bytes_diff_dump(http_file_source):
     }
 
 
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
 def test_certificate_pem_load():
     EntityCert = (
         load_test_open_api_spec(secrets_key=None, reload=True)
