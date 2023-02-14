@@ -1086,15 +1086,19 @@ def test_git_dumper_checksum() -> None:
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
     EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
     # Entity in memory loaded from appgate, that means it does not have writeOnly fields
-    e = EntityTestFileComplex(filename="file1.sh", checksum="123456")
+    e = EntityTestFileComplex(
+        name="test1", id="test1", filename="file1.sh", checksum="123456"
+    )
     assert GIT_DUMPER(api_spec).dump(e, False, None) == {
         "apiVersion": "v666.sdp.appgate.com/v1",
         "kind": "EntityTestFileComplex",
         "metadata": {
-            "name": "entitytestfilecomplex",
-            "annotations": {},
+            "name": "test1",
+            "annotations": {"sdp.appgate.com/id": "test1"},
         },
         "spec": {
+            "name": "test1",
+            "id": "test1",
             "filename": "file1.sh",
             "checksum": "123456",
         },
@@ -1106,16 +1110,22 @@ def test_git_dumper_write_only() -> None:
     EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
     # Entity in memory loaded from appgate, that means it does not have writeOnly fields
     e = EntityTestFileComplex(
-        filename="file1.sh", checksum="123456", file="somefilecontents"
+        name="test1",
+        id="test1",
+        filename="file1.sh",
+        checksum="123456",
+        file="somefilecontents",
     )
     assert GIT_DUMPER(api_spec).dump(e, False, None) == {
         "apiVersion": "v666.sdp.appgate.com/v1",
         "kind": "EntityTestFileComplex",
         "metadata": {
-            "name": "entitytestfilecomplex",
-            "annotations": {},
+            "name": "test1",
+            "annotations": {"sdp.appgate.com/id": "test1"},
         },
         "spec": {
+            "name": "test1",
+            "id": "test1",
             "filename": "file1.sh",
             "checksum": "123456",
         },
