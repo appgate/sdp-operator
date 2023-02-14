@@ -812,6 +812,7 @@ cGVhdFNjaGVkdWxlczoKICAtIDFoCiAgLSAnMTM6MzInCiAgdGFnczoKICAtIGFwaS1jcmVhdGVk
 CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
 """
 BASE64_FILE_W0 = "".join(BASE64_FILE.split("\n"))
+FILE_CONTENTS = base64.b64decode(BASE64_FILE)
 SHA256_FILE = "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"
 SIZE_FILE = 1563
 
@@ -821,13 +822,9 @@ def http_file_source():
     with new_file_source(
         {
             # file referenced via name/field (test test_bytes_diff_dump)
-            "localhost:8000/entitytest3appgate-v18/entity1/fieldOne": base64.b64decode(
-                BASE64_FILE
-            ),
+            "localhost:8000/entitytest3appgate-v18/entity1/fieldOne": FILE_CONTENTS,
             # File referenced via checksum (test test_bytes_load)
-            "localhost:8000/entitytest3-v18/0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e": base64.b64decode(
-                BASE64_FILE
-            ),
+            "localhost:8000/entitytest3-v18/0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e": FILE_CONTENTS,
         }
     ) as s:
         yield s

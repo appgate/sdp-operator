@@ -1,5 +1,7 @@
+import os
 import typing
 from typing import Optional, List
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +21,7 @@ from appgate.types import (
     EntityFieldDependency,
 )
 from appgate.openapi.types import AppgateException, MissingFieldDependencies
-from tests.test_entities import BASE64_FILE_W0, SHA256_FILE
+from tests.test_entities import SHA256_FILE, FILE_CONTENTS
 from tests.utils import (
     load_test_open_api_spec,
     PEM_TEST,
@@ -31,6 +33,7 @@ from tests.utils import (
     _k8s_get_secret,
     api_spec,
     entities,
+    new_file_source,
 )
 
 
@@ -39,6 +42,18 @@ Entitlement = entities()["Entitlement"].cls
 Condition = entities()["Condition"].cls
 IdentityProvider = entities()["IdentityProvider"].cls
 Site = entities()["Site"].cls
+
+
+@pytest.fixture
+def sdp_http_file_source():
+    with new_file_source(
+        {
+            # file referenced via name/field (test test_bytes_diff_dump)
+            "localhost:8000/entitytest3appgate-v18/0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e": FILE_CONTENTS,
+            "localhost:8000/entitytest3appgate-v18/some-other-file.txt": b"some-other-content",
+        }
+    ) as s:
+        yield s
 
 
 @typing.no_type_check
@@ -1922,7 +1937,10 @@ def test_dependencies_6():
     }
 
 
-def test_compare_plan_entity_bytes():
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_compare_plan_entity_bytes(sdp_http_file_source):
     EntityTest3Appgate = (
         load_test_open_api_spec(secrets_key=None, reload=True)
         .entities["EntityTest3Appgate"]
@@ -1943,8 +1961,8 @@ def test_compare_plan_entity_bytes():
     )
     e_data = {
         "name": "entity1",
-        "fieldOne": BASE64_FILE_W0,
-        "fieldTwo": None,
+        "fieldOne": None,
+        "fieldTwo": SHA256_FILE,
         "fieldThree": None,
     }
     e_metadata = {"uuid": "6a01c585-c192-475b-b86f-0e632ada6769"}
@@ -1965,7 +1983,7 @@ def test_compare_plan_entity_bytes():
     # Let's change the bytes
     e_data = {
         "name": "entity1",
-        "fieldOne": "Some other content",
+        "fieldOne": "some-other-file.txt",
         "fieldTwo": None,
         "fieldThree": None,
     }
@@ -1982,8 +2000,8 @@ def test_compare_plan_entity_bytes():
             '     "name": "entity1",\n',
             '-    "fieldTwo": "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e",\n',
             '-    "fieldThree": 1563\n',
-            '+    "fieldTwo": "c8f4fc85b689f8f3a70e7024e2bb8c7c8f4f7f9ffd2a1a8d01fc8fba74d1af34",\n',
-            '+    "fieldThree": 12\n',
+            '+    "fieldTwo": "7a3e8221a00c6a0602f73a4fab1488049c0b54deff57c279bd00d19e3a9fde8d",\n',
+            '+    "fieldThree": 18\n',
             " }",
         ]
     }
