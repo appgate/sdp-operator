@@ -62,6 +62,7 @@ sdp:
   ## @param sdp.gitOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
   ## @param sdp.gitOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
   ## @param sdp.operator.gitOperator.git.vendor The vendor of the git repository: github, gitlab
+  ## @param sdp.operator.gitOperator.git.mainBranch Main branch of the repository to clone the repository
   ## @param sdp.operator.gitOperator.git.baseBranch Base branch of the repository to create pull requests
   ## @param sdp.operator.gitOperator.git.repository The name of the repository (e.g. organization/repository)
   ## @param sdp.operator.gitOperator.git.secret The secret to pull and push the git repository
@@ -74,6 +75,7 @@ sdp:
     secret: ""
     git:
       vendor: github
+      mainBranch: ""
       baseBranch: ""
       repository: ""
 

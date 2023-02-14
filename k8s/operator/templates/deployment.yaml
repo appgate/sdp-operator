@@ -231,6 +231,8 @@ spec:
                   name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
                   key: gitlab-token
             {{- end }}
+            - name: GIT_MAIN_BRANCH
+              value: {{ .Values.sdp.gitOperator.git.mainBranch }}
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
             {{- if .Values.sdp.externalSecret.enabled }}
