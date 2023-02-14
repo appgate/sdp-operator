@@ -192,12 +192,12 @@ class FileAttribMaker(AttribMaker):
         required_fields: List[str],
         instance_maker_config: EntityClassGeneratorConfig,
     ) -> AttributesDict:
-        def name_or_id(values: dict[str, Any]) -> Optional[str]:
+        def name_or_id(values: dict[str, Any]) -> str:
             if name := values.get("name"):
-                return name
+                return f" [{name}]"
             if id := values.get("id"):
-                return id
-            return None
+                return f" [{id}]"
+            return ""
 
         values = super().values(attributes, required_fields, instance_maker_config)
         if "metadata" not in values:
@@ -211,7 +211,7 @@ class FileAttribMaker(AttribMaker):
                     target_fields=self.target_fields,
                 ),
                 error=lambda v: AppgateFileException(
-                    f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v) or ''}."
+                    f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v)}."
                 ),
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),

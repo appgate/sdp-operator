@@ -513,6 +513,11 @@ definitions:
   EntityTestFileComplex:
     type: object
     properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
       filename:
         type: string
       file:
