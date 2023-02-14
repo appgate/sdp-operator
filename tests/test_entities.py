@@ -32,7 +32,7 @@ from tests.utils import (
     PEM_TEST,
     join_string,
     FINGERPRINT,
-    new_http_file_source,
+    new_file_source,
 )
 
 
@@ -83,7 +83,7 @@ CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
 
 @pytest.fixture
 def sdp_http_file_source():
-    with new_http_file_source(
+    with new_file_source(
         {
             # file referenced via name/field (test test_bytes_diff_dump)
             "localhost:8000/devicescript-v18/crowdstrike_data_macos.sh": DEVICE_SCRIPT_CONTENTS,
@@ -818,7 +818,7 @@ SIZE_FILE = 1563
 
 @pytest.fixture
 def http_file_source():
-    with new_http_file_source(
+    with new_file_source(
         {
             # file referenced via name/field (test test_bytes_diff_dump)
             "localhost:8000/entitytest3appgate-v18/entity1/fieldOne": base64.b64decode(

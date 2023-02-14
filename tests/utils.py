@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable, Dict, Union
 from unittest.mock import patch
 
+import urllib3
 from cryptography.fernet import Fernet
 from requests import Response
 
@@ -140,19 +141,37 @@ def _k8s_get_secret(name: str, key: str) -> str:
 
 
 @contextmanager
-def new_http_file_source(
-    contents: Optional[Dict[str, bytes]] = None, default: Optional[bytes] = None
+def new_file_source(
+    contents: Optional[Dict[str, bytes]] = None,
+    default: Optional[bytes] = None,
+    tpe: str = "HTTP",
 ):
-    def _response(v: str) -> Response:
-        mock_response = Response()
+    def _response(v: str) -> Union[Response, urllib3.response.HTTPResponse]:
         data = (contents or {}).get(v) or default
-        if data:
-            mock_response._content = data
-            mock_response.status_code = 200
-        else:
-            mock_response.status_code = 404
-        return mock_response
+        if tpe == "HTTP":
+            mock_response = Response()
+            if data:
+                mock_response._content = data
+                mock_response.status_code = 200
+            else:
+                mock_response.status_code = 404
+            return mock_response
+        elif tpe == "S3":
+            if data:
+                mock_response2 = urllib3.response.HTTPResponse(body=data)
+            else:
+                raise Exception(f"No data for {v}")
+            return mock_response2
+        raise Exception("Unknow file source type to mock")
 
-    with patch("appgate.files.requests.get") as get:
-        get.side_effect = _response
-        yield get
+    if tpe == "HTTP":
+        with patch("appgate.files.requests.get") as get:
+            get.side_effect = _response
+            yield get
+    elif tpe == "S3":
+        with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
+            "appgate.files.Minio.get_object"
+        ) as get_object:
+            bucket_exists.return_value = True
+            get_object.side_effect = lambda a, b: _response(f"{a}/{b}")
+            yield get_object
