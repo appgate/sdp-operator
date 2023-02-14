@@ -167,6 +167,7 @@ class GitRepo:
     vendor: GitVendor = attrib()
     dry_run: bool = attrib()
     repository_fork: str | None = attrib()
+    main_branch: str = attrib()
 
     @functools.cache
     def user_fork(self) -> str | None:
@@ -239,6 +240,7 @@ def gitlab_repo(
         vendor=ctx.git_vendor,
         repository_path=repository_path,
         dry_run=ctx.dry_run,
+        main_branch=ctx.main_branch,
     )
 
 
@@ -260,6 +262,7 @@ def github_repo(
         vendor=ctx.git_vendor,
         repository_path=repository_path,
         dry_run=ctx.dry_run,
+        main_branch=ctx.main_branch,
     )
 
 
