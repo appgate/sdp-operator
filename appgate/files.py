@@ -3,7 +3,7 @@ import os
 import re
 
 import requests
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 
 from minio import Minio  # type: ignore
 
@@ -38,12 +38,12 @@ class AppgateFile:
         value: Dict,
         entity_name: str,
         field_name: str,
-        target_field: Optional[str],
+        target_fields: Tuple[str, ...],
     ) -> None:
         self.value = value
         self.entity_name = entity_name
         self.field_name = field_name
-        self.target_field = target_field
+        self.target_field = target_fields
         self.api_version = os.getenv("APPGATE_API_VERSION")
 
     def load_file(self) -> str:
@@ -57,7 +57,10 @@ def normalize_url_file_path(url_path: str) -> str:
 
 
 def url_file_path(
-    value: Dict, field_name: str, entity_name: str, target_field: Optional[str]
+    value: Dict,
+    field_name: str,
+    entity_name: str,
+    target_fields: Tuple[str, ...],
 ) -> str:
     """
     Function to compute the url from where to get the bytes.
@@ -70,9 +73,10 @@ def url_file_path(
     """
     if (v := value.get(field_name)) is not None:
         return normalize_url_file_path(v)
-    elif target_field is not None and (v := value.get(target_field)) is not None:
-        return v
-    elif value.get("name"):
+    for field in target_fields:
+        if v := value.get(field):
+            return v
+    if value.get("name"):
         return f"{normalize_url_file_path(value['name'])}/{field_name}"
     elif value.get("id"):
         return f"{value['id']}/{field_name}"
@@ -136,22 +140,28 @@ class AppgateS3File(AppgateFile):
 
 
 def get_appgate_file(
-    value: Dict, entity_name: str, field_name: str, target_field: Optional[str]
+    value: Dict,
+    entity_name: str,
+    field_name: str,
+    target_fields: Tuple[str, ...],
 ) -> AppgateFile:
     match os.getenv("APPGATE_FILE_SOURCE", ""):
         case "http":
-            return AppgateHttpFile(value, entity_name, field_name, target_field)
+            return AppgateHttpFile(value, entity_name, field_name, target_fields)
         case "s3":
-            return AppgateS3File(value, entity_name, field_name, target_field)
+            return AppgateS3File(value, entity_name, field_name, target_fields)
         case _:
             raise AppgateFileException("Unable to create an AppgateFile")
 
 
 def appgate_file_load(
-    value: OpenApiDict, entity_name: str, field_name: str, target_field: Optional[str]
+    value: OpenApiDict,
+    entity_name: str,
+    field_name: str,
+    target_fields: Tuple[str, ...],
 ) -> str:
     appgate_file = get_appgate_file(
-        value, entity_name, field_name=field_name, target_field=target_field
+        value, entity_name, field_name=field_name, target_fields=target_fields
     )
     return appgate_file.load_file()
 
@@ -169,12 +179,12 @@ class FileAttribMaker(AttribMaker):
         default: Optional[AttribType],
         factory: Optional[type],
         definition: OpenApiDict,
-        target_field: Optional[str],
+        target_fields: Tuple[str, ...],
         operator_mode: OperatorMode,
     ) -> None:
         super().__init__(name, tpe, base_tpe, default, factory, definition)
         self.operator_mode = operator_mode
-        self.target_field = target_field
+        self.target_fields = target_fields
 
     def values(
         self,
@@ -198,7 +208,7 @@ class FileAttribMaker(AttribMaker):
                     v,
                     instance_maker_config.entity_name,
                     field_name=self.name,
-                    target_field=self.target_field,
+                    target_fields=self.target_fields,
                 ),
                 error=lambda v: AppgateFileException(
                     f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v) or ''}."

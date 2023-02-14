@@ -519,6 +519,7 @@ definitions:
         writeOnly: true
         type: string
         format: byte
+        x-filename: filename
         x-checksum: checksum
       checksum:
         format: checksum

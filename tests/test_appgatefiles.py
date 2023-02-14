@@ -15,6 +15,7 @@ def http_file_source():
             # file referenced via name/field (test test_bytes_diff_dump)
             "localhost:8000/entitytestfilecomplex-v18/2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2": b"start123",
             "localhost:8000/entitytestfilecomplex-v18/my-script.sh": b"start123",
+            "localhost:8000/entitytestfilecomplex-v18/test-entity.sh": b"start123",
         }
     ) as s:
         yield s
@@ -28,6 +29,7 @@ def s3_file_source():
             # file referenced via name/field (test test_bytes_diff_dump)
             "sdp/entitytestfilecomplex-v18/2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2": b"start123",
             "sdp/entitytestfilecomplex-v18/my-script.sh": b"start123",
+            "sdp/entitytestfilecomplex-v18/test-entity.sh": b"start123",
         },
     ) as s:
         yield s
@@ -66,23 +68,37 @@ def test_load_http_file_1(http_file_source):
         .entities["EntityTestFileComplex"]
         .cls
     )
-    # Test 1: file field is not specified
+    # Test 1: file field is not specified, use checksum to get the contents
     data = {
-        "filename": "test-entity.sh",
         "checksum": "2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     }
     e = K8S_LOADER.load(data, None, EntityTestFileComplex)
     http_file_source.assert_called_once_with(
         "localhost:8000/entitytestfilecomplex-v18/2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2"
     )
+    assert e == EntityTestFileComplex(
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    http_file_source.reset_mock()
 
+    # Test 2: file field is not specified, use filename to get the contents
+    data = {
+        "filename": "test-entity.sh",
+    }
+    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    http_file_source.assert_called_once_with(
+        "localhost:8000/entitytestfilecomplex-v18/test-entity.sh"
+    )
     assert e == EntityTestFileComplex(
         filename="test-entity.sh",
         file="c3RhcnQxMjM=",
         checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )
 
-    # Test 2: file field is specified
+    http_file_source.reset_mock()
+
+    # Test 3: file field is specified
     # The contents of file will be used to compute the URL
     data = {
         "filename": "test-entity.sh",
@@ -98,6 +114,25 @@ def test_load_http_file_1(http_file_source):
     e = K8S_LOADER.load(data, None, EntityTestFileComplex)
     http_file_source.assert_called_once_with(
         "localhost:8000/entitytestfilecomplex-v18/my-script.sh"
+    )
+    assert expected_entity == e
+
+    http_file_source.reset_mock()
+
+    # Test 4: filename has preference over checksum
+    data = {
+        "filename": "test-entity.sh",
+        "checksum": "2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    }
+    expected_entity = EntityTestFileComplex(
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    http_file_source.call_count = 0
+    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    http_file_source.assert_called_once_with(
+        "localhost:8000/entitytestfilecomplex-v18/test-entity.sh"
     )
     assert expected_entity == e
 
@@ -156,7 +191,65 @@ def test_load_s3_file_1(s3_file_source):
     )
 
     # Test 1: file field is not specified
-    # The entity defines `x-checksum: checksum` so checksum field will be used to generate the url
+    # Use filename to get the contents
+    data = {
+        "filename": "test-entity.sh",
+    }
+    expected_entity = EntityTestFileComplex(
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    s3_file_source.assert_called_once_with(
+        "sdp",
+        "entitytestfilecomplex-v18/test-entity.sh",
+    )
+    assert expected_entity == e
+
+    s3_file_source.reset_mock()
+
+    # Test 1: file field is not specified
+    # Use checksum to get the contents
+    data = {
+        "checksum": "2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    }
+    expected_entity = EntityTestFileComplex(
+        filename="",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    s3_file_source.assert_called_once_with(
+        "sdp",
+        "entitytestfilecomplex-v18/2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    assert expected_entity == e
+
+    s3_file_source.reset_mock()
+
+    # Test 2: file field is not specified
+    # Contents in the byte field have precedence
+    data = {
+        "filename": "test-entity.sh",
+        "file": "my-script.sh",
+        "checksum": "2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    }
+    expected_entity = EntityTestFileComplex(
+        filename="test-entity.sh",
+        file="c3RhcnQxMjM=",
+        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
+    )
+    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
+    s3_file_source.assert_called_once_with(
+        "sdp", "entitytestfilecomplex-v18/my-script.sh"
+    )
+    assert expected_entity == e
+
+    s3_file_source.reset_mock()
+
+    # Test 3: file field is not specified
+    # filename has precedence
     data = {
         "filename": "test-entity.sh",
         "checksum": "2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
@@ -168,23 +261,7 @@ def test_load_s3_file_1(s3_file_source):
     )
     e = K8S_LOADER.load(data, None, EntityTestFileComplex)
     s3_file_source.assert_called_once_with(
-        "sdp",
-        "entitytestfilecomplex-v18/2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
-    )
-    assert expected_entity == e
-
-    # Test 1: file field is not specified
-    # The entity defines `x-checksum: checksum` so checksum field will be used to generate the url
-    data = {"filename": "test-entity.sh", "file": "my-script.sh"}
-    expected_entity = EntityTestFileComplex(
-        filename="test-entity.sh",
-        file="c3RhcnQxMjM=",
-        checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
-    )
-    s3_file_source.call_count = 0
-    e = K8S_LOADER.load(data, None, EntityTestFileComplex)
-    s3_file_source.assert_called_once_with(
-        "sdp", "entitytestfilecomplex-v18/my-script.sh"
+        "sdp", "entitytestfilecomplex-v18/test-entity.sh"
     )
     assert expected_entity == e
 

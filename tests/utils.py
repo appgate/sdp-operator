@@ -154,7 +154,7 @@ def new_file_source(
                 mock_response._content = data
                 mock_response.status_code = 200
             else:
-                mock_response.status_code = 404
+                raise Exception(f"No data for {v}")
             return mock_response
         elif tpe == "S3":
             if data:
@@ -162,7 +162,7 @@ def new_file_source(
             else:
                 raise Exception(f"No data for {v}")
             return mock_response2
-        raise Exception("Unknow file source type to mock")
+        raise Exception("Unknown file source type to mock")
 
     if tpe == "HTTP":
         with patch("appgate.files.requests.get") as get:
