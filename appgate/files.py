@@ -181,8 +181,8 @@ class FileAttribMaker(AttribMaker):
                     field_name=self.name,
                     target_field=self.target_field,
                 ),
-                error=lambda v: AppgateFileException(
-                    f"Unable to load field {self.name} with value {instance_maker_config.name or 'unknown value'}"
+                error=lambda _v: AppgateFileException(
+                    f"Unable to load field {self.name} with value {instance_maker_config.name or 'unknown value'}."
                 ),
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
