@@ -1,7 +1,7 @@
 import base64
 import os
 import requests
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 
 from minio import Minio  # type: ignore
 
@@ -119,7 +119,7 @@ class AppgateS3File(AppgateFile):
                 response.release_conn()
         except Exception as e:
             raise AppgateFileException(
-                "Unable to fetch the file contents for %s: %s", e
+                "Unable to fetch the file contents for %s/%s: %s", bucket, object_key, e
             )
 
 
@@ -170,6 +170,13 @@ class FileAttribMaker(AttribMaker):
         required_fields: List[str],
         instance_maker_config: EntityClassGeneratorConfig,
     ) -> AttributesDict:
+        def name_or_id(values: dict[str, Any]) -> Optional[str]:
+            if name := values.get("name"):
+                return name
+            if id := values.get("id"):
+                return id
+            return None
+
         values = super().values(attributes, required_fields, instance_maker_config)
         if "metadata" not in values:
             values["metadata"] = {}
@@ -181,8 +188,8 @@ class FileAttribMaker(AttribMaker):
                     field_name=self.name,
                     target_field=self.target_field,
                 ),
-                error=lambda _v: AppgateFileException(
-                    f"Unable to load field {self.name} with value {instance_maker_config.name or 'unknown value'}."
+                error=lambda v: AppgateFileException(
+                    f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v) or ''}."
                 ),
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
