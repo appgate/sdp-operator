@@ -518,6 +518,7 @@ definitions:
         writeOnly: true
         type: string
         format: byte
+        x-checksum: checksum
       checksum:
         format: checksum
         readOnly: true
