@@ -2,32 +2,33 @@
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
-  ## @section SDP Parameters
-   ## @param sdp.operators List of operators to run in the deployment. At least one must be defined. Values can be sdp-operator and git-operator
+  ## @section Operator Parameters
+  ## @param sdp.operators List of operators to run in the deployment. (Option: sdp-operator, git-operator)
   operators:
     - sdp-operator
     - git-operator
 
-  ## @section SDP Parameters
+  ## @section SDP Operator Parameters
   ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
   ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
+  ## @param sdp.sdpOperator.reverseMode Enable the operator in reverse mode (pulls entity from SDP instead of pushing)
+  ## @param sdp.sdpOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
+  ## @param sdp.sdpOperator.version The API version of the controller.
+  ## @param sdp.sdpOperator.logLevel The log level of the operator.
+  ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
+  ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
+  ## @param sdp.sdpOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
+  ## @param sdp.sdpOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
+  ## @param sdp.sdpOperator.sslNoVerify verify the SSL certificate of the controller.
+  ## @param sdp.sdpOperator.dryRun Run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
+  ## @param sdp.sdpOperator.cleanup Delete entities from the controller to sync the entities on the operator.
+  ## @param sdp.sdpOperator.twoWaySync Read the current configuration from the controller before computing the plan.
+  ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
+  ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
   sdpOperator:
     host: ""
     deviceId: ""
-
-    ## @section SDP git operator Optional Parameters
-    ## @param sdp.sdpOperator.version The API version of the controller.
-    ## @param sdp.sdpOperator.logLevel The log level of the operator.
-    ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
-    ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
-    ## @param sdp.sdpOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
-    ## @param sdp.sdpOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
-    ## @param sdp.sdpOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
-    ## @param sdp.sdpOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
-    ## @param sdp.sdpOperator.cleanup Whether to delete entities from the controller to sync the entities on the operator.
-    ## @param sdp.sdpOperator.twoWaySync Whether to read the current configuration from the controller before computing the plan.
-    ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
-    ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
+    secret: ""
     reverseMode: false
     version: v18
     logLevel: info
@@ -42,7 +43,6 @@ sdp:
     cleanup: false
     fernetKey: ""
     caCert: ""
-    secret: ""
 
     ## @param sdp.sdpOperator.image.tag The image tag of the operator.
     ## @param sdp.sdpOperator.image.pullPolicy The image pull policy of the operator.
@@ -54,18 +54,18 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
-  ## Configuration for SDP git operator
+
+  ## @section Git Operator
   ## @param sdp.gitOperator.version The API version of the controller.
   ## @param sdp.gitOperator.logLevel The log level of the operator.
   ## @param sdp.gitOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.gitOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
-  ## @param sdp.gitOperator.sslNoVerify Whether to verify the SSL certificate of the controller.
-  ## @param sdp.gitOperator.dryRun Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
-  ## @param sdp.operator.gitOperator.git.vendor The vendor of the git repository: github, gitlab
-  ## @param sdp.operator.gitOperator.git.mainBranch Main branch of the repository to clone the repository
-  ## @param sdp.operator.gitOperator.git.baseBranch Base branch of the repository to create pull requests
-  ## @param sdp.operator.gitOperator.git.repository The name of the repository (e.g. organization/repository)
-  ## @param sdp.operator.gitOperator.git.secret The secret to pull and push the git repository
+  ## @param sdp.gitOperator.dryRun Run the operator in Dry Run mode. The operator will compute the plan but will not commit/push.
+  ## @param sdp.gitOperator.git.vendor The vendor of the git repository: github, gitlab
+  ## @param sdp.gitOperator.git.mainBranch Main branch of the repository to clone the repository
+  ## @param sdp.gitOperator.git.baseBranch Base branch of the repository to create pull requests
+  ## @param sdp.gitOperator.git.repository The name of the repository (e.g. organization/repository)
+  ## @param sdp.gitOperator.secret Name of the secret that contains the SSH key and token for the git repository
   gitOperator:
     version: v18
     logLevel: info
@@ -79,7 +79,6 @@ sdp:
       baseBranch: ""
       repository: ""
 
-    ## @section SDP git operator Optional Parameters
     ## @param sdp.gitOperator.image.tag The image tag of the operator.
     ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.
     ## @param sdp.gitOperator.image.repository The repository to pull the operator image from.
@@ -90,6 +89,12 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
+  ## @section External Secret Configuration
+  ## @param sdp.externalSecret.enabled Enable the loading of secrets from an external source
+  ## @param sdp.externalSecret.type Type of the external secret source (Option: vault)
+  ## @param sdp.externalSecret.source.vault.address Hostname of the Vault
+  ## @param sdp.externalSecret.source.vault.tokenSecret Token to use for authenticating against the Vault
+  ## @param sdp.externalSecret.source.vault.sslNoVerify Disables SSL verification on Vault connection
   externalSecret:
     enabled: false
     type: ""
@@ -99,6 +104,14 @@ sdp:
         tokenSecret: ""
         sslNoVerify: false
 
+
+  ## @section External File Configuration
+  ## @param sdp.externalFile.enabled Enable the loading of files from an external source
+  ## @param sdp.externalFile.type Type of the external file source (Option: http, s3)
+  ## @param sdp.externalFile.source.http.address Hostname of the HTTP file server
+  ## @param sdp.externalFile.source.s3.address Hostname of the S3 object storage
+  ## @param sdp.externalFile.source.s3.keySecret Name of the secret that contains the access key and secret key
+  ## @param sdp.externalFile.source.s3.sslNoVerify Disables SSL verification on S3 connection
   externalFile:
     enabled: false
     type: ""
@@ -114,6 +127,6 @@ sdp:
 serviceAccount:
   create: true
 
-## @param rbac.create Whether to create & use RBAC resources or not
+## @param rbac.create create & use RBAC resources or not
 rbac:
   create: true

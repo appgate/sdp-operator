@@ -1,164 +1,301 @@
 # SDP Operator
-SDP Operator is a cloud-native project to declaratively configure an Appgate SDP system.
+SDP Operator is a Kubernetes operator to configure an Appgate SDP system.
 
-SDP Operator supports the following API versions:
-* v14 (Appgate version 5.3)
-* v15 (Appgate version 5.4)
-* v16 (Appgate version 5.5)
-* v17 (Appgate version 6.0)
-* v18 (Appgate version 6.1)
+# Table of Contents
+* [Getting Started](#getting-started)
+  * [Prerequisite](#prerequisite)
+  * [Installing the Normal Operator](#installing-the-normal-operator)
+  * [Installing the Reverse Operator](#installing-the-reverse-operator)
+    * [GitHub](#github)
+    * [GitLab](#gitlab)
+  * [Installing the Git Operator](#installing-the-git-operator)
+* [Examples](#examples)
+* [Helm Values](#helm-values)
+* [Advanced Usage](#advanced-usage)
+  * [External Source for Secrets and Files](#external-source-for-secrets-and-files)
+    * [Secret Source](#configuring-an-external-secret-source)
+      * [Hashicorp Vault](#vault)
+    * [File Source](#configuring-an-external-file-source)
+      * [HTTP](#http)
+      * [S3](#s3)
+  * [Encrypt Secrets with Fernet Key](#encrypt-secrets-with-fernet-key)
+  * [CA Certificates](#ca-certificates)
+  * [Dump Entities into YAML](#dump-entities-into-yaml)
+  * [Validate Entities against OpenAPI Spec](#validate-entities-against-an-openapi-spec)
 
-## Requirements
+
+# Getting Started
+## Prerequisite
 The following tools are required to install the SDP Operator
-* helm v3.7.0+ - https://helm.sh/docs/intro/install/
+* helm v3.8.0+ - https://helm.sh/docs/intro/install/
 * kubectl - https://kubernetes.io/docs/tasks/tools/#kubectl
 
-## Getting Started
+> Browse available versions by navigating to the [SDP Operator Releases](https://github.com/appgate/sdp-operator/releases)
 
-Browse the available charts versions in the [SDP Operator GitHub Container Registry](https://github.com/appgate/sdp-operator/pkgs/container/charts%2Fsdp-operator).
-
-1. Install the SDP Operator CRD charts with Helm.
+1. Add `appgate/sdp-operator` to your Helm repository
    ```shell
-   $ helm install sdp-operator-crd oci://ghcr.io/appgate/charts/sdp-operator-crd \
-	  --version <version> \
-	  --set version=<api-version> \
-	  --namespace sdp-system
+   helm repo add appgate https://appgate.github.io/sdp-operator/
+   helm repo update
    ```
-   * `api-version` : API version of the controller (`v14`, `v15`, `v16`, `v17`).
-   * `version` : chart version of the SDP Operator.
-
-
-2. Create a secret containing the username and password for the operator.
+2. Install the SDP Operator CRD
    ```shell
-   $ kubectl create secret generic sdp-operator-secret-sdp-operator \
-	   --from-literal=appgate-operator-user=<user> \
-	   --from-literal=appgate-operator-password=<password> \
-	   --namespace sdp-system
+   helm install sdp-operator-crd appgate/sdp-operator-crd \
+       --namespace sdp-system \
+       --create-namespace
    ```
-   * `user` : Username of the user with admin access to the controller.
-   * `password`: Password of the user with admin access to the controller.
 
-
-3. Install the SDP Operator with Helm. Browse the options in [values.yaml](#parameters).
+## Installing the Normal Operator
+Standard Mode pushes entities on Kubernetes to an Appgate SDP system
+1. Create a secret containing Admin API credentials
    ```shell
-   $ helm install sdp-operator oci://ghcr.io/appgate/charts/sdp-operator \
-	   --version <version> \
-	   --set sdp.operator.version=<api-version> \
-	   --set sdp.operator.host=<host> \
-	   --set sdp.operator.deviceId=<device-id> \
-	   --namespace sdp-system
+   kubectl create secret generic sdp-operator-secret \
+       --from-literal=appgate-operator-user="<USERNAME>" \
+       --from-literal=appgate-operator-password="<PASSWORD>" \
+       --namespace sdp-system
    ```
-   * `version` : chart version of the SDP Operator. Must match the CRD chart version in Step 1.
-   * `api-version` : API version of the controller. (`v14`, `v15`, `v16`, `v17`).
-   * `host` : Hostname of the controller you want to configure.
-   * `device-id` : UUID v4 assigned to this operator.
+
+2. Install the SDP Operator in Standard Mode
+   ```yaml
+   sdp:
+     operators:
+       - sdp-operator
+     sdpOperator:
+       version: v18
+       host: "https://sdp.appgate.com:8443"
+       deviceId: "00000000-1111-2222-3333-44444444"
+       secret: sdp-operator-secret
+       reverseMode: false
+   ```
+   ```shell
+   helm install normal-operator appgate/sdp-operator --values normal-operator.yaml --namespace sdp-system
+   ```
+
+## Installing the Reverse Operator
+Reverse Mode pulls SDP entities from an Appgate SDP system into Kubernetes
+1. Create a secret containing Admin API credentials
+   ```shell
+   kubectl create secret generic sdp-operator-secret \
+       --from-literal=appgate-operator-user="<USERNAME>" \
+       --from-literal=appgate-operator-password="<PASSWORD>" \
+       --namespace sdp-system
+   ```
+2. Install the SDP Operator in Reverse Mode
+   ```yaml
+   sdp:
+     operators:
+       - sdp-operator
+     sdpOperator:
+       version: v18
+       host: "https://sdp.appgate.com:8443"
+       deviceId: "00000000-1111-2222-3333-44444444"
+       secret: sdp-operator-secret
+       reverseMode: true
+   ```
+   ```shell
+   helm install reverse-operator appgate/sdp-operator --values reverse-operator.yaml --namespace sdp-system
+   ```
+
+## Installing the Git Operator
+Git Operator pushes SDP entities on Kubernetes to a Git repository and create pull requests on GitHub or GitLab
+
+### GitHub
+1. Create a secret containing SSH key and GitHub token
+   ```shell
+   # GitHub
+   kubectl create secret generic github-operator-secret \
+       --from-literal=github-token="<GITHUB_TOKEN>" \
+       --from-file=git-ssh-key="<SSH_KEY_PATH>"
+   ```
+2. Install the Git Operator for GitHub
+   ```yaml
+   sdp:
+     operators:
+       - git-operator
+     gitOperator:
+       version: v18
+       secret: github-operator-secret
+       git:
+         vendor: github
+         mainBranch: main
+         baseBranch: main
+         repository: appgate/github-example
+   ```
+   ```shell
+   helm install github-operator appgate/sdp-operator --values github-operator.yaml --namespace sdp-system
+   ```
+   
+### GitLab
+1. Create a secret containing SSH key and GitLab token
+   ```shell
+   # GitLab
+   kubectl create secret generic gitlab-operator-secret \
+       --from-literal=gitlab-token="<GITLAB_TOKEN>" \
+       --from-file=git-ssh-key="<SSH_KEY_PATH>"
+   ```
+
+2. Install the Git Operator for GitLab
+   ```yaml
+   sdp:
+     operators:
+       - git-operator
+     gitOperator:
+       version: v18
+       secret: gitlab-operator-secret
+       git:
+         vendor: gitlab
+         mainBranch: main
+         baseBranch: main
+         repository: appgate/gitlab-example
+   ```
+   ```shell
+   helm install gitlab-operator appgate/sdp-operator --values gitlab-operator.yaml --namespace sdp-system
+   ```
+
+# Examples
+* [Normal Operator](examples/normal-mode)
+* [Reverse Operator](examples/reverse-mode)
+* [GitOps with SDP Operator](examples/gitops)
+* [Sync from Collective A to Collective B](examples/sync)
+
+# Helm Values
+For the list of available Helm parameters, please go to [Helm Values](doc/values.md)
+
+# Advanced Usage
+## External Source for Secrets and Files
+By design, the Admin API does not return sensitive information and binary data in its response. That means, you cannot sync any entity from Collective A to Collective B if it contains any secret or file fields. 
+
+Suppose you want to sync a LocalUser from Collective A to Collective B. The reverse operator will sync the LocalUser entity from Collective A into Kubernetes without the `password` field (because the response to GET /localuser does not contain such field). If this entity is pushed to Collective B as-is, it would fail because `password` is a required value. To fix this issue, you can configure the normal operator to fetch and load the `password` value in memory before pushing it to Collective B. 
+
+The same logic applies to binary data. DeviceScript is an entity that contains a binary data in field `file`. By configuring an external source for files, you can load the binary data before pushing the entity to target collective.
+
+SDP Operator expects secrets and files to be uploaded to the store in a specific format:
+```
+{Entity Type}-{API Version}/{Name}/{Key}
+```
+
+### Configuring an External Secret Source
+The following secret source are supported:
+* Hashicorp Vault
+
+#### Vault
+Create a secret containing the Vault token
+```shell
+kubectl create secret generic sdp-operator-vault-secret \
+    --from-literal=vault-token="<VAULT_TOKEN>"
+```
+Install the SDP Operator with Vault
+```yaml
+sdp:    
+  externalSecret:
+    enabled: true
+    type: vault
+    source:
+      vault:
+        address: "https://vault.example.com:8200"
+        tokenSecret: sdp-operator-vault-secret
+
+# Note: Other required helm values are omitted for simplicity
+```
+
+SDP Operator expects secrets to be stored under `/data/secret/sdp`
+
+Initialize the `sdp` path by uploading data for v18 LocalUser (username=`john.doe` password=`password123`)
+```shell
+vault kv put secret/sdp localuser-v18/john.doe/password="password123"
+```
+
+On subsequent uploads, you can use `vault kv patch` to update the secret. For example, to upload another v18 LocalUser (username=`jane.doe`, password=`password123`), run the following:
+```shell
+vault kv patch secret/sdp localuser-v18/jane.doe/password="password123"
+```
 
 
-## Parameters
+### Configuring an External File Source
+The following external file source are supported:
+* HTTP
+* S3
 
-### SDP Parameters
+#### HTTP
+```yaml
+sdp:
+  externalFile:
+    enabled: true
+    type: http
+    source:
+      http:
+        address: "https://example.com:8000"
 
-| Name                                     | Description                                                                                                                                                                              | Value         |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `sdp.operator.host`                      | The hostname of the controller to manage with the operator.                                                                                                                              | `""`          |
-| `sdp.operator.deviceId`                  | The device ID assigned to the operator for authenticating against the controller.                                                                                                        | `""`          |
-| `sdp.operator.version`                   | The API version of the controller.                                                                                                                                                       | `v17`         |
-| `sdp.operator.logLevel`                  | The log level of the operator.                                                                                                                                                           | `info`        |
-| `sdp.operator.timeout`                   | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`          |
-| `sdp.operator.builtinTags`               | The list of tags that defines a built-in entity. Built-in entities are never deleted.                                                                                                    | `["builtin"]` |
-| `sdp.operator.targetTags`                | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`          |
-| `sdp.operator.excludeTags`               | The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.                                                                                      | `[]`          |
-| `sdp.operator.sslNoVerify`               | Whether to verify the SSL certificate of the controller.                                                                                                                                 | `false`       |
-| `sdp.operator.mode`                      | The mode of the operator: run (Push configuration to SDP) | git-sync (Sync configuration from SDP to Git)                                                                                | `run`         |
-| `sdp.operator.run.dryRun`                | Whether to run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.                                        | `true`        |
-| `sdp.operator.run.cleanup`               | Whether to delete entities from the controller to sync the entities on the operator.                                                                                                     | `false`       |
-| `sdp.operator.run.twoWaySync`            | Whether to read the current configuration from the controller before computing the plan.                                                                                                 | `true`        |
-| `sdp.operator.gitSync.git.vendor`        | The vendor of the git repository: github                                                                                                                                                 | `github`      |
-| `sdp.operator.gitSync.git.baseBranch`    | Base branch of the repository to create pull requests                                                                                                                                    | `""`          |
-| `sdp.operator.gitSync.git.repositoryUrl` | The url of the git repository (HTTPS only supported)                                                                                                                                     | `""`          |
-| `sdp.operator.gitSync.git.secret`        | The secret to pull and push the git repository                                                                                                                                           | `""`          |
-| `sdp.operator.gitSync.github.repository` | The name of the GitHub repository (e.g. appgate/sdp-operator)                                                                                                                            | `""`          |
+# Note: Other required helm values are omitted for simplicity
+```
+SDP Operator expects the files to be stored at the root of the filesystem.
 
+Upload the file `example.sh` for v18 DeviceScript under the following path:
+```
+/devicescript-v18/example/file
+```
 
-### SDP Optional Parameters
+#### S3
+Create secret containing the access key and secret key for the S3 storage
+```shell
+kubectl create secret generic sdp-operator-s3-secret \
+    --from-literal=access-key="<S3_ACCESS_KEY>"
+    --from-literal=secret-key="<S3_SECRET_KEY>"
+```
 
-| Name                             | Description                                                                                       | Value                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `sdp.operator.image.tag`         | The image tag of the operator.                                                                    | `""`                           |
-| `sdp.operator.image.pullPolicy`  | The image pull policy of the operator.                                                            | `Always`                       |
-| `sdp.operator.image.repository`  | The repository to pull the operator image from.                                                   | `ghcr.io/appgate/sdp-operator` |
-| `sdp.operator.image.pullSecrets` | The secret to access the repository.                                                              | `[]`                           |
-| `sdp.operator.fernetKey`         | The fernet key to use when decrypting secrets in entities.                                        | `""`                           |
-| `sdp.operator.caCert`            | The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is. | `""`                           |
+Install the SDP Operator with S3
+```yaml
+sdp:
+  externalFile:
+    enabled: true
+    type: s3
+    source:
+      s3:
+        address: "http://example.com:8000"
+        tokenSecret: sdp-operator-http-secret
 
+# Note: Other required helm values are omitted for simplicity
+```
 
-This table above was generated using [readme-generator-for-helm](https://github.com/bitnami-labs/readme-generator-for-helm)
+SDP Operator expects the files to be stored under bucket `sdp`
 
+Create a bucket `/sdp` on the root of the object store
 
-## How It Works
-[Custom Resource Definitions (CRD)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) on Kubernetes allow the operator to represent Appgate SDP entities as YAMLs. Each instance of an entity is stored as a Custom Resource. The operator reads each instance's spec and syncs the entity with the controller using the Admin API. SDP Operator consumes a version from [Appgate SDP OpenAPI Spec](https://github.com/appgate/sdp-api-specification) to generate entities for a given version of the controller.
+Upload the file `example.sh` for v18 DeviceScript under the following path:
+```
+/sdp/devicescript-v18/example/file
+```
 
-For each entity, the operator begins a timer and an event loop to listen for any changes happening on the cluster. Every time an event is received, the timer resets. After the timeout period has expired (in other words, when no event has newly arrived), the operator proceeds to compute a Plan. A Plan represents the difference between the current state on the controller vs the desired state defined in Kubernetes - it outlines what entities will be created/updated/deleted on the controller. After the plan is computed, the operator to execute the Plan on the controller using the API in order to produce the desired state.
-
-It is important to note that, by design, any state defined in Kubernetes wins over state in the SDP system - any external changes made outside the operator will be overwritten. For example, if an administrator makes a change to the Policy via admin UI, the operator will determine the change as 'out-of-sync- and undoes the change.
-
-### Secrets Management
-The operator supports 3 ways to handle sensitive information in YAML files:
-1. Unencrypted secrets
-2. Secrets encrypted with a fernet key
-3. Secrets created as a Secret on kubernetes
-
-#### Unencrypted Secrets
-Secret is stored as-is in the YAML file. The operator will use that value as the value for the secret field. This is not recommended in production.
-
-#### Secrets Encrypted with a Fernet Key
+## Encrypt Secrets with Fernet Key
 Sensitive information can be stored in the YAML as encrypted secrets using [fernet (symmetric encryption)](https://cryptography.io/en/latest/fernet/).
 
 To generate a new fernet key, run:
 ```shell
-$ python3 -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())'
+python3 -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())'
 ```
 
 To generate a secret with the key, run:
 ```shell
-$ export SECRET="super-sensitive-information"
-$ export KEY="dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk="
-$ python3 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
+export SECRET="super-sensitive-information"
+export KEY="dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk="
+python3 -c 'from cryptography.fernet import Fernet;import os;print(Fernet(os.getenv("KEY")).encrypt(bytes(os.getenv("SECRET").encode())))'
 ```
 
-After generating the secret, the value is safe to be stored inside the YAML file. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
-
-#### Secrets using Kubernetes Secrets
-Alternatively, the operator supports reading secrets from Kubernetes.
-
-Let's say, we created the secret below on the Kubernetes cluster.
+After generating the secret, the encrypted value can be safely stored inside the YAML file as plain-text. When the operator encounters such field, it will read the value of environment variable `APPGATE_OPERATOR_FERNET_KET` to decrypt and read secrets in entities.
 ```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: my-secret
-data:
-  password: YmFyCg==
+sdp:
+  sdpOperator:
+    fernetKey: "dFVzzjKCa9mWbeig8dprliGLCXwnwE5Fbycz4Xe2ptk="
 ```
 
-To instruct the operator to use this secret, specify the value of the entity's field with the following dictionary
-```yaml
-fieldOne:
-  type: "k8s/secret",
-  name: "my-secret",
-  key: "password"
-```
-
-When operator sees an entity field with `type: k8s/secret`, it will read the Kubernetes secret to find the value it can use to decrypt and read the secret.
-
-### CA Certificates
+## CA Certificates
 CA certificate in PEM format can be stored in env `APPGATE_OPERATOR_CACERT`. We recommend storing the contents of the PEM as a base64 encoded string.
-``` shell
-$ export APPGATE_OPERATOR_CACERT=`cat cert.ca`
+```yaml
+sdp: 
+  sdpOperator:
+    caCert: "$(cat cert.ca)"
 ```
 
-## Advanced Usage
-### Dump Current Entities into YAML
+## Dump Entities into YAML
 `dump-entities` command will read the entities from an existing SDP system and dump them into YAML.
 ```shell
 $ python3 -m appgate --spec-directory /root/appgate/api_specs/v15 dump-entities
@@ -183,7 +320,7 @@ total 52
 -rw-r--r-- 1 root root  602 Jul 20 23:03 site.yaml
 ```
 
-### Validate Entities against an OpenAPI Specification
+## Validate Entities against an OpenAPI Spec
 `validate-entities` command will validate the compatibility of entities against a version of the OpenAPI specification. This is useful for verifying if entities dumped from one SDP system is compatible with another SDP system.
 
 ```shell
@@ -193,33 +330,9 @@ $ python3 -m appgate --spec-directory /root/appgate/api_specs/v17 validate-entit
 In the example above, we validated the v15 entities (generated by `dump-entities` command) to a v17 OpenAPI specification. The command will attempt to load all entities defined in `examples-v15-entities/` as a v17 entities, reporting errors if encountered any.
 
 
-## Development
-### Versioning
-The versioning of the SDP Operator is managed in [k8s/operator/Chart.yaml](k8s/operator/Chart.yaml)
+# How It Works
+[Custom Resource Definitions (CRD)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) on Kubernetes allow the operator to represent Appgate SDP entities as YAMLs. Each instance of an entity is stored as a Custom Resource. The operator reads each instance's spec and syncs the entity with the controller using the Admin API. SDP Operator consumes a version from [Appgate SDP OpenAPI Spec](https://github.com/appgate/sdp-api-specification) to generate entities for a given version of the controller.
 
-```
-version: 0.1.2
-appVersion: "0.1.0"
-```
-- `.Chart.appVersion` is used as the SDP Operator image tag. See [deployment.yaml line 84](k8s/operator/templates/deployment.yaml)
-- `.Chart.version` is used as the SDP Operator and CRD chart version. See [GitHub Action line 85](.github/workflows/docker.yml)
+For each entity, the operator begins a timer and an event loop to listen for any changes happening on the cluster. Every time an event is received, the timer resets. After the timeout period has expired (in other words, when no event has newly arrived), the operator proceeds to compute a Plan. A Plan represents the difference between the current state on the controller vs the desired state defined in Kubernetes - it outlines what entities will be created/updated/deleted on the controller. After the plan is computed, the operator to execute the Plan on the controller using the API in order to produce the desired state.
 
-### Cheatsheet
-Test changes by mounting local repository and kubeconfig
-```
-$ docker build . -f docker/Dockerfile -t sdp-operator:dev
-$ docker run --rm -it -v $HOME/.kube/:/root/.kube/ -v $PWD:/test/ -w /test  --dns 10.97.2.20 --entrypoint /bin/bash sdp-operator:dev
-$ /root/run.sh
-```
-
-Test changes on Kubernetes cluster
-```
-$ docker build . -f docker/Dockerfile -t registry.example.com/sdp-operator:dev
-$ docker push registry.example.com/sdp-operator:dev
-$ helm upgrade --install sdp-operator k8s/operator \
-   --set sdp.operator.image.repository=registry.example.com \
-   --set sdp.operator.image.tag=dev \
-   --set sdp.operator.version=<version> \
-   --set sdp.operator.host=<hostname> \
-   --set sdp.operator.deviceId=<deviceId>
-```
+It is important to note that, by design, any state defined in Kubernetes wins over state in the SDP system - any external changes made outside the operator will be overwritten. For example, if an administrator makes a change to the Policy via admin UI, the operator will determine the change as 'out-of-sync- and undoes the change.
