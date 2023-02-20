@@ -124,7 +124,7 @@ class AppgateS3File(AppgateFile):
         object_key = f"{self.entity_name.lower()}-{self.api_version}/{contents_field}"
 
         if not client.bucket_exists(bucket):
-            raise AppgateFileException("Bucket sdp does not exist on %s", address)
+            raise AppgateFileException(f"Bucket sdp does not exist on {address}")
 
         try:
             response = client.get_object(bucket, object_key)
@@ -135,7 +135,7 @@ class AppgateS3File(AppgateFile):
                 response.release_conn()
         except Exception as e:
             raise AppgateFileException(
-                "Unable to fetch the file contents for %s/%s: %s", bucket, object_key, e
+                f"Unable to fetch the file contents for {bucket}/{object_key}: {e}"
             )
 
 
