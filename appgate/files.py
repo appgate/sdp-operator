@@ -17,8 +17,8 @@ from appgate.openapi.types import (
     AttributesDict,
     K8S_LOADERS_FIELD_NAME,
     Entity_T,
-    PYTHON_TYPES,
 )
+from appgate.openapi.utils import get_byte_field
 from appgate.types import OperatorMode
 
 
@@ -171,27 +171,6 @@ def appgate_file_load(
 
 def should_load_file(operator_mode: OperatorMode) -> bool:
     return "APPGATE_FILE_SOURCE" in os.environ
-
-
-def _get_byte_field(entity: Entity_T, names: List[str]) -> List[str]:
-    fields = []
-    prefix = ".".join(names)
-    for a in entity.__attrs_attrs__:
-        name = getattr(a, "name")
-        mt = getattr(a, "metadata", {})
-        if mt.get("format") == "byte":
-            if prefix:
-                fields.append(f"{prefix}.{name}")
-            else:
-                fields.append(name)
-        base_type = mt.get("base_type", None)
-        if base_type and base_type not in PYTHON_TYPES:
-            fields.extend(_get_byte_field(base_type, names + [name]))
-    return fields
-
-
-def get_byte_field(entity: Entity_T) -> List[str]:
-    return _get_byte_field(entity, [])
 
 
 def set_appgate_file_metadata(orig_values, entity: Entity_T) -> Entity_T:
