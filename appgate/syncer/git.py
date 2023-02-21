@@ -356,12 +356,13 @@ def get_sdp_pull_request(
 
 
 def get_commit_message(commit_state: GitCommitState, p: Path) -> str | None:
-    if commit_state == "ADD":
-        return f"Added {p.relative_to(GIT_DUMP_DIR)}"
-    elif commit_state == "DELETE":
-        return f"Deleted {p.relative_to(GIT_DUMP_DIR)}"
-    elif commit_state == "MODIFY":
-        return f"Modified {p.relative_to(GIT_DUMP_DIR)}"
+    match commit_state.operation:
+        case "ADD":
+            return f"Added {p.relative_to(GIT_DUMP_DIR)}"
+        case "DELETE":
+            return f"Deleted {p.relative_to(GIT_DUMP_DIR)}"
+        case "MODIFY":
+            return f"Modified {p.relative_to(GIT_DUMP_DIR)}"
     return
 
 
@@ -765,23 +766,28 @@ class GitEntityClient(EntityClient):
         log.info("[git-entity-client/%s] Committing changes for entities", self.kind)
         commit_message = f"[{self.branch}] {self.kind} changes\n\nChanges:"
         for p, o in self.commits:
-            if o == "ADD":
-                log.info(
-                    "[git-entity-client/%s] + New commit: Added file  %s", self.kind, p
-                )
-                self.git_repo.git_repo.index.add([str(p)])
-            elif o == "DELETE":
-                log.info(
-                    "[git-entity-client/%s] - New commit: Deleted file %s", self.kind, p
-                )
-                self.git_repo.git_repo.index.remove([str(p)])
-            elif o == "MODIFY":
-                log.info(
-                    "[git-entity-client/%s] * New commit: Modified file %s",
-                    self.kind,
-                    p,
-                )
-                self.git_repo.git_repo.index.add([str(p)])
+            match o.operation:
+                case "ADD":
+                    log.info(
+                        "[git-entity-client/%s] + New commit: Added file  %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.add([str(p)])
+                case "DELETE":
+                    log.info(
+                        "[git-entity-client/%s] - New commit: Deleted file %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.remove([str(p)])
+                case "MODIFY":
+                    log.info(
+                        "[git-entity-client/%s] * New commit: Modified file %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.add([str(p)])
             commit_message += f"\n  - {get_commit_message(o, p)}"
         self.git_repo.git_repo.index.commit(message=commit_message)
         cs = [(str(k), v) for (k, v) in self.commits]
