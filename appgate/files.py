@@ -5,9 +5,10 @@ import re
 import requests
 from typing import Optional, Dict, List, Any, Tuple
 
+from attr import evolve
 from minio import Minio  # type: ignore
 
-from appgate.customloaders import FileAttribLoader
+from appgate.customloaders import FileAttribLoader, CustomEntityLoader
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
     AttribType,
@@ -15,6 +16,8 @@ from appgate.openapi.types import (
     EntityClassGeneratorConfig,
     AttributesDict,
     K8S_LOADERS_FIELD_NAME,
+    Entity_T,
+    PYTHON_TYPES,
 )
 from appgate.types import OperatorMode
 
@@ -170,6 +173,41 @@ def should_load_file(operator_mode: OperatorMode) -> bool:
     return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
 
 
+def _get_byte_field(entity: Entity_T, names: List[str]) -> List[str]:
+    fields = []
+    prefix = ".".join(names)
+    for a in entity.__attrs_attrs__:
+        name = getattr(a, "name")
+        mt = getattr(a, "metadata", {})
+        if mt.get("format") == "byte":
+            if prefix:
+                fields.append(f"{prefix}.{name}")
+            else:
+                fields.append(name)
+        base_type = mt.get("base_type", None)
+        if base_type and base_type not in PYTHON_TYPES:
+            fields.extend(_get_byte_field(base_type, names + [name]))
+    return fields
+
+
+def get_byte_field(entity: Entity_T) -> List[str]:
+    return _get_byte_field(entity, [])
+
+
+def set_appgate_file_metadata(orig_values, entity: Entity_T) -> Entity_T:
+    byte_fields = get_byte_field(entity)
+    for field in byte_fields:
+        entity_name = entity.__class__.__name__.lower()
+        api_version = os.getenv("APPGATE_API_VERSION")
+        content_field = url_file_path(
+            orig_values, field, entity_name, ("x-filename", "x-checksum")
+        )
+        object_key = f"{entity_name}-{api_version}/{content_field}"
+        appgate_mt = entity.appgate_metadata.with_url_file_path(object_key)
+        return evolve(entity, appgate_metadata=appgate_mt)
+    return entity
+
+
 class FileAttribMaker(AttribMaker):
     def __init__(
         self,
@@ -215,6 +253,7 @@ class FileAttribMaker(AttribMaker):
                 ),
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
-            )
+            ),
+            CustomEntityLoader(loader=set_appgate_file_metadata),
         ]
         return values

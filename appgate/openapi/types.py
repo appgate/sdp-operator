@@ -140,6 +140,9 @@ class AppgateMetadata:
     from_appgate: Optional[bool] = attrib(
         default=None, repr=False, metadata={"name": "fromAppgate"}
     )
+    url_file_path: Optional[str] = attrib(
+        default=None, metadata={"name": "urlFilePath"}
+    )
 
     def with_password_values(
         self, passwords: Dict[str, Union[str, Dict[str, str]]]
@@ -148,6 +151,9 @@ class AppgateMetadata:
 
     def with_password_fields(self, fields: List[str]) -> "AppgateMetadata":
         return evolve(self, password_fields=frozenset(fields))
+
+    def with_url_file_path(self, url_file_path: str) -> "AppgateMetadata":
+        return evolve(self, url_file_path=url_file_path)
 
 
 @attrs()
