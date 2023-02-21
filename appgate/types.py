@@ -126,7 +126,29 @@ APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
 APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 
 
-GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
+GitCommitOperation = Literal["ADD", "DELETE", "MODIFY"]
+
+
+@attrs(slots=True, frozen=True)
+class GitCommitState:
+    entity: Entity_T = attrib()
+    path: Path = attrib()
+    operation: GitCommitOperation = attrib()
+
+    def get_commit_message(self) -> str:
+        message = ""
+        match self.operation:
+            case "ADD":
+                message += f"Added {self.path.relative_to(GIT_DUMP_DIR)}. "
+            case "DELETE":
+                message += f"Deleted {self.path.relative_to(GIT_DUMP_DIR)}. "
+            case "MODIFY":
+                message += f"Modified {self.path.relative_to(GIT_DUMP_DIR)}. "
+
+        if self.entity.appgate_metadata.url_file_path:
+            message += f"Please upload the contents of the file as `{self.entity.appgate_metadata.url_file_path}` to the external file storage."
+
+        return message
 
 GitVendor: TypeAlias = Literal["gitlab", "github"]
 SUPPORTED_GIT_VENDORS: List[GitVendor] = ["gitlab", "github"]
