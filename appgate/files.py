@@ -170,7 +170,7 @@ def appgate_file_load(
 
 
 def should_load_file(operator_mode: OperatorMode) -> bool:
-    return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
+    return "APPGATE_FILE_SOURCE" in os.environ
 
 
 def _get_byte_field(entity: Entity_T, names: List[str]) -> List[str]:
