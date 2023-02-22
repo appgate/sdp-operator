@@ -263,7 +263,6 @@ class PasswordAttribMaker(AttribMaker):
             entity_name: str,
             field_name: str,
             target_fields: Tuple[str, ...],
-            load_external: bool,
         ) -> Entity_T:
             password_fields = get_passwords(entity)
             orig_passwords = {}
@@ -272,19 +271,17 @@ class PasswordAttribMaker(AttribMaker):
                 field_passwords.append(field)
                 if field in orig_values:
                     orig_passwords[field] = orig_values[field]
-            appgate_mt = entity.appgate_metadata.with_password_fields(
-                field_passwords
-            ).with_password_values(orig_passwords)
 
-            if load_external:
-                api_version = os.getenv("APPGATE_API_VERSION")
-                contents_field = url_file_path(
-                    orig_values, field_name, entity_name, target_fields
-                )
-                url = f"{entity_name.lower()}-{api_version}/{contents_field}"
-                appgate_mt = entity.appgate_metadata.with_password_fields(
-                    field_passwords
-                ).with_url_file_path(url)
+            api_version = os.getenv("APPGATE_API_VERSION")
+            contents_field = url_file_path(
+                orig_values, field_name, entity_name, target_fields
+            )
+            url = f"{entity_name.lower()}-{api_version}/{contents_field}"
+            appgate_mt = (
+                entity.appgate_metadata.with_password_fields(field_passwords)
+                .with_password_values(orig_passwords)
+                .with_url_file_path(url)
+            )
 
             return evolve(entity, appgate_metadata=appgate_mt)
 
@@ -308,7 +305,6 @@ class PasswordAttribMaker(AttribMaker):
                     instance_maker_config.entity_name,
                     field_name=self.name,
                     target_fields=(),
-                    load_external=should_load_secret(self.operator_mode),
                 ),
             ),
         ]
@@ -320,7 +316,6 @@ class PasswordAttribMaker(AttribMaker):
                     instance_maker_config.entity_name,
                     field_name=self.name,
                     target_fields=(),
-                    load_external=should_load_secret(self.operator_mode),
                 ),
             ),
         ]
