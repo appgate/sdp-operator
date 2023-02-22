@@ -74,7 +74,8 @@ def url_file_path(
     2. else if it has a target field (x-filename, x-checksum for now) use the contents
     3. else if the entity has a name, use it to compute the path url `name/fieldName`
     4. else if the entity has an id, use it to compute the path url `id/fieldName`
-    5. else raise an exception
+    5. else if entity_name, field_name, and value are not empty, try our best effort to construct URL
+    6. else raise an exception
     """
     if (v := value.get(field_name)) is not None:
         return normalize_url_file_path(v)
@@ -85,6 +86,11 @@ def url_file_path(
         return f"{normalize_url_file_path(value['name'])}/{field_name}"
     elif value.get("id"):
         return f"{value['id']}/{field_name}"
+    elif field_name and value:
+        # TODO: Figure out a way to resolve URL for entity without id or name.
+        # Temporary workaround for appliance.ntp.server.key
+        normalized_value = normalize_url_file_path("/".join(value.popitem()))
+        return f"{normalized_value}/{field_name}"
     else:
         raise AppgateFileException(
             f"Unable to generate url to get fetch file for field {field_name} for entity {entity_name}"
