@@ -14,6 +14,7 @@ from typing import (
     Union,
     Tuple,
     TypeAlias,
+    cast,
 )
 from attr import attrib, attrs, evolve
 
@@ -71,7 +72,7 @@ __all__ = [
     "GIT_DUMP_DIR",
     "GIT_REPOSITORY_FORK_ENV",
     "GITHUB_TOKEN_ENV",
-    "GITHUB_DEPLOYMENT_KEY_PATH",
+    "GIT_SSH_KEY_PATH",
     "EntityClient",
     "GitCommitState",
     "crd_domain",
@@ -81,7 +82,6 @@ __all__ = [
     "GIT_REPOSITORY_MAIN_BRANCH",
     "GIT_REPOSITORY_MAIN_BRANCH_ENV",
 ]
-
 
 BUILTIN_TAGS = frozenset({"builtin"})
 APPGATE_LOG_LEVEL = "APPGATE_OPERATOR_LOG_LEVEL"
@@ -111,10 +111,11 @@ GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
 GIT_VENDOR_ENV = "GIT_VENDOR"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/entities")
 
-GITHUB_DEPLOYMENT_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
+GIT_SSH_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
@@ -122,6 +123,9 @@ APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 
 
 GitCommitState = Literal["ADD", "DELETE", "MODIFY"]
+
+GitVendor: TypeAlias = Literal["gitlab", "github"]
+SUPPORTED_GIT_VENDORS: List[GitVendor] = ["gitlab", "github"]
 
 
 class EntityClient:
@@ -405,7 +409,7 @@ class GitOperatorContext:
     log_level: str = attrib()
     git_repository: str = attrib()
     git_repository_fork: str | None = attrib()
-    git_vendor: str = attrib()
+    git_vendor: GitVendor = attrib()
     git_base_branch: str = attrib()
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
@@ -439,6 +443,14 @@ def get_tags(tags: List[str], env_tags: str | None) -> FrozenSet[str]:
 def get_dry_run(no_dry_run_arg: bool) -> bool:
     env_dry_run = os.getenv(DRY_RUN_ENV)
     return to_bool(env_dry_run) if env_dry_run is not None else not no_dry_run_arg
+
+
+def get_git_vendor(vendor: str) -> GitVendor:
+    if vendor not in SUPPORTED_GIT_VENDORS:
+        raise AppgateException(
+            f"Environment variable {GIT_VENDOR_ENV}={vendor} must be 'github' or 'gitlab'"
+        )
+    return cast(GitVendor, vendor)
 
 
 def to_bool(value: Optional[str]) -> bool:
