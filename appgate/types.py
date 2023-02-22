@@ -153,6 +153,7 @@ class GitCommitState:
 
         return message
 
+
 GitVendor: TypeAlias = Literal["gitlab", "github"]
 SUPPORTED_GIT_VENDORS: List[GitVendor] = ["gitlab", "github"]
 
