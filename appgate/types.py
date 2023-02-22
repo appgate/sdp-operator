@@ -146,8 +146,6 @@ class GitCommitState:
             case "MODIFY":
                 message += f"Modified {self.path.relative_to(GIT_DUMP_DIR)}. "
 
-        log.info("ENTITY: %s", self.entity)
-
         if self.entity.appgate_metadata.url_file_path:
             message += f"\n      - [ ] Upload the bytes/secret as `{self.entity.appgate_metadata.url_file_path}`"
 
