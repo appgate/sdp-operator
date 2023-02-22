@@ -8,7 +8,10 @@ from typing import Optional, Dict, List, Any, Tuple
 from attr import evolve
 from minio import Minio  # type: ignore
 
-from appgate.customloaders import FileAttribLoader, CustomEntityLoader
+from appgate.customloaders import (
+    FileAttribLoader,
+    UrlFilePathLoader,
+)
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
     AttribType,
@@ -18,7 +21,6 @@ from appgate.openapi.types import (
     K8S_LOADERS_FIELD_NAME,
     Entity_T,
 )
-from appgate.openapi.utils import get_byte_field
 from appgate.types import OperatorMode
 
 
@@ -173,18 +175,18 @@ def should_load_file(operator_mode: OperatorMode) -> bool:
     return "APPGATE_FILE_SOURCE" in os.environ
 
 
-def set_appgate_file_metadata(orig_values, entity: Entity_T) -> Entity_T:
-    byte_fields = get_byte_field(entity)
-    for field in byte_fields:
-        entity_name = entity.__class__.__name__.lower()
-        api_version = os.getenv("APPGATE_API_VERSION")
-        content_field = url_file_path(
-            orig_values, field, entity_name, ("x-filename", "x-checksum")
-        )
-        object_key = f"{entity_name}-{api_version}/{content_field}"
-        appgate_mt = entity.appgate_metadata.with_url_file_path(object_key)
-        return evolve(entity, appgate_metadata=appgate_mt)
-    return entity
+def set_appgate_file_metadata(
+    value: OpenApiDict,
+    entity: Entity_T,
+    entity_name: str,
+    field_name: str,
+    target_fields: Tuple[str, ...],
+) -> Entity_T:
+    api_version = os.getenv("APPGATE_API_VERSION")
+    contents_field = url_file_path(value, field_name, entity_name, target_fields)
+    object_key = f"{entity_name.lower()}-{api_version}/{contents_field}"
+    appgate_mt = entity.appgate_metadata.with_url_file_path(object_key)
+    return evolve(entity, appgate_metadata=appgate_mt)
 
 
 class FileAttribMaker(AttribMaker):
@@ -233,6 +235,14 @@ class FileAttribMaker(AttribMaker):
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
             ),
-            CustomEntityLoader(loader=set_appgate_file_metadata),
+            UrlFilePathLoader(
+                loader=lambda v, e: set_appgate_file_metadata(
+                    v,
+                    e,
+                    entity_name=instance_maker_config.entity_name,
+                    field_name=self.name,
+                    target_fields=self.target_fields,
+                )
+            ),
         ]
         return values

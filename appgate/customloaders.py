@@ -62,6 +62,18 @@ class FileAttribLoader(CustomAttribLoader):
 
 
 @attrs()
+class UrlFilePathLoader(CustomLoader):
+    """
+    Loader to store the URL file path for secret and files and return a new entity
+    """
+
+    loader: Callable[[AttributesDict, Entity_T], Any] = attrib()
+
+    def load(self, values: AttributesDict, entity: Entity_T) -> Any:
+        return self.loader(values, entity)
+
+
+@attrs()
 class CustomFieldsEntityLoader(CustomLoader):
     loader: Callable[..., Any] = attrib()
     field: str = attrib()

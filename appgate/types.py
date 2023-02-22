@@ -18,6 +18,7 @@ from typing import (
 )
 from attr import attrib, attrs, evolve
 
+from appgate.logger import log
 from appgate.openapi.types import (
     Entity_T,
     APISpec,
@@ -144,6 +145,8 @@ class GitCommitState:
                 message += f"Deleted {self.path.relative_to(GIT_DUMP_DIR)}. "
             case "MODIFY":
                 message += f"Modified {self.path.relative_to(GIT_DUMP_DIR)}. "
+
+        log.info("ENTITY: %s", self.entity)
 
         if self.entity.appgate_metadata.url_file_path:
             message += f"Please upload the contents of the file as `{self.entity.appgate_metadata.url_file_path}` to the external file storage."
