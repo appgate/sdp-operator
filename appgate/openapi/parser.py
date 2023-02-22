@@ -1,7 +1,18 @@
 import datetime
 import functools
 from pathlib import Path
-from typing import Optional, Dict, Set, Any, List, Type, FrozenSet, cast, Callable
+from typing import (
+    Optional,
+    Dict,
+    Set,
+    Any,
+    List,
+    Type,
+    FrozenSet,
+    cast,
+    Callable,
+    Tuple,
+)
 
 import yaml
 from attr import attrib, make_class
@@ -532,7 +543,19 @@ class Parser:
                     factory=None,
                     definition=attrib_maker_config.definition,
                 )
-            elif format == "byte":
+            elif (
+                format == "byte"
+                and attrib_maker_config.definition.get("writeOnly") is True
+            ):
+                target_fields: Tuple[str, ...] = tuple(
+                    filter(
+                        None,
+                        (
+                            attrib_maker_config.definition.get("x-filename"),
+                            attrib_maker_config.definition.get("x-checksum"),
+                        ),
+                    )
+                )
                 return FileAttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
@@ -540,6 +563,7 @@ class Parser:
                     default=None,
                     factory=None,
                     definition=attrib_maker_config.definition,
+                    target_fields=target_fields,
                     operator_mode=self.parser_context.operator_mode,
                 )
             elif (

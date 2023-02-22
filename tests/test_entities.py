@@ -1,3 +1,4 @@
+import base64
 import datetime
 import os
 from pathlib import Path
@@ -12,6 +13,8 @@ from appgate.attrs import (
     K8S_DUMPER,
     APPGATE_DUMPER,
     DIFF_DUMPER,
+    GIT_DUMPER,
+    GIT_LOADER,
 )
 from appgate.openapi.openapi import generate_api_spec
 from appgate.openapi.types import (
@@ -29,6 +32,7 @@ from tests.utils import (
     PEM_TEST,
     join_string,
     FINGERPRINT,
+    new_file_source,
 )
 
 
@@ -42,6 +46,51 @@ def load_entities(version: str) -> None:
                 e = entities[d["kind"]].cls
                 # We load from a k8s yaml spec here
                 assert isinstance(K8S_LOADER.load(d["spec"], None, e), e)
+
+
+DEVICE_SCRIPT_CONTENTS = """YXBpVmVyc2lvbjogYmV0YS5hcHBnYXRlLmNvbS92MQpraW5kOiBDb25kaXRpb24KbWV0YWRhdGE6
+CiAgbmFtZTogY29uZGl0aW9uLTIKc3BlYzoKICBleHByZXNzaW9uOiAnIHZhciByZXN1bHQgPSBm
+YWxzZTsgLypwYXNzd29yZCovIGlmIChjbGFpbXMudXNlci5oYXNQYXNzd29yZCgnJ2NvbmRpdGlv
+bi0yJycsCiAgICA2MCkpIHsgcmV0dXJuIHRydWU7IH0gLyplbmQgcGFzc3dvcmQqLyByZXR1cm4g
+cmVzdWx0OyAnCiAgaWQ6IDEwMWY3OTYzLTczYjYtNDg3Mi04NTU1LWViMTVmZDk1YTYxMwogIG5h
+bWU6IGNvbmRpdGlvbi0yCiAgcmVtZWR5TWV0aG9kczoKICAtIGNsYWltU3VmZml4OiB0ZXN0CiAg
+ICBtZXNzYWdlOiB0ZXN0CiAgICB0eXBlOiBQYXNzd29yZEF1dGhlbnRpY2F0aW9uCiAgcmVwZWF0
+U2NoZWR1bGVzOgogIC0gMWgKICAtICcxMzozMicKICB0YWdzOgogIC0gYXBpLWNyZWF0ZWQKICAt
+IGF1dG9tYXRlZAogIC0gazhzCi0tLQphcGlWZXJzaW9uOiBiZXRhLmFwcGdhdGUuY29tL3YxCmtp
+bmQ6IENvbmRpdGlvbgptZXRhZGF0YToKICBuYW1lOiBBbHdheXMKc3BlYzoKICBleHByZXNzaW9u
+OiByZXR1cm4gdHJ1ZTsKICBpZDogZWU3YjdlNmYtZTkwNC00YjRmLWE1ZWMtYjNiZWYwNDA2NDNl
+CiAgbmFtZTogQWx3YXlzCiAgbm90ZXM6IENvbmRpdGlvbiBmb3IgYnVpbHQtaW4gdXNhZ2UuCiAg
+cmVtZWR5TWV0aG9kczogW10KICByZXBlYXRTY2hlZHVsZXM6IFtdCiAgdGFnczoKICAtIGJ1aWx0
+aW4KLS0tCmFwaVZlcnNpb246IGJldGEuYXBwZ2F0ZS5jb20vdjEKa2luZDogQ29uZGl0aW9uCm1l
+dGFkYXRhOgogIG5hbWU6IGNvbmRpdGlvbi0zCnNwZWM6CiAgZXhwcmVzc2lvbjogJyB2YXIgcmVz
+dWx0ID0gZmFsc2U7IC8qcGFzc3dvcmQqLyBpZiAoY2xhaW1zLnVzZXIuaGFzUGFzc3dvcmQoJydj
+b25kaXRpb24tMycnLAogICAgNjApKSB7IHJldHVybiB0cnVlOyB9IC8qZW5kIHBhc3N3b3JkKi8g
+cmV0dXJuIHJlc3VsdDsgJwogIGlkOiAwOTY3MWNhNi0wNGM4LTRjMWYtOTVjMS1jZDQ3Y2VkMTI4
+ZjcKICBuYW1lOiBjb25kaXRpb24tMwogIHJlbWVkeU1ldGhvZHM6IFtdCiAgcmVwZWF0U2NoZWR1
+bGVzOgogIC0gMWgKICAtICcxMzozMicKICB0YWdzOgogIC0gYXBpLWNyZWF0ZWQKICAtIGF1dG9t
+YXRlZAogIC0gazhzCi0tLQphcGlWZXJzaW9uOiBiZXRhLmFwcGdhdGUuY29tL3YxCmtpbmQ6IENv
+bmRpdGlvbgptZXRhZGF0YToKICBuYW1lOiBjb25kaXRpb24tMQpzcGVjOgogIGV4cHJlc3Npb246
+ICcgdmFyIHJlc3VsdCA9IGZhbHNlOyAvKnBhc3N3b3JkKi8gaWYgKGNsYWltcy51c2VyLmhhc1Bh
+c3N3b3JkKCcnY29uZGl0aW9uLTEnJywKICAgIDYwKSkgeyByZXR1cm4gdHJ1ZTsgfSAvKmVuZCBw
+YXNzd29yZCovIHJldHVybiByZXN1bHQ7ICcKICBpZDogZDQwODNkMTAtNzRkOC00OTc5LThhMGEt
+ZTE5M2Q1MmQ3OThjCiAgbmFtZTogY29uZGl0aW9uLTEKICByZW1lZHlNZXRob2RzOiBbXQogIHJl
+cGVhdFNjaGVkdWxlczoKICAtIDFoCiAgLSAnMTM6MzInCiAgdGFnczoKICAtIGFwaS1jcmVhdGVk
+CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
+""".replace(
+    "\n", ""
+).encode()
+
+
+@pytest.fixture
+def sdp_http_file_source():
+    with new_file_source(
+        {
+            # file referenced via name/field (test test_bytes_diff_dump)
+            "localhost:8000/devicescript-v18/crowdstrike_data_macos.sh": DEVICE_SCRIPT_CONTENTS,
+            "localhost:8000/devicescript-v18/crowdstrike-get-risk-data-from-macos/file": DEVICE_SCRIPT_CONTENTS,
+        }
+    ) as s:
+        yield s
 
 
 @pytest.mark.skip("SDP v5.1 is unsupported")
@@ -66,11 +115,17 @@ def test_load_entities_v16():
     load_entities("v16")
 
 
-def test_load_entities_v17():
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_load_entities_v17(sdp_http_file_source):
     load_entities("v17")
 
 
-def test_load_entities_v18():
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_load_entities_v18(sdp_http_file_source):
     load_entities("v18")
 
 
@@ -758,11 +813,28 @@ cGVhdFNjaGVkdWxlczoKICAtIDFoCiAgLSAnMTM6MzInCiAgdGFnczoKICAtIGFwaS1jcmVhdGVk
 CiAgLSBhdXRvbWF0ZWQKICAtIGs4cwoK
 """
 BASE64_FILE_W0 = "".join(BASE64_FILE.split("\n"))
+FILE_CONTENTS = base64.b64decode(BASE64_FILE)
 SHA256_FILE = "0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e"
 SIZE_FILE = 1563
 
 
-def test_bytes_load():
+@pytest.fixture
+def http_file_source():
+    with new_file_source(
+        {
+            # file referenced via name/field (test test_bytes_diff_dump)
+            "localhost:8000/entitytest3appgate-v18/entity1/fieldOne": FILE_CONTENTS,
+            # File referenced via checksum (test test_bytes_load)
+            "localhost:8000/entitytest3-v18/0d373afdccb82399b29ba0d6d1a282b4d10d7e70d948257e75c05999f0be9f3e": FILE_CONTENTS,
+        }
+    ) as s:
+        yield s
+
+
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_bytes_load(http_file_source):
     EntityTest3 = (
         load_test_open_api_spec(secrets_key=None, reload=True)
         .entities["EntityTest3"]
@@ -771,7 +843,6 @@ def test_bytes_load():
     # fieldOne is writeOnly :: byte
     # fieldTwo is readOnly :: checksum of fieldOne
     e_data = {
-        "fieldOne": BASE64_FILE_W0,
         "fieldTwo": SHA256_FILE,
     }
     # writeOnly with format bytes is never read from APPGATE
@@ -785,9 +856,9 @@ def test_bytes_load():
     # readOnly associated to writeOnly bytes is compared
     assert e != EntityTest3(fieldOne="Some value", fieldTwo="22222")
 
+    # We use fieldTwo to reference where to get the contents of fieldOne
     e_data = {
-        "fieldOne": BASE64_FILE_W0,
-        "fieldTwo": None,
+        "fieldTwo": SHA256_FILE,
     }
     e = K8S_LOADER.load(e_data, None, EntityTest3)
     # When reading from K8S the checksum field associated to bytes is computed
@@ -804,6 +875,9 @@ def test_bytes_load():
     )
 
 
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
 def test_bytes_dump():
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
     EntityTest3 = api_spec.entities["EntityTest3"].cls
@@ -829,7 +903,10 @@ def test_bytes_dump():
     }
 
 
-def test_bytes_diff_dump():
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_bytes_diff_dump(http_file_source):
     # DIFF mode we should dump just the fields used for equality
     EntityTest3Appgate = (
         load_test_open_api_spec(secrets_key=None, reload=True)
@@ -839,7 +916,6 @@ def test_bytes_diff_dump():
     appgate_metadata = {"uuid": "6a01c585-c192-475b-b86f-0e632ada6769"}
     e_data = {
         "name": "entity1",
-        "fieldOne": BASE64_FILE_W0,
         "fieldTwo": None,
         "fieldThree": None,
         "appgate_metadata": appgate_metadata,
@@ -853,6 +929,9 @@ def test_bytes_diff_dump():
     }
 
 
+@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
+@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
 def test_certificate_pem_load():
     EntityCert = (
         load_test_open_api_spec(secrets_key=None, reload=True)
@@ -1001,3 +1080,139 @@ def test_discriminator_dump():
         "discriminatorTwoFieldTwo": False,
         "configurableFieldOne": False,
     }
+
+
+def test_git_dumper_checksum() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityTestFileComplex(
+        name="test1", id="test1", filename="file1.sh", checksum="123456"
+    )
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestFileComplex",
+        "metadata": {
+            "name": "test1",
+            "annotations": {"sdp.appgate.com/id": "test1"},
+        },
+        "spec": {
+            "name": "test1",
+            "id": "test1",
+            "filename": "file1.sh",
+            "checksum": "123456",
+        },
+    }
+
+
+def test_git_dumper_write_only() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityTestFileComplex(
+        name="test1",
+        id="test1",
+        filename="file1.sh",
+        checksum="123456",
+        file="somefilecontents",
+    )
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTestFileComplex",
+        "metadata": {
+            "name": "test1",
+            "annotations": {"sdp.appgate.com/id": "test1"},
+        },
+        "spec": {
+            "name": "test1",
+            "id": "test1",
+            "filename": "file1.sh",
+            "checksum": "123456",
+        },
+    }
+
+
+def test_git_dumper_size() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTest3 = api_spec.entities["EntityTest3"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityTest3(fieldTwo="12345", fieldThree="67890")
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest3",
+        "metadata": {
+            "name": "entitytest3",
+            "annotations": {},
+        },
+        "spec": {
+            "fieldTwo": "12345",
+            "fieldThree": "67890",
+        },
+    }
+
+
+def test_git_dumper_certificate() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityCert = api_spec.entities["EntityCert"].cls
+    EntityCert_Fieldtwo = api_spec.entities["EntityCert_Fieldtwo"].cls
+    # Entity in memory loaded from appgate, that means it does not have writeOnly fields
+    e = EntityCert(
+        id="myid",
+        name="myname",
+        fieldOne="PEMFILE",
+        fieldTwo=EntityCert_Fieldtwo(
+            version="666",
+            serial="serial",
+            issuer="issuer",
+            subject="subject",
+            validFrom="1",
+            validTo="2",
+            fingerprint="123",
+            certificate="123",
+            subjectPublicKey="1234",
+        ),
+    )
+    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityCert",
+        "metadata": {
+            "name": "myname",
+            "annotations": {"sdp.appgate.com/id": "myid"},
+        },
+        "spec": {
+            "id": "myid",
+            "name": "myname",
+            "fieldOne": "PEMFILE",
+            "fieldTwo": {
+                "certificate": "123",
+                "fingerprint": "123",
+                "issuer": "issuer",
+                "serial": "serial",
+                "subject": "subject",
+                "subjectPublicKey": "1234",
+                "validFrom": "1",
+                "validTo": "2",
+                "version": "666",
+            },
+        },
+    }
+
+
+def test_loader_git_0():
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    EntityTestFileComplex = api_spec.entities["EntityTestFileComplex"].cls
+    data = {
+        "apiVersion": "v666.sdp.appgate.com/v1",
+        "kind": "EntityTest3",
+        "metadata": {
+            "name": "entitytest3",
+            "annotations": {},
+        },
+        "spec": {
+            "file": "somefilecontent",  # This is ignored
+            "filename": "somename",
+            "checksum": "somechecksum",
+        },
+    }
+    e = GIT_LOADER.load(data["spec"], None, EntityTestFileComplex)
+    assert e == EntityTestFileComplex(filename="somename", checksum="somechecksum")

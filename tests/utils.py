@@ -1,25 +1,35 @@
-import typing
+from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import Optional, Callable, Dict, Union
+from unittest.mock import patch
 
+import urllib3
 from cryptography.fernet import Fernet
+from requests import Response
 
 from appgate.client import AppgateClient
 from appgate.logger import set_level
 from appgate.openapi.openapi import parse_files, generate_api_spec
+from appgate.openapi.types import APISpec, EntitiesDict
 
 KEY = "9K5-LO9yhyWNtHzjd__rYfPuJqrF58yApxtvHXGxefk="
 ENCRYPTED_PASSWORD = "gAAAAABfTgED7qYN_pr9dJjwMPhM9j3kp69B8SNJwwL4Rj5DpWVR8u0KG5kAzgx2yU-rVPW0AiWHL3cgXlGwz1tpepafJdM-ZA=="
 FERNET_CIPHER = Fernet(KEY.encode())
 
-api_spec = generate_api_spec(secrets_key=KEY)
-entities = api_spec.entities
 
-Policy = entities["Policy"].cls
-Entitlement = entities["Entitlement"].cls
-Condition = entities["Condition"].cls
-IdentityProvider = entities["IdentityProvider"].cls
-Site = entities["Site"].cls
+_api_spec = None
+
+
+def api_spec() -> APISpec:
+    global _api_spec
+    if not _api_spec:
+        _api_spec = generate_api_spec(secrets_key=KEY)
+    return _api_spec
+
+
+def entities() -> EntitiesDict:
+    return api_spec().entities
+
 
 TestOpenAPI = None
 TestSpec = {
@@ -32,6 +42,7 @@ TestSpec = {
     "/entity-test4": "EntityTest4",
     "/entity-test-with-id": "EntityTestWithId",
     "/entity-test-file": "EntityTestFile",
+    "/entity-test-file-complex": "EntityTestFileComplex",
     "/entity-dep-1": "EntityDep1",
     "/entity-dep-2": "EntityDep2",
     "/entity-dep-3": "EntityDep3",
@@ -109,50 +120,13 @@ def load_test_open_api_spec(
     if not TestOpenAPI or reload:
         TestOpenAPI = parse_files(
             spec_entities=TestSpec,
-            spec_directory=Path("tests/resources/"),
+            spec_directory=Path(__file__).parent / "resources",
             spec_file="test_entity.yaml",
             secrets_key=secrets_key,
             k8s_get_secret=k8s_get_secret,
             operator_mode="appgate-operator",
         )
     return TestOpenAPI
-
-
-@typing.no_type_check
-def entitlement(
-    name: str,
-    id: str = None,
-    site: str = "site-example",
-    conditions: Optional[List[str]] = None,
-) -> Entitlement:
-    return Entitlement(
-        id=id,
-        name=name,
-        site=site,
-        conditions=frozenset(conditions) if conditions else frozenset(),
-    )
-
-
-@typing.no_type_check
-def condition(name: str, id: str = None, expression: Optional[str] = None) -> Condition:
-    return Condition(id=id, name=name, expression=expression or "expression-test")
-
-
-@typing.no_type_check
-def site(name: str, id: str = None) -> Condition:
-    return Site(id=id, name=name)
-
-
-@typing.no_type_check
-def policy(
-    name: str, id: str = None, entitlements: Optional[List[str]] = None
-) -> Policy:
-    return Policy(
-        name=name,
-        id=id,
-        entitlements=frozenset(entitlements) if entitlements else frozenset(),
-        expression="expression-test",
-    )
 
 
 class MockedClient(AppgateClient):
@@ -164,3 +138,40 @@ def _k8s_get_secret(name: str, key: str) -> str:
     if name in k8s_secrets and key in k8s_secrets[name]:
         return k8s_secrets[name][key]
     raise Exception(f"Unable to get secret: {name}.{key}")
+
+
+@contextmanager
+def new_file_source(
+    contents: Optional[Dict[str, bytes]] = None,
+    default: Optional[bytes] = None,
+    tpe: str = "HTTP",
+):
+    def _response(v: str) -> Union[Response, urllib3.response.HTTPResponse]:
+        data = (contents or {}).get(v) or default
+        if tpe == "HTTP":
+            mock_response = Response()
+            if data:
+                mock_response._content = data
+                mock_response.status_code = 200
+            else:
+                raise Exception(f"No data for {v}")
+            return mock_response
+        elif tpe == "S3":
+            if data:
+                mock_response2 = urllib3.response.HTTPResponse(body=data)
+            else:
+                raise Exception(f"No data for {v}")
+            return mock_response2
+        raise Exception("Unknown file source type to mock")
+
+    if tpe == "HTTP":
+        with patch("appgate.files.requests.get") as get:
+            get.side_effect = _response
+            yield get
+    elif tpe == "S3":
+        with patch("appgate.files.Minio.bucket_exists") as bucket_exists, patch(
+            "appgate.files.Minio.get_object"
+        ) as get_object:
+            bucket_exists.return_value = True
+            get_object.side_effect = lambda a, b: _response(f"{a}/{b}")
+            yield get_object

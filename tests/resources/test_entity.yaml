@@ -26,6 +26,8 @@ paths:
     $ref: '#/entity-test-with-id'
   /entity-test-file:
     $ref: '#/entity-test-file'
+  /entity-test-file-complex:
+    $ref: '#/entity-test-file-complex'
   /entity-dep-1:
     $ref: '#/entity-dep-1'
   /entity-dep-2:
@@ -183,6 +185,21 @@ entity-test-file:
         application/json:
           schema:
             $ref: '#/definitions/EntityTestFile'
+
+entity-test-file-complex:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTestFileComplex'
 
 entity-dep-1:
   get:
@@ -426,6 +443,7 @@ definitions:
         writeOnly: true
         format: byte
         type: string
+        x-checksum: fieldTwo
       fieldTwo:
         readOnly: true
         type: string
@@ -448,6 +466,7 @@ definitions:
         writeOnly: true
         format: byte
         type: string
+        x-checksum: fieldTwo
       fieldTwo:
         readOnly: true
         type: string
@@ -491,6 +510,27 @@ definitions:
       file:
         type: string
         format: byte
+  EntityTestFileComplex:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      filename:
+        type: string
+      file:
+        writeOnly: true
+        type: string
+        format: byte
+        x-filename: filename
+        x-checksum: checksum
+      checksum:
+        format: checksum
+        readOnly: true
+        type: string
+        x-checksum-source: file
   EntityDep1:
     type: object
     properties:
