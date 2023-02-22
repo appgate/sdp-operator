@@ -34,6 +34,8 @@ from tests.utils import (
     api_spec,
     entities,
     new_file_source,
+    KEY,
+    ENCRYPTED_PASSWORD,
 )
 
 
@@ -2083,26 +2085,14 @@ def test_compare_plan_entity_pem():
 
 
 def test_compare_entities_generation_changed():
-    EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
-        .entities["EntityTest2"]
-        .cls
-    )
+    EntityTest2 = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -2129,26 +2119,14 @@ def test_compare_entities_generation_changed():
 
 
 def test_compare_entities_updated_changed():
-    EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
-        .entities["EntityTest2"]
-        .cls
-    )
+    EntityTest2 = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",

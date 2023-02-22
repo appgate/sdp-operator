@@ -735,6 +735,7 @@ def test_appgate_metadata_secrets_dump_from_appgate():
     api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
     EntityTest2 = api_spec.entities["EntityTest2"].cls
     e1_data = {
+        "name": "test_appgate_metadata_secrets_dump_from_appgate",
         "fieldThree": "this is a field",
     }
     e1 = APPGATE_LOADER.load(e1_data, None, EntityTest2)

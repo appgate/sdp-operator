@@ -161,22 +161,18 @@ def test_get_appgate_secret_simple_load_no_cipher():
 
 def test_get_appgate_secret_k8s_simple_load():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     e = K8S_LOADER.load(data, None, EntityTest2)
     # Password is coming from k8s secrets
-    assert e.fieldOne == "1234567890-from-k8s"
+    assert e.fieldOne == "1234567890"
     assert e.appgate_metadata.passwords == {"fieldOne": data["fieldOne"]}
 
 
@@ -202,11 +198,12 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
 
 def test_get_secret_read_entity_without_password():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data = {
+        "name": "test_get_secret_read_entity_without_password",
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
@@ -220,25 +217,17 @@ def test_compare_entity_with_secrets():
     If we are missing metadata frm k8s we should always update the entity
     """
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -251,25 +240,17 @@ def test_compare_entity_with_secrets():
 
 def test_compare_entity_with_secrets_with_metadata_1():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -288,11 +269,7 @@ def test_compare_entity_with_secrets_with_metadata_1():
     assert e1 == e2
 
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field different",
         "created": "2020-09-10T12:20:14Z",
@@ -304,25 +281,17 @@ def test_compare_entity_with_secrets_with_metadata_1():
 
 def test_compare_entity_with_secrets_with_metadata_2():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -341,25 +310,17 @@ def test_compare_entity_with_secrets_with_metadata_2():
 
 def test_compare_entity_with_secrets_with_metadata_3():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -378,25 +339,17 @@ def test_compare_entity_with_secrets_with_metadata_3():
 
 def test_compare_entity_with_secrets_with_metadata_4():
     EntityTest2 = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -415,27 +368,19 @@ def test_compare_entity_with_secrets_with_metadata_4():
 
 def test_compare_entity_without_secrets_and_metadata():
     EntityTest2WihoutPassword = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
+        load_test_open_api_spec(secrets_key=KEY, reload=True)
         .entities["EntityTest2WihoutPassword"]
         .cls
     )
     data_1 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
         "updated": "2020-09-10T12:20:14Z",
     }
     data_2 = {
-        "fieldOne": {
-            "type": "k8s/secret",
-            "name": "secret-storage-1",
-            "key": "field-one",
-        },
+        "fieldOne": ENCRYPTED_PASSWORD,
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
         "created": "2020-09-10T12:20:14Z",
@@ -457,11 +402,7 @@ def test_compare_entity_without_secrets_and_metadata():
 @patch.dict(os.environ, {"APPGATE_SECRET_SOURCE": "vault"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
 def test_load_vault_secret():
-    EntityTest = (
-        load_test_open_api_spec(reload=True, k8s_get_secret=_k8s_get_secret)
-        .entities["EntityTest2"]
-        .cls
-    )
+    EntityTest = load_test_open_api_spec(reload=True).entities["EntityTest2"].cls
 
     data_without_password = {
         "name": "vault_secret_foo",
