@@ -37,3 +37,4 @@ jobs:
           CR_CHARTS_DIR: "k8s"
           CR_SKIP_EXISTING: true
           CR_RELEASE_NAME_TEMPLATE: "v{{ .Version }}-{{ .Name }}"
+          CR_GENERATE_RELEASE_NOTES: true
