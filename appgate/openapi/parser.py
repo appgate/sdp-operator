@@ -27,7 +27,6 @@ from appgate.bytes import (
 from appgate.customloaders import (
     CustomFieldsEntityLoader,
     CustomEntityLoader,
-    UrlFilePathLoader,
 )
 from appgate.discriminator import (
     get_discriminator_maker_config,
@@ -183,7 +182,6 @@ class EntityClassGenerator:
                         {
                             CustomFieldsEntityLoader,
                             CustomEntityLoader,
-                            UrlFilePathLoader,
                         },
                     )
                 ):

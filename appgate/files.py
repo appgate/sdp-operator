@@ -10,7 +10,7 @@ from minio import Minio  # type: ignore
 
 from appgate.customloaders import (
     FileAttribLoader,
-    UrlFilePathLoader,
+    CustomEntityLoader,
 )
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
@@ -235,7 +235,7 @@ class FileAttribMaker(AttribMaker):
                 field=self.name,
                 load_external=should_load_file(self.operator_mode),
             ),
-            UrlFilePathLoader(
+            CustomEntityLoader(
                 loader=lambda v, e: set_appgate_file_metadata(
                     v,
                     e,
@@ -243,7 +243,6 @@ class FileAttribMaker(AttribMaker):
                     field_name=self.name,
                     target_fields=self.target_fields,
                 ),
-                should_load=should_load_file(self.operator_mode),
             ),
         ]
         return values
