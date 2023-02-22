@@ -242,7 +242,8 @@ class FileAttribMaker(AttribMaker):
                     entity_name=instance_maker_config.entity_name,
                     field_name=self.name,
                     target_fields=self.target_fields,
-                )
+                ),
+                should_load=should_load_file(self.operator_mode),
             ),
         ]
         return values

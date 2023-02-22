@@ -68,9 +68,12 @@ class UrlFilePathLoader(CustomLoader):
     """
 
     loader: Callable[[AttributesDict, Entity_T], Any] = attrib()
+    should_load: bool = attrib()
 
     def load(self, values: AttributesDict, entity: Entity_T) -> Any:
-        return self.loader(values, entity)
+        if self.should_load:
+            return self.loader(values, entity)
+        return entity
 
 
 @attrs()
