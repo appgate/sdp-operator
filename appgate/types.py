@@ -149,7 +149,7 @@ class GitCommitState:
         log.info("ENTITY: %s", self.entity)
 
         if self.entity.appgate_metadata.url_file_path:
-            message += f"Please upload the contents of the file as `{self.entity.appgate_metadata.url_file_path}` to the external file storage."
+            message += f"\n      - [ ] Upload the bytes/secret as `{self.entity.appgate_metadata.url_file_path}`"
 
         return message
 
