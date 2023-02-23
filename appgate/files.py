@@ -76,7 +76,8 @@ def url_file_path(
     4. else if the entity has an id, use it to compute the path url `id/fieldName`
     5. else raise an exception
     """
-    if (v := value.get(field_name)) is not None:
+    v = value.get(field_name)
+    if v is not None and isinstance(v, str):
         return normalize_url_file_path(v)
     for field in target_fields:
         if v := value.get(field):
