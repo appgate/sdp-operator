@@ -1,0 +1,16 @@
+sdp:
+  sdpOperator:
+    host: ""
+    deviceId: ""
+    version: v18
+    secret: sdp-operator-secret
+    logLevel: info
+    timeout: 30
+    builtinTags:
+      - builtin
+    targetTags: ["normal-mode"]
+    excludeTags: []
+    sslNoVerify: false
+    dryRun: false
+    twoWaySync: true
+    cleanup: false
