@@ -38,22 +38,24 @@ Below is the list of Helm values available for configuration.
 
 ### Git Operator
 
-| Name                                | Description                                                                                                                                                                              | Value                          |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `sdp.gitOperator.version`           | The API version of the controller.                                                                                                                                                       | `v18`                          |
-| `sdp.gitOperator.logLevel`          | The log level of the operator.                                                                                                                                                           | `info`                         |
-| `sdp.gitOperator.timeout`           | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`                           |
-| `sdp.gitOperator.targetTags`        | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`                           |
-| `sdp.gitOperator.dryRun`            | Run the operator in Dry Run mode. The operator will compute the plan but will not commit/push.                                                                                           | `true`                         |
-| `sdp.gitOperator.git.vendor`        | The vendor of the git repository: github, gitlab                                                                                                                                         | `github`                       |
-| `sdp.gitOperator.git.mainBranch`    | Main branch of the repository to clone the repository                                                                                                                                    | `""`                           |
-| `sdp.gitOperator.git.baseBranch`    | Base branch of the repository to create pull requests                                                                                                                                    | `""`                           |
-| `sdp.gitOperator.git.repository`    | The name of the repository (e.g. organization/repository)                                                                                                                                | `""`                           |
-| `sdp.gitOperator.secret`            | Name of the secret that contains the SSH key and token for the git repository                                                                                                            | `""`                           |
-| `sdp.gitOperator.image.tag`         | The image tag of the operator.                                                                                                                                                           | `""`                           |
-| `sdp.gitOperator.image.pullPolicy`  | The image pull policy of the operator.                                                                                                                                                   | `Always`                       |
-| `sdp.gitOperator.image.repository`  | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
-| `sdp.gitOperator.image.pullSecrets` | The secret to access the repository.                                                                                                                                                     | `[]`                           |
+| Name                                        | Description                                                                                                                                                                              | Value                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `sdp.gitOperator.version`                   | The API version of the controller.                                                                                                                                                       | `v18`                          |
+| `sdp.gitOperator.logLevel`                  | The log level of the operator.                                                                                                                                                           | `info`                         |
+| `sdp.gitOperator.timeout`                   | The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received. | `30`                           |
+| `sdp.gitOperator.targetTags`                | The list of tags that define the entities to sync. Tagged entities will be synced.                                                                                                       | `[]`                           |
+| `sdp.gitOperator.dryRun`                    | Run the operator in Dry Run mode. The operator will compute the plan but will not commit/push.                                                                                           | `true`                         |
+| `sdp.gitOperator.git.vendor`                | The vendor of the git repository: github, gitlab                                                                                                                                         | `github`                       |
+| `sdp.gitOperator.git.mainBranch`            | Main branch of the repository to clone the repository                                                                                                                                    | `""`                           |
+| `sdp.gitOperator.git.baseBranch`            | Base branch of the repository to create pull requests                                                                                                                                    | `""`                           |
+| `sdp.gitOperator.git.repository`            | The name of the repository (e.g. organization/repository)                                                                                                                                | `""`                           |
+| `sdp.gitOperator.secret`                    | Name of the secret that contains the SSH key and token for the git repository                                                                                                            | `""`                           |
+| `sdp.gitOperator.git.hostname`              | Hostname of the git repository                                                                                                                                                           | `""`                           |
+| `sdp.gitOperator.git.strictHostKeyChecking` | Enable StrictHostKeyChecking when cloning repository via SSH                                                                                                                             | `true`                         |
+| `sdp.gitOperator.image.tag`                 | The image tag of the operator.                                                                                                                                                           | `""`                           |
+| `sdp.gitOperator.image.pullPolicy`          | The image pull policy of the operator.                                                                                                                                                   | `Always`                       |
+| `sdp.gitOperator.image.repository`          | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
+| `sdp.gitOperator.image.pullSecrets`         | The secret to access the repository.                                                                                                                                                     | `[]`                           |
 
 
 ### External Secret Configuration
@@ -77,6 +79,12 @@ Below is the list of Helm values available for configuration.
 | `sdp.externalFile.source.s3.address`     | Hostname of the S3 object storage                              | `""`    |
 | `sdp.externalFile.source.s3.keySecret`   | Name of the secret that contains the access key and secret key | `""`    |
 | `sdp.externalFile.source.s3.sslNoVerify` | Disables SSL verification on S3 connection                     | `false` |
-| `serviceAccount.create`                  | Enable the creation of a ServiceAccount for SDP pods           | `true`  |
-| `rbac.create`                            | create & use RBAC resources or not                             | `true`  |
+
+
+### Kubernetes Parameters
+
+| Name                    | Description                                          | Value  |
+| ----------------------- | ---------------------------------------------------- | ------ |
+| `serviceAccount.create` | Enable the creation of a ServiceAccount for SDP pods | `true` |
+| `rbac.create`           | create & use RBAC resources or not                   | `true` |
 
