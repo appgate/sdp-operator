@@ -110,12 +110,15 @@ GIT_REPOSITORY_ENV = "GIT_REPOSITORY"
 GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
 GIT_VENDOR_ENV = "GIT_VENDOR"
+GIT_HOSTNAME_ENV = "GIT_HOSTNAME"
+GIT_STRICT_HOST_KEY_CHECKING_ENV = "GIT_STRICT_HOST_KEY_CHECKING"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/entities")
 
 GIT_SSH_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path("/opt/git-operator/k8s/fingerprint.key")
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
@@ -411,6 +414,8 @@ class GitOperatorContext:
     git_repository_fork: str | None = attrib()
     git_vendor: GitVendor = attrib()
     git_base_branch: str = attrib()
+    git_hostname: str | None = attrib()
+    git_strict_host_key_checking = attrib(default=True)
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
     main_branch: str = attrib(default=GIT_REPOSITORY_MAIN_BRANCH)

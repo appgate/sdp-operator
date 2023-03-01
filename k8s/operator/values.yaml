@@ -66,6 +66,8 @@ sdp:
   ## @param sdp.gitOperator.git.baseBranch Base branch of the repository to create pull requests
   ## @param sdp.gitOperator.git.repository The name of the repository (e.g. organization/repository)
   ## @param sdp.gitOperator.secret Name of the secret that contains the SSH key and token for the git repository
+  ## @param sdp.gitOperator.git.hostname Hostname of the git repository
+  ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
   gitOperator:
     version: v18
     logLevel: info
@@ -78,6 +80,8 @@ sdp:
       mainBranch: ""
       baseBranch: ""
       repository: ""
+      hostname: ""
+      strictHostKeyChecking: true
 
     ## @param sdp.gitOperator.image.tag The image tag of the operator.
     ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.
@@ -123,10 +127,11 @@ sdp:
         keySecret: ""
         sslNoVerify: false
 
+
+## @section Kubernetes Parameters
 ## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
+## @param rbac.create create & use RBAC resources or not
 serviceAccount:
   create: true
-
-## @param rbac.create create & use RBAC resources or not
 rbac:
   create: true
