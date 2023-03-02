@@ -144,7 +144,7 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
          vendor: gitlab
          mainBranch: main
          baseBranch: main
-         repository: <GITLAB_REPOSITORY>
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
    ```
    ```shell
    helm install gitlab-operator appgate/sdp-operator --values gitlab-operator.yaml --namespace sdp-system
@@ -176,9 +176,8 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
          vendor: gitlab
          mainBranch: main
          baseBranch: main
-         repository: <GITLAB_REPOSITORY>
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
          hostname: <GITLAB_HOSTNAME>
-         strictHostKeyChecking: true
    ```
    ```shell
    helm install gitlab-operator appgate/sdp-operator --values gitlab-operator.yaml --namespace sdp-system
