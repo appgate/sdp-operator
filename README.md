@@ -101,7 +101,6 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
 ### GitHub
 1. Create a secret containing SSH key and GitHub token
    ```shell
-   # GitHub
    kubectl create secret generic github-operator-secret \
        --from-literal=github-token="<GITHUB_TOKEN>" \
        --from-file=git-ssh-key="<SSH_KEY_PATH>"
@@ -118,22 +117,22 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
          vendor: github
          mainBranch: main
          baseBranch: main
-         repository: appgate/github-example
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
    ```
    ```shell
    helm install github-operator appgate/sdp-operator --values github-operator.yaml --namespace sdp-system
    ```
    
 ### GitLab
+#### GitLab (SaaS)
 1. Create a secret containing SSH key and GitLab token
    ```shell
-   # GitLab
    kubectl create secret generic gitlab-operator-secret \
        --from-literal=gitlab-token="<GITLAB_TOKEN>" \
        --from-file=git-ssh-key="<SSH_KEY_PATH>"
    ```
 
-2. Install the Git Operator for GitLab
+2. Install the Git Operator for GitLab (SaaS)
    ```yaml
    sdp:
      operators:
@@ -145,7 +144,40 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
          vendor: gitlab
          mainBranch: main
          baseBranch: main
-         repository: appgate/gitlab-example
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
+   ```
+   ```shell
+   helm install gitlab-operator appgate/sdp-operator --values gitlab-operator.yaml --namespace sdp-system
+   ```
+
+#### GitLab (Self-Hosted)
+1. Generate a file containing the host key fingerprint of the self-hosted GitLab
+   ```shell
+   ssh-keyscan <GITLAB_HOSTNAME> > <SSH_HOST_KEY_FINGERPRINT_PATH>
+   ```
+
+2. Create a secret containing SSH key and GitLab token
+   ```shell
+   kubectl create secret generic gitlab-operator-secret \
+       --from-literal=gitlab-token="<GITLAB_TOKEN>" \
+       --from-file=git-ssh-key="<SSH_KEY_PATH>" \
+       --from-file=git-ssh-host-key-fingerprint="<SSH_HOST_KEY_FINGERPRINT_PATH>"
+   ```
+
+3. Install the Git Operator for self-hosted GitLab
+   ```yaml
+   sdp:
+     operators:
+       - git-operator
+     gitOperator:
+       version: v18
+       secret: gitlab-operator-secret
+       git:
+         vendor: gitlab
+         mainBranch: main
+         baseBranch: main
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
+         hostname: <GITLAB_HOSTNAME>
    ```
    ```shell
    helm install gitlab-operator appgate/sdp-operator --values gitlab-operator.yaml --namespace sdp-system

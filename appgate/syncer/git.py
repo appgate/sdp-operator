@@ -3,6 +3,7 @@ import functools
 import time
 from datetime import date
 from typing import Tuple, List, Type, Dict, Iterable, Protocol
+from urllib.parse import urlparse
 
 import yaml
 from git import Repo, GitCommandError
@@ -41,6 +42,7 @@ from appgate.types import (
     APPGATE_OPERATOR_PR_LABEL_DESC,
     GITLAB_TOKEN_ENV,
     GitVendor,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
 )
 
 
@@ -201,18 +203,29 @@ class GitRepo:
         raise NotImplementedError()
 
 
-def clone_repo(ctx: GitOperatorContext, vendor: str, repository_path: Path) -> Repo:
+def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
     if repository_path.exists():
         shutil.rmtree(repository_path)
     if not GIT_SSH_KEY_PATH.exists():
         raise AppgateException(f"Unable to find SSH key {GIT_SSH_KEY_PATH}")
+    url = (
+        f"git@{urlparse(ctx.git_hostname).hostname}:{repository}"
+        if ctx.git_hostname
+        else f"git@{ctx.git_vendor}.com:{repository}"
+    )
     try:
+        git_ssh_command = f"ssh -i {GIT_SSH_KEY_PATH} -o IdentitiesOnly=yes"
+        if not ctx.git_strict_host_key_checking:
+            git_ssh_command += " -o StrictHostKeyChecking=no"
+        if ctx.git_ssh_port:
+            git_ssh_command += f" -p {ctx.git_ssh_port}"
+        log.info("%s", git_ssh_command)
         git_repo = Repo.clone_from(
-            f"git@{vendor}.com:{repository}",
+            url,
             repository_path,
-            env={"GIT_SSH_COMMAND": f"ssh -i {GIT_SSH_KEY_PATH} -o IdentitiesOnly=yes"},
+            env={"GIT_SSH_COMMAND": git_ssh_command},
         )
     except GitCommandError as e:
         log.error("Error cloning repository %s: %s", repository, e.stderr)
@@ -226,9 +239,9 @@ def gitlab_repo(
     ctx: GitOperatorContext, repository_path: Path = GIT_DUMP_DIR
 ) -> GitRepo:
     token = ensure_env(GITLAB_TOKEN_ENV)
-    git_repo = clone_repo(ctx, "gitlab", repository_path)
+    git_repo = clone_repo(ctx, repository_path)
     repository = ctx.git_repository_fork or ctx.git_repository
-    gl = Gitlab(private_token=token)
+    gl = Gitlab(url=ctx.git_hostname, private_token=token)
     gl_project = gl.projects.get(repository)
     return GitLabRepo(
         gl=gl,
@@ -248,7 +261,7 @@ def github_repo(
     ctx: GitOperatorContext, repository_path: Path = GIT_DUMP_DIR
 ) -> GitRepo:
     token = ensure_env(GITHUB_TOKEN_ENV)
-    git_repo = clone_repo(ctx, "github", repository_path)
+    git_repo = clone_repo(ctx, repository_path)
     repository = ctx.git_repository_fork or ctx.git_repository
     gh = Github(token)
     gh_repo = gh.get_repo(repository)
@@ -658,7 +671,11 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
 
         case "gitlab":
             log.info("[git-operator] Detected GitLab as git vendor type")
-            create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
+            if ctx.git_hostname and ctx.git_strict_host_key_checking:
+                with open(GIT_SSH_HOST_KEY_FINGERPRINT_PATH) as fingerprint:
+                    create_ssh_fingerprint(fingerprint.read())
+            else:
+                create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
             return gitlab_repo(ctx)
 
         case _:

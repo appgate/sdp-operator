@@ -186,18 +186,22 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
       volumes:
-        - name: git-ssh-key
+        - name: git-key
           secret:
             defaultMode: 0600
             secretName: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
             items:
               - key: git-ssh-key
                 path: deployment.key
+              {{- if and (.Values.sdp.gitOperator.git.hostname) (eq .Values.sdp.gitOperator.git.strictHostKeyChecking true) }}
+              - key: git-ssh-host-key-fingerprint
+                path: fingerprint.key
+              {{- end }}
       containers:
         - name: {{ .Chart.Name }}-git
           volumeMounts:
             - mountPath: /opt/git-operator/k8s
-              name: git-ssh-key
+              name: git-key
           env:
             - name: APPGATE_API_VERSION
               value: {{ .Values.sdp.sdpOperator.version }}
@@ -217,6 +221,16 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY
               value: {{ .Values.sdp.gitOperator.git.repository }}
+            - name: GIT_STRICT_HOST_KEY_CHECKING
+              value: "{{ .Values.sdp.gitOperator.git.strictHostKeyChecking }}"
+            {{- with .Values.sdp.gitOperator.git.hostname }}
+            - name: GIT_HOSTNAME
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.gitOperator.git.sshPort }}
+            - name: GIT_SSH_PORT
+              value: "{{ . }}"
+            {{- end }}
             {{- if eq .Values.sdp.gitOperator.git.vendor "github" }}
             - name: GITHUB_TOKEN
               valueFrom:
