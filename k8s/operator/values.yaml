@@ -66,7 +66,8 @@ sdp:
   ## @param sdp.gitOperator.git.baseBranch Base branch of the repository to create pull requests
   ## @param sdp.gitOperator.git.repository The name of the repository (e.g. organization/repository)
   ## @param sdp.gitOperator.secret Name of the secret that contains the SSH key and token for the git repository
-  ## @param sdp.gitOperator.git.hostname Hostname of the git repository
+  ## @param sdp.gitOperator.git.hostname Hostname of the git repository including the port (if not well-known port)
+  ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
   gitOperator:
     version: v18
@@ -81,6 +82,7 @@ sdp:
       baseBranch: ""
       repository: ""
       hostname: ""
+      sshPort: ""
       strictHostKeyChecking: true
 
     ## @param sdp.gitOperator.image.tag The image tag of the operator.

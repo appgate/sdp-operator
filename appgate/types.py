@@ -111,6 +111,7 @@ GIT_REPOSITORY_FORK_ENV = "GIT_REPOSITORY_FORK"
 GIT_BASE_BRANCH_ENV = "GIT_BASE_BRANCH"
 GIT_VENDOR_ENV = "GIT_VENDOR"
 GIT_HOSTNAME_ENV = "GIT_HOSTNAME"
+GIT_SSH_PORT_ENV = "GIT_SSH_PORT"
 GIT_STRICT_HOST_KEY_CHECKING_ENV = "GIT_STRICT_HOST_KEY_CHECKING"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
@@ -415,6 +416,7 @@ class GitOperatorContext:
     git_vendor: GitVendor = attrib()
     git_base_branch: str = attrib()
     git_hostname: str | None = attrib()
+    git_ssh_port: str | None = attrib()
     git_strict_host_key_checking = attrib(default=True)
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)

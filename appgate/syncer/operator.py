@@ -40,6 +40,7 @@ from appgate.types import (
     GIT_REPOSITORY_MAIN_BRANCH,
     GIT_HOSTNAME_ENV,
     GIT_STRICT_HOST_KEY_CHECKING_ENV,
+    GIT_SSH_PORT_ENV,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -95,6 +96,7 @@ def git_operator_context(
             GIT_REPOSITORY_MAIN_BRANCH_ENV, GIT_REPOSITORY_MAIN_BRANCH
         ),
         git_hostname=os.environ.get(GIT_HOSTNAME_ENV),
+        git_ssh_port=os.environ.get(GIT_SSH_PORT_ENV),
         git_strict_host_key_checking=ensure_env(GIT_STRICT_HOST_KEY_CHECKING_ENV)
         == "true",
     )

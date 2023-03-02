@@ -223,9 +223,13 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.repository }}
             - name: GIT_STRICT_HOST_KEY_CHECKING
               value: "{{ .Values.sdp.gitOperator.git.strictHostKeyChecking }}"
-            {{- if .Values.sdp.gitOperator.git.hostname }}
+            {{- with .Values.sdp.gitOperator.git.hostname }}
             - name: GIT_HOSTNAME
-              value: "{{ .Values.sdp.gitOperator.git.hostname }}"
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.gitOperator.git.sshPort }}
+            - name: GIT_SSH_PORT
+              value: "{{ . }}"
             {{- end }}
             {{- if eq .Values.sdp.gitOperator.git.vendor "github" }}
             - name: GITHUB_TOKEN

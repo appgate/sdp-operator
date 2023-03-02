@@ -219,7 +219,9 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
         git_ssh_command = f"ssh -i {GIT_SSH_KEY_PATH} -o IdentitiesOnly=yes"
         if not ctx.git_strict_host_key_checking:
             git_ssh_command += " -o StrictHostKeyChecking=no"
-
+        if ctx.git_ssh_port:
+            git_ssh_command += f" -p {ctx.git_ssh_port}"
+        log.info("%s", git_ssh_command)
         git_repo = Repo.clone_from(
             url,
             repository_path,
