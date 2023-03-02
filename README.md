@@ -117,7 +117,7 @@ Git Operator pushes SDP entities on Kubernetes to a Git repository and create pu
          vendor: github
          mainBranch: main
          baseBranch: main
-         repository: <GITHUB_REPOSITORY>
+         repository: <ORGANIZATION_OR_USER/REPOSITORY>
    ```
    ```shell
    helm install github-operator appgate/sdp-operator --values github-operator.yaml --namespace sdp-system

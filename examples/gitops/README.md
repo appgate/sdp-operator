@@ -87,7 +87,7 @@ sdp:
       vendor: github
       mainBranch: main
       baseBranch: main
-      repository: appgate/example
+      repository: <ORGANIZATION_OR_USER/REPOSITORY>
 ```
 
 1. Create a secret containing SSH key and GitHub token
