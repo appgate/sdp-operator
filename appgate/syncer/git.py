@@ -1,5 +1,6 @@
 import enum
 import functools
+import shlex
 import time
 from datetime import date
 from typing import Tuple, List, Type, Dict, Iterable, Protocol
@@ -216,16 +217,22 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
         else f"git@{ctx.git_vendor}.com:{repository}"
     )
     try:
-        git_ssh_command = f"ssh -i {GIT_SSH_KEY_PATH} -o IdentitiesOnly=yes"
+        git_ssh_command = [
+            "ssh",
+            "-i",
+            str(GIT_SSH_KEY_PATH),
+            "-o",
+            "IdentitiesOnly=yes",
+        ]
         if not ctx.git_strict_host_key_checking:
-            git_ssh_command += " -o StrictHostKeyChecking=no"
+            git_ssh_command.extend(["-o", "StrictHostKeyChecking=no"])
         if ctx.git_ssh_port:
-            git_ssh_command += f" -p {ctx.git_ssh_port}"
-        log.info("%s", git_ssh_command)
+            git_ssh_command.extend(["-p", str(ctx.git_ssh_port)])
+
         git_repo = Repo.clone_from(
             url,
             repository_path,
-            env={"GIT_SSH_COMMAND": git_ssh_command},
+            env={"GIT_SSH_COMMAND": shlex.join(git_ssh_command)},
         )
     except GitCommandError as e:
         log.error("Error cloning repository %s: %s", repository, e.stderr)
