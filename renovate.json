@@ -3,14 +3,5 @@
   "pip-compile": {
     "fileMatch": ["(^|/)requirements\\.in$"]
   },
-  "packageRules": [
-    {
-      "matchPackagePatterns": ["*"],
-      "enabled": false
-    },
-    {
-      "matchManagers": ["pip-compile"],
-      "enabled": true
-    }
-  ]
+  "enabledManagers": ["pip-compile"]
 }
