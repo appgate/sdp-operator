@@ -1,3 +1,16 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "pip-compile": {
+    "fileMatch": ["(^|/)requirements\\.in$"]
+  },
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["*"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["pip-compile"],
+      "enabled": true
+    }
+  ]
 }
