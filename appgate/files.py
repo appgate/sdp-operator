@@ -185,7 +185,7 @@ def appgate_file_load(
 
 
 def should_load_file(operator_mode: OperatorMode) -> bool:
-    return "APPGATE_FILE_SOURCE" in os.environ
+    return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
 
 
 def set_appgate_file_metadata(
