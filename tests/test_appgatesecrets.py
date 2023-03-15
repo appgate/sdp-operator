@@ -55,6 +55,7 @@ def test_write_only_password_attribute_dump():
 
 def test_write_only_password_attribute_load():
     e_data = {
+        "name": "test_write_only_password_attribute_load",
         "fieldOne": ENCRYPTED_PASSWORD,  # password
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
@@ -166,6 +167,7 @@ def test_get_appgate_secret_k8s_simple_load():
         .cls
     )
     data = {
+        "name": "test_get_appgate_secret_k8s_simple_load",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -187,6 +189,7 @@ def test_get_appgate_secret_k8s_simple_load_missing_key():
         .cls
     )
     data = {
+        "name": "test_get_appgate_secret_k8s_simple_load_missing_key",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage",
@@ -207,6 +210,7 @@ def test_get_secret_read_entity_without_password():
         .cls
     )
     data = {
+        "name": "test_get_secret_read_entity_without_password",
         "fieldTwo": "this is write only",
         "fieldThree": "this is a field",
     }
@@ -225,6 +229,7 @@ def test_compare_entity_with_secrets():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_with_secrets",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -234,6 +239,7 @@ def test_compare_entity_with_secrets():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entity_with_secrets",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -256,6 +262,7 @@ def test_compare_entity_with_secrets_with_metadata_1():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_1",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -265,6 +272,7 @@ def test_compare_entity_with_secrets_with_metadata_1():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_1",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -288,6 +296,7 @@ def test_compare_entity_with_secrets_with_metadata_1():
     assert e1 == e2
 
     data_2 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_1",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -309,6 +318,7 @@ def test_compare_entity_with_secrets_with_metadata_2():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_2",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -318,6 +328,7 @@ def test_compare_entity_with_secrets_with_metadata_2():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_2",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -346,6 +357,7 @@ def test_compare_entity_with_secrets_with_metadata_3():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_3",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -355,6 +367,7 @@ def test_compare_entity_with_secrets_with_metadata_3():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_3",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -383,6 +396,7 @@ def test_compare_entity_with_secrets_with_metadata_4():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_4",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -392,6 +406,7 @@ def test_compare_entity_with_secrets_with_metadata_4():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entity_with_secrets_with_metadata_4",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -420,6 +435,7 @@ def test_compare_entity_without_secrets_and_metadata():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entity_without_secrets_and_metadata",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -431,6 +447,7 @@ def test_compare_entity_without_secrets_and_metadata():
         "updated": "2020-09-10T12:20:14Z",
     }
     data_2 = {
+        "name": "test_compare_entity_without_secrets_and_metadata",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",

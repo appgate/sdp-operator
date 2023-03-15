@@ -24,7 +24,10 @@ from appgate.bytes import (
     checksum_attrib_maker,
     certificate_attrib_maker,
 )
-from appgate.customloaders import CustomFieldsEntityLoader, CustomEntityLoader
+from appgate.customloaders import (
+    CustomFieldsEntityLoader,
+    CustomEntityLoader,
+)
 from appgate.discriminator import (
     get_discriminator_maker_config,
     DiscriminatorAttribMaker,
@@ -176,7 +179,10 @@ class EntityClassGenerator:
                 if any(
                     map(
                         lambda el: isinstance(k8s_loader, el),
-                        {CustomFieldsEntityLoader, CustomEntityLoader},
+                        {
+                            CustomFieldsEntityLoader,
+                            CustomEntityLoader,
+                        },
                     )
                 ):
                     k8s_custom_entity_loaders.append(k8s_loader)

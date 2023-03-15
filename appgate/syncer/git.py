@@ -355,16 +355,6 @@ def get_sdp_pull_request(
     return GitHubPullRequest(pr) if pr else None
 
 
-def get_commit_message(commit_state: GitCommitState, p: Path) -> str | None:
-    if commit_state == "ADD":
-        return f"Added {p.relative_to(GIT_DUMP_DIR)}"
-    elif commit_state == "DELETE":
-        return f"Deleted {p.relative_to(GIT_DUMP_DIR)}"
-    elif commit_state == "MODIFY":
-        return f"Modified {p.relative_to(GIT_DUMP_DIR)}"
-    return
-
-
 def get_pull_request_body(
     commits: Dict[str, List[Tuple[str, GitCommitState]]], body: str | None
 ) -> str:
@@ -383,7 +373,7 @@ Pull request created automatically by sdp-operator
             continue
         body += f"\n  * {k}"
         for (p, o) in cs:
-            body += f"\n    - {get_commit_message(o, Path(p))}"
+            body += f"\n    - {o.get_commit_message()}"
     return body
 
 
@@ -723,18 +713,27 @@ class GitEntityClient(EntityClient):
         p.mkdir(exist_ok=True)
         file = git_dump(e, self.api_spec, p, self.resolution_conflicts)
         if register_commit:
-            self.commits.append((file, "ADD"))
+            self.commits.append(
+                (p, GitCommitState(entity=e, path=file, operation="ADD"))
+            )
         return self
 
     async def create(self, e: Entity_T) -> EntityClient:
         return await self._create(e, register_commit=True)
 
-    async def _delete(self, name: str, register_commit: bool = True) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(name)
+    async def _delete(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
+        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
+            e.name
+        )
         if register_commit:
-            self.commits.append((p, "DELETE"))
+            self.commits.append(
+                (p, GitCommitState(entity=e, path=p, operation="DELETE"))
+            )
         log.info(
-            "[git-entity-client/%s] Removing file %s for entity %s", self.kind, p, name
+            "[git-entity-client/%s] Removing file %s for entity %s",
+            self.kind,
+            p,
+            e.name,
         )
         if p.exists():
             p.unlink()
@@ -743,19 +742,19 @@ class GitEntityClient(EntityClient):
                 "[git-entity-client/%s] File %s for entity %s should be deleted but it's not present",
                 self.kind,
                 p,
-                name,
+                e.name,
             )
         return self
 
     async def delete(self, e: Entity_T) -> EntityClient:
-        return await self._delete(e.name, register_commit=True)
+        return await self._delete(e, register_commit=True)
 
     async def modify(self, e: Entity_T) -> EntityClient:
         p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
             e.name
         )
-        self.commits.append((p, "MODIFY"))
-        await self._delete(e.name, register_commit=False)
+        self.commits.append((p, GitCommitState(entity=e, path=p, operation="MODIFY")))
+        await self._delete(e, register_commit=False)
         await self._create(e, register_commit=False)
         return self
 
@@ -765,24 +764,29 @@ class GitEntityClient(EntityClient):
         log.info("[git-entity-client/%s] Committing changes for entities", self.kind)
         commit_message = f"[{self.branch}] {self.kind} changes\n\nChanges:"
         for p, o in self.commits:
-            if o == "ADD":
-                log.info(
-                    "[git-entity-client/%s] + New commit: Added file  %s", self.kind, p
-                )
-                self.git_repo.git_repo.index.add([str(p)])
-            elif o == "DELETE":
-                log.info(
-                    "[git-entity-client/%s] - New commit: Deleted file %s", self.kind, p
-                )
-                self.git_repo.git_repo.index.remove([str(p)])
-            elif o == "MODIFY":
-                log.info(
-                    "[git-entity-client/%s] * New commit: Modified file %s",
-                    self.kind,
-                    p,
-                )
-                self.git_repo.git_repo.index.add([str(p)])
-            commit_message += f"\n  - {get_commit_message(o, p)}"
+            match o.operation:
+                case "ADD":
+                    log.info(
+                        "[git-entity-client/%s] + New commit: Added file  %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.add([str(p)])
+                case "DELETE":
+                    log.info(
+                        "[git-entity-client/%s] - New commit: Deleted file %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.remove([str(p)])
+                case "MODIFY":
+                    log.info(
+                        "[git-entity-client/%s] * New commit: Modified file %s",
+                        self.kind,
+                        p,
+                    )
+                    self.git_repo.git_repo.index.add([str(p)])
+            commit_message += f"\n  - {o.get_commit_message()}"
         self.git_repo.git_repo.index.commit(message=commit_message)
         cs = [(str(k), v) for (k, v) in self.commits]
         self.commits = []

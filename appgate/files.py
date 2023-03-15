@@ -5,9 +5,13 @@ import re
 import requests
 from typing import Optional, Dict, List, Any, Tuple
 
+from attr import evolve
 from minio import Minio  # type: ignore
 
-from appgate.customloaders import FileAttribLoader
+from appgate.customloaders import (
+    FileAttribLoader,
+    CustomEntityLoader,
+)
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
     AttribType,
@@ -15,6 +19,7 @@ from appgate.openapi.types import (
     EntityClassGeneratorConfig,
     AttributesDict,
     K8S_LOADERS_FIELD_NAME,
+    Entity_T,
 )
 from appgate.types import OperatorMode
 
@@ -71,19 +76,32 @@ def url_file_path(
     4. else if the entity has an id, use it to compute the path url `id/fieldName`
     5. else raise an exception
     """
-    if (v := value.get(field_name)) is not None:
+    v = value.get(field_name)
+    if v is not None and isinstance(v, str):
         return normalize_url_file_path(v)
     for field in target_fields:
         if v := value.get(field):
             return v
     if value.get("name"):
         return f"{normalize_url_file_path(value['name'])}/{field_name}"
-    elif value.get("id"):
+    if value.get("id"):
         return f"{value['id']}/{field_name}"
-    else:
-        raise AppgateFileException(
-            f"Unable to generate url to get fetch file for field {field_name} for entity {entity_name}"
-        )
+
+    # TODO: Problematic entities. Below are hardcoded workarounds.
+    if entity_name == "Appliance_Ntp_Servers":
+        # appliance.ntp.servers is deeply nested entity and its
+        # value only contains [{"hostname": xxx.xxx.xxx.xxx}]
+        normalized_value = normalize_url_file_path("/".join(value.popitem()))
+        return f"{normalized_value}/{field_name}"
+    if entity_name == "GlobalSettings":
+        # GlobalSettings does not have a name or id
+        v = tuple(value["profileHostname"])
+        normalized_value = normalize_url_file_path("/".join(v))
+        return f"{normalized_value}/{field_name}"
+
+    raise AppgateFileException(
+        f"Unable to generate url to get fetch file for field {field_name} for entity {entity_name}"
+    )
 
 
 class AppgateHttpFile(AppgateFile):
@@ -170,6 +188,20 @@ def should_load_file(operator_mode: OperatorMode) -> bool:
     return "APPGATE_FILE_SOURCE" in os.environ and operator_mode == "appgate-operator"
 
 
+def set_appgate_file_metadata(
+    value: OpenApiDict,
+    entity: Entity_T,
+    entity_name: str,
+    field_name: str,
+    target_fields: Tuple[str, ...],
+) -> Entity_T:
+    api_version = os.getenv("APPGATE_API_VERSION")
+    contents_field = url_file_path(value, field_name, entity_name, target_fields)
+    object_key = f"{entity_name.lower()}-{api_version}/{contents_field}"
+    appgate_mt = entity.appgate_metadata.with_url_file_path(object_key)
+    return evolve(entity, appgate_metadata=appgate_mt)
+
+
 class FileAttribMaker(AttribMaker):
     def __init__(
         self,
@@ -214,7 +246,17 @@ class FileAttribMaker(AttribMaker):
                     f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v)}."
                 ),
                 field=self.name,
-                load_external=should_load_file(self.operator_mode),
-            )
+                is_appgate_operator_mode=self.operator_mode == "appgate-operator",
+                is_external_store_configured="APPGATE_FILE_SOURCE" in os.environ,
+            ),
+            CustomEntityLoader(
+                loader=lambda v, e: set_appgate_file_metadata(
+                    v,
+                    e,
+                    entity_name=instance_maker_config.entity_name,
+                    field_name=self.name,
+                    target_fields=self.target_fields,
+                ),
+            ),
         ]
         return values

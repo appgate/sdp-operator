@@ -1,6 +1,6 @@
 import base64
 import os
-from typing import Dict, List, Union, Optional, Callable
+from typing import Dict, List, Union, Optional, Callable, Tuple
 
 from attr import evolve
 
@@ -10,9 +10,10 @@ from hvac.api.auth_methods import Kubernetes  # type: ignore
 from kubernetes.client import CoreV1Api
 
 from appgate.customloaders import (
-    CustomEntityLoader,
     CustomAttribLoader,
+    CustomEntityLoader,
 )
+from appgate.files import url_file_path
 from appgate.logger import log
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
@@ -256,7 +257,13 @@ class PasswordAttribMaker(AttribMaker):
 
         # sets appgate_metadata.passwords
         # TODO: Recursive fields
-        def set_appgate_password_metadata(orig_values, entity: Entity_T) -> Entity_T:
+        def set_appgate_password_metadata(
+            orig_values,
+            entity: Entity_T,
+            entity_name: str,
+            field_name: str,
+            target_fields: Tuple[str, ...],
+        ) -> Entity_T:
             password_fields = get_passwords(entity)
             orig_passwords = {}
             field_passwords = []
@@ -264,9 +271,18 @@ class PasswordAttribMaker(AttribMaker):
                 field_passwords.append(field)
                 if field in orig_values:
                     orig_passwords[field] = orig_values[field]
-            appgate_mt = entity.appgate_metadata.with_password_fields(
-                field_passwords
-            ).with_password_values(orig_passwords)
+
+            api_version = os.getenv("APPGATE_API_VERSION")
+            contents_field = url_file_path(
+                orig_values, field_name, entity_name, target_fields
+            )
+            url = f"{entity_name.lower()}-{api_version}/{contents_field}"
+            appgate_mt = (
+                entity.appgate_metadata.with_password_fields(field_passwords)
+                .with_password_values(orig_passwords)
+                .with_url_file_path(url)
+            )
+
             return evolve(entity, appgate_metadata=appgate_mt)
 
         if "metadata" not in values:
@@ -282,10 +298,26 @@ class PasswordAttribMaker(AttribMaker):
                 field=self.name,
                 load_external=should_load_secret(self.operator_mode),
             ),
-            CustomEntityLoader(loader=set_appgate_password_metadata),
+            CustomEntityLoader(
+                loader=lambda v, e: set_appgate_password_metadata(
+                    v,
+                    e,
+                    instance_maker_config.entity_name,
+                    field_name=self.name,
+                    target_fields=(),
+                ),
+            ),
         ]
         values["metadata"][APPGATE_LOADERS_FIELD_NAME] = [
-            CustomEntityLoader(loader=set_appgate_password_metadata)
+            CustomEntityLoader(
+                loader=lambda v, e: set_appgate_password_metadata(
+                    v,
+                    e,
+                    instance_maker_config.entity_name,
+                    field_name=self.name,
+                    target_fields=(),
+                ),
+            ),
         ]
         return values
 

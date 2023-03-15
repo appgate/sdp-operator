@@ -2089,6 +2089,7 @@ def test_compare_entities_generation_changed():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entities_generation_changed",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -2098,6 +2099,7 @@ def test_compare_entities_generation_changed():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entities_generation_changed",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -2135,6 +2137,7 @@ def test_compare_entities_updated_changed():
         .cls
     )
     data_1 = {
+        "name": "test_compare_entities_updated_changed",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",
@@ -2144,6 +2147,7 @@ def test_compare_entities_updated_changed():
         "fieldThree": "this is a field",
     }
     data_2 = {
+        "name": "test_compare_entities_updated_changed",
         "fieldOne": {
             "type": "k8s/secret",
             "name": "secret-storage-1",

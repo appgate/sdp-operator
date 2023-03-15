@@ -139,3 +139,24 @@ def _get_passwords(entity: Entity_T, names: List[str]) -> List[str]:
 
 def get_passwords(entity: Entity_T) -> List[str]:
     return _get_passwords(entity, [])
+
+
+def _get_byte_field(entity: Entity_T, names: List[str]) -> List[str]:
+    fields = []
+    prefix = ".".join(names)
+    for a in entity.__attrs_attrs__:
+        name = getattr(a, "name")
+        mt = getattr(a, "metadata", {})
+        if mt.get("format") == "byte":
+            if prefix:
+                fields.append(f"{prefix}.{name}")
+            else:
+                fields.append(name)
+        base_type = mt.get("base_type", None)
+        if base_type and base_type not in PYTHON_TYPES:
+            fields.extend(_get_byte_field(base_type, names + [name]))
+    return fields
+
+
+def get_byte_field(entity: Entity_T) -> List[str]:
+    return _get_byte_field(entity, [])
