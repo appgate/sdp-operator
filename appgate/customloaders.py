@@ -46,18 +46,25 @@ class FileAttribLoader(CustomAttribLoader):
     loader: Callable[[Any], Any] = attrib()
     error: Callable[[Any], Exception] = attrib()
     field: str = attrib()
-    load_external: bool = attrib()
+    is_appgate_operator_mode: bool = attrib()
+    is_external_store_configured: bool = attrib()
+    load_external: bool = attrib(default=False)
 
     def load(self, values: AttributesDict) -> AttributesDict:
-        # Always load from the external source, ignore the value specified
-        if self.load_external:
+        # If not AppgateOperator mode, allow empty file
+        if not self.is_appgate_operator_mode:
+            values[self.field] = ""
+            return values
+
+        # Always load from the external source when mode is AppgateOperator
+        if self.is_external_store_configured:
             v = self.loader(values)
             if not v:
                 return values
             values[self.field] = v
+            return values
         else:
-            values[self.field] = ""
-        return values
+            raise self.error(values)
 
 
 @attrs()

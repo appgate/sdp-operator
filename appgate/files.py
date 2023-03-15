@@ -246,7 +246,8 @@ class FileAttribMaker(AttribMaker):
                     f"Unable to load field {self.name} for entity {instance_maker_config.name}{name_or_id(v)}."
                 ),
                 field=self.name,
-                load_external=should_load_file(self.operator_mode),
+                is_appgate_operator_mode=self.operator_mode == "appgate-operator",
+                is_external_store_configured="APPGATE_FILE_SOURCE" in os.environ,
             ),
             CustomEntityLoader(
                 loader=lambda v, e: set_appgate_file_metadata(
