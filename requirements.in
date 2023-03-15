@@ -3,7 +3,7 @@ apischema>=0.17
 attrs>=20.3.0
 cryptography>=36.0.1
 kubernetes>=16
-typedload==2.12
+typedload==2.22
 GitPython>=3.1.29
 PyGitHub>=1.57
 hvac>=1.0
