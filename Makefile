@@ -43,10 +43,13 @@ clean-cache:
 	find appgate -name "__pycache__" -print | xargs rm -r $1
 
 .PHONY: pip-compile
-pip-compile:
-	rm -rf venv
-	${PYTHON3} -m venv venv
+pip-compile: docker-build-image
+	docker run --rm -it -v ${PWD}:/build sdp-operator-builder make _pip-compile
+
+_pip-compile:
+	$(PYTHON3) -m venv venv
 	. venv/bin/activate && ${PYTHON3} -m pip install pip-tools && pip-compile requirements.in
+	rm -rf venv
 
 clean:
 	rm -rf api_specs
