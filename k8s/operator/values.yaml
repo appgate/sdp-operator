@@ -12,6 +12,7 @@ sdp:
   ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
   ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
   ## @param sdp.sdpOperator.reverseMode Enable the operator in reverse mode (pulls entity from SDP instead of pushing)
+  ## @param sdp.sdpOperator.oneshotMode Enable the operator in one-shot mode (cannot be combined with reverse-mode)
   ## @param sdp.sdpOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
   ## @param sdp.sdpOperator.version The API version of the controller.
   ## @param sdp.sdpOperator.logLevel The log level of the operator.
