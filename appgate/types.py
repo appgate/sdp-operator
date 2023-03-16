@@ -418,6 +418,7 @@ class AppgateOperatorContext:
     api_spec: APISpec = attrib()
     metadata_configmap: str = attrib()
     reverse_mode: bool = attrib()
+    one_shot_mode: bool = attrib(default=False)
     # target tags if specified tells which entities do we want to work on
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
     # builtin tags are the entities that we consider builtin
