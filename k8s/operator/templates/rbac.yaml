@@ -29,6 +29,7 @@ rules:
       - globalsettingss
       - clientconnections
       - serviceusers
+      - clientprofiles
 {{- if .Values.sdp.sdpOperator.reverseMode }}
     verbs: ["get", "create", "patch", "watch", "list", "delete"]
 {{- else }}
