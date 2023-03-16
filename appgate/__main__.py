@@ -72,6 +72,7 @@ from appgate.types import (
     get_tags,
     to_bool,
     get_dry_run,
+    ONE_SHOT_MODE_ENV,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -124,11 +125,18 @@ def appgate_operator_context(
     two_way_sync = args.no_two_way_sync or (to_bool(os.getenv(TWO_WAY_SYNC_ENV)))
     dry_run_mode = get_dry_run(args.no_dry_run)
     cleanup_mode = args.no_cleanup or (to_bool(os.getenv(CLEANUP_ENV)))
+    oneshot_mode = args.oneshot_mode or (to_bool(os.getenv(ONE_SHOT_MODE_ENV)))
     no_verify = args.no_verify or (to_bool(os.getenv(APPGATE_SSL_NO_VERIFY)))
 
     spec_directory = os.getenv(SPEC_DIR_ENV) or args.spec_directory or SPEC_DIR
     appgate_cacert = os.getenv(APPGATE_SSL_CACERT)
     appgate_cacert_path = None
+
+    if oneshot_mode and args.reverse_mode:
+        raise AppgateException(
+            f"[get-context] one-shot mode not implemented in reverse mode."
+        )
+
     verify = not no_verify
     if verify and appgate_cacert:
         try:
@@ -472,6 +480,12 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Disable SSL strict verification.",
+    )
+    appgate_operator.add_argument(
+        "--oneshot-mode",
+        action="store_true",
+        default=False,
+        help="Enable one-shot mode.",
     )
     appgate_operator.add_argument(
         "--cafile", help="cacert file used for ssl verification.", default=None
