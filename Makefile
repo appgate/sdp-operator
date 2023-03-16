@@ -22,11 +22,8 @@ check-fmt:
 test:
 	$(PYTHON3) -m pytest -p no:cacheprovider tests
 
-dump-crd:
-	docker build -f docker/Dockerfile -t localhost:5000/sdp-operator .
-	docker run -v ${PWD}:/build --rm -it --entrypoint bash localhost:5000/sdp-operator ./run.sh --spec-directory /root/api_specs/$(VERSION) dump-crd --file /build/k8s/crd/templates/$(VERSION).yaml
-	echo '{{ if eq .Values.version "$(VERSION)" }}' | cat - k8s/crd/templates/$(VERSION).yaml > temp && mv temp k8s/crd/templates/$(VERSION).yaml
-	echo '{{ end }}' >> k8s/crd/templates/$(VERSION).yaml
+docker-run-image:
+	docker build -f docker/Dockerfile -t sdp-operator .
 
 docker-build-image:
 	docker build -f docker/Dockerfile-build . -t sdp-operator-builder
@@ -36,6 +33,11 @@ docker-all: docker-build-image
 
 docker-shell: docker-build-image
 	docker run --rm -it -v ${PWD}:/build sdp-operator-builder bash
+
+dump-crd: docker-run-image
+	docker run -v ${PWD}:/build --rm -it --entrypoint bash sdp-operator ./run.sh --spec-directory /root/api_specs/$(VERSION) dump-crd --file /build/k8s/crd/templates/$(VERSION).yaml
+	echo '{{ if eq .Values.version "$(VERSION)" }}' | cat - k8s/crd/templates/$(VERSION).yaml > temp && mv temp k8s/crd/templates/$(VERSION).yaml
+	echo '{{ end }}' >> k8s/crd/templates/$(VERSION).yaml
 
 clean-cache:
 	find appgate -name "__pycache__" -print | xargs rm -r $1
