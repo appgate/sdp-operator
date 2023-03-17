@@ -197,6 +197,7 @@ def appgate_operator_context(
         metadata_configmap=metadata_configmap,
         cafile=appgate_cacert_path,
         reverse_mode=args.reverse_mode,
+        one_shot_mode=oneshot_mode,
     )
 
 
