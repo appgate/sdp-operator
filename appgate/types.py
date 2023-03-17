@@ -82,6 +82,7 @@ __all__ = [
     "APPGATE_OPERATOR_PR_LABEL_DESC",
     "GIT_REPOSITORY_MAIN_BRANCH",
     "GIT_REPOSITORY_MAIN_BRANCH_ENV",
+    "ONE_SHOT_MODE_ENV",
 ]
 
 BUILTIN_TAGS = frozenset({"builtin"})
@@ -97,6 +98,7 @@ CLEANUP_ENV = "APPGATE_OPERATOR_CLEANUP"
 NAMESPACE_ENV = "APPGATE_OPERATOR_NAMESPACE"
 TWO_WAY_SYNC_ENV = "APPGATE_OPERATOR_TWO_WAY_SYNC"
 SPEC_DIR_ENV = "APPGATE_OPERATOR_SPEC_DIRECTORY"
+ONE_SHOT_MODE_ENV = "APPGATE_OPERATOR_ONE_SHOT_MODE"
 APPGATE_SECRETS_KEY = "APPGATE_OPERATOR_FERNET_KEY"
 APPGATE_MT_CONFIGMAP_ENV = "APPGATE_OPERATOR_CONFIG_MAP"
 APPGATE_SSL_NO_VERIFY = "APPGATE_OPERATOR_SSL_NO_VERIFY"
@@ -193,6 +195,7 @@ class AppgateOperatorArguments:
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
     reverse_mode: bool = attrib(default=False)
+    oneshot_mode: bool = attrib(default=False)
 
 
 @attrs(slots=True, frozen=True)
@@ -418,6 +421,7 @@ class AppgateOperatorContext:
     api_spec: APISpec = attrib()
     metadata_configmap: str = attrib()
     reverse_mode: bool = attrib()
+    one_shot_mode: bool = attrib(default=False)
     # target tags if specified tells which entities do we want to work on
     target_tags: Optional[FrozenSet[str]] = attrib(default=None)
     # builtin tags are the entities that we consider builtin

@@ -72,6 +72,8 @@ spec:
             {{- end }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.sdpOperator.dryRun }}"
+            - name: APPGATE_OPERATOR_ONE_SHOT_MODE
+              value: "{{ .Values.sdp.sdpOperator.oneshotMode }}"
             - name: APPGATE_OPERATOR_CLEANUP
               value: "{{ .Values.sdp.sdpOperator.cleanup }}"
             - name: APPGATE_OPERATOR_TWO_WAY_SYNC

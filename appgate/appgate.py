@@ -126,6 +126,9 @@ async def appgate_operator(
     log.info("[%s/%s]   + namespace: %s", operator_name, namespace, namespace)
     log.info("[%s/%s]   + host: %s", operator_name, namespace, ctx.controller)
     log.info("[%s/%s]   + reverse mode: %s", operator_name, namespace, ctx.reverse_mode)
+    log.info(
+        "[%s/%s]   + one-shot mode: %s", operator_name, namespace, ctx.one_shot_mode
+    )
     log.info("[%s/%s]   + log-level: %s", operator_name, namespace, log.level)
     log.info("[%s/%s]   + timeout: %s", operator_name, namespace, ctx.timeout)
     log.info("[%s/%s]   + dry-run: %s", operator_name, namespace, ctx.dry_run_mode)
@@ -286,7 +289,8 @@ async def appgate_operator(
                 )
                 continue
 
-            if not ctx.reverse_mode and ctx.two_way_sync:
+            # one-shot mode does not need two_way_sync
+            if not ctx.reverse_mode and ctx.two_way_sync and not ctx.one_shot_mode:
                 # use current appgate state from controller instead of from memory
                 current_appgate_state = await get_current_appgate_state(
                     ctx=ctx, appgate_client=appgate_client
@@ -345,6 +349,10 @@ async def appgate_operator(
                         log.error("[%s/%s] Error %s:", operator_name, namespace, err)
                     sys.exit(1)
 
+                if ctx.one_shot_mode:
+                    # one-shot mode without errors, exit cleanly
+                    sys.exit(0)
+
                 if not ctx.dry_run_mode and not ctx.reverse_mode:
                     current_appgate_state = new_plan.appgate_state
                     expected_appgate_state = expected_appgate_state.sync_generations()
@@ -356,6 +364,10 @@ async def appgate_operator(
                     operator_name,
                     namespace,
                 )
+                if ctx.one_shot_mode:
+                    # We are done, nothing changed
+                    sys.exit(0)
+
                 if ctx.reverse_mode:
                     expected_appgate_state = await get_current_appgate_state(
                         ctx=ctx, appgate_client=appgate_client
