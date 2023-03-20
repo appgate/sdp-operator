@@ -1,0 +1,7 @@
+apiVersion: v18.sdp.appgate.com/v1
+kind: ClientProfile
+metadata:
+  name: test
+spec:
+  identityProviderName: local
+  name: test

@@ -35,6 +35,7 @@ SPEC_ENTITIES = {
     "/administrative-roles": "AdministrativeRole",
     "/device-scripts": "DeviceScript",
     "/client-connections": "ClientConnection",
+    "/client-profiles": "ClientProfile",
     "/global-settings": "GlobalSettings",
     "/appliances": "Appliance",
     "/criteria-scripts": "CriteriaScripts",
