@@ -1,3 +1,4 @@
+from collections import namedtuple
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Type, Callable, Sequence, List
 
@@ -291,15 +292,17 @@ def generate_api_spec(
     )
 
 
-MAGIC_ENTITIES = {
+MagicEntity = namedtuple("MagicEntity", ["name", "id"])
+
+MAGIC_ENTITIES: Dict[str, List[MagicEntity]] = {
     "Site": [
         # Use '6f6fa9d9-17b2-4157-9f68-e97662acccdf' to collect logs
         # from all the appliances
-        "6f6fa9d9-17b2-4157-9f68-e97662acccdf",
+        MagicEntity("All Appliances", "6f6fa9d9-17b2-4157-9f68-e97662acccdf"),
         # Use '6263435b-c9f6-4b7f-99f8-37e2e6b006a9' to collect logs
         # from appliances without a site.
-        "6263435b-c9f6-4b7f-99f8-37e2e6b006a9",
-    ]
+        MagicEntity("Appliance Without Site", "6263435b-c9f6-4b7f-99f8-37e2e6b006a9"),
+    ],
 }
 
 
@@ -313,7 +316,9 @@ def generate_api_spec_clients(
         if e_name in MAGIC_ENTITIES:
             magic_entities = [
                 e.cls(
-                    name=magic_instance, id=magic_instance, tags=frozenset({"builtin"})
+                    name=magic_instance.name,
+                    id=magic_instance.id,
+                    tags=frozenset({"builtin"}),
                 )
                 for magic_instance in MAGIC_ENTITIES[e_name]
             ]
