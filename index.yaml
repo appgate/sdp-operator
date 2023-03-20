@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   sdp-operator:
   - apiVersion: v2
+    appVersion: 0.2.5
+    created: "2023-03-20T05:08:47.604283991Z"
+    description: Helm chart for the Appgate SDP Operator
+    digest: d06a34551e022d7bd2d97bf51b6d9173970943f6e9310280dea4c057fe51361f
+    name: sdp-operator
+    type: application
+    urls:
+    - https://github.com/appgate/sdp-operator/releases/download/v0.2.5-sdp-operator/sdp-operator-0.2.5.tgz
+    version: 0.2.5
+  - apiVersion: v2
     appVersion: 0.2.4
     created: "2023-03-15T06:20:45.789439208Z"
     description: Helm chart for the Appgate SDP Operator
@@ -86,6 +96,16 @@ entries:
     version: 0.1.1
   sdp-operator-crd:
   - apiVersion: v2
+    appVersion: 0.2.5
+    created: "2023-03-20T05:08:47.805073687Z"
+    description: Helm chart for the Appgate SDP Operator CRD
+    digest: d28a420797b1f25172bd990fdc599d232195841158c6650b55c8ffae1eeef39f
+    name: sdp-operator-crd
+    type: application
+    urls:
+    - https://github.com/appgate/sdp-operator/releases/download/v0.2.5-sdp-operator-crd/sdp-operator-crd-0.2.5.tgz
+    version: 0.2.5
+  - apiVersion: v2
     appVersion: 0.2.4
     created: "2023-03-15T06:20:45.924109795Z"
     description: Helm chart for the Appgate SDP Operator CRD
@@ -165,4 +185,4 @@ entries:
     urls:
     - https://github.com/appgate/sdp-operator/releases/download/sdp-operator-crd-0.1.1/sdp-operator-crd-0.1.1.tgz
     version: 0.1.1
-generated: "2023-03-15T06:20:45.924156895Z"
+generated: "2023-03-20T05:08:47.805130391Z"
