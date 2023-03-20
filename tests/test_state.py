@@ -662,6 +662,23 @@ def test_compare_policies_builtin_tags():
         EntityWrapper(Policy(id="id2", name="policy2", expression="expression-2-copy")),
     }
 
+    # builtin policy is not created
+    expected_policies = EntitiesSet(
+        {
+            EntityWrapper(
+                Policy(
+                    id="id4",
+                    tags=frozenset({"builtin"}),
+                    name="policy4",
+                    expression="expression-4",
+                )
+            )
+        }
+    )
+    plan = compare_entities(current_policies, expected_policies, BUILTIN_TAGS, None)
+    assert plan.create.entities == set()
+    assert plan.modify.entities == set()
+
 
 def test_compare_policies_builtin_tags_deleted():
     """

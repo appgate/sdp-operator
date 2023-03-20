@@ -599,7 +599,11 @@ def compare_entities(
         return e.name not in expected_names and not has_tag(e, ignore_tags)
 
     def _to_create_filter(e: EntityWrapper) -> bool:
-        return e.name not in current_names and e.name not in shared_names
+        return (
+            e.name not in current_names
+            and e.name not in shared_names
+            and not has_tag(e, ignore_tags)
+        )
 
     def _to_modify_filter(e: EntityWrapper) -> bool:
         return e.name in shared_names and e not in current_entities
