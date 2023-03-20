@@ -1,0 +1,17 @@
+apiVersion: v17.sdp.appgate.com/v1
+kind: GlobalSettings
+metadata:
+  annotations:
+    sdp.appgate.com/id: GlobalSettings
+  name: globalsettings
+spec:
+  administrationTokenExpiration: 1440
+  auditLogPersistenceMode: Default
+  backupApiEnabled: false
+  claimsTokenExpiration: 1440
+  collectiveName: 9fd1130d
+  entitlementTokenExpiration: 1440
+  geoIpUpdates: false
+  spaMode: TCP
+  spaTimeWindowSeconds: 600
+  vpnCertificateExpiration: 525600

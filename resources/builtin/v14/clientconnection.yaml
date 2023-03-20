@@ -1,0 +1,8 @@
+apiVersion: v14.sdp.appgate.com/v1
+kind: ClientConnection
+metadata:
+  annotations:
+    sdp.appgate.com/id: ClientConnection
+  name: clientconnection
+spec:
+  spaMode: TCP

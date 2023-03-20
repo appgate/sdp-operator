@@ -1,0 +1,13 @@
+apiVersion: v14.sdp.appgate.com/v1
+kind: Condition
+metadata:
+  annotations:
+    sdp.appgate.com/id: ee7b7e6f-e904-4b4f-a5ec-b3bef040643e
+  name: always
+spec:
+  expression: return true;
+  name: Always
+  notes: Condition for built-in usage.
+  remedyLogic: and
+  tags:
+  - builtin

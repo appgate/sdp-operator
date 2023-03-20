@@ -1,0 +1,105 @@
+apiVersion: v15.sdp.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  annotations:
+    sdp.appgate.com/id: b0adbc60-7ed4-11e4-b4a9-0800200c9a66
+  name: system-administration
+spec:
+  name: System Administration
+  notes: Built-in Administrative Role that has access to all.
+  privileges:
+  - scope:
+      all: true
+    target: All
+    type: All
+  tags:
+  - builtin
+---
+apiVersion: v15.sdp.appgate.com/v1
+kind: AdministrativeRole
+metadata:
+  annotations:
+    sdp.appgate.com/id: 72cbe03c-4e35-4ff8-9e2b-9bcf88e689f5
+  name: api-access
+spec:
+  name: Api Access
+  notes: Built-in Administrative Role for API usage..
+  privileges:
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: CriteriaScript
+    type: Create
+  - scope:
+      all: true
+    target: Condition
+    type: View
+  - scope:
+      all: true
+    target: Policy
+    type: View
+  - scope:
+      all: true
+    target: Condition
+    type: Edit
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: Delete
+  - scope:
+      all: true
+    target: Policy
+    type: Delete
+  - scope:
+      all: true
+    target: Entitlement
+    type: Edit
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: Edit
+  - scope:
+      all: true
+    target: Entitlement
+    type: View
+  - scope:
+      all: true
+    target: Condition
+    type: Delete
+  - scope:
+      all: true
+    target: CriteriaScript
+    type: View
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Policy
+    type: Create
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Condition
+    type: Create
+  - scope:
+      all: true
+    target: Entitlement
+    type: Delete
+  - scope:
+      all: true
+    target: Policy
+    type: Edit
+  - scope:
+      all: true
+    target: Site
+    type: View
+  - defaultTags:
+    - api-created
+    scope:
+      all: false
+    target: Entitlement
+    type: Create
+  tags:
+  - builtin

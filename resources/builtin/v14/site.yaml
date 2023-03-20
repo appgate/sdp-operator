@@ -1,0 +1,42 @@
+apiVersion: v14.sdp.appgate.com/v1
+kind: Site
+metadata:
+  annotations:
+    sdp.appgate.com/id: 6f6fa9d9-17b2-4157-9f68-e97662acccdf
+  name: all-appliances
+spec:
+  entitlementBasedRouting: false
+  name: All Appliances
+  tags:
+  - builtin
+---
+apiVersion: v14.sdp.appgate.com/v1
+kind: Site
+metadata:
+  annotations:
+    sdp.appgate.com/id: 8a4add9e-0e99-4bb1-949c-c9faf9a49ad4
+  name: default-site
+spec:
+  entitlementBasedRouting: true
+  name: Default Site
+  notes: Built-in default site with EBR.
+  tags:
+  - builtin
+  vpn:
+    ipAccessLogIntervalSeconds: 120
+    snat: true
+    stateSharing: false
+    webProxyEnabled: false
+    webProxyVerifyUpstreamCertificate: true
+---
+apiVersion: v14.sdp.appgate.com/v1
+kind: Site
+metadata:
+  annotations:
+    sdp.appgate.com/id: 6263435b-c9f6-4b7f-99f8-37e2e6b006a9
+  name: appliance-without-site
+spec:
+  entitlementBasedRouting: false
+  name: Appliance Without Site
+  tags:
+  - builtin

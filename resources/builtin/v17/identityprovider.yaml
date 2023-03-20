@@ -1,0 +1,154 @@
+apiVersion: v17.sdp.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  annotations:
+    sdp.appgate.com/id: c233bfd8-555c-4cf5-98df-a266e35e0fbe
+  name: service
+spec:
+  adminProvider: false
+  authenticationProtocol: CHAP
+  blockLocalDnsRequests: false
+  certificateUserAttribute: userPrincipalName
+  claimMappings:
+  - attributeName: username
+    claimName: username
+    encrypt: false
+    list: false
+  - attributeName: labels
+    claimName: labels
+    encrypt: false
+    list: false
+  - attributeName: id
+    claimName: id
+    encrypt: false
+    list: false
+  - attributeName: tags
+    claimName: tags
+    encrypt: false
+    list: true
+  deviceLimitPerUser: 100
+  inactivityTimeoutMinutes: 0
+  membershipFilter: (objectCategory=group)
+  minPasswordLength: 0
+  name: service
+  notes: Built-in Identity Provider on local database for service users.
+  objectClass: user
+  scope: openid profile email offline_access
+  sslEnabled: false
+  tags:
+  - builtin
+  type: ServiceDatabase
+  userLockoutDurationMinutes: 1
+  userLockoutThreshold: 5
+  usernameAttribute: sAMAccountName
+---
+apiVersion: v17.sdp.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  annotations:
+    sdp.appgate.com/id: b5ea7cf0-6e75-11e4-9803-0800200c9a66
+  name: local
+spec:
+  adminProvider: true
+  authenticationProtocol: CHAP
+  blockLocalDnsRequests: false
+  certificateUserAttribute: userPrincipalName
+  claimMappings:
+  - attributeName: phone
+    claimName: phone
+    encrypt: false
+    list: false
+  - attributeName: id
+    claimName: id
+    encrypt: false
+    list: false
+  - attributeName: lastName
+    claimName: lastName
+    encrypt: false
+    list: false
+  - attributeName: tags
+    claimName: tags
+    encrypt: false
+    list: true
+  - attributeName: email
+    claimName: emails
+    encrypt: false
+    list: true
+  - attributeName: username
+    claimName: username
+    encrypt: false
+    list: false
+  - attributeName: firstName
+    claimName: firstName
+    encrypt: false
+    list: false
+  deviceLimitPerUser: 100000
+  enforceWindowsNetworkProfileAsDomain: false
+  inactivityTimeoutMinutes: 0
+  ipPoolV4: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+  ipPoolV6: 6935b379-205d-4fdd-847f-a0b5f14aff53
+  membershipFilter: (objectCategory=group)
+  minPasswordLength: 0
+  name: local
+  notes: Built-in Identity Provider on local database.
+  objectClass: user
+  scope: openid profile email offline_access
+  sslEnabled: false
+  tags:
+  - builtin
+  type: LocalDatabase
+  userLockoutDurationMinutes: 1
+  userLockoutThreshold: 5
+  usernameAttribute: sAMAccountName
+---
+apiVersion: v17.sdp.appgate.com/v1
+kind: IdentityProvider
+metadata:
+  annotations:
+    sdp.appgate.com/id: b2cdefce-1efe-4a7e-85d1-7976920f118f
+  name: connector
+spec:
+  adminProvider: false
+  authenticationProtocol: CHAP
+  blockLocalDnsRequests: false
+  certificateUserAttribute: userPrincipalName
+  claimMappings:
+  - attributeName: id
+    claimName: id
+    encrypt: false
+    list: false
+  - attributeName: clientName
+    claimName: clientName
+    encrypt: false
+    list: false
+  - attributeName: hostname
+    claimName: hostname
+    encrypt: false
+    list: false
+  - attributeName: applianceName
+    claimName: applianceName
+    encrypt: false
+    list: false
+  - attributeName: applianceApiVersion
+    claimName: applianceApiVersion
+    encrypt: false
+    list: false
+  - attributeName: tags
+    claimName: tags
+    encrypt: false
+    list: true
+  deviceLimitPerUser: 100
+  inactivityTimeoutMinutes: 0
+  membershipFilter: (objectCategory=group)
+  minPasswordLength: 0
+  name: Connector
+  notes: Built-in Connector provider.
+  objectClass: user
+  scope: openid profile email offline_access
+  sslEnabled: false
+  tags:
+  - builtin
+  type: Connector
+  userLockoutDurationMinutes: 1
+  userLockoutThreshold: 5
+  usernameAttribute: sAMAccountName

@@ -1,0 +1,43 @@
+apiVersion: v18.sdp.appgate.com/v1
+kind: RingfenceRule
+metadata:
+  annotations:
+    sdp.appgate.com/id: bb4685b0-ae57-4ad4-b026-413699b25640
+  name: block-in
+spec:
+  actions:
+  - action: block
+    direction: in
+    hosts:
+    - ::/0
+    protocol: icmpv6
+    types:
+    - 0-255
+  - action: block
+    direction: in
+    hosts:
+    - 0.0.0.0/0
+    - ::/0
+    ports:
+    - 1-65535
+    protocol: tcp
+  - action: block
+    direction: in
+    hosts:
+    - 0.0.0.0/0
+    protocol: icmp
+    types:
+    - 0-255
+  - action: block
+    direction: in
+    hosts:
+    - 0.0.0.0/0
+    - ::/0
+    ports:
+    - 1-65535
+    protocol: udp
+  name: Block-in
+  notes: Built-in ringfence rule to block all in traffic on the device. Replaces the
+    old 'deviceRingfence' flag.
+  tags:
+  - builtin

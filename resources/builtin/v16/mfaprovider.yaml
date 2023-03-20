@@ -1,0 +1,33 @@
+apiVersion: v16.sdp.appgate.com/v1
+kind: MfaProvider
+metadata:
+  annotations:
+    sdp.appgate.com/id: 3ae98d53-c520-437f-99e4-451f936e6d2c
+  name: default-fido2-provider
+spec:
+  authenticationProtocol: CHAP
+  inputType: Masked
+  mode: Challenge
+  name: Default FIDO2 Provider
+  notes: Built-in default FIDO2 provider.
+  tags:
+  - builtin
+  timeout: 6
+  type: Fido2
+---
+apiVersion: v16.sdp.appgate.com/v1
+kind: MfaProvider
+metadata:
+  annotations:
+    sdp.appgate.com/id: 03542d1e-733c-4c43-a567-d28fbc4649a7
+  name: default-time-based-otp-provider
+spec:
+  authenticationProtocol: CHAP
+  inputType: Numeric
+  mode: Challenge
+  name: Default Time-Based OTP Provider
+  notes: Built-in default time-based OTP provider.
+  tags:
+  - builtin
+  timeout: 6
+  type: DefaultTimeBased

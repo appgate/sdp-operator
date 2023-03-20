@@ -1,0 +1,8 @@
+apiVersion: v18.sdp.appgate.com/v1
+kind: ClientConnection
+metadata:
+  annotations:
+    sdp.appgate.com/id: ClientConnection
+  name: clientconnection
+spec:
+  profileHostname: envy-10-97-172-2.devops

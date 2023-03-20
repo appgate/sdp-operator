@@ -1,0 +1,12 @@
+apiVersion: v15.sdp.appgate.com/v1
+kind: CriteriaScripts
+metadata:
+  annotations:
+    sdp.appgate.com/id: 7c643920-7112-11e6-8b77-86f30ca893d3
+  name: everyone
+spec:
+  expression: return true;
+  name: Everyone
+  notes: Filter for built-in Everyone.
+  tags:
+  - builtin
