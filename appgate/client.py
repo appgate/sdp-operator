@@ -117,6 +117,7 @@ class AppgateEntityClient(EntityClient):
         dump: Callable[[Entity_T], Dict[str, Any]],
         kind: str,
         magic_entities: Optional[List[Entity_T]] = None,
+        builtin_entities: Optional[List[Entity_T]] = None,
         dry_run: bool = False,
     ) -> None:
         self._client = appgate_client
@@ -125,6 +126,7 @@ class AppgateEntityClient(EntityClient):
         self.dump = dump
         self.singleton = singleton
         self.magic_entities = magic_entities
+        self.builtin_entities = builtin_entities
         self.dry_run = dry_run
         self.kind = kind
 
@@ -143,7 +145,9 @@ class AppgateEntityClient(EntityClient):
         else:
             entities = [self.load(data)]
         if self.magic_entities:
-            return entities + self.magic_entities
+            entities += self.magic_entities
+        if self.builtin_entities:
+            entities += self.builtin_entities
         return entities
 
     async def create(self, entity: Entity_T) -> EntityClient:
@@ -563,6 +567,7 @@ class AppgateClient:
         api_path: str,
         singleton: bool,
         magic_entities: Optional[List[Entity_T]],
+        builtin_entities: Optional[List[Entity_T]],
     ) -> AppgateEntityClient:
         dumper = APPGATE_DUMPER
         return AppgateEntityClient(
@@ -572,6 +577,7 @@ class AppgateClient:
             load=lambda d: APPGATE_LOADER.load(d, None, entity),
             dump=lambda e: dumper.dump(e, True, None),
             magic_entities=magic_entities,
+            builtin_entities=builtin_entities,
             kind=entity.__qualname__,
             dry_run=self.dry_run,
         )

@@ -1,3 +1,4 @@
+import os
 from collections import namedtuple
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Type, Callable, Sequence, List
@@ -10,6 +11,7 @@ from apischema.json_schema import deserialization_schema
 from apischema.json_schema.types import JsonType
 from apischema.objects import ObjectField, AliasedStr
 
+from appgate.attrs import K8S_LOADER
 from appgate.client import AppgateClient, AppgateEntityClient
 from appgate.logger import log
 from appgate.openapi.parser import is_compound, Parser, ParserContext
@@ -22,6 +24,7 @@ from appgate.openapi.types import (
     GeneratedEntity,
     APPGATE_METADATA_ATTRIB_NAME,
     ENTITY_METADATA_ATTRIB_NAME,
+    Entity_T,
 )
 
 __all__ = [
@@ -37,6 +40,7 @@ from appgate.types import EntityClient, OperatorMode
 
 # Always set the default API version to latest released version
 SPEC_DIR = "api_specs/v18"
+BUILTIN_ENTITY_DIR = "resources/builtin"
 K8S_API_VERSION = "apiextensions.k8s.io/v1"
 K8S_CRD_KIND = "CustomResourceDefinition"
 LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
@@ -309,10 +313,13 @@ MAGIC_ENTITIES: Dict[str, List[MagicEntity]] = {
 def generate_api_spec_clients(
     api_spec: APISpec, appgate_client: AppgateClient
 ) -> Dict[str, EntityClient | None]:
-    def _entity_client(e_name: str, e: GeneratedEntity) -> AppgateEntityClient:
-        magic_entities = None
-        # We filter the None's in the caller anyway
+    def _entity_client(
+        e_name: str, e: GeneratedEntity, builtin: Dict[str, List[Entity_T]]
+    ) -> AppgateEntityClient:
         assert e.api_path is not None
+
+        # Load magic entities
+        magic_entities = None
         if e_name in MAGIC_ENTITIES:
             magic_entities = [
                 e.cls(
@@ -322,8 +329,32 @@ def generate_api_spec_clients(
                 )
                 for magic_instance in MAGIC_ENTITIES[e_name]
             ]
+
+        builtin_entities = None
+        if e_name in builtin:
+            builtin_entities = [b for b in builtin[e_name]]
+
         return appgate_client.entity_client(
-            e.cls, e.api_path, singleton=e.singleton, magic_entities=magic_entities
+            e.cls,
+            e.api_path,
+            singleton=e.singleton,
+            magic_entities=magic_entities,
+            builtin_entities=builtin_entities,
         )
 
-    return {n: _entity_client(n, e) for n, e in api_spec.entities.items() if e.api_path}
+    # Load builtin entities
+    b: Dict[str, List[Entity_T]] = {}
+    for file in Path(
+        f"{BUILTIN_ENTITY_DIR}/{os.getenv('APPGATE_API_VERSION')}"
+    ).iterdir():
+        with file.open() as f:
+            data = yaml.safe_load_all(f.read())
+            entities = []
+            for d in data:
+                kind = d.get("kind")
+                entities.append(api_spec.validate(d, kind, K8S_LOADER))
+            b[kind] = entities
+
+    return {
+        n: _entity_client(n, e, b) for n, e in api_spec.entities.items() if e.api_path
+    }

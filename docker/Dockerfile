@@ -9,6 +9,7 @@ RUN python3 -m venv /root/venv && \
 
 COPY appgate /root/appgate/
 COPY api_specs /root/api_specs
+COPY resources /root/resources
 COPY docker/assets/run.sh /root/run.sh
 RUN chmod +x /root/run.sh
 WORKDIR /root
