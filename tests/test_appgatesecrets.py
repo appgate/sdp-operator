@@ -523,3 +523,26 @@ def test_load_vault_secret_2():
         e = K8S_LOADER.load(data, None, EntityTestSecret)
         read_secret_from_vault.assert_called()
         assert e.password == "1234567890"
+
+def test_load_vault_secret_nested():
+    EntityTestSecret = (
+        load_test_open_api_spec(reload=True).entities["EntityTestSecretNested"].cls
+    )
+
+    data = {
+        "name": "test-entity-secret1",
+        "passwordList": [{"fieldOne": "array-item-1"}, {"fieldOne": "array-item-2"}],
+    }
+
+    ret = {
+        "data": {
+            "data": {"entitytestsecret-v18/test-entity-secret1/password": "1234567890"}
+        }
+    }
+
+    with patch.object(AppgateVaultSecret, "authenticate"), patch.object(
+        AppgateVaultSecret, "read_secret_from_vault", return_value=ret
+    ) as read_secret_from_vault:
+        e = K8S_LOADER.load(data, None, EntityTestSecret)
+        read_secret_from_vault.assert_called()
+        assert e.password == "1234567890"

@@ -44,6 +44,7 @@ TestSpec = {
     "/entity-test-file": "EntityTestFile",
     "/entity-test-file-complex": "EntityTestFileComplex",
     "/entity-test-secret": "EntityTestSecret",
+    "/entity-test-secret-nested": "EntityTestSecretNested",
     "/entity-dep-1": "EntityDep1",
     "/entity-dep-2": "EntityDep2",
     "/entity-dep-3": "EntityDep3",
