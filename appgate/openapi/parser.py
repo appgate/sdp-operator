@@ -529,6 +529,15 @@ class Parser:
             )
             format = definition.get("format", None)
             if format == "password":
+                pw_target_fields: Tuple[str, ...] = tuple(
+                    filter(
+                        None,
+                        (
+                            attrib_maker_config.definition.get("x-password-key"),
+                            attrib_maker_config.definition.get("x-secret-key"),
+                        ),
+                    )
+                )
                 return PasswordAttribMaker(
                     name=attrib_name,
                     tpe=TYPES_MAP[tpe],
@@ -539,6 +548,7 @@ class Parser:
                     secrets_cipher=self.parser_context.secrets_cipher,
                     k8s_get_client=self.parser_context.k8s_get_secret,
                     operator_mode=self.parser_context.operator_mode,
+                    target_fields=pw_target_fields,
                 )
             elif format == "date-time":
                 return AttribMaker(

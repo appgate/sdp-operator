@@ -3,7 +3,7 @@ import os
 import re
 
 import requests
-from typing import Optional, Dict, List, Any, Tuple
+from typing import Optional, Dict, List, Any, Tuple, Union
 
 from attr import evolve
 from minio import Minio  # type: ignore
@@ -62,7 +62,7 @@ def normalize_url_file_path(url_path: str) -> str:
 
 
 def url_file_path(
-    value: Dict,
+    value: Union[str, Dict[str, Any]],
     field_name: str,
     entity_name: str,
     target_fields: Tuple[str, ...],
@@ -76,6 +76,8 @@ def url_file_path(
     4. else if the entity has an id, use it to compute the path url `id/fieldName`
     5. else raise an exception
     """
+    if isinstance(value, str):
+        return value
     v = value.get(field_name)
     if v is not None and isinstance(v, str):
         return normalize_url_file_path(v)

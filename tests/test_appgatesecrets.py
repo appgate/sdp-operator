@@ -100,14 +100,16 @@ def test_write_only_password_attribute_load():
 
 def test_get_appgate_secret_plain_text():
     value = "aaaaaa"
-    secret = get_appgate_secret(value, None, lambda x: ENCRYPTED_PASSWORD, "entity1")
+    secret = get_appgate_secret(
+        value, None, lambda x: ENCRYPTED_PASSWORD, "entity1", "field1", ()
+    )
     assert isinstance(secret, AppgateSecretPlainText)
 
 
 def test_get_appgate_secret_simple():
     value = "aaaaaa"
     secret = get_appgate_secret(
-        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1"
+        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1", "field1", ()
     )
     assert isinstance(secret, AppgateSecretSimple)
 
@@ -115,7 +117,7 @@ def test_get_appgate_secret_simple():
 def test_get_appgate_secret_k8s_simple():
     value = {"type": "k8s/secret", "password": "secret1"}
     secret = get_appgate_secret(
-        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1"
+        value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "entity1", "field1", ()
     )
     assert isinstance(secret, AppgateSecretK8S)
 
@@ -123,7 +125,9 @@ def test_get_appgate_secret_k8s_simple():
 def exception():
     value = {"some": "value"}
     with pytest.raises(AppgateSecretException):
-        get_appgate_secret(value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "")
+        get_appgate_secret(
+            value, FERNET_CIPHER, lambda x: ENCRYPTED_PASSWORD, "", "", ()
+        )
 
 
 def test_get_appgate_secret_simple_load():
@@ -486,7 +490,9 @@ def test_load_vault_secret():
         "fieldThree": "this is a field",
     }
 
-    ret = {"data": {"data": {"entitytest2-v18/vault_secret_foo": "1234567890"}}}
+    ret = {
+        "data": {"data": {"entitytest2-v18/vault_secret_foo/fieldOne": "1234567890"}}
+    }
 
     with patch.object(AppgateVaultSecret, "authenticate"), patch.object(
         AppgateVaultSecret, "read_secret_from_vault", return_value=ret
