@@ -12,6 +12,7 @@ from appgate.customloaders import (
     FileAttribLoader,
     CustomEntityLoader,
 )
+from appgate.logger import log
 from appgate.openapi.attribmaker import AttribMaker
 from appgate.openapi.types import (
     AttribType,
@@ -87,21 +88,11 @@ def url_file_path(
     if value.get("id"):
         return f"{value['id']}/{field_name}"
 
-    # TODO: Problematic entities. Below are hardcoded workarounds.
-    if entity_name == "Appliance_Ntp_Servers":
-        # appliance.ntp.servers is deeply nested entity and its
-        # value only contains [{"hostname": xxx.xxx.xxx.xxx}]
-        normalized_value = normalize_url_file_path("/".join(value.popitem()))
-        return f"{normalized_value}/{field_name}"
-    if entity_name == "GlobalSettings":
-        # GlobalSettings does not have a name or id
-        v = tuple(value["profileHostname"])
-        normalized_value = normalize_url_file_path("/".join(v))
-        return f"{normalized_value}/{field_name}"
-
-    raise AppgateFileException(
+    # TODO: Implement x-field in the API spec for GlobalSettings and Appliance_Ntp_Server
+    log.warning(
         f"Unable to generate url to get fetch file for field {field_name} for entity {entity_name}"
     )
+    return ""
 
 
 class AppgateHttpFile(AppgateFile):
