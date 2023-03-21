@@ -1,4 +1,4 @@
-{{- if has "sdp-operator" .Values.sdp.operators }}
+{{- if and (has "sdp-operator" .Values.sdp.operators) (eq .Values.sdp.sdpOperator.oneshotMode false) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,8 +72,6 @@ spec:
             {{- end }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.sdpOperator.dryRun }}"
-            - name: APPGATE_OPERATOR_ONE_SHOT_MODE
-              value: "{{ .Values.sdp.sdpOperator.oneshotMode }}"
             - name: APPGATE_OPERATOR_CLEANUP
               value: "{{ .Values.sdp.sdpOperator.cleanup }}"
             - name: APPGATE_OPERATOR_TWO_WAY_SYNC
