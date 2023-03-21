@@ -28,6 +28,8 @@ paths:
     $ref: '#/entity-test-file'
   /entity-test-file-complex:
     $ref: '#/entity-test-file-complex'
+  /entity-test-secret:
+    $ref: '#/entity-test-secret'
   /entity-dep-1:
     $ref: '#/entity-dep-1'
   /entity-dep-2:
@@ -200,6 +202,21 @@ entity-test-file-complex:
         application/json:
           schema:
             $ref: '#/definitions/EntityTestFileComplex'
+
+entity-test-secret:
+  get:
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/EntityTestList'
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/definitions/EntityTestSecret'
 
 entity-dep-1:
   get:
@@ -531,6 +548,18 @@ definitions:
         readOnly: true
         type: string
         x-checksum-source: file
+  EntityTestSecret:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      password:
+        format: password
+        type: string
+        writeOnly: true
   EntityDep1:
     type: object
     properties:

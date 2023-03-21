@@ -500,3 +500,26 @@ def test_load_vault_secret():
         e = K8S_LOADER.load(data_without_password, None, EntityTest)
         read_secret_from_vault.assert_called()
         assert e.fieldOne == "1234567890"
+
+
+@patch.dict(os.environ, {"APPGATE_SECRET_SOURCE": "vault"})
+@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
+def test_load_vault_secret_2():
+    EntityTestSecret = (
+        load_test_open_api_spec(reload=True).entities["EntityTestSecret"].cls
+    )
+
+    data = {"name": "test-entity-secret1"}
+
+    ret = {
+        "data": {
+            "data": {"entitytestsecret-v18/test-entity-secret1/password": "1234567890"}
+        }
+    }
+
+    with patch.object(AppgateVaultSecret, "authenticate"), patch.object(
+        AppgateVaultSecret, "read_secret_from_vault", return_value=ret
+    ) as read_secret_from_vault:
+        e = K8S_LOADER.load(data, None, EntityTestSecret)
+        read_secret_from_vault.assert_called()
+        assert e.password == "1234567890"
