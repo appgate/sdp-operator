@@ -573,10 +573,13 @@ definitions:
         format: uuid
       name:
         type: string
+      fieldOne:
+        type: string
       password:
         format: password
         type: string
         writeOnly: true
+        x-password-key: fieldOne
   EntityTestSecretNested:
     type: object
     properties:

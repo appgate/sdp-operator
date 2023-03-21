@@ -509,8 +509,9 @@ def test_load_vault_secret_2():
         load_test_open_api_spec(reload=True).entities["EntityTestSecret"].cls
     )
 
+    # Data does not contain field referenced in x-password-key
+    # Use the field name as the URL Key
     data = {"name": "test-entity-secret1"}
-
     ret = {
         "data": {
             "data": {"entitytestsecret-v18/test-entity-secret1/password": "1234567890"}
@@ -523,6 +524,19 @@ def test_load_vault_secret_2():
         e = K8S_LOADER.load(data, None, EntityTestSecret)
         read_secret_from_vault.assert_called()
         assert e.password == "1234567890"
+
+    # Data contains field referenced in x-password-key
+    # Use the field name as the URL Key
+    data = {"name": "test-entity-secret1", "fieldOne": "password-is-here"}
+    ret = {"data": {"data": {"entitytestsecret-v18/password-is-here": "1234567890"}}}
+
+    with patch.object(AppgateVaultSecret, "authenticate"), patch.object(
+        AppgateVaultSecret, "read_secret_from_vault", return_value=ret
+    ) as read_secret_from_vault:
+        e = K8S_LOADER.load(data, None, EntityTestSecret)
+        read_secret_from_vault.assert_called()
+        assert e.password == "1234567890"
+
 
 def test_load_vault_secret_nested():
     EntityTestSecret = (
