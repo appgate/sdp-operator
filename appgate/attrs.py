@@ -12,6 +12,7 @@ from typedload.exceptions import (
     TypedloadException,
     TypedloadValueError,
     TypedloadTypeError,
+    TypedloadAttributeError,
 )
 
 from appgate.customloaders import (
