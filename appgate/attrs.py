@@ -279,7 +279,7 @@ def get_loader(
                 raise TypedloadException(str(e))
 
         try:
-            value = _mangle_names(namesmap, value, l.failonextra)
+            value = dataloader._mangle_names(namesmap, value, l.failonextra)
         except ValueError as e:
             raise TypedloadValueError(str(e), value=value, type_=type_)
         except AttributeError as e:
