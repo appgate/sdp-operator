@@ -229,7 +229,14 @@ def get_loader(
 
         fields = {i.name for i in type_.__attrs_attrs__}
         necessary_fields = set()
-        type_hints = {i.name: (dataloader._get_attr_converter_type(i.converter) if i.converter else i.type) for i in type_.__attrs_attrs__}
+        type_hints = {
+            i.name: (
+                dataloader._get_attr_converter_type(i.converter)
+                if i.converter
+                else i.type
+            )
+            for i in type_.__attrs_attrs__
+        }
         namesmap = {}  # type: Dict[str, str]
 
         value = value.copy()
@@ -239,10 +246,14 @@ def get_loader(
 
             read_only = attribute.metadata.get("readOnly", False)
             write_only = attribute.metadata.get("writeOnly", False)
-            if (read_only and platform_type == PlatformType.K8S) or ( write_only and platform_type in {
-                PlatformType.APPGATE,
-                PlatformType.GIT,
-            }):
+            if (read_only and platform_type == PlatformType.K8S) or (
+                write_only
+                and platform_type
+                in {
+                    PlatformType.APPGATE,
+                    PlatformType.GIT,
+                }
+            ):
                 # Don't load attribute from K8S in read only mode even if
                 # it's defined
                 fields.remove(attribute.name)
@@ -285,7 +296,9 @@ def get_loader(
         except AttributeError as e:
             raise TypedloadAttributeError(str(e), value=value, type_=type_)
 
-        entity = dataloader._objloader(l, fields, necessary_fields, type_hints, value, type_)
+        entity = dataloader._objloader(
+            l, fields, necessary_fields, type_hints, value, type_
+        )
 
         try:
             if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
@@ -317,7 +330,6 @@ def get_loader(
                 description=str(e), value=value, type_=type
             ) from None
         return entity
-
 
     loader = dataloader.Loader(**{})
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
