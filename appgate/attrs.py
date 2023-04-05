@@ -351,7 +351,7 @@ def get_loader(
                         annotations[K8S_ID_ANNOTATION],
                     )
             return loaded_entity
-        except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
+        except TypedloadException as e:
             raise AppgateTypedloadException(
                 platform_type=platform_type,
                 value=e.value,
