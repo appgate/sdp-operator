@@ -314,7 +314,7 @@ def get_loader(
             ) from None
         except Exception as e:
             raise TypedloadException(
-                description=str(e), value=value, type_=list(t)[-1]
+                description=str(e), value=value, type_=type
             ) from None
         return entity
 
