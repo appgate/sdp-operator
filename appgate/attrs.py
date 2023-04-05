@@ -228,7 +228,9 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and K8S_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: list[CustomFieldsEntityLoader | CustomEntityLoader] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
+                    els: list[
+                        CustomFieldsEntityLoader | CustomEntityLoader
+                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
                     for el in els or []:
                         entity = el.load(orig_values, entity)
                 elif (
