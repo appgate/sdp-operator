@@ -229,6 +229,14 @@ def get_loader(
         names = []
         defaults = {}
         types = {}
+
+        # Manage name mangling
+        namesmap: dict[str, str] = {}
+        for attribute in type_.__attrs_attrs__:
+            if "name" in attribute.metadata:
+                namesmap[attribute.metadata["name"]] = attribute.name
+        value = dataloader._mangle_names(namesmap, value, l.failonextra)
+
         for attribute in type_.__attrs_attrs__:
             read_only = attribute.metadata.get("readOnly", False)
             write_only = attribute.metadata.get("writeOnly", False)
@@ -247,15 +255,6 @@ def get_loader(
             types[attribute.name] = attribute.type
             defaults[attribute.name] = attribute.default
 
-            # Manage name mangling
-            if "name" in attribute.metadata:
-                dataname = attribute.metadata["name"]
-                pyname = attribute.name
-
-                if dataname in value:
-                    tmp = value[dataname]
-                    del value[dataname]
-                    value[pyname] = tmp
             # Custom loading values
             try:
                 if (
