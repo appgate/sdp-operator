@@ -219,37 +219,6 @@ def get_loader(
     platform_type: PlatformType,
 ) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]:
     # TODO: Implement GIT_LOADERS_FIELD_NAME
-    def _namedtupleload_wrapper(orig_values, l, value, t):
-        entity = dataloader._namedtupleload(l, value, t)
-        try:
-            if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
-                appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
-                if (
-                    platform_type == PlatformType.K8S
-                    and K8S_LOADERS_FIELD_NAME in appgate_metadata
-                ):
-                    els: list[
-                        CustomFieldsEntityLoader | CustomEntityLoader
-                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
-                    for el in els or []:
-                        entity = el.load(orig_values, entity)
-                elif (
-                    platform_type == PlatformType.APPGATE
-                    and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
-                ):
-                    els = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
-                    for el in els or []:
-                        entity = el.load(orig_values, entity)
-        except TypedloadException as e:
-            raise TypedloadException(
-                description=str(e), value=e.value, type_=e.type_
-            ) from None
-        except Exception as e:
-            raise TypedloadException(
-                description=str(e), value=value, type_=list(t)[-1]
-            ) from None
-        return entity
-
     def _attrload(l, value, type_):
         if not isinstance(value, dict):
             raise dataloader.TypedloadTypeError(
@@ -318,7 +287,39 @@ def get_loader(
                 type_,
             )
         )
-        return _namedtupleload_wrapper(orig_values, l, value, t)
+
+        entity = dataloader._namedtupleload(l, value, t)
+        try:
+            if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
+                appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
+                if (
+                    platform_type == PlatformType.K8S
+                    and K8S_LOADERS_FIELD_NAME in appgate_metadata
+                ):
+                    els: List[
+                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
+                    for el in els or []:
+                        entity = el.load(orig_values, entity)
+                elif (
+                    platform_type == PlatformType.APPGATE
+                    and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
+                ):
+                    els: List[
+                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    ] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    for el in els or []:
+                        entity = el.load(orig_values, entity)
+        except TypedloadException as e:
+            raise TypedloadException(
+                description=str(e), value=e.value, type_=e.type_
+            ) from None
+        except Exception as e:
+            raise TypedloadException(
+                description=str(e), value=value, type_=list(t)[-1]
+            ) from None
+        return entity
+
 
     loader = dataloader.Loader(**{})
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
