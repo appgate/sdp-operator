@@ -12,6 +12,7 @@ from typedload.exceptions import (
     TypedloadException,
     TypedloadValueError,
     TypedloadTypeError,
+    TypedloadAttributeError,
 )
 
 from appgate.customloaders import (
@@ -227,8 +228,8 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and K8S_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[
-                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    els: list[
+                        CustomFieldsEntityLoader | CustomEntityLoader
                     ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
                     for el in els or []:
                         entity = el.load(orig_values, entity)
@@ -236,9 +237,7 @@ def get_loader(
                     platform_type == PlatformType.APPGATE
                     and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[
-                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
-                    ] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    els = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
                     for el in els or []:
                         entity = el.load(orig_values, entity)
         except TypedloadException as e:
