@@ -3,5 +3,8 @@
   "pip-compile": {
     "fileMatch": ["(^|/)requirements\\.in$"]
   },
-  "enabledManagers": ["pip-compile"]
+  "enabledManagers": ["pip-compile"],
+  "constraints": {
+    "python": "==3.10"
+  }
 }
