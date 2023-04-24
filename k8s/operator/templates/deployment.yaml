@@ -29,7 +29,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-sdp
       containers:
         - name: {{ .Chart.Name }}-sdp
@@ -55,7 +58,7 @@ spec:
             - name: APPGATE_OPERATOR_LOG_LEVEL
               value: "{{ .Values.sdp.sdpOperator.logLevel }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
-              value: /root/api_specs/{{ required "A valid .Values.sdp.sdpOperator.version entry is required!" .Values.sdp.sdpOperator.version }}
+              value: /appgate/api_specs/{{ required "A valid .Values.sdp.sdpOperator.version entry is required!" .Values.sdp.sdpOperator.version }}
             - name: APPGATE_OPERATOR_TIMEOUT
               value: "{{ .Values.sdp.sdpOperator.timeout }}"
             {{- with .Values.sdp.sdpOperator.targetTags }}
@@ -183,7 +186,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
       volumes:
         - name: git-key
@@ -214,7 +220,7 @@ spec:
             - name: APPGATE_OPERATOR_TARGET_TAGS
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
-              value: /root/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
+              value: /appgate/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.gitOperator.dryRun }}"
             - name: GIT_VENDOR
