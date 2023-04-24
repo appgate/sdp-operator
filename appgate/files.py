@@ -89,9 +89,7 @@ def url_file_path(
     if value.get("id"):
         return f"{value['id']}/{field_name}"
 
-    log.warning(
-        f"Unable to generate url to get fetch file for field {field_name} for entity {entity_name}"
-    )
+    # TODO: Implement x-field to resolve problematic entities
     return str(uuid.uuid4())
 
 
