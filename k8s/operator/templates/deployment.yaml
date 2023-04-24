@@ -130,8 +130,6 @@ spec:
               value: {{ .Values.sdp.externalFile.source.s3.sslNoVerify | quote }}
             {{- end }}
             {{- end }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.sdpOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.sdpOperator.image.tag}}"
           imagePullPolicy: {{ .Values.sdp.sdpOperator.image.pullPolicy }}
           args:
@@ -294,8 +292,6 @@ spec:
               value: {{ .Values.sdp.externalFile.source.s3.sslNoVerify | quote }}
             {{- end }}
             {{- end }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.sdp.gitOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.gitOperator.image.tag}}"
           imagePullPolicy: {{ .Values.sdp.gitOperator.image.pullPolicy }}
           args:
