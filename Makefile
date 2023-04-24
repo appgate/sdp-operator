@@ -1,5 +1,5 @@
 .PHONY: lint all
-PYTHON3=python3.10
+PYTHON3=python3.11
 
 all: api_specs lint test
 
