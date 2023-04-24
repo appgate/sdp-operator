@@ -219,74 +219,53 @@ def get_loader(
     platform_type: PlatformType,
 ) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]:
     # TODO: Implement GIT_LOADERS_FIELD_NAME
-    def _namedtupleload_wrapper(orig_values, l, value, t):
-        entity = dataloader._namedtupleload(l, value, t)
-        try:
-            if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
-                appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
-                if (
-                    platform_type == PlatformType.K8S
-                    and K8S_LOADERS_FIELD_NAME in appgate_metadata
-                ):
-                    els: list[
-                        CustomFieldsEntityLoader | CustomEntityLoader
-                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
-                    for el in els or []:
-                        entity = el.load(orig_values, entity)
-                elif (
-                    platform_type == PlatformType.APPGATE
-                    and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
-                ):
-                    els = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
-                    for el in els or []:
-                        entity = el.load(orig_values, entity)
-        except TypedloadException as e:
-            raise TypedloadException(
-                description=str(e), value=e.value, type_=e.type_
-            ) from None
-        except Exception as e:
-            raise TypedloadException(
-                description=str(e), value=value, type_=list(t)[-1]
-            ) from None
-        return entity
-
     def _attrload(l, value, type_):
+        from attr._make import _Nothing as NOTHING
+
         if not isinstance(value, dict):
             raise dataloader.TypedloadTypeError(
                 "Expected dictionary, got %s" % type(value), type_=type_, value=value
             )
+
+        fields = {i.name for i in type_.__attrs_attrs__}
+        necessary_fields = set()
+        type_hints = {
+            i.name: (
+                dataloader._get_attr_converter_type(i.converter)
+                if i.converter
+                else i.type
+            )
+            for i in type_.__attrs_attrs__
+        }
+        namesmap = {}  # type: Dict[str, str]
+
         value = value.copy()
         orig_values = value.copy()
-        names = []
-        defaults = {}
-        types = {}
+
         for attribute in type_.__attrs_attrs__:
+
             read_only = attribute.metadata.get("readOnly", False)
             write_only = attribute.metadata.get("writeOnly", False)
-            if read_only and platform_type == PlatformType.K8S:
+            if (read_only and platform_type == PlatformType.K8S) or (
+                write_only
+                and platform_type
+                in {
+                    PlatformType.APPGATE,
+                    PlatformType.GIT,
+                }
+            ):
                 # Don't load attribute from K8S in read only mode even if
                 # it's defined
+                fields.remove(attribute.name)
                 continue
-            elif write_only and platform_type in {
-                PlatformType.APPGATE,
-                PlatformType.GIT,
-            }:
-                # Don't load attribute from APPGATE or GIT in write only mode even if
-                # it's defined
-                continue
-            names.append(attribute.name)
-            types[attribute.name] = attribute.type
-            defaults[attribute.name] = attribute.default
+
+            if attribute.default is NOTHING and attribute.init:
+                necessary_fields.add(attribute.name)
 
             # Manage name mangling
-            if "name" in attribute.metadata:
-                dataname = attribute.metadata["name"]
-                pyname = attribute.name
+            if l.mangle_key in attribute.metadata:
+                namesmap[attribute.metadata[l.mangle_key]] = attribute.name
 
-                if dataname in value:
-                    tmp = value[dataname]
-                    del value[dataname]
-                    value[pyname] = tmp
             # Custom loading values
             try:
                 if (
@@ -310,15 +289,47 @@ def get_loader(
             except Exception as e:
                 raise TypedloadException(str(e))
 
-        t = dataloader._FakeNamedTuple(
-            (
-                tuple(names),
-                types,
-                defaults,
-                type_,
-            )
+        try:
+            value = dataloader._mangle_names(namesmap, value, l.failonextra)
+        except ValueError as e:
+            raise TypedloadValueError(str(e), value=value, type_=type_)
+        except AttributeError as e:
+            raise TypedloadAttributeError(str(e), value=value, type_=type_)
+
+        entity = dataloader._objloader(
+            l, fields, necessary_fields, type_hints, value, type_
         )
-        return _namedtupleload_wrapper(orig_values, l, value, t)
+
+        try:
+            if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
+                appgate_metadata = getattr(entity, ENTITY_METADATA_ATTRIB_NAME)
+                if (
+                    platform_type == PlatformType.K8S
+                    and K8S_LOADERS_FIELD_NAME in appgate_metadata
+                ):
+                    els: List[
+                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
+                    for el in els or []:
+                        entity = el.load(orig_values, entity)
+                elif (
+                    platform_type == PlatformType.APPGATE
+                    and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
+                ):
+                    els: List[
+                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    ] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    for el in els or []:
+                        entity = el.load(orig_values, entity)
+        except TypedloadException as e:
+            raise TypedloadException(
+                description=str(e), value=e.value, type_=e.type_
+            ) from None
+        except Exception as e:
+            raise TypedloadException(
+                description=str(e), value=value, type_=type
+            ) from None
+        return entity
 
     loader = dataloader.Loader(**{})
     loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
@@ -352,7 +363,7 @@ def get_loader(
                         annotations[K8S_ID_ANNOTATION],
                     )
             return loaded_entity
-        except (TypedloadException, TypedloadValueError, TypedloadTypeError) as e:
+        except TypedloadException as e:
             raise AppgateTypedloadException(
                 platform_type=platform_type,
                 value=e.value,
