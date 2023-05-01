@@ -21,7 +21,7 @@ COPY api_specs /appgate/api_specs
 COPY docker/assets/run.sh /appgate/run.sh
 RUN chmod +x /appgate/run.sh
 
-RUN useradd appgate --uid 1000 --user-group
+RUN useradd appgate --uid 1000 --user-group --create-home
 USER appgate
 
 ENTRYPOINT ["/appgate/run.sh"]
