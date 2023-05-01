@@ -117,7 +117,7 @@ GIT_STRICT_HOST_KEY_CHECKING_ENV = "GIT_STRICT_HOST_KEY_CHECKING"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
-GIT_DUMP_DIR: Path = Path("/entities")
+GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
 
 GIT_SSH_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
 GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path("/opt/git-operator/k8s/fingerprint.key")
