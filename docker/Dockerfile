@@ -4,7 +4,7 @@ WORKDIR /appgate
 USER root
 
 RUN apt-get update && \
-    apt-get install gcc libffi-dev git --yes && \
+    apt-get install libffi-dev git --yes && \
     apt-get clean && \
     apt-get autoclean
 
@@ -13,7 +13,6 @@ COPY requirements.txt /appgate
 RUN python3 -m venv /appgate/venv && \
     /appgate/venv/bin/pip install --upgrade pip && \
     /appgate/venv/bin/pip install -r /appgate/requirements.txt && \
-    apt-get autoremove gcc --yes && \
     rm /appgate/requirements.txt
 
 COPY appgate /appgate/appgate/
