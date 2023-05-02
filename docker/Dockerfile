@@ -3,14 +3,13 @@ FROM python:3.11-slim
 WORKDIR /appgate
 USER root
 
+COPY requirements.txt /appgate
+
 RUN apt-get update && \
     apt-get install libffi-dev git --yes && \
     apt-get clean && \
-    apt-get autoclean
-
-COPY requirements.txt /appgate
-
-RUN python3 -m venv /appgate/venv && \
+    apt-get autoclean && \
+    python3 -m venv /appgate/venv && \
     /appgate/venv/bin/pip install --upgrade pip && \
     /appgate/venv/bin/pip install -r /appgate/requirements.txt && \
     rm /appgate/requirements.txt
