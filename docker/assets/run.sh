@@ -1,3 +1,3 @@
 #!/bin/bash
 
-/root/venv/bin/python3 -m appgate $@
+exec /appgate/venv/bin/python3 -m appgate $@

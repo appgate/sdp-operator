@@ -35,7 +35,7 @@ docker-shell: docker-build-image
 	docker run --rm -it -v ${PWD}:/build sdp-operator-builder bash
 
 dump-crd: docker-run-image
-	docker run -v ${PWD}:/build --rm -it --entrypoint bash sdp-operator ./run.sh --spec-directory /root/api_specs/$(VERSION) dump-crd --file /build/k8s/crd/templates/$(VERSION).yaml
+	docker run -v ${PWD}:/build --rm -it --entrypoint bash sdp-operator ./run.sh --spec-directory /appgate/api_specs/$(VERSION) dump-crd --file /build/k8s/crd/templates/$(VERSION).yaml
 	echo '{{ if eq .Values.version "$(VERSION)" }}' | cat - k8s/crd/templates/$(VERSION).yaml > temp && mv temp k8s/crd/templates/$(VERSION).yaml
 	echo '{{ end }}' >> k8s/crd/templates/$(VERSION).yaml
 
