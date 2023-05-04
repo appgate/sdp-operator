@@ -129,6 +129,4 @@ spec:
             {{- if eq .Values.sdp.sdpOperator.reverseMode true }}
             - --reverse-mode
             {{- end }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
 {{- end }}
