@@ -1,0 +1,136 @@
+{{- if has "git-operator" .Values.sdp.operators }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sdp-operator.fullname" . }}-git
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sdp-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sdp-operator.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.sdp.gitOperator.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
+      volumes:
+        - name: git-key
+          secret:
+            defaultMode: 0600
+            secretName: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+            items:
+              - key: git-ssh-key
+                path: deployment.key
+              {{- if and (.Values.sdp.gitOperator.git.hostname) (eq .Values.sdp.gitOperator.git.strictHostKeyChecking true) }}
+              - key: git-ssh-host-key-fingerprint
+                path: fingerprint.key
+              {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-git
+          volumeMounts:
+            - mountPath: /home/appgate/git-operator/k8s
+              name: git-key
+          env:
+            - name: APPGATE_API_VERSION
+              value: {{ .Values.sdp.sdpOperator.version }}
+            - name: APPGATE_OPERATOR_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: APPGATE_OPERATOR_LOG_LEVEL
+              value: "{{ .Values.sdp.gitOperator.logLevel }}"
+            - name: APPGATE_OPERATOR_TIMEOUT
+              value: "{{ .Values.sdp.gitOperator.timeout }}"
+            - name: APPGATE_OPERATOR_TARGET_TAGS
+              value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
+            - name: APPGATE_OPERATOR_SPEC_DIRECTORY
+              value: /appgate/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
+            - name: APPGATE_OPERATOR_DRY_RUN
+              value: "{{ .Values.sdp.gitOperator.dryRun }}"
+            - name: GIT_VENDOR
+              value: {{ .Values.sdp.gitOperator.git.vendor }}
+            - name: GIT_REPOSITORY
+              value: {{ .Values.sdp.gitOperator.git.repository }}
+            - name: GIT_STRICT_HOST_KEY_CHECKING
+              value: "{{ .Values.sdp.gitOperator.git.strictHostKeyChecking }}"
+            {{- with .Values.sdp.gitOperator.git.hostname }}
+            - name: GIT_HOSTNAME
+              value: "{{ . }}"
+            {{- end }}
+            {{- with .Values.sdp.gitOperator.git.sshPort }}
+            - name: GIT_SSH_PORT
+              value: "{{ . }}"
+            {{- end }}
+            {{- if eq .Values.sdp.gitOperator.git.vendor "github" }}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+                  key: github-token
+            {{- end }}
+            {{- if eq .Values.sdp.gitOperator.git.vendor "gitlab" }}
+            - name: GITLAB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (include "sdp-operator.secret" .) .Values.sdp.gitOperator.secret }}
+                  key: gitlab-token
+            {{- end }}
+            - name: GIT_MAIN_BRANCH
+              value: {{ .Values.sdp.gitOperator.git.mainBranch }}
+            - name: GIT_BASE_BRANCH
+              value: {{ .Values.sdp.gitOperator.git.baseBranch }}
+            {{- if .Values.sdp.externalSecret.enabled }}
+            - name: APPGATE_SECRET_SOURCE
+              value: {{ .Values.sdp.externalSecret.type }}
+            {{- if eq .Values.sdp.externalSecret.type "vault" }}
+            - name: APPGATE_VAULT_ADDRESS
+              value: {{ .Values.sdp.externalSecret.source.vault.address }}
+            - name: APPGATE_VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalSecret.source.vault.tokenSecret }}
+                  key: vault-token
+            - name: APPGATE_VAULT_SSL_NO_VERIFY
+              value: {{ .Values.sdp.externalSecret.source.vault.sslNoVerify | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.sdp.externalFile.enabled }}
+            - name: APPGATE_FILE_SOURCE
+              value: {{ .Values.sdp.externalFile.type }}
+            {{- if eq .Values.sdp.externalFile.type "http" }}
+            - name: APPGATE_FILE_HTTP_ADDRESS
+              value: {{ .Values.sdp.externalFile.source.http.address }}
+            {{- end }}
+            {{- if eq .Values.sdp.externalFile.type "s3" }}
+            - name: APPGATE_FILE_S3_ADDRESS
+              value: {{ .Values.sdp.externalFile.source.s3.address }}
+            - name: APPGATE_FILE_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalFile.source.s3.keySecret }}
+                  key: access-key
+            - name: APPGATE_FILE_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sdp.externalFile.source.s3.keySecret }}
+                  key: secret-key
+            - name: APPGATE_FILE_S3_SSL_NO_VERIFY
+              value: {{ .Values.sdp.externalFile.source.s3.sslNoVerify | quote }}
+            {{- end }}
+            {{- end }}
+          image: "{{ .Values.sdp.gitOperator.image.repository }}/sdp-operator:{{ default .Chart.AppVersion .Values.sdp.gitOperator.image.tag}}"
+          imagePullPolicy: {{ .Values.sdp.gitOperator.image.pullPolicy }}
+          args:
+            - "git-operator"
+{{ end }}
