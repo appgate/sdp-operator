@@ -119,8 +119,8 @@ GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
 
-GIT_SSH_KEY_PATH = Path("/opt/git-operator/k8s/deployment.key")
-GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path("/opt/git-operator/k8s/fingerprint.key")
+GIT_SSH_KEY_PATH = Path("/home/appgate/git-operator/k8s/deployment.key")
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path("/home/appgate/git-operator/k8s/fingerprint.key")
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
