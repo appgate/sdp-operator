@@ -83,7 +83,7 @@ python-gitlab==3.13.0
     # via -r requirements.in
 pyyaml==6.0
     # via kubernetes
-requests==2.28.2
+requests==2.31.0
     # via
     #   hvac
     #   kubernetes
