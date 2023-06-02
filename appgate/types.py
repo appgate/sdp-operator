@@ -116,6 +116,8 @@ GIT_SSH_PORT_ENV = "GIT_SSH_PORT"
 GIT_STRICT_HOST_KEY_CHECKING_ENV = "GIT_STRICT_HOST_KEY_CHECKING"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
+GIT_USERNAME = "GIT_USERNAME"
+GIT_TOKEN = "GIT_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
 
@@ -130,7 +132,7 @@ APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 
 
 GitCommitOperation = Literal["ADD", "DELETE", "MODIFY"]
-
+GitProtocol: TypeAlias = Literal["https", "ssh"]
 
 @attrs(slots=True, frozen=True)
 class GitCommitState:
@@ -443,10 +445,14 @@ class GitOperatorContext:
     git_base_branch: str = attrib()
     git_hostname: str | None = attrib()
     git_ssh_port: str | None = attrib()
+    git_username: str | None = attrib()
+    git_token: str | None = attrib()
     git_strict_host_key_checking = attrib(default=True)
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
     main_branch: str = attrib(default=GIT_REPOSITORY_MAIN_BRANCH)
+    git_protocol: GitProtocol = attrib(default="https")
+
 
 
 @attrs(slots=True, frozen=True)
@@ -484,6 +490,16 @@ def get_git_vendor(vendor: str) -> GitVendor:
             f"Environment variable {GIT_VENDOR_ENV}={vendor} must be 'github' or 'gitlab'"
         )
     return cast(GitVendor, vendor)
+
+
+def get_git_token() -> Optional[str]:
+    if GITHUB_TOKEN_ENV in os.environ:
+        return os.getenv(GITHUB_TOKEN_ENV)
+    if GITLAB_TOKEN_ENV in os.environ:
+        return os.getenv(GITLAB_TOKEN_ENV)
+    if GIT_TOKEN in os.environ:
+        return os.getenv(GIT_TOKEN)
+    return None
 
 
 def to_bool(value: Optional[str]) -> bool:
