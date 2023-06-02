@@ -36,10 +36,12 @@ from appgate.types import (
     is_target,
     GitCommitState,
     get_git_vendor,
+    get_git_protocol,
     get_git_token,
     GIT_REPOSITORY_MAIN_BRANCH_ENV,
     GIT_REPOSITORY_MAIN_BRANCH,
     GIT_HOSTNAME_ENV,
+    GIT_PROTOCOL,
     GIT_STRICT_HOST_KEY_CHECKING_ENV,
     GIT_SSH_PORT_ENV,
     GIT_USERNAME,
@@ -103,6 +105,7 @@ def git_operator_context(
         git_token=get_git_token(),
         git_strict_host_key_checking=ensure_env(GIT_STRICT_HOST_KEY_CHECKING_ENV)
         == "true",
+        git_protocol=get_git_protocol(os.environ.get(GIT_PROTOCOL, "https")),
     )
 
 

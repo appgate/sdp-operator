@@ -118,6 +118,7 @@ GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 GIT_USERNAME = "GIT_USERNAME"
 GIT_TOKEN = "GIT_TOKEN"
+GIT_PROTOCOL = "GIT_PROTOCOL"
 
 GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
 
@@ -490,6 +491,14 @@ def get_git_vendor(vendor: str) -> GitVendor:
             f"Environment variable {GIT_VENDOR_ENV}={vendor} must be 'github' or 'gitlab'"
         )
     return cast(GitVendor, vendor)
+
+
+def get_git_protocol(protocol: str) -> GitProtocol:
+    if protocol not in ['https', 'ssh']:
+        raise AppgateException(
+            f"Environment variable {GIT_PROTOCOL}={protocol} must be 'https' or 'ssh'"
+        )
+    return cast(GitProtocol, protocol)
 
 
 def get_git_token() -> Optional[str]:
