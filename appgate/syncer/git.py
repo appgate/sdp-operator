@@ -3,7 +3,7 @@ import functools
 import shlex
 import time
 from datetime import date
-from typing import Tuple, List, Type, Dict, Iterable, Protocol
+from typing import Tuple, List, Type, Dict, Iterable, Protocol, Optional
 from urllib.parse import urlparse
 
 import yaml
@@ -203,24 +203,31 @@ class GitRepo:
     ) -> PullRequestLike | None:
         raise NotImplementedError()
 
-
-def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
-    repository = ctx.git_repository_fork or ctx.git_repository
-    log.info("[git-operator] Initializing the git repository by cloning %s", repository)
-    if repository_path.exists():
-        shutil.rmtree(repository_path)
-    if not GIT_SSH_KEY_PATH.exists():
-        raise AppgateException(f"Unable to find SSH key {GIT_SSH_KEY_PATH}")
-    url = (
-        f"git@{urlparse(ctx.git_hostname).hostname}:{repository}"
-        if ctx.git_hostname
-        else f"git@{ctx.git_vendor}.com:{repository}"
-    )
-    try:
+def clone_repo_url(ctx: GitOperatorContext, key_path: Optional[Path] = None) -> Tuple[str,dict[str,str]]:
+    env = {
+        # workaround to avoid the process to get stuck on any stdout prompt (passphrase)
+        # will instead terminate
+        "GIT_ASKPASS": '/bin/echo'
+    }
+    user = "git"
+    host = f"{ctx.git_vendor}.com"
+    protocol = ctx.git_protocol
+    if ctx.git_hostname:
+        h = urlparse(ctx.git_hostname)
+        if h.hostname:
+            host = h.hostname
+    if ctx.git_username:
+        # if user is set, we will automagically overwrite the protocol to https
+        protocol = "https"
+        user = f"{ctx.git_username}"
+    if ctx.git_token:
+        user = f"{user}:{ctx.git_token}"
+    elif key_path is not None and key_path.exists():
+        protocol = 'ssh'
         git_ssh_command = [
             "ssh",
             "-i",
-            str(GIT_SSH_KEY_PATH),
+            str(key_path),
             "-o",
             "IdentitiesOnly=yes",
         ]
@@ -228,17 +235,31 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
             git_ssh_command.extend(["-o", "StrictHostKeyChecking=no"])
         if ctx.git_ssh_port:
             git_ssh_command.extend(["-p", str(ctx.git_ssh_port)])
+        env["GIT_SSH_COMMAND"] = shlex.join(git_ssh_command)
 
+    return f"{protocol}://{user}@{host}", env
+
+def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
+    repository = ctx.git_repository_fork or ctx.git_repository
+    log.info("[git-operator] Initializing the git repository by cloning %s", repository)
+    url, env = clone_repo_url(ctx, GIT_SSH_KEY_PATH)
+
+    if repository_path.exists():
+        shutil.rmtree(repository_path)
+
+    try:
+        log.info(f"[git-operator] Initializing the git repository by cloning {url}/{repository}")
         git_repo = Repo.clone_from(
-            url,
+            f"{url}/{repository}",
             repository_path,
-            env={"GIT_SSH_COMMAND": shlex.join(git_ssh_command)},
+            env=env,
         )
     except GitCommandError as e:
         log.error("Error cloning repository %s: %s", repository, e.stderr)
         raise AppgateException(f"Unable to clone repository {repository}")
 
     log.info(f"[git-operator] Repository %s cloned", repository)
+
     return git_repo
 
 
