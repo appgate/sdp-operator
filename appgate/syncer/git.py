@@ -203,11 +203,14 @@ class GitRepo:
     ) -> PullRequestLike | None:
         raise NotImplementedError()
 
-def clone_repo_url(ctx: GitOperatorContext, key_path: Optional[Path] = None) -> Tuple[str,dict[str,str]]:
+
+def clone_repo_url(
+    ctx: GitOperatorContext, key_path: Optional[Path] = None
+) -> Tuple[str, dict[str, str]]:
     env = {
         # workaround to avoid the process to get stuck on any stdout prompt (passphrase)
         # will instead terminate
-        "GIT_ASKPASS": '/bin/echo'
+        "GIT_ASKPASS": "/bin/echo"
     }
     user = "git"
     host = f"{ctx.git_vendor}.com"
@@ -223,7 +226,7 @@ def clone_repo_url(ctx: GitOperatorContext, key_path: Optional[Path] = None) -> 
     if ctx.git_token:
         user = f"{user}:{ctx.git_token}"
     elif key_path is not None and key_path.exists():
-        protocol = 'ssh'
+        protocol = "ssh"
         git_ssh_command = [
             "ssh",
             "-i",
@@ -239,6 +242,7 @@ def clone_repo_url(ctx: GitOperatorContext, key_path: Optional[Path] = None) -> 
 
     return f"{protocol}://{user}@{host}", env
 
+
 def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
@@ -248,7 +252,9 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
         shutil.rmtree(repository_path)
 
     try:
-        log.info(f"[git-operator] Initializing the git repository by cloning {url}/{repository}")
+        log.info(
+            f"[git-operator] Initializing the git repository by cloning {url}/{repository}"
+        )
         git_repo = Repo.clone_from(
             f"{url}/{repository}",
             repository_path,

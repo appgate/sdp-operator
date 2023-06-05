@@ -135,6 +135,7 @@ APPGATE_OPERATOR_PR_LABEL_DESC = "Pullrequest created by sdp-operator"
 GitCommitOperation = Literal["ADD", "DELETE", "MODIFY"]
 GitProtocol: TypeAlias = Literal["https", "ssh"]
 
+
 @attrs(slots=True, frozen=True)
 class GitCommitState:
     entity: Entity_T = attrib()
@@ -455,7 +456,6 @@ class GitOperatorContext:
     git_protocol: GitProtocol = attrib(default="https")
 
 
-
 @attrs(slots=True, frozen=True)
 class EntityFieldDependency:
     """
@@ -494,7 +494,7 @@ def get_git_vendor(vendor: str) -> GitVendor:
 
 
 def get_git_protocol(protocol: str) -> GitProtocol:
-    if protocol not in ['https', 'ssh']:
+    if protocol not in ["https", "ssh"]:
         raise AppgateException(
             f"Environment variable {GIT_PROTOCOL}={protocol} must be 'https' or 'ssh'"
         )

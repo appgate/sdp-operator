@@ -121,83 +121,15 @@ def test_gitlab_checkout_branch() -> None:
 
 def test_clone_repo() -> None:
     # assert public HTTPS git clone
-    url, env = clone_repo_url(GitOperatorContext(
-        namespace="test",
-        api_spec=APISpec(entities={}, api_version=18),
-        timeout=5,
-        target_tags=frozenset("master"),
-        dry_run=False,
-        git_vendor="github",
-        git_repository="sdp-operator-1",
-        git_base_branch="master",
-        git_repository_fork="fork",
-        main_branch="main",
-        git_hostname=None,
-        git_ssh_port=None,
-        git_username=None,
-        git_token=None,
-        log_level="info",
-    ))
-    assert url == 'https://git@github.com'
-    TestCase().assertDictEqual({
-        'GIT_ASKPASS': '/bin/echo',
-    }, env)
-
-    # assert private HTTPS git clone
-    url, _ = clone_repo_url(GitOperatorContext(
-        namespace="test",
-        api_spec=APISpec(entities={}, api_version=18),
-        timeout=5,
-        target_tags=frozenset("master"),
-        dry_run=False,
-        git_vendor="github",
-        git_repository="sdp-operator-2",
-        git_base_branch="master",
-        git_repository_fork="fork",
-        main_branch="main",
-        git_hostname=None,
-        git_ssh_port=None,
-        git_username="bob",
-        git_token="hunter2",
-        log_level="info",
-    ))
-    assert url == 'https://bob:hunter2@github.com'
-
-    # assert private ssh git clone
-    with tempfile.TemporaryDirectory() as tmp:
-        url, env = clone_repo_url(GitOperatorContext(
+    url, env = clone_repo_url(
+        GitOperatorContext(
             namespace="test",
             api_spec=APISpec(entities={}, api_version=18),
             timeout=5,
             target_tags=frozenset("master"),
             dry_run=False,
-            git_vendor="gitlab",
-            git_repository="sdp-operator-3",
-            git_base_branch="master",
-            git_repository_fork="fork",
-            main_branch="main",
-            git_hostname=None,
-            git_ssh_port="21",
-            git_username=None,
-            git_token=None,
-            log_level="info",
-        ), Path(tmp))
-        TestCase().assertDictEqual({
-            'GIT_ASKPASS': '/bin/echo',
-            'GIT_SSH_COMMAND': f"ssh -i {tmp} -o IdentitiesOnly=yes -p 21"
-        }, env)
-        assert url == 'ssh://git@gitlab.com'
-
-    # assert private ssh git clone
-    with tempfile.TemporaryDirectory() as tmp:
-        url, env = clone_repo_url(GitOperatorContext(
-            namespace="test",
-            api_spec=APISpec(entities={}, api_version=18),
-            timeout=5,
-            target_tags=frozenset("master"),
-            dry_run=False,
-            git_vendor="gitlab",
-            git_repository="sdp-operator-4",
+            git_vendor="github",
+            git_repository="sdp-operator-1",
             git_base_branch="master",
             git_repository_fork="fork",
             main_branch="main",
@@ -206,37 +138,128 @@ def test_clone_repo() -> None:
             git_username=None,
             git_token=None,
             log_level="info",
-        ), Path(tmp))
-        TestCase().assertDictEqual({
-            'GIT_ASKPASS': '/bin/echo',
-            'GIT_SSH_COMMAND': f"ssh -i {tmp} -o IdentitiesOnly=yes"
-        }, env)
-        assert url == 'ssh://git@gitlab.com'
+        )
+    )
+    assert url == "https://git@github.com"
+    TestCase().assertDictEqual(
+        {
+            "GIT_ASKPASS": "/bin/echo",
+        },
+        env,
+    )
+
+    # assert private HTTPS git clone
+    url, _ = clone_repo_url(
+        GitOperatorContext(
+            namespace="test",
+            api_spec=APISpec(entities={}, api_version=18),
+            timeout=5,
+            target_tags=frozenset("master"),
+            dry_run=False,
+            git_vendor="github",
+            git_repository="sdp-operator-2",
+            git_base_branch="master",
+            git_repository_fork="fork",
+            main_branch="main",
+            git_hostname=None,
+            git_ssh_port=None,
+            git_username="bob",
+            git_token="hunter2",
+            log_level="info",
+        )
+    )
+    assert url == "https://bob:hunter2@github.com"
+
+    # assert private ssh git clone
+    with tempfile.TemporaryDirectory() as tmp:
+        url, env = clone_repo_url(
+            GitOperatorContext(
+                namespace="test",
+                api_spec=APISpec(entities={}, api_version=18),
+                timeout=5,
+                target_tags=frozenset("master"),
+                dry_run=False,
+                git_vendor="gitlab",
+                git_repository="sdp-operator-3",
+                git_base_branch="master",
+                git_repository_fork="fork",
+                main_branch="main",
+                git_hostname=None,
+                git_ssh_port="21",
+                git_username=None,
+                git_token=None,
+                log_level="info",
+            ),
+            Path(tmp),
+        )
+        TestCase().assertDictEqual(
+            {
+                "GIT_ASKPASS": "/bin/echo",
+                "GIT_SSH_COMMAND": f"ssh -i {tmp} -o IdentitiesOnly=yes -p 21",
+            },
+            env,
+        )
+        assert url == "ssh://git@gitlab.com"
+
+    # assert private ssh git clone
+    with tempfile.TemporaryDirectory() as tmp:
+        url, env = clone_repo_url(
+            GitOperatorContext(
+                namespace="test",
+                api_spec=APISpec(entities={}, api_version=18),
+                timeout=5,
+                target_tags=frozenset("master"),
+                dry_run=False,
+                git_vendor="gitlab",
+                git_repository="sdp-operator-4",
+                git_base_branch="master",
+                git_repository_fork="fork",
+                main_branch="main",
+                git_hostname=None,
+                git_ssh_port=None,
+                git_username=None,
+                git_token=None,
+                log_level="info",
+            ),
+            Path(tmp),
+        )
+        TestCase().assertDictEqual(
+            {
+                "GIT_ASKPASS": "/bin/echo",
+                "GIT_SSH_COMMAND": f"ssh -i {tmp} -o IdentitiesOnly=yes",
+            },
+            env,
+        )
+        assert url == "ssh://git@gitlab.com"
 
     # assert private ssh git clone strict checking disabled
     with tempfile.TemporaryDirectory() as tmp:
-        url, env = clone_repo_url(GitOperatorContext(
-            namespace="test",
-            api_spec=APISpec(entities={}, api_version=18),
-            timeout=5,
-            target_tags=frozenset("master"),
-            dry_run=False,
-            git_vendor="gitlab",
-            git_repository="sdp-operator-5",
-            git_base_branch="master",
-            git_repository_fork="fork",
-            main_branch="main",
-            git_hostname=None,
-            git_ssh_port=None,
-            git_username=None,
-            git_token=None,
-            log_level="info",
-            git_strict_host_key_checking=False
-        ), Path(tmp))
-        TestCase().assertDictEqual({
-            'GIT_ASKPASS': '/bin/echo',
-            'GIT_SSH_COMMAND': f"ssh -i {tmp} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
-        }, env)
-        assert url == 'ssh://git@gitlab.com'
-
-
+        url, env = clone_repo_url(
+            GitOperatorContext(
+                namespace="test",
+                api_spec=APISpec(entities={}, api_version=18),
+                timeout=5,
+                target_tags=frozenset("master"),
+                dry_run=False,
+                git_vendor="gitlab",
+                git_repository="sdp-operator-5",
+                git_base_branch="master",
+                git_repository_fork="fork",
+                main_branch="main",
+                git_hostname=None,
+                git_ssh_port=None,
+                git_username=None,
+                git_token=None,
+                log_level="info",
+                git_strict_host_key_checking=False,
+            ),
+            Path(tmp),
+        )
+        TestCase().assertDictEqual(
+            {
+                "GIT_ASKPASS": "/bin/echo",
+                "GIT_SSH_COMMAND": f"ssh -i {tmp} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no",
+            },
+            env,
+        )
+        assert url == "ssh://git@gitlab.com"
