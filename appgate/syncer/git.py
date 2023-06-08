@@ -2,6 +2,7 @@ import enum
 import functools
 import shlex
 import time
+import re
 from datetime import date
 from typing import Tuple, List, Type, Dict, Iterable, Protocol, Optional
 from urllib.parse import urlparse
@@ -245,18 +246,20 @@ def clone_repo_url(
 
 def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
-    log.info("[git-operator] Initializing the git repository by cloning %s", repository)
     url, env = clone_repo_url(ctx, GIT_SSH_KEY_PATH)
 
     if repository_path.exists():
         shutil.rmtree(repository_path)
 
     try:
+        # make sure we don't log the git token
+        addr = f"{url}/{repository}"
         log.info(
-            f"[git-operator] Initializing the git repository by cloning {url}/{repository}"
+            f"[git-operator] Initializing the git repository by cloning %s",
+            re.sub(r"(://.*?:)(.*?)(@)", rf"\g<1>****\g<3>", addr),
         )
         git_repo = Repo.clone_from(
-            f"{url}/{repository}",
+            addr,
             repository_path,
             env=env,
         )
