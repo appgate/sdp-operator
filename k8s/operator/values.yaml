@@ -69,6 +69,7 @@ sdp:
   ## @param sdp.gitOperator.git.hostname Hostname of the git repository including the port (if not well-known port)
   ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
+  ## @param sdp.gitOperator.git.protocl Transport protocl for git (SSH, HTTPS supported) default to HTTPS, if ssh is used, ssh-key must be provided as secret
   gitOperator:
     version: v18
     logLevel: info
