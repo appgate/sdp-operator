@@ -85,6 +85,7 @@ sdp:
       hostname: ""
       sshPort: ""
       strictHostKeyChecking: true
+      protocl: https
 
     ## @param sdp.gitOperator.image.tag The image tag of the operator.
     ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.

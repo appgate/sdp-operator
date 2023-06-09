@@ -9,7 +9,6 @@ Below is the list of Helm values available for configuration.
 | --------------- | -------------------------------------------------------------------------------- | --------------------------------- |
 | `sdp.operators` | List of operators to run in the deployment. (Option: sdp-operator, git-operator) | `["sdp-operator","git-operator"]` |
 
-
 ### SDP Operator Parameters
 
 | Name                                | Description                                                                                                                                                                              | Value                          |
@@ -35,7 +34,6 @@ Below is the list of Helm values available for configuration.
 | `sdp.sdpOperator.image.repository`  | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
 | `sdp.sdpOperator.image.pullSecrets` | The secret to access the repository.                                                                                                                                                     | `[]`                           |
 
-
 ### Git Operator
 
 | Name                                        | Description                                                                                                                                                                              | Value                          |
@@ -53,11 +51,11 @@ Below is the list of Helm values available for configuration.
 | `sdp.gitOperator.git.hostname`              | Hostname of the git repository including the port (if not well-known port)                                                                                                               | `""`                           |
 | `sdp.gitOperator.git.sshPort`               | Alternate ssh port for the git repository (if not well-known port)                                                                                                                       | `""`                           |
 | `sdp.gitOperator.git.strictHostKeyChecking` | Enable StrictHostKeyChecking when cloning repository via SSH                                                                                                                             | `true`                         |
+| `sdp.gitOperator.git.protocl`               | Transport protocl for git (SSH, HTTPS supported) default to HTTPS, if ssh is used, ssh-key must be provided as secret                                                                    | `https`                        |
 | `sdp.gitOperator.image.tag`                 | The image tag of the operator.                                                                                                                                                           | `""`                           |
 | `sdp.gitOperator.image.pullPolicy`          | The image pull policy of the operator.                                                                                                                                                   | `Always`                       |
 | `sdp.gitOperator.image.repository`          | The repository to pull the operator image from.                                                                                                                                          | `ghcr.io/appgate/sdp-operator` |
 | `sdp.gitOperator.image.pullSecrets`         | The secret to access the repository.                                                                                                                                                     | `[]`                           |
-
 
 ### External Secret Configuration
 
@@ -69,7 +67,6 @@ Below is the list of Helm values available for configuration.
 | `sdp.externalSecret.source.vault.tokenSecret` | Token to use for authenticating against the Vault     | `""`    |
 | `sdp.externalSecret.source.vault.sslNoVerify` | Disables SSL verification on Vault connection         | `false` |
 
-
 ### External File Configuration
 
 | Name                                     | Description                                                    | Value   |
@@ -80,7 +77,6 @@ Below is the list of Helm values available for configuration.
 | `sdp.externalFile.source.s3.address`     | Hostname of the S3 object storage                              | `""`    |
 | `sdp.externalFile.source.s3.keySecret`   | Name of the secret that contains the access key and secret key | `""`    |
 | `sdp.externalFile.source.s3.sslNoVerify` | Disables SSL verification on S3 connection                     | `false` |
-
 
 ### Kubernetes Parameters
 
