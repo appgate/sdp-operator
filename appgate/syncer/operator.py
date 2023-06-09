@@ -103,7 +103,9 @@ def git_operator_context(
         git_ssh_port=os.environ.get(GIT_SSH_PORT_ENV),
         git_username=os.environ.get(GIT_USERNAME),
         git_token=get_git_token(),
-        git_strict_host_key_checking=ensure_env(GIT_STRICT_HOST_KEY_CHECKING_ENV)
+        git_strict_host_key_checking=os.environ.get(
+            GIT_STRICT_HOST_KEY_CHECKING_ENV, False
+        )
         == "true",
         git_protocol=get_git_protocol(os.environ.get(GIT_PROTOCOL, "https")),
     )
