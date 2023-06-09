@@ -693,16 +693,20 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
     match ctx.git_vendor:
         case "github":
             log.info("[git-operator] Detected GitHub as git vendor type")
-            create_ssh_fingerprint(GITHUB_SSH_FINGERPRINT)
+            if ctx.git_protocol == "ssh":
+                create_ssh_fingerprint(GITHUB_SSH_FINGERPRINT)
+
             return github_repo(ctx)
 
         case "gitlab":
             log.info("[git-operator] Detected GitLab as git vendor type")
-            if ctx.git_hostname and ctx.git_strict_host_key_checking:
-                with open(GIT_SSH_HOST_KEY_FINGERPRINT_PATH) as fingerprint:
-                    create_ssh_fingerprint(fingerprint.read())
-            else:
-                create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
+            if ctx.git_protocol == "ssh":
+                if ctx.git_hostname and ctx.git_strict_host_key_checking:
+                    with open(GIT_SSH_HOST_KEY_FINGERPRINT_PATH) as fingerprint:
+                        create_ssh_fingerprint(fingerprint.read())
+                else:
+                    create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
+
             return gitlab_repo(ctx)
 
         case _:
