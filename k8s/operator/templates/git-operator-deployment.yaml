@@ -26,6 +26,7 @@ spec:
         fsGroup: 1000
         runAsNonRoot: true
       serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
+      {{- if  eq .Values.sdp.gitOperator.git.protocol "ssh" }}
       volumes:
         - name: git-key
           secret:
@@ -38,11 +39,14 @@ spec:
               - key: git-ssh-host-key-fingerprint
                 path: fingerprint.key
               {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}-git
+        {{- if  eq .Values.sdp.gitOperator.git.protocol "ssh" }}
           volumeMounts:
             - mountPath: /home/appgate/git-operator/k8s
               name: git-key
+        {{- end }}
           env:
             - name: APPGATE_API_VERSION
               value: {{ .Values.sdp.sdpOperator.version }}
@@ -61,9 +65,12 @@ spec:
             - name: GIT_VENDOR
               value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY
-              value: {{ .Values.sdp.gitOperator.git.repository }}
+            - name: GIT_PROTOCOL
+              value: {{ default "https" .Values.sdp.gitOperator.git.protocol }}
+            {{- if  eq .Values.sdp.gitOperator.git.protocol "ssh" }}
             - name: GIT_STRICT_HOST_KEY_CHECKING
               value: "{{ .Values.sdp.gitOperator.git.strictHostKeyChecking }}"
+            {{- end }}
             {{- with .Values.sdp.gitOperator.git.hostname }}
             - name: GIT_HOSTNAME
               value: "{{ . }}"
