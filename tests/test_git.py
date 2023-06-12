@@ -136,7 +136,7 @@ def test_clone_repo() -> None:
             git_hostname=None,
             git_ssh_port=None,
             git_username=None,
-            git_token=None,
+            git_token="A_token_should_not_be_used_with_ssh",
             log_level="info",
         )
     )

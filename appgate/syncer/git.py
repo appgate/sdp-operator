@@ -224,8 +224,8 @@ def clone_repo_url(
         # if user is set, we will automagically overwrite the protocol to https
         protocol = "https"
         user = f"{ctx.git_username}"
-    if ctx.git_token:
-        user = f"{user}:{ctx.git_token}"
+        if ctx.git_token:
+            user = f"{user}:{ctx.git_token}"
     elif key_path is not None and key_path.exists():
         protocol = "ssh"
         git_ssh_command = [
