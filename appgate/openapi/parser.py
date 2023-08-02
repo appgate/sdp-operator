@@ -107,7 +107,9 @@ class EntityClassGenerator:
         dependencies: Set[GeneratedEntityFieldDependency] = set()
         for attrib_name, attrib_attrs in self.attributes.items():
             dependency = attrib_attrs.definition.get(UUID_REFERENCE_FIELD)
-            if dependency and isinstance(dependency, list):
+            if dependency == self.name:
+                continue
+            elif dependency and isinstance(dependency, list):
                 dependencies.add(
                     GeneratedEntityFieldDependency(
                         field_path=attrib_name, dependencies=frozenset(dependency)

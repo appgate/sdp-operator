@@ -238,6 +238,8 @@ def get_dependencies(
             deps.update(_d)
         elif UUID_REFERENCE_FIELD in mt:
             ds = mt.get(UUID_REFERENCE_FIELD)
+            if cls.__name__ == ds:
+                continue
             if isinstance(ds, list):
                 deps.add(
                     GeneratedEntityFieldDependency(
