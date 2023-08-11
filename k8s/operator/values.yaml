@@ -30,7 +30,7 @@ sdp:
     deviceId: ""
     secret: ""
     reverseMode: false
-    version: v18
+    version: v19
     logLevel: info
     timeout: 30
     builtinTags:

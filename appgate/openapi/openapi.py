@@ -35,7 +35,7 @@ __all__ = [
 from appgate.types import EntityClient, OperatorMode
 
 # Always set the default API version to latest released version
-SPEC_DIR = "api_specs/v18"
+SPEC_DIR = "api_specs/v19"
 K8S_API_VERSION = "apiextensions.k8s.io/v1"
 K8S_CRD_KIND = "CustomResourceDefinition"
 LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
