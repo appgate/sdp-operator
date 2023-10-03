@@ -23,11 +23,11 @@ certifi==2023.7.22
     #   kubernetes
     #   minio
     #   requests
-cffi==1.15.1
+cffi==1.16.0
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.2.0
+charset-normalizer==3.3.0
     # via
     #   aiohttp
     #   requests
@@ -45,7 +45,7 @@ gitdb==4.0.10
     # via gitpython
 gitpython==3.1.37
     # via -r requirements.in
-google-auth==2.23.0
+google-auth==2.23.2
     # via kubernetes
 hvac==1.2.1
     # via -r requirements.in
@@ -55,7 +55,7 @@ idna==3.4
     #   yarl
 kubernetes==28.1.0
     # via -r requirements.in
-minio==7.1.16
+minio==7.1.17
     # via -r requirements.in
 multidict==6.0.4
     # via
@@ -73,7 +73,7 @@ pyasn1-modules==0.3.0
     # via google-auth
 pycparser==2.21
     # via cffi
-pygithub==1.59.1
+pygithub==2.1.1
     # via -r requirements.in
 pyhcl==0.4.5
     # via hvac
@@ -82,7 +82,9 @@ pyjwt[crypto]==2.8.0
 pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
-    # via kubernetes
+    # via
+    #   kubernetes
+    #   pygithub
 python-gitlab==3.15.0
     # via -r requirements.in
 pyyaml==6.0.1
@@ -109,11 +111,13 @@ smmap==5.0.1
     # via gitdb
 typedload==2.26
     # via -r requirements.in
-urllib3==1.26.16
+typing-extensions==4.8.0
+    # via pygithub
+urllib3==1.26.17
     # via
-    #   google-auth
     #   kubernetes
     #   minio
+    #   pygithub
     #   requests
 websocket-client==1.6.3
     # via kubernetes
