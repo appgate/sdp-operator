@@ -1,0 +1,33 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install unzip
+
+      - name: Download OpenApi Spec
+        run: make clean && make api_specs
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Lint with mypy
+        run: MYPYPATH=mypy-stubs mypy appgate
+
+      - name: Test with pytest
+        run: PYTHONPATH=. pytest tests
+
+      - name: Check formatting with black
+        run: black --check --diff appgate tests
