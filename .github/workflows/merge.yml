@@ -1,0 +1,22 @@
+name: Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-push-image.yml
+    with:
+      push: true
+
+  release-chart:
+    uses: ./.github/workflows/release-chart.yml
+    with:
+      secrets: inherit
+
+  releae-chart-oci:
+    uses: ./.github/workflows/release-chart-oci.yml
+    with:
+      secrets: inherit

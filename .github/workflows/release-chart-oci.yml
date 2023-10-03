@@ -1,15 +1,10 @@
 name: Release Chart OCI
 
 on:
-  workflow_run:
-    workflows: [ "Build and Push Image" ]
-    branches: [ "main" ]
-    types:
-      - completed
+  workflow_call:
 
 jobs:
   operator:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
