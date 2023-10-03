@@ -27,7 +27,6 @@ jobs:
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
   crd:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     env:
       HELM_EXPERIMENTAL_OCI: 1
