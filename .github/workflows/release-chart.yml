@@ -2,6 +2,10 @@ name: Release Chart
 
 on:
   workflow_call:
+    inputs:
+      push:
+        type: boolean
+        required: true
 
 jobs:
   release:
@@ -9,7 +13,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -22,6 +26,7 @@ jobs:
         uses: azure/setup-helm@v3
 
       - name: Run chart-releaser
+        if: ${{ inputs.push }}
         uses: helm/chart-releaser-action@v1.5.0
         with:
           charts_dir: "k8s"

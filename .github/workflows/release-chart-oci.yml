@@ -2,6 +2,10 @@ name: Release Chart OCI
 
 on:
   workflow_call:
+    inputs:
+      push:
+        type: boolean
+        required: true
 
 jobs:
   operator:
@@ -9,13 +13,11 @@ jobs:
     env:
       HELM_EXPERIMENTAL_OCI: 1
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Read operator chart version
         run: |
           echo "chart_version=$(grep version: k8s/operator/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v3
-        with:
-          version: 3.7.2
       - name: Login to GitHub Container Registry
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
@@ -31,13 +33,11 @@ jobs:
     env:
       HELM_EXPERIMENTAL_OCI: 1
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Read crd chart version
         run: |
           echo "chart_version=$(grep version: k8s/crd/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v3
-        with:
-          version: 3.7.2
       - name: Login to GitHub Container Registry
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
@@ -45,4 +45,5 @@ jobs:
       - name: Package chart
         run: helm package k8s/crd
       - name: Push chart
-        run: helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
+        if: ${{ inputs.push }}
+        run: $( && helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts)

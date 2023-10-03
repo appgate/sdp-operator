@@ -9,7 +9,7 @@ jobs:
   build:
     uses: ./.github/workflows/build-push-image.yml
     with:
-      push: true
+      push: false
 
   release-chart:
     uses: ./.github/workflows/release-chart.yml
