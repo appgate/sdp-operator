@@ -19,6 +19,7 @@ jobs:
           echo "chart_version=$(grep version: k8s/operator/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v3
       - name: Login to GitHub Container Registry
+        if: ${{ inputs.push }}
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
         run: helm lint k8s/operator
@@ -39,6 +40,7 @@ jobs:
           echo "chart_version=$(grep version: k8s/crd/Chart.yaml | awk '/version:/{print $NF}')" >> $GITHUB_ENV
       - uses: azure/setup-helm@v3
       - name: Login to GitHub Container Registry
+        if: ${{ inputs.push }}
         run: helm registry login ghcr.io/${{ github.repository }} --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: Lint chart
         run: helm lint k8s/crd
