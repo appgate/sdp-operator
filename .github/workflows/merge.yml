@@ -16,11 +16,9 @@ jobs:
     needs: build
     with:
       push: true
-      secrets: inherit
 
   releae-chart-oci:
     uses: ./.github/workflows/release-chart-oci.yml
     needs: build
     with:
       push: true
-      secrets: inherit
