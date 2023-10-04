@@ -26,7 +26,7 @@ jobs:
       - name: Package chart
         run: helm package k8s/operator
       - name: Push chart
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ inputs.push }}
         run: helm push sdp-operator-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
 
   crd:
@@ -48,4 +48,4 @@ jobs:
         run: helm package k8s/crd
       - name: Push chart
         if: ${{ inputs.push }}
-        run: $( && helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts)
+        run: helm push sdp-operator-crd-${{ env.chart_version }}.tgz oci://ghcr.io/appgate/charts
