@@ -1,11 +1,11 @@
-aiohttp>=3.8.1
-apischema>=0.17
-attrs>=20.3.0
-cryptography>=36.0.1
-kubernetes>=16
-typedload==2.26
-GitPython>=3.1.29
-PyGitHub>=1.57
-hvac>=1.0
-minio>=7.1.13
-python-gitlab>=3.13.0
+aiohttp ~= 3.0
+apischema ~= 0.18
+attrs ~= 23.0
+cryptography ~= 41.0
+kubernetes ~= 28.0
+typedload == 2.26
+GitPython ~= 3.0
+PyGitHub ~= 1.0
+hvac ~= 1.0
+minio ~= 7.0
+python-gitlab ~= 3.0
