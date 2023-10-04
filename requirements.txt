@@ -73,7 +73,7 @@ pyasn1-modules==0.3.0
     # via google-auth
 pycparser==2.21
     # via cffi
-pygithub==2.1.1
+pygithub==1.59.1
     # via -r requirements.in
 pyhcl==0.4.5
     # via hvac
@@ -82,9 +82,7 @@ pyjwt[crypto]==2.8.0
 pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
-    # via
-    #   kubernetes
-    #   pygithub
+    # via kubernetes
 python-gitlab==3.15.0
     # via -r requirements.in
 pyyaml==6.0.1
@@ -111,13 +109,10 @@ smmap==5.0.1
     # via gitdb
 typedload==2.26
     # via -r requirements.in
-typing-extensions==4.8.0
-    # via pygithub
 urllib3==1.26.17
     # via
     #   kubernetes
     #   minio
-    #   pygithub
     #   requests
 websocket-client==1.6.3
     # via kubernetes
