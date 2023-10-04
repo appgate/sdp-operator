@@ -51,5 +51,14 @@ _pip-compile:
 	. venv/bin/activate && ${PYTHON3} -m pip install pip-tools && pip-compile requirements.in
 	rm -rf venv
 
+.PHONY: pip-compile-build
+pip-compile-build: docker-build-image
+	docker run --rm -it -v ${PWD}:/build sdp-operator-builder make _pip-compile-build
+
+_pip-compile-build:
+	$(PYTHON3) -m venv venv
+	. venv/bin/activate && ${PYTHON3} -m pip install pip-tools && pip-compile requirements-build.in
+	rm -rf venv
+
 clean:
 	rm -rf api_specs

@@ -23,11 +23,11 @@ certifi==2023.7.22
     #   kubernetes
     #   minio
     #   requests
-cffi==1.15.1
+cffi==1.16.0
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.2.0
+charset-normalizer==3.3.0
     # via
     #   aiohttp
     #   requests
@@ -45,7 +45,7 @@ gitdb==4.0.10
     # via gitpython
 gitpython==3.1.37
     # via -r requirements.in
-google-auth==2.23.0
+google-auth==2.23.2
     # via kubernetes
 hvac==1.2.1
     # via -r requirements.in
@@ -55,7 +55,7 @@ idna==3.4
     #   yarl
 kubernetes==28.1.0
     # via -r requirements.in
-minio==7.1.16
+minio==7.1.17
     # via -r requirements.in
 multidict==6.0.4
     # via
@@ -109,9 +109,8 @@ smmap==5.0.1
     # via gitdb
 typedload==2.26
     # via -r requirements.in
-urllib3==1.26.16
+urllib3==1.26.17
     # via
-    #   google-auth
     #   kubernetes
     #   minio
     #   requests
