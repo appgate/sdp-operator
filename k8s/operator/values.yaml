@@ -54,6 +54,11 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
+    serviceAccount:
+      create: true
+      name:
+    rbac:
+      create: true
 
   ## @section Git Operator
   ## @param sdp.gitOperator.version The API version of the controller.
@@ -95,6 +100,12 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
+    serviceAccount:
+      create: true
+      name:
+    rbac:
+      create: true
+
   ## @section External Secret Configuration
   ## @param sdp.externalSecret.enabled Enable the loading of secrets from an external source
   ## @param sdp.externalSecret.type Type of the external secret source (Option: vault)
@@ -128,12 +139,3 @@ sdp:
         address: ""
         keySecret: ""
         sslNoVerify: false
-
-
-## @section Kubernetes Parameters
-## @param serviceAccount.create Enable the creation of a ServiceAccount for SDP pods
-## @param rbac.create create & use RBAC resources or not
-serviceAccount:
-  create: true
-rbac:
-  create: true
