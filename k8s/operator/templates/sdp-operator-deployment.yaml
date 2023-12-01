@@ -25,7 +25,7 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
         runAsNonRoot: true
-      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-sdp
+      serviceAccountName: {{ include "sdpServiceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}-sdp
           env:

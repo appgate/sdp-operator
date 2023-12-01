@@ -39,17 +39,17 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}-sdp
+  name: {{ include "sdpServiceAccountName" . }}-rb
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}-sdp
+    name: {{ include "sdpServiceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "sdp-operator.fullname" . }}-role
+  name: {{ include "sdp-operator.fullname" . }}-r
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
 ---
@@ -57,13 +57,13 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}-git
+  name: {{ include "gitServiceAccountName" . }}-rb
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}-git
+    name: {{ include "gitServiceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
