@@ -30,6 +30,11 @@ sdp:
     host: ""
     deviceId: ""
     secret: ""
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      runAsNonRoot: true
     reverseMode: false
     logLevel: info
     timeout: 30
@@ -79,6 +84,11 @@ sdp:
     targetTags: []
     dryRun: true
     secret: ""
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      runAsNonRoot: true
     git:
       vendor: github
       mainBranch: ""
@@ -117,7 +127,6 @@ sdp:
         address: ""
         tokenSecret: ""
         sslNoVerify: false
-
 
   ## @section External File Configuration
   ## @param sdp.externalFile.enabled Enable the loading of files from an external source

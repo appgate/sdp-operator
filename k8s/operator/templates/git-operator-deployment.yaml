@@ -20,11 +20,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if not (empty .Values.sdp.gitOperator.securityContext) }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        runAsNonRoot: true
+        {{- toYaml .Values.sdp.gitOperator.securityContext | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "gitServiceAccountName" . }}
       volumes:
         - name: git-key
