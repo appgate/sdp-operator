@@ -53,9 +53,26 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/*
 ServiceAccount
 */}}
-{{- define "sdp-operator.serviceAccountName" -}}
-{{- include "sdp-operator.fullname" . }}
+{{- define "serviceAccountName" }}
+{{- $ := index . 0 }}
+{{- $var := index . 2 }}
+{{- $default := index . 3 }}
+{{- if $var }}
+{{- $var }}
+{{- else }}
+{{- with index . 1 }}
+{{- include "sdp-operator.fullname" . }}-{{- $default }}
 {{- end }}
+{{- end -}}
+{{- end -}}
+
+{{- define "gitServiceAccountName" }}
+{{- include "serviceAccountName" (list $ . .Values.sdp.gitOperator.serviceAccount.name "git") }}
+{{- end -}}
+
+{{- define "sdpServiceAccountName" }}
+{{- include "serviceAccountName" (list $ . .Values.sdp.sdpOperator.serviceAccount.name "sdp") }}
+{{- end -}}
 
 {{/*
 Operator Secrets
