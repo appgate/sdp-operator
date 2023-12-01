@@ -2,6 +2,8 @@
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
+  version: v19
+
   ## @section Operator Parameters
   ## @param sdp.operators List of operators to run in the deployment. (Option: sdp-operator, git-operator)
   operators:
@@ -13,7 +15,6 @@ sdp:
   ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
   ## @param sdp.sdpOperator.reverseMode Enable the operator in reverse mode (pulls entity from SDP instead of pushing)
   ## @param sdp.sdpOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
-  ## @param sdp.sdpOperator.version The API version of the controller.
   ## @param sdp.sdpOperator.logLevel The log level of the operator.
   ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
@@ -30,7 +31,6 @@ sdp:
     deviceId: ""
     secret: ""
     reverseMode: false
-    version: v19
     logLevel: info
     timeout: 30
     builtinTags:
@@ -61,7 +61,6 @@ sdp:
       create: true
 
   ## @section Git Operator
-  ## @param sdp.gitOperator.version The API version of the controller.
   ## @param sdp.gitOperator.logLevel The log level of the operator.
   ## @param sdp.gitOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.gitOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
@@ -75,7 +74,6 @@ sdp:
   ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
   gitOperator:
-    version: v18
     logLevel: info
     timeout: 30
     targetTags: []
@@ -89,7 +87,6 @@ sdp:
       hostname: ""
       sshPort: ""
       strictHostKeyChecking: true
-
     ## @param sdp.gitOperator.image.tag The image tag of the operator.
     ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.
     ## @param sdp.gitOperator.image.repository The repository to pull the operator image from.
