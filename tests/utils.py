@@ -114,8 +114,8 @@ def load_test_open_api_spec(
     secrets_key: Optional[str] = KEY,
     k8s_get_secret: Callable[[str, str], str] = lambda x, y: ENCRYPTED_PASSWORD,
     reload: bool = False,
-    entities_to_include: set[str] | None = None,
-    entities_to_exclude: set[str] | None = None,
+    entities_to_include: frozenset[str] | None = None,
+    entities_to_exclude: frozenset[str] | None = None,
 ):
     global TestOpenAPI
     set_level(log_level="debug")

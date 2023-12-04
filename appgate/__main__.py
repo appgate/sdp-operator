@@ -72,6 +72,8 @@ from appgate.types import (
     get_tags,
     to_bool,
     get_dry_run,
+    APPGATE_EXCLUDE_ENTITIES_ENV,
+    APPGATE_INCLUDE_ENTITIES_ENV,
 )
 from appgate.attrs import K8S_LOADER
 from appgate.openapi.openapi import generate_api_spec
@@ -592,12 +594,14 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                     reverse_mode=args.reverse_mode,
-                    entities_to_include=set(args.entities_to_include)
-                    if args.entities_to_include
-                    else None,
-                    entities_to_exclude=set(args.entities_to_exclude)
-                    if args.entities_to_exclude
-                    else None,
+                    entities_to_include=get_tags(
+                        args.entities_to_include,
+                        os.environ.get(APPGATE_INCLUDE_ENTITIES_ENV, ""),
+                    ),
+                    entities_to_exclude=get_tags(
+                        args.entities_to_exclude,
+                        os.environ.get(APPGATE_EXCLUDE_ENTITIES_ENV, ""),
+                    ),
                 )
             )
 
@@ -609,12 +613,14 @@ def main() -> None:
                     no_dry_run=args.no_dry_run,
                     timeout=args.timeout,
                     target_tags=args.tags,
-                    entities_to_include=set(args.entities_to_include)
-                    if args.entities_to_include
-                    else None,
-                    entities_to_exclude=set(args.entities_to_exclude)
-                    if args.entities_to_exclude
-                    else None,
+                    entities_to_include=get_tags(
+                        args.entities_to_include,
+                        os.environ.get(APPGATE_INCLUDE_ENTITIES_ENV, ""),
+                    ),
+                    entities_to_exclude=get_tags(
+                        args.entities_to_exclude,
+                        os.environ.get(APPGATE_EXCLUDE_ENTITIES_ENV, ""),
+                    ),
                 )
             )
         elif args.cmd == "dump-entities":
@@ -629,12 +635,14 @@ def main() -> None:
                     target_tags=args.tags,
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
-                    entities_to_include=set(args.entities_to_include)
-                    if args.entities_to_include
-                    else None,
-                    entities_to_exclude=set(args.entities_to_exclude)
-                    if args.entities_to_exclude
-                    else None,
+                    entities_to_include=get_tags(
+                        args.entities_to_include,
+                        os.environ.get(APPGATE_INCLUDE_ENTITIES_ENV, ""),
+                    ),
+                    entities_to_exclude=get_tags(
+                        args.entities_to_exclude,
+                        os.environ.get(APPGATE_EXCLUDE_ENTITIES_ENV, ""),
+                    ),
                 ),
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,

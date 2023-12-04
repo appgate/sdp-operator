@@ -104,6 +104,9 @@ APPGATE_SSL_CACERT = "APPGATE_OPERATOR_CACERT"
 APPGATE_EXCLUDE_TAGS_ENV = "APPGATE_OPERATOR_EXCLUDE_TAGS"
 APPGATE_TARGET_TAGS_ENV = "APPGATE_OPERATOR_TARGET_TAGS"
 APPGATE_BUILTIN_TAGS_ENV = "APPGATE_OPERATOR_BUILTIN_TAGS"
+APPGATE_EXCLUDE_ENTITIES_ENV = "APPGATE_OPERATOR_EXCLUDE_ENTITIES"
+APPGATE_INCLUDE_ENTITIES_ENV = "APPGATE_OPERATOR_INCLUDE_ENTITIES"
+
 
 GIT_REPOSITORY_MAIN_BRANCH_ENV = "GIT_MAIN_BRANCH"
 GIT_REPOSITORY_MAIN_BRANCH = "master"
@@ -195,8 +198,8 @@ class AppgateOperatorArguments:
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
     reverse_mode: bool = attrib(default=False)
-    entities_to_include: set[str] | None = attrib(default=None)
-    entities_to_exclude: set[str] | None = attrib(default=None)
+    entities_to_include: frozenset[str] | None = attrib(default=None)
+    entities_to_exclude: frozenset[str] | None = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)
@@ -206,8 +209,8 @@ class GitOperatorArguments:
     no_dry_run: bool = attrib(default=False)
     timeout: str = attrib(default="30")
     target_tags: List[str] = attrib(factory=list)
-    entities_to_include: set[str] = attrib(default=None)
-    entities_to_exclude: set[str] = attrib(default=None)
+    entities_to_include: frozenset[str] = attrib(default=None)
+    entities_to_exclude: frozenset[str] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)

@@ -349,7 +349,7 @@ class EntityClassGeneratorConfig:
 
 
 def is_entity_included(
-    entity_name: str, included: set[str] | None, excluded: set[str] | None
+    entity_name: str, included: frozenset[str] | None, excluded: frozenset[str] | None
 ) -> bool:
     if not included and not excluded:
         return True
@@ -362,8 +362,8 @@ def is_entity_included(
 class APISpec:
     entities: EntitiesDict = attrib()
     api_version: int = attrib()
-    entities_to_exclude: set[str] | None = attrib(default=None)
-    entities_to_include: set[str] | None = attrib(default=None)
+    entities_to_exclude: frozenset[str] | None = attrib(default=None)
+    entities_to_include: frozenset[str] | None = attrib(default=None)
 
     @property
     def entities_sorted(self) -> List[str]:

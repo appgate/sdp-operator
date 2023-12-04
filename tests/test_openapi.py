@@ -22,7 +22,9 @@ def test_generate_api_spec_clients_1() -> None:
         len(
             generate_api_spec_clients(
                 api_spec=generate_api_spec(
-                    entities_to_include={"Entitlement", "Policy", "Condition"}
+                    entities_to_include=frozenset(
+                        {"Entitlement", "Policy", "Condition"}
+                    )
                 ),
                 appgate_client=mock.Mock(),
             )
@@ -36,7 +38,9 @@ def test_generate_api_spec_clients_2() -> None:
         len(
             generate_api_spec_clients(
                 api_spec=generate_api_spec(
-                    entities_to_exclude={"Entitlement", "Policy", "Condition"}
+                    entities_to_exclude=frozenset(
+                        {"Entitlement", "Policy", "Condition"}
+                    )
                 ),
                 appgate_client=mock.Mock(),
             )
@@ -48,6 +52,6 @@ def test_generate_api_spec_clients_2() -> None:
 def test_generate_api_spec_clients_3() -> None:
     with pytest.raises(AppgateException, match="There are no API entities to manage"):
         generate_api_spec_clients(
-            api_spec=generate_api_spec(entities_to_include={"IDontExist"}),
+            api_spec=generate_api_spec(entities_to_include=frozenset({"IDontExist"})),
             appgate_client=mock.Mock(),
         )
