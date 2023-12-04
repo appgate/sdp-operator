@@ -20,12 +20,11 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if not (empty .Values.sdp.gitOperator.securityContext) }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        runAsNonRoot: true
-      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-git
+        {{- toYaml .Values.sdp.gitOperator.securityContext | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gitServiceAccountName" . }}
       volumes:
         - name: git-key
           secret:
@@ -45,7 +44,7 @@ spec:
               name: git-key
           env:
             - name: APPGATE_API_VERSION
-              value: {{ .Values.sdp.sdpOperator.version }}
+              value: {{ .Values.sdp.version }}
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APPGATE_OPERATOR_LOG_LEVEL
@@ -55,7 +54,7 @@ spec:
             - name: APPGATE_OPERATOR_TARGET_TAGS
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
-              value: /appgate/api_specs/{{ required "A valid .Values.sdp.gitOperator.version entry is required!" .Values.sdp.gitOperator.version }}
+              value: /appgate/api_specs/{{ required "A valid .Values.sdp.version entry is required!" .Values.sdp.version }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.gitOperator.dryRun }}"
             - name: GIT_VENDOR

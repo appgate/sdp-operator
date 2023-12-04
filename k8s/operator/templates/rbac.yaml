@@ -1,4 +1,4 @@
-
+{{- if or .Values.sdp.sdpOperator.rbac.create .Values.sdp.gitOperator.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -7,7 +7,7 @@ metadata:
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [ "{{ .Values.sdp.sdpOperator.version }}.sdp.appgate.com" ]
+  - apiGroups: [ "{{ .Values.sdp.version }}.sdp.appgate.com" ]
     resources:
       - policies
       - entitlements
@@ -34,39 +34,44 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "create", "list", "patch"]
+{{- end }}
 ---
 {{- if has "sdp-operator" .Values.sdp.operators }}
+{{- if .Values.sdp.sdpOperator.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "sdp-operator.fullname" . }}-sdp
+  name: {{ include "sdpServiceAccountName" . }}-rb
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "sdp-operator.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}-sdp
+    name: {{ include "sdpServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "sdp-operator.fullname" . }}-r
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+{{- end }}
+---
+{{- if has "git-operator" .Values.sdp.operators }}
+{{- if .Values.sdp.gitOperator.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "gitServiceAccountName" . }}-rb
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "sdp-operator.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "gitServiceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
   name: {{ include "sdp-operator.fullname" . }}-role
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
----
-{{- if has "git-operator" .Values.sdp.operators }}
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "sdp-operator.fullname" . }}-git
-  namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "sdp-operator.labels" . | nindent 4 }}
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "sdp-operator.serviceAccountName" . }}-git
-    namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: Role
-  name: {{ include "sdp-operator.fullname" . }}-role
-  apiGroup: rbac.authorization.k8s.io
 {{- end }}

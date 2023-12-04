@@ -20,17 +20,16 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if not (empty .Values.sdp.sdpOperator.securityContext) }}
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        runAsNonRoot: true
-      serviceAccountName: {{ include "sdp-operator.serviceAccountName" . }}-sdp
+       {{- toYaml .Values.sdp.sdpOperator.securityContext | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sdpServiceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}-sdp
           env:
             - name: APPGATE_API_VERSION
-              value: {{ .Values.sdp.sdpOperator.version }}
+              value: {{ .Values.sdp.version }}
             - name: APPGATE_OPERATOR_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APPGATE_OPERATOR_USER
@@ -50,7 +49,7 @@ spec:
             - name: APPGATE_OPERATOR_LOG_LEVEL
               value: "{{ .Values.sdp.sdpOperator.logLevel }}"
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
-              value: /appgate/api_specs/{{ required "A valid .Values.sdp.sdpOperator.version entry is required!" .Values.sdp.sdpOperator.version }}
+              value: /appgate/api_specs/{{ required "A valid .Values.sdp.version entry is required!" .Values.sdp.version }}
             - name: APPGATE_OPERATOR_TIMEOUT
               value: "{{ .Values.sdp.sdpOperator.timeout }}"
             {{- with .Values.sdp.sdpOperator.targetTags }}
