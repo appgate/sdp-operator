@@ -43,6 +43,8 @@ sdp:
     sslNoVerify: false
     targetTags: []
     excludeTags: []
+    includeEntities: []
+    excludeEntities: []
     dryRun: true
     twoWaySync: true
     cleanup: false
@@ -82,6 +84,8 @@ sdp:
     logLevel: info
     timeout: 30
     targetTags: []
+    includeEntities: []
+    excludeEntities: []
     dryRun: true
     secret: ""
     securityContext:
