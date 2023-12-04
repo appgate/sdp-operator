@@ -48,6 +48,8 @@ def parse_files(
     spec_file: str = "api_specs.yml",
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
     secrets_key: Optional[str] = None,
+    entities_to_include: set[str] | None = None,
+    entities_to_exclude: set[str] | None = None,
 ) -> APISpec:
     parser_context = ParserContext(
         spec_entities=spec_entities,
@@ -93,7 +95,12 @@ def parse_files(
             singleton=singleton,
         )
 
-    return APISpec(entities=parser_context.entities, api_version=parser.api_version())
+    return APISpec(
+        entities=parser_context.entities,
+        api_version=parser.api_version(),
+        entities_to_exclude=entities_to_exclude,
+        entities_to_include=entities_to_include,
+    )
 
 
 def entity_names(
@@ -278,6 +285,8 @@ def generate_api_spec(
     secrets_key: Optional[str] = None,
     k8s_get_secret: Optional[Callable[[str, str], str]] = None,
     operator_mode: OperatorMode = "appgate-operator",
+    entities_to_include: set[str] | None = None,
+    entities_to_exclude: set[str] | None = None,
 ) -> APISpec:
     """
     Parses openapi yaml files and generates the ApiSpec.
@@ -288,6 +297,8 @@ def generate_api_spec(
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
         operator_mode=operator_mode,
+        entities_to_include=entities_to_include,
+        entities_to_exclude=entities_to_exclude,
     )
 
 

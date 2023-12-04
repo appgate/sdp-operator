@@ -3,7 +3,7 @@ import os
 import sys
 import threading
 from asyncio import Queue
-from typing import Type, Any, Coroutine, Callable, Dict
+from typing import Type, Any, Coroutine, Callable, Dict, Awaitable
 
 from kubernetes.client import CustomObjectsApi
 from kubernetes.config import (
@@ -109,14 +109,13 @@ def get_crds() -> CustomObjectsApi:
     return crds
 
 
-async def run_k8s(
+def get_k8s_tasks(
     queue: Queue[AppgateEvent],
-    namespace: str,
     api_spec: APISpec,
+    namespace: str,
     k8s_configmap_client: K8SConfigMapClient | None,
-    operator: Coroutine[Any, Any, None],
-) -> None:
-    tasks = [
+) -> list[Awaitable[None]]:
+    return [
         start_entity_loop(
             namespace=namespace,
             queue=queue,
@@ -126,9 +125,23 @@ async def run_k8s(
             api_spec=api_spec,
             k8s_configmap_client=k8s_configmap_client,
         )
-        for e in api_spec.entities.values()
-        if e.api_path
-    ] + [operator]
+        for e in api_spec.api_entities.values()
+    ]
+
+
+async def run_k8s(
+    queue: Queue[AppgateEvent],
+    namespace: str,
+    api_spec: APISpec,
+    k8s_configmap_client: K8SConfigMapClient | None,
+    operator: Coroutine[Any, Any, None],
+) -> None:
+    tasks = get_k8s_tasks(
+        queue=queue,
+        api_spec=api_spec,
+        namespace=namespace,
+        k8s_configmap_client=k8s_configmap_client,
+    ) + [operator]
 
     await asyncio.gather(*tasks)
 

@@ -348,10 +348,22 @@ class EntityClassGeneratorConfig:
         return properties
 
 
+def is_entity_included(
+    entity_name: str, included: set[str] | None, excluded: set[str] | None
+) -> bool:
+    if not included and not excluded:
+        return True
+    return (included is not None and entity_name in included) or (
+        excluded is not None and entity_name not in excluded
+    )
+
+
 @attrs()
 class APISpec:
     entities: EntitiesDict = attrib()
     api_version: int = attrib()
+    entities_to_exclude: set[str] | None = attrib(default=None)
+    entities_to_include: set[str] | None = attrib(default=None)
 
     @property
     def entities_sorted(self) -> List[str]:
@@ -366,7 +378,17 @@ class APISpec:
 
     @property
     def api_entities(self) -> EntitiesDict:
-        return {k: v for k, v in self.entities.items() if v.api_path is not None}
+        entities = {
+            k: v
+            for k, v in self.entities.items()
+            if v.api_path is not None
+            and is_entity_included(
+                k, self.entities_to_include, self.entities_to_exclude
+            )
+        }
+        if not entities:
+            raise AppgateException("There are no API entities to manage!")
+        return entities
 
     def loader(
         self, loader: EntityLoader, entity_type: type
