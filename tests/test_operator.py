@@ -49,7 +49,7 @@ def test_get_k8s_tasks_2() -> None:
                 k8s_configmap_client=None,
             )
         )
-        == 18
+        == len(ALL_APPGATE_ENTITIES) - 3
     )
 
 

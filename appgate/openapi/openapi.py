@@ -332,4 +332,4 @@ def generate_api_spec_clients(
             e.cls, e.api_path, singleton=e.singleton, magic_entities=magic_entities
         )
 
-    return {n: _entity_client(n, e) for n, e in api_spec.entities.items() if e.api_path}
+    return {n: _entity_client(n, e) for n, e in api_spec.api_entities.items()}
