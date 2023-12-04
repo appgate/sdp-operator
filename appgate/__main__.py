@@ -168,6 +168,8 @@ def appgate_operator_context(
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
         operator_mode=get_operator_mode(args.reverse_mode),
+        entities_to_include=args.entities_to_include,
+        entities_to_exclude=args.entities_to_exclude,
     )
 
     return AppgateOperatorContext(
@@ -411,6 +413,20 @@ def main() -> None:
         default=None,
         help="Specifies the directory where the openapi yaml specification is located.",
     )
+    parser.add_argument(
+        "--entities-to-include",
+        action="append",
+        help="Entities to include when generating the spec clients (k8s, appgate and git clients)."
+        " Entities included have preference over entities excluded.",
+        default=[],
+    )
+    parser.add_argument(
+        "--entities-to-exclude",
+        action="append",
+        help="Entities to exlude when generating the spec clients (k8s, appgate and git clients)."
+        " Entities included have preference over entities excluded.",
+        default=[],
+    )
     subparsers = parser.add_subparsers(dest="cmd")
     # appgate_operator
     appgate_operator = subparsers.add_parser("appgate-operator")
@@ -576,6 +592,12 @@ def main() -> None:
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
                     reverse_mode=args.reverse_mode,
+                    entities_to_include=set(args.entities_to_include)
+                    if args.entities_to_include
+                    else None,
+                    entities_to_exclude=set(args.entities_to_exclude)
+                    if args.entities_to_exclude
+                    else None,
                 )
             )
 
@@ -587,6 +609,12 @@ def main() -> None:
                     no_dry_run=args.no_dry_run,
                     timeout=args.timeout,
                     target_tags=args.tags,
+                    entities_to_include=set(args.entities_to_include)
+                    if args.entities_to_include
+                    else None,
+                    entities_to_exclude=set(args.entities_to_exclude)
+                    if args.entities_to_exclude
+                    else None,
                 )
             )
         elif args.cmd == "dump-entities":
@@ -601,6 +629,12 @@ def main() -> None:
                     target_tags=args.tags,
                     no_verify=args.no_verify,
                     cafile=Path(args.cafile) if args.cafile else None,
+                    entities_to_include=set(args.entities_to_include)
+                    if args.entities_to_include
+                    else None,
+                    entities_to_exclude=set(args.entities_to_exclude)
+                    if args.entities_to_exclude
+                    else None,
                 ),
                 stdout=args.stdout,
                 output_dir=Path(args.directory) if args.directory else None,

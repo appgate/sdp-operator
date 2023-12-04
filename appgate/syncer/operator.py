@@ -75,6 +75,8 @@ def git_operator_context(
         secrets_key=secrets_key,
         k8s_get_secret=k8s_get_secret,
         operator_mode="git-operator",
+        entities_to_include=args.entities_to_include,
+        entities_to_exclude=args.entities_to_exclude,
     )
     if not namespace:
         raise AppgateException(
@@ -97,7 +99,9 @@ def git_operator_context(
         ),
         git_hostname=os.environ.get(GIT_HOSTNAME_ENV),
         git_ssh_port=os.environ.get(GIT_SSH_PORT_ENV),
-        git_strict_host_key_checking=ensure_env(GIT_STRICT_HOST_KEY_CHECKING_ENV)
+        git_strict_host_key_checking=os.environ.get(
+            GIT_STRICT_HOST_KEY_CHECKING_ENV, "true"
+        )
         == "true",
     )
 

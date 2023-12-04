@@ -195,6 +195,8 @@ class AppgateOperatorArguments:
     cafile: Optional[Path] = attrib(default=None)
     device_id: Optional[str] = attrib(default=None)
     reverse_mode: bool = attrib(default=False)
+    entities_to_include: set[str] | None = attrib(default=None)
+    entities_to_exclude: set[str] | None = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)
@@ -204,6 +206,8 @@ class GitOperatorArguments:
     no_dry_run: bool = attrib(default=False)
     timeout: str = attrib(default="30")
     target_tags: List[str] = attrib(factory=list)
+    entities_to_include: set[str] = attrib(default=None)
+    entities_to_exclude: set[str] = attrib(default=None)
 
 
 @attrs(slots=True, frozen=True)
