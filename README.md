@@ -210,9 +210,11 @@ Example:
 APPGATE_OPERATOR_TARGET_TAGS="devops,dev"
 ```
 
-With that environemnt variable defined the operator will only modify or delete entities that any of the tags devops or dev (ot both at the same time).
+With that environemnt variable defined the operator will only create, modify or delete entities that any of the tags devops or dev (ot both at the same time).
 
-We can also specify explicitly that we don't want to manage entities with specific tags. This can be done with the environemnt variable `APPGATE_OPERATOR_EXCLUDE_TAGS`. Entities with any of the tags listed there won't be modified or deleted.
+We can also specify explicitly that we don't want to manage entities with specific tags. This can be done with the environemnt variable `APPGATE_OPERATOR_EXCLUDE_TAGS`. Entities with any of the tags listed there won't be deleted.
+
+Note that if an entity has both tags it won't be deleted or if a tag is in both sets it will prevent entities with that tag to be deleted.
 
 ### Configuring what entity kinds to sync
 We saw how to use tags to decide what entities the operator should manage. In some occasions we don't want to load entities of some specific kind at all. To achive that we have 2 more environment variables:
