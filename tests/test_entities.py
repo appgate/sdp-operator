@@ -1344,9 +1344,8 @@ def test_open_api_spec_exclude_include_9() -> None:
         entities_to_exclude=ALL_ENTITY_NAMES - {"EntityDiscriminator"},
     )
     assert set(api_spec.api_entities.keys()) == {
-        "EntityDiscriminator",
-        "EntityCert",
         "EntityDepNestedNullable",
+        "EntityCert",
     }
 
 
