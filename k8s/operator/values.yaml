@@ -2,6 +2,7 @@
 ## ref: https://github.com/appgate/sdp-operator
 ##
 sdp:
+  ## @param sdp.version API version of the controller
   version: v19
 
   ## @section Operator Parameters
@@ -13,13 +14,19 @@ sdp:
   ## @section SDP Operator Parameters
   ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
   ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
-  ## @param sdp.sdpOperator.reverseMode Enable the operator in reverse mode (pulls entity from SDP instead of pushing)
   ## @param sdp.sdpOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
+  ## @param sdp.sdpOperator.securityContext.runAsUser UID of the user to run the operator
+  ## @param sdp.sdpOperator.securityContext.runAsGroup GID of the user to run the operator
+  ## @param sdp.sdpOperator.securityContext.fsGroup Filesystem group to run the operator
+  ## @param sdp.sdpOperator.securityContext.runAsNonRoot Whether to run the container as root
+  ## @param sdp.sdpOperator.reverseMode Enable the operator in reverse mode (pulls entity from SDP instead of pushing)
   ## @param sdp.sdpOperator.logLevel The log level of the operator.
   ## @param sdp.sdpOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.sdpOperator.builtinTags The list of tags that defines a built-in entity. Built-in entities are never deleted.
   ## @param sdp.sdpOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
   ## @param sdp.sdpOperator.excludeTags The list of tags that define the entities to exclude from syncing. Tagged entities will be ignored.
+  ## @param sdp.sdpOperator.includeEntities The list of entity types to include from syncing
+  ## @param sdp.sdpOperator.excludeEntities The list of entity types to exclude from syncing
   ## @param sdp.sdpOperator.sslNoVerify verify the SSL certificate of the controller.
   ## @param sdp.sdpOperator.dryRun Run the operator in Dry Run mode. The operator will compute the plan but will not make REST calls to the controller to sync the state.
   ## @param sdp.sdpOperator.cleanup Delete entities from the controller to sync the entities on the operator.
@@ -61,6 +68,9 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
+    ## @param sdp.sdpOperator.serviceAccount.create Whether to create a service account
+    ## @param sdp.sdpOperator.serviceAccount.name Name of the service account
+    ## @param sdp.sdpOperator.rbac.create Whether to create a role based access control
     serviceAccount:
       create: true
       name:
@@ -71,12 +81,19 @@ sdp:
   ## @param sdp.gitOperator.logLevel The log level of the operator.
   ## @param sdp.gitOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.gitOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
+  ## @param sdp.gitOperator.includeEntities The list of entity types to include from syncing
+  ## @param sdp.gitOperator.excludeEntities The list of entity types to exclude from syncing
   ## @param sdp.gitOperator.dryRun Run the operator in Dry Run mode. The operator will compute the plan but will not commit/push.
   ## @param sdp.gitOperator.git.vendor The vendor of the git repository: github, gitlab
   ## @param sdp.gitOperator.git.mainBranch Main branch of the repository to clone the repository
   ## @param sdp.gitOperator.git.baseBranch Base branch of the repository to create pull requests
   ## @param sdp.gitOperator.git.repository The name of the repository (e.g. organization/repository)
   ## @param sdp.gitOperator.secret Name of the secret that contains the SSH key and token for the git repository
+  ## @param sdp.gitOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
+  ## @param sdp.gitOperator.securityContext.runAsUser UID of the user to run the operator
+  ## @param sdp.gitOperator.securityContext.runAsGroup GID of the user to run the operator
+  ## @param sdp.gitOperator.securityContext.fsGroup Filesystem group to run the operator
+  ## @param sdp.gitOperator.securityContext.runAsNonRoot Whether to run the container as root
   ## @param sdp.gitOperator.git.hostname Hostname of the git repository including the port (if not well-known port)
   ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
@@ -111,6 +128,9 @@ sdp:
       pullSecrets: []
       pullPolicy: Always
 
+    ## @param sdp.gitOperator.serviceAccount.create Whether to create a service account
+    ## @param sdp.gitOperator.serviceAccount.name Name of the service account
+    ## @param sdp.gitOperator.rbac.create Whether to create a role based access control
     serviceAccount:
       create: true
       name:
