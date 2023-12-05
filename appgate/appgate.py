@@ -132,6 +132,18 @@ async def appgate_operator(
     log.info("[%s/%s]   + cleanup: %s", operator_name, namespace, ctx.cleanup_mode)
     log.info("[%s/%s]   + two-way-sync: %s", operator_name, namespace, ctx.two_way_sync)
     log.info(
+        "[%s/%s]   + entities-included: %s",
+        operator_name,
+        namespace,
+        ",".join(ctx.api_spec.entities_to_include or frozenset()),
+    )
+    log.info(
+        "[%s/%s]   + entities-excluded: %s",
+        operator_name,
+        namespace,
+        ",".join(ctx.api_spec.entities_to_exclude or frozenset()),
+    )
+    log.info(
         "[%s/%s]   + builtin tags: %s",
         operator_name,
         namespace,

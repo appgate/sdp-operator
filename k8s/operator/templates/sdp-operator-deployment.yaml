@@ -64,6 +64,14 @@ spec:
             - name: APPGATE_OPERATOR_BUILTIN_TAGS
               value: "{{ join "," . }}"
             {{- end }}
+            {{- with .Values.sdp.sdpOperator.includeEntities}}
+            - name: APPGATE_OPERATOR_INCLUDE_ENTITIES
+              value: "{{ join "," . }}"
+            {{- end }}
+            {{- with .Values.sdp.sdpOperator.excludeEntities}}
+            - name: APPGATE_OPERATOR_EXCLUDE_ENTITIES
+              value: "{{ join "," . }}"
+            {{- end }}
             - name: APPGATE_OPERATOR_DRY_RUN
               value: "{{ .Values.sdp.sdpOperator.dryRun }}"
             - name: APPGATE_OPERATOR_CLEANUP

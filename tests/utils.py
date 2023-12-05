@@ -114,6 +114,8 @@ def load_test_open_api_spec(
     secrets_key: Optional[str] = KEY,
     k8s_get_secret: Callable[[str, str], str] = lambda x, y: ENCRYPTED_PASSWORD,
     reload: bool = False,
+    entities_to_include: frozenset[str] | None = None,
+    entities_to_exclude: frozenset[str] | None = None,
 ):
     global TestOpenAPI
     set_level(log_level="debug")
@@ -125,6 +127,8 @@ def load_test_open_api_spec(
             secrets_key=secrets_key,
             k8s_get_secret=k8s_get_secret,
             operator_mode="appgate-operator",
+            entities_to_exclude=entities_to_exclude,
+            entities_to_include=entities_to_include,
         )
     return TestOpenAPI
 

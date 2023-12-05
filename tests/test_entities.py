@@ -22,6 +22,8 @@ from appgate.openapi.types import (
     AppgateTypedloadException,
     K8S_ID_ANNOTATION,
     MissingFieldDependencies,
+    AppgateException,
+    is_entity_included,
 )
 from tests.utils import (
     load_test_open_api_spec,
@@ -1217,3 +1219,160 @@ def test_loader_git_0():
     }
     e = GIT_LOADER.load(data["spec"], None, EntityTestFileComplex)
     assert e == EntityTestFileComplex(filename="somename", checksum="somechecksum")
+
+
+ALL_ENTITY_NAMES = frozenset(
+    {
+        "EntityDiscriminator",
+        "EntityTestWithId",
+        "EntityTest1",
+        "EntityTestFile",
+        "EntityArray",
+        "EntityDep4",
+        "EntityDepNested7",
+        "EntityTest3Appgate",
+        "EntityDep3",
+        "EntityDepNestedNullable",
+        "EntityTest2",
+        "EntityTest4",
+        "EntityCert",
+        "EntityDep6",
+        "EntityDep1",
+        "EntityTest3",
+        "EntityTest2WihoutPassword",
+        "EntityDep5",
+        "EntityTest0",
+        "EntityTestFileComplex",
+        "EntityDep2",
+    }
+)
+
+
+def test_open_api_spec_exclude_include_0() -> None:
+    api_spec = load_test_open_api_spec(secrets_key=None, reload=True)
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES
+
+
+def test_open_api_spec_exclude_include_1() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=frozenset(),
+        entities_to_exclude=frozenset(),
+    )
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES
+
+
+def test_open_api_spec_exclude_include_2() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=ALL_ENTITY_NAMES,
+        entities_to_exclude=frozenset(),
+    )
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES
+
+
+def test_open_api_spec_exclude_include_3() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=ALL_ENTITY_NAMES,
+        entities_to_exclude=ALL_ENTITY_NAMES,
+    )
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES
+
+
+def test_open_api_spec_exclude_include_4() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=None,
+        entities_to_exclude=ALL_ENTITY_NAMES,
+    )
+    with pytest.raises(AppgateException, match="There are no API entities to manage!"):
+        api_spec.api_entities.keys()
+
+
+def test_open_api_spec_exclude_include_5() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=None,
+        entities_to_exclude=ALL_ENTITY_NAMES - {"EntityDiscriminator"},
+    )
+    assert set(api_spec.api_entities.keys()) == {"EntityDiscriminator"}
+
+
+def test_open_api_spec_exclude_include_6() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=frozenset({"EntityDiscriminator"}),
+        entities_to_exclude=ALL_ENTITY_NAMES,
+    )
+    assert set(api_spec.api_entities.keys()) == {"EntityDiscriminator"}
+
+
+def test_open_api_spec_exclude_include_7() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=None,
+        entities_to_exclude=frozenset({"EntityDiscriminator"}),
+    )
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES - {
+        "EntityDiscriminator"
+    }
+
+
+def test_open_api_spec_exclude_include_8() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=ALL_ENTITY_NAMES,
+        entities_to_exclude=frozenset({"EntityDiscriminator"}),
+    )
+    assert set(api_spec.api_entities.keys()) == ALL_ENTITY_NAMES
+
+
+def test_open_api_spec_exclude_include_9() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=frozenset({"EntityCert", "EntityDepNestedNullable"}),
+        entities_to_exclude=ALL_ENTITY_NAMES - {"EntityDiscriminator"},
+    )
+    assert set(api_spec.api_entities.keys()) == {
+        "EntityDepNestedNullable",
+        "EntityCert",
+    }
+
+
+def test_open_api_spec_exclude_include_10() -> None:
+    api_spec = load_test_open_api_spec(
+        secrets_key=None,
+        reload=True,
+        entities_to_include=frozenset({"EntityCert", "EntityDepNestedNullable"}),
+        entities_to_exclude=None,
+    )
+    assert set(api_spec.api_entities.keys()) == {
+        "EntityCert",
+        "EntityDepNestedNullable",
+    }
+
+
+def test_is_entity_included() -> None:
+    assert is_entity_included("a", None, None) is True
+    assert is_entity_included("a", frozenset(), frozenset()) is True
+    assert is_entity_included("a", frozenset({"b", "c"}), None) is False
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"a"})) is False
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset()) is False
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"b"})) is False
+    assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"b"})) is True
+    assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"a"})) is True
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"a"})) is False
+    assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"a"})) is True
+    assert is_entity_included("a", None, frozenset({"a"})) is False
+    assert is_entity_included("a", None, frozenset()) is True
+    assert is_entity_included("a", None, frozenset("b")) is True

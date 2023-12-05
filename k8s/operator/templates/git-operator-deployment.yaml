@@ -53,6 +53,14 @@ spec:
               value: "{{ .Values.sdp.gitOperator.timeout }}"
             - name: APPGATE_OPERATOR_TARGET_TAGS
               value: "{{ join "," .Values.sdp.gitOperator.targetTags }}"
+            {{- with .Values.sdp.gitOperator.includeEntities}}
+            - name: APPGATE_OPERATOR_INCLUDE_ENTITIES
+              value: "{{ join "," . }}"
+            {{- end }}
+            {{- with .Values.sdp.gitOperator.excludeEntities}}
+            - name: APPGATE_OPERATOR_EXCLUDE_ENTITIES
+              value: "{{ join "," . }}"
+            {{- end }}
             - name: APPGATE_OPERATOR_SPEC_DIRECTORY
               value: /appgate/api_specs/{{ required "A valid .Values.sdp.version entry is required!" .Values.sdp.version }}
             - name: APPGATE_OPERATOR_DRY_RUN
