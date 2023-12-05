@@ -196,8 +196,8 @@ For the list of available Helm parameters, please go to [Helm Values](doc/values
 ## Configuring what entities to sync
 The SDP Operator supports different of ways of specifying what to sync and how:
 
- 1. Configuring what tags to sync
- 2. Configuring what entity types to sync
+ 1. Configuring what entity tags to sync :: To filter based on the tags of the actual entities
+ 2. Configuring what entity kinds types to sync :: To only fetch entities of specific kinds
 
 Note that both can be used together.
 
