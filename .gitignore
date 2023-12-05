@@ -20,4 +20,5 @@ build/
 .idea_modules/
 configd.kdev4
 .paswd
-.group
+api_specs/
+local_test/
