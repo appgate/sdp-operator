@@ -353,9 +353,11 @@ def is_entity_included(
 ) -> bool:
     if not included and not excluded:
         return True
-    return (included is not None and entity_name in included) or (
-        excluded is not None and entity_name not in excluded
-    )
+    if included is not None:
+        return entity_name in included
+    if excluded is not None:
+        return entity_name not in excluded
+    return True
 
 
 @attrs()

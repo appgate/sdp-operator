@@ -1368,8 +1368,12 @@ def test_is_entity_included() -> None:
     assert is_entity_included("a", frozenset(), frozenset()) is True
     assert is_entity_included("a", frozenset({"b", "c"}), None) is False
     assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"a"})) is False
-    assert is_entity_included("a", frozenset({"b", "c"}), frozenset()) is True
-    assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"b"})) is True
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset()) is False
+    assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"b"})) is False
     assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"b"})) is True
     assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"a"})) is True
     assert is_entity_included("a", frozenset({"b", "c"}), frozenset({"a"})) is False
+    assert is_entity_included("a", frozenset({"a", "b", "c"}), frozenset({"a"})) is True
+    assert is_entity_included("a", None, frozenset({"a"})) is False
+    assert is_entity_included("a", None, frozenset()) is True
+    assert is_entity_included("a", None, frozenset("b")) is True
