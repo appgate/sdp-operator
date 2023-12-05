@@ -197,7 +197,7 @@ For the list of available Helm parameters, please go to [Helm Values](doc/values
 The SDP Operator supports different of ways of specifying what to sync and how:
 
  1. Configuring what entity tags to sync :: To filter based on the tags of the actual entities
- 2. Configuring what entity kinds types to sync :: To only fetch entities of specific kinds
+ 2. Configuring what entity kinds to sync :: To only fetch entities of specific kinds
 
 Note that both can be used together.
 
@@ -214,7 +214,7 @@ With that environemnt variable defined the operator will only modify or delete e
 
 We can also specify explicitly that we don't want to manage entities with specific tags. This can be done with the environemnt variable `APPGATE_OPERATOR_EXCLUDE_TAGS`. Entities with any of the tags listed there won't be modified or deleted.
 
-### Configuring what entity types to sync
+### Configuring what entity kinds to sync
 We saw how to use tags to decide what entities the operator should manage. In some occasions we don't want to load entities of some specific kind at all. To achive that we have 2 more environment variables:
 
  - `APPGATE_OPERATOR_INCLUDE_ENTITIES` :: list of entity kinds we want to manage
