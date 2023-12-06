@@ -35,6 +35,7 @@ sdp:
   ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
   sdpOperator:
     annotations:
+    podAnnotations:
     host: ""
     deviceId: ""
     secret: ""
@@ -100,6 +101,7 @@ sdp:
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
   gitOperator:
     annotations:
+    podAnnotations:
     logLevel: info
     timeout: 30
     targetTags: []
