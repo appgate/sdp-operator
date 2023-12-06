@@ -120,6 +120,7 @@ sdp:
       strictHostKeyChecking: true
       sshKeyPath: ""
       sshKeyFingerprintPath: ""
+      clonePath: ""
     ## @param sdp.gitOperator.image.tag The image tag of the operator.
     ## @param sdp.gitOperator.image.pullPolicy The image pull policy of the operator.
     ## @param sdp.gitOperator.image.repository The repository to pull the operator image from.
