@@ -41,6 +41,10 @@ from appgate.types import (
     GIT_HOSTNAME_ENV,
     GIT_STRICT_HOST_KEY_CHECKING_ENV,
     GIT_SSH_PORT_ENV,
+    GIT_SSH_KEY_PATH_ENV,
+    GIT_SSH_KEY_PATH,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -103,6 +107,13 @@ def git_operator_context(
             GIT_STRICT_HOST_KEY_CHECKING_ENV, "true"
         )
         == "true",
+        git_ssh_key_path=Path(os.environ.get(GIT_SSH_KEY_PATH_ENV, GIT_SSH_KEY_PATH)),
+        git_ssh_host_key_fingerprint_path=Path(
+            os.environ.get(
+                GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
+                GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
+            )
+        ),
     )
 
 

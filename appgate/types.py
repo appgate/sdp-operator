@@ -122,10 +122,10 @@ GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
 GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
 
+GIT_SSH_KEY_PATH_ENV = "GIT_SSH_KEY_PATH_ENV"
 GIT_SSH_KEY_PATH = Path("/home/appgate/git-operator/k8s/deployment.key")
-GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path(
-    "/home/appgate/git-operator/k8s/fingerprint.key"
-)
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV = "GIT_KEY_FINGERPRINT_PATH_ENV"
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH = "/home/appgate/git-operator/k8s/fingerprint.key"
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
@@ -450,6 +450,8 @@ class GitOperatorContext:
     git_base_branch: str = attrib()
     git_hostname: str | None = attrib()
     git_ssh_port: str | None = attrib()
+    git_ssh_key_path: Path = attrib()
+    git_ssh_host_key_fingerprint_path: Path = attrib()
     git_strict_host_key_checking = attrib(default=True)
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)

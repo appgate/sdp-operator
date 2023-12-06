@@ -1,5 +1,6 @@
 import enum
 import functools
+import os
 import shlex
 import time
 from datetime import date
@@ -44,6 +45,7 @@ from appgate.types import (
     GITLAB_TOKEN_ENV,
     GitVendor,
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
 )
 
 
@@ -209,8 +211,8 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
     if repository_path.exists():
         shutil.rmtree(repository_path)
-    if not GIT_SSH_KEY_PATH.exists():
-        raise AppgateException(f"Unable to find SSH key {GIT_SSH_KEY_PATH}")
+    if not ctx.git_ssh_key_path.exists():
+        raise AppgateException(f"Unable to find SSH key {ctx.git_ssh_key_path}")
     url = (
         f"git@{urlparse(ctx.git_hostname).hostname}:{repository}"
         if ctx.git_hostname
@@ -220,7 +222,7 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
         git_ssh_command = [
             "ssh",
             "-i",
-            str(GIT_SSH_KEY_PATH),
+            str(ctx.git_ssh_key_path),
             "-o",
             "IdentitiesOnly=yes",
         ]
@@ -669,7 +671,7 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
         case "gitlab":
             log.info("[git-operator] Detected GitLab as git vendor type")
             if ctx.git_hostname and ctx.git_strict_host_key_checking:
-                with open(GIT_SSH_HOST_KEY_FINGERPRINT_PATH) as fingerprint:
+                with open(ctx.git_ssh_host_key_fingerprint_path) as fingerprint:
                     create_ssh_fingerprint(fingerprint.read())
             else:
                 create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
