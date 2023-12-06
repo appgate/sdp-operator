@@ -34,6 +34,7 @@ sdp:
   ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
   ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
   sdpOperator:
+    annotations:
     host: ""
     deviceId: ""
     secret: ""
@@ -98,6 +99,7 @@ sdp:
   ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
   gitOperator:
+    annotations:
     logLevel: info
     timeout: 30
     targetTags: []
