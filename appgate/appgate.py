@@ -2,7 +2,7 @@ import asyncio
 import sys
 from asyncio import Queue
 from copy import deepcopy
-from typing import Optional, Dict, TypeAlias, Literal
+from typing import Optional, Dict
 
 from kubernetes.client import CustomObjectsApi
 

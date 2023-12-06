@@ -28,7 +28,6 @@ from appgate.types import (
     GIT_REPOSITORY_ENV,
     GIT_VENDOR_ENV,
     GIT_BASE_BRANCH_ENV,
-    GIT_DUMP_DIR,
     APPGATE_LOG_LEVEL,
     GIT_REPOSITORY_FORK_ENV,
     BUILTIN_TAGS,
@@ -41,6 +40,12 @@ from appgate.types import (
     GIT_HOSTNAME_ENV,
     GIT_STRICT_HOST_KEY_CHECKING_ENV,
     GIT_SSH_PORT_ENV,
+    GIT_SSH_KEY_PATH_ENV,
+    GIT_SSH_KEY_PATH,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
+    GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
+    GIT_DUMP_DIR_ENV,
+    GIT_DUMP_DIR,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -103,6 +108,14 @@ def git_operator_context(
             GIT_STRICT_HOST_KEY_CHECKING_ENV, "true"
         )
         == "true",
+        git_ssh_key_path=Path(os.environ.get(GIT_SSH_KEY_PATH_ENV, GIT_SSH_KEY_PATH)),
+        git_ssh_host_key_fingerprint_path=Path(
+            os.environ.get(
+                GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
+                GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
+            )
+        ),
+        git_dump_path=Path(os.environ.get(GIT_DUMP_DIR_ENV, GIT_DUMP_DIR)),
     )
 
 
@@ -178,7 +191,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     log.info("[git-operator] Loading current state")
     # Checkout to existing branch or create a new one if needed and get current state
     branch, pull_request = git.checkout_branch(previous_branch=None, previous_pr=None)
-    current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
+    current_state = get_current_branch_state(ctx.api_spec, ctx.git_dump_path)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
     git_entity_clients = None
@@ -251,7 +264,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 if not git_entity_clients:
                     git_entity_clients = generate_git_entity_clients(
                         api_spec=ctx.api_spec,
-                        repository_path=GIT_DUMP_DIR,
+                        repository_path=ctx.git_dump_path,
                         branch=branch,
                         git=git,
                         resolution_conflicts=total_conflicts,
@@ -285,7 +298,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     ctx.timeout,
                 )
             log.info("[git-operator] Loading current state")
-            current_state = get_current_branch_state(ctx.api_spec, GIT_DUMP_DIR)
+            current_state = get_current_branch_state(ctx.api_spec, ctx.git_dump_path)
             branch, pull_request = git.checkout_branch(
                 previous_branch=branch, previous_pr=pull_request
             )

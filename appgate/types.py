@@ -120,12 +120,13 @@ GIT_STRICT_HOST_KEY_CHECKING_ENV = "GIT_STRICT_HOST_KEY_CHECKING"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 GITLAB_TOKEN_ENV = "GITLAB_TOKEN"
 
-GIT_DUMP_DIR: Path = Path("/home/appgate/entities")
+GIT_DUMP_DIR_ENV = "GIT_DUMP_PATH_ENV"
+GIT_DUMP_DIR = "/home/appgate/entities"
 
-GIT_SSH_KEY_PATH = Path("/home/appgate/git-operator/k8s/deployment.key")
-GIT_SSH_HOST_KEY_FINGERPRINT_PATH = Path(
-    "/home/appgate/git-operator/k8s/fingerprint.key"
-)
+GIT_SSH_KEY_PATH_ENV = "GIT_SSH_KEY_PATH_ENV"
+GIT_SSH_KEY_PATH = "/home/appgate/git-operator/k8s/deployment.key"
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV = "GIT_KEY_FINGERPRINT_PATH_ENV"
+GIT_SSH_HOST_KEY_FINGERPRINT_PATH = "/home/appgate/git-operator/k8s/fingerprint.key"
 
 APPGATE_OPERATOR_PR_LABEL_NAME = "sdp-operator"
 APPGATE_OPERATOR_PR_LABEL_COLOR = "f213e3"
@@ -143,13 +144,14 @@ class GitCommitState:
 
     def get_commit_message(self) -> str:
         message = ""
+        git_dump_path = Path(os.environ.get(GIT_DUMP_DIR_ENV, GIT_DUMP_DIR))
         match self.operation:
             case "ADD":
-                message += f"Added {self.path.relative_to(GIT_DUMP_DIR)}. "
+                message += f"Added {self.path.relative_to(git_dump_path)}. "
             case "DELETE":
-                message += f"Deleted {self.path.relative_to(GIT_DUMP_DIR)}. "
+                message += f"Deleted {self.path.relative_to(git_dump_path)}. "
             case "MODIFY":
-                message += f"Modified {self.path.relative_to(GIT_DUMP_DIR)}. "
+                message += f"Modified {self.path.relative_to(git_dump_path)}. "
 
         if self.entity.appgate_metadata.url_file_path:
             message += f"\n      - [ ] Upload the bytes/secret as `{self.entity.appgate_metadata.url_file_path}`"
@@ -450,6 +452,9 @@ class GitOperatorContext:
     git_base_branch: str = attrib()
     git_hostname: str | None = attrib()
     git_ssh_port: str | None = attrib()
+    git_ssh_key_path: Path = attrib()
+    git_ssh_host_key_fingerprint_path: Path = attrib()
+    git_dump_path: Path = attrib()
     git_strict_host_key_checking = attrib(default=True)
     target_tags: FrozenSet[str] | None = attrib(default=None)
     dry_run: bool = attrib(default=True)
