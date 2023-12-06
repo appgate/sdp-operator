@@ -97,6 +97,14 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.mainBranch }}
             - name: GIT_BASE_BRANCH
               value: {{ .Values.sdp.gitOperator.git.baseBranch }}
+            {{- if .Values.sdp.gitOperator.git.sshKeyPath }}
+            - name: GIT_SSH_KEY_PATH_ENV
+              value: {{ .Values.sdp.gitOperator.git.sshKeyPath }}
+            {{- end}}
+            {{- if .Values.sdp.gitOperator.git.sshKeyFingerprintPath }}
+            - name: GIT_KEY_FINGERPRINT_PATH_ENV
+              value: {{ .Values.sdp.gitOperator.git.sshKeyFingerprintPath }}
+            {{- end}}
             {{- if .Values.sdp.externalSecret.enabled }}
             - name: APPGATE_SECRET_SOURCE
               value: {{ .Values.sdp.externalSecret.type }}
