@@ -33,8 +33,6 @@ from appgate.types import (
     ensure_env,
     GITHUB_TOKEN_ENV,
     GitOperatorContext,
-    GIT_DUMP_DIR,
-    GIT_SSH_KEY_PATH,
     EntityWrapper,
     EntitiesSet,
     EntityClient,
@@ -44,8 +42,6 @@ from appgate.types import (
     APPGATE_OPERATOR_PR_LABEL_DESC,
     GITLAB_TOKEN_ENV,
     GitVendor,
-    GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
-    GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
 )
 
 
@@ -206,11 +202,11 @@ class GitRepo:
         raise NotImplementedError()
 
 
-def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
+def clone_repo(ctx: GitOperatorContext) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
-    if repository_path.exists():
-        shutil.rmtree(repository_path)
+    if ctx.git_dump_path.exists():
+        shutil.rmtree(ctx.git_dump_path)
     if not ctx.git_ssh_key_path.exists():
         raise AppgateException(f"Unable to find SSH key {ctx.git_ssh_key_path}")
     url = (
@@ -233,7 +229,7 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
 
         git_repo = Repo.clone_from(
             url,
-            repository_path,
+            ctx.git_dump_path,
             env={"GIT_SSH_COMMAND": shlex.join(git_ssh_command)},
         )
     except GitCommandError as e:
@@ -244,11 +240,9 @@ def clone_repo(ctx: GitOperatorContext, repository_path: Path) -> Repo:
     return git_repo
 
 
-def gitlab_repo(
-    ctx: GitOperatorContext, repository_path: Path = GIT_DUMP_DIR
-) -> GitRepo:
+def gitlab_repo(ctx: GitOperatorContext) -> GitRepo:
     token = ensure_env(GITLAB_TOKEN_ENV)
-    git_repo = clone_repo(ctx, repository_path)
+    git_repo = clone_repo(ctx)
     repository = ctx.git_repository_fork or ctx.git_repository
     gl = Gitlab(url=ctx.git_hostname, private_token=token)
     gl_project = gl.projects.get(repository)
@@ -260,17 +254,15 @@ def gitlab_repo(
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
-        repository_path=repository_path,
+        repository_path=ctx.git_dump_path,
         dry_run=ctx.dry_run,
         main_branch=ctx.main_branch,
     )
 
 
-def github_repo(
-    ctx: GitOperatorContext, repository_path: Path = GIT_DUMP_DIR
-) -> GitRepo:
+def github_repo(ctx: GitOperatorContext) -> GitRepo:
     token = ensure_env(GITHUB_TOKEN_ENV)
-    git_repo = clone_repo(ctx, repository_path)
+    git_repo = clone_repo(ctx)
     repository = ctx.git_repository_fork or ctx.git_repository
     gh = Github(token)
     gh_repo = gh.get_repo(repository)
@@ -282,7 +274,7 @@ def github_repo(
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
-        repository_path=repository_path,
+        repository_path=ctx.git_dump_path,
         dry_run=ctx.dry_run,
         main_branch=ctx.main_branch,
     )
