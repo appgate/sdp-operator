@@ -119,6 +119,7 @@ sdp:
       mainBranch: ""
       baseBranch: ""
       repository: ""
+      repositoryFork: ""
       hostname: ""
       sshPort: ""
       strictHostKeyChecking: true

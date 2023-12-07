@@ -77,6 +77,10 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.vendor }}
             - name: GIT_REPOSITORY
               value: {{ .Values.sdp.gitOperator.git.repository }}
+            {{- if .Values.sdp.gitOperator.git.repositoryFork }}
+            - name: GIT_REPOSITORY_FORK
+              value: {{ .Values.sdp.gitOperator.git.repositoryFork }}
+            {{- end }}
             - name: GIT_STRICT_HOST_KEY_CHECKING
               value: "{{ .Values.sdp.gitOperator.git.strictHostKeyChecking }}"
             {{- with .Values.sdp.gitOperator.git.hostname }}
