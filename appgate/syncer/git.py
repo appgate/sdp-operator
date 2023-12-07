@@ -690,8 +690,10 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
 
 
 @functools.cache
-def entity_path(repository_path: Path, kind: str) -> Path:
-    return repository_path / kind.lower()
+def entity_path(
+    repository_path: Path, kind: str, entities_path: Path | None = None
+) -> Path:
+    return repository_path / (entities_path or "") / kind.lower()
 
 
 @attrs()
@@ -703,6 +705,7 @@ class GitEntityClient(EntityClient):
     branch: str = attrib()
     commits: List[Tuple[Path, GitCommitState]] = attrib()
     resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = attrib()
+    entities_path: Path | None = attrib(default=None)
 
     def with_commit(self, state: GitCommitState, file: Path) -> "GitEntityClient":
         self.commits.append((file, state))
@@ -713,7 +716,9 @@ class GitEntityClient(EntityClient):
         return self
 
     async def _create(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
-        p = entity_path(self.repository_path, self.kind)
+        p = entity_path(
+            self.repository_path, self.kind, entitites_path=self.entities_path
+        )
         log.info(
             "[git-entity-client/%s] Creating file %s for entity %s",
             self.kind,
@@ -732,9 +737,9 @@ class GitEntityClient(EntityClient):
         return await self._create(e, register_commit=True)
 
     async def _delete(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
-            e.name
-        )
+        p: Path = entity_path(
+            self.repository_path, self.kind, entitites_path=self.entities_path
+        ) / entity_file_name(e.name)
         if register_commit:
             self.commits.append(
                 (p, GitCommitState(entity=e, path=p, operation="DELETE"))
@@ -760,9 +765,9 @@ class GitEntityClient(EntityClient):
         return await self._delete(e, register_commit=True)
 
     async def modify(self, e: Entity_T) -> EntityClient:
-        p: Path = entity_path(self.repository_path, self.kind) / entity_file_name(
-            e.name
-        )
+        p: Path = entity_path(
+            self.repository_path, self.kind, entities_path=self.entities_path
+        ) / entity_file_name(e.name)
         self.commits.append((p, GitCommitState(entity=e, path=p, operation="MODIFY")))
         await self._delete(e, register_commit=False)
         await self._create(e, register_commit=False)

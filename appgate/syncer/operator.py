@@ -45,7 +45,8 @@ from appgate.types import (
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
     GIT_CLONE_DIR_ENV,
-    GIT_CLONE_DIR, GIT_ENTITIES_PATH,
+    GIT_CLONE_DIR,
+    GIT_ENTITIES_PATH,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -116,7 +117,7 @@ def git_operator_context(
             )
         ),
         git_clone_path=Path(os.environ.get(GIT_CLONE_DIR_ENV, GIT_CLONE_DIR)),
-        git_entities_path=Path(os.environ.get(GIT_ENTITIES_PATH))
+        git_entities_path=Path(p) if (p := os.environ.get(GIT_ENTITIES_PATH)) else None,
     )
 
 
@@ -171,6 +172,7 @@ def generate_git_entity_clients(
     branch: str,
     git: GitRepo,
     resolution_conflicts: Dict[str, List[MissingFieldDependencies]],
+    entities_path: Path | None = None,
 ) -> Dict[str, EntityClient | None]:
     return {
         k: GitEntityClient(
@@ -181,6 +183,7 @@ def generate_git_entity_clients(
             git_repo=git,
             commits=[],
             resolution_conflicts=resolution_conflicts,
+            entities_path=entities_path,
         )
         for k in api_spec.api_entities.keys()
     }
@@ -269,6 +272,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                         branch=branch,
                         git=git,
                         resolution_conflicts=total_conflicts,
+                        entities_path=ctx.git_entities_path,
                     )
                 new_plan, git_entity_clients = await appgate_plan_apply(
                     appgate_plan=plan,

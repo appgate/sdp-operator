@@ -121,6 +121,11 @@ spec:
             - name: GIT_CLONE_PATH_ENV
               value: {{ .Values.sdp.gitOperator.git.clonePath }}
             {{- end}}
+            {{- if .Values.sdp.gitOperator.git.entitiesPath }}
+            - name: GIT_ENTITIES_PATH
+              value: {{ .Values.sdp.gitOperator.git.entitiesPath }}
+            {{- end}}
+
             {{- if .Values.sdp.externalSecret.enabled }}
             - name: APPGATE_SECRET_SOURCE
               value: {{ .Values.sdp.externalSecret.type }}
