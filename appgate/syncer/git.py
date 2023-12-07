@@ -213,8 +213,8 @@ class GitRepo:
 def clone_repo(ctx: GitOperatorContext) -> Repo:
     repository = ctx.git_repository_fork or ctx.git_repository
     log.info("[git-operator] Initializing the git repository by cloning %s", repository)
-    if ctx.git_dump_path.exists():
-        shutil.rmtree(ctx.git_dump_path)
+    if ctx.git_clone_path.exists():
+        shutil.rmtree(ctx.git_clone_path)
     if not ctx.git_ssh_key_path.exists():
         raise AppgateException(f"Unable to find SSH key {ctx.git_ssh_key_path}")
     url = (
@@ -237,7 +237,7 @@ def clone_repo(ctx: GitOperatorContext) -> Repo:
 
         git_repo = Repo.clone_from(
             url,
-            ctx.git_dump_path,
+            ctx.git_clone_path,
             env={"GIT_SSH_COMMAND": shlex.join(git_ssh_command)},
         )
     except GitCommandError as e:
@@ -262,7 +262,7 @@ def gitlab_repo(ctx: GitOperatorContext) -> GitRepo:
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
-        repository_path=ctx.git_dump_path,
+        repository_path=ctx.git_clone_path,
         dry_run=ctx.dry_run,
         main_branch=ctx.main_branch,
     )
@@ -282,7 +282,7 @@ def github_repo(ctx: GitOperatorContext) -> GitRepo:
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
-        repository_path=ctx.git_dump_path,
+        repository_path=ctx.git_clone_path,
         dry_run=ctx.dry_run,
         main_branch=ctx.main_branch,
     )

@@ -44,8 +44,8 @@ from appgate.types import (
     GIT_SSH_KEY_PATH,
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
-    GIT_DUMP_DIR_ENV,
-    GIT_DUMP_DIR,
+    GIT_CLONE_DIR_ENV,
+    GIT_CLONE_DIR, GIT_ENTITIES_PATH,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -115,7 +115,8 @@ def git_operator_context(
                 GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
             )
         ),
-        git_dump_path=Path(os.environ.get(GIT_DUMP_DIR_ENV, GIT_DUMP_DIR)),
+        git_clone_path=Path(os.environ.get(GIT_CLONE_DIR_ENV, GIT_CLONE_DIR)),
+        git_entities_path=Path(os.environ.get(GIT_ENTITIES_PATH))
     )
 
 
@@ -191,7 +192,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     log.info("[git-operator] Loading current state")
     # Checkout to existing branch or create a new one if needed and get current state
     branch, pull_request = git.checkout_branch(previous_branch=None, previous_pr=None)
-    current_state = get_current_branch_state(ctx.api_spec, ctx.git_dump_path)
+    current_state = get_current_branch_state(ctx.api_spec, ctx.git_clone_path)
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
     git_entity_clients = None
@@ -264,7 +265,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                 if not git_entity_clients:
                     git_entity_clients = generate_git_entity_clients(
                         api_spec=ctx.api_spec,
-                        repository_path=ctx.git_dump_path,
+                        repository_path=ctx.git_clone_path,
                         branch=branch,
                         git=git,
                         resolution_conflicts=total_conflicts,
@@ -298,7 +299,7 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     ctx.timeout,
                 )
             log.info("[git-operator] Loading current state")
-            current_state = get_current_branch_state(ctx.api_spec, ctx.git_dump_path)
+            current_state = get_current_branch_state(ctx.api_spec, ctx.git_clone_path)
             branch, pull_request = git.checkout_branch(
                 previous_branch=branch, previous_pr=pull_request
             )

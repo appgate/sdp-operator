@@ -118,7 +118,7 @@ spec:
               value: {{ .Values.sdp.gitOperator.git.sshKeyFingerprintPath }}
             {{- end}}
             {{- if .Values.sdp.gitOperator.git.clonePath }}
-            - name: GIT_DUMP_PATH_ENV
+            - name: GIT_CLONE_PATH_ENV
               value: {{ .Values.sdp.gitOperator.git.clonePath }}
             {{- end}}
             {{- if .Values.sdp.externalSecret.enabled }}
