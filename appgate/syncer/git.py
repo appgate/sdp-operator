@@ -1,6 +1,5 @@
 import enum
 import functools
-import os
 import shlex
 import time
 from datetime import date
@@ -10,6 +9,7 @@ from urllib.parse import urlparse
 import yaml
 from git import Repo, GitCommandError
 from github import Github
+from github.GithubObject import NotSet
 from github.Label import Label
 from github.PullRequest import PullRequest
 from github.Repository import Repository
@@ -29,6 +29,7 @@ from appgate.openapi.types import (
     MissingFieldDependencies,
 )
 from appgate.state import AppgateState
+from appgate.syncer.github import SDPRepository
 from appgate.types import (
     ensure_env,
     GITHUB_TOKEN_ENV,
@@ -171,8 +172,15 @@ class GitRepo:
     main_branch: str = attrib()
 
     @functools.cache
-    def user_fork(self) -> str | None:
-        return self.repository_fork.split("/")[0] if self.repository_fork else None
+    def user_fork(self) -> tuple[str, str] | None:
+        xs = (
+            self.repository_fork.split("/", maxsplit=2)
+            if self.repository_fork
+            else None
+        )
+        if xs:
+            return xs[0], xs[1]
+        return None
 
     def checkout_branch(
         self,
@@ -265,10 +273,10 @@ def github_repo(ctx: GitOperatorContext) -> GitRepo:
     git_repo = clone_repo(ctx)
     repository = ctx.git_repository_fork or ctx.git_repository
     gh = Github(token)
-    gh_repo = gh.get_repo(repository)
+    gh_repo = SDPRepository(gh_repo=gh.get_repo(repository))
     return GitHubRepo(
         gh=gh,
-        gh_repo=gh_repo,
+        sdp_repo=gh_repo,
         repository=repository,
         repository_fork=ctx.git_repository_fork,
         git_repo=git_repo,
@@ -500,8 +508,10 @@ class GitLabRepo(GitRepo):
             # We need to create a new merge request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
             head_branch = branch
-            if self.user_fork():
-                head_branch = f"{self.user_fork()}:{branch}"
+            fork_info = self.user_fork()
+            fork_user = None
+            if fork_info:
+                fork_user = fork_info[0]
             log.info("[git-operator] Creating merge request in GitLab")
             log.info("[git-operator] title: %s", title)
             log.info("[git-operator] source_branch: %s", head_branch)
@@ -510,7 +520,7 @@ class GitLabRepo(GitRepo):
             if self.dry_run:
                 return None
             pull_request_details = {
-                "source_branch": head_branch,
+                "source_branch": f"{fork_user}:{branch}" if fork_user else None,
                 "target_branch": self.base_branch,
                 "title": title,
                 "description": get_pull_request_body(commits=commits, body=None),
@@ -526,7 +536,7 @@ class GitLabRepo(GitRepo):
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
     gh: Github = attrib()
-    gh_repo: Repository = attrib()
+    sdp_repo: SDPRepository = attrib()
 
     def needs_pull_request(self) -> bool:
         return self.git_repo.is_dirty()
@@ -539,7 +549,7 @@ class GitHubRepo(GitRepo):
         Return the name of the branch and if it needs to create PullRequest: if the branch is
         from an already opened PullRequest this will be False
         """
-        open_pull = get_sdp_pull_request(self.gh_repo)
+        open_pull = get_sdp_pull_request(self.sdp_repo.gh_repo)
         pr_branch, branch_op = github_checkout_branch(
             previous_branch, previous_pr, open_pull
         )
@@ -584,9 +594,9 @@ class GitHubRepo(GitRepo):
     ) -> PullRequestLike | None:
         # Try to sync with the opened pull request again here
         # It could be that someone has merged a PR that was opened before we entered the loop
-        latest_opened_pull = get_sdp_pull_request(self.gh_repo)
+        latest_opened_pull = get_sdp_pull_request(self.sdp_repo.gh_repo)
         current_opened_pull = (
-            get_sdp_pull_request(self.gh_repo, pull_request.number)
+            get_sdp_pull_request(self.sdp_repo.gh_repo, pull_request.number)
             if pull_request
             else None
         )
@@ -622,6 +632,9 @@ class GitHubRepo(GitRepo):
             # We need to create a new pull request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
             head_branch = branch
+            fork_info = self.user_fork()
+            fork_user = fork_info[0] if fork_info else None
+            fork_repo = fork_info[0] if fork_info else None
             if self.user_fork():
                 head_branch = f"{self.user_fork()}:{branch}"
             log.info("[git-operator] Creating pull request in GitHub")
@@ -632,14 +645,17 @@ class GitHubRepo(GitRepo):
             if self.dry_run:
                 return None
             pull_request_to_use = GitHubPullRequest(
-                self.gh_repo.create_pull(
+                self.sdp_repo.create_pull(
                     title=title,
                     body=get_pull_request_body(commits=commits, body=None),
-                    head=head_branch,
+                    head=f"{fork_user}:{branch}" if fork_user else head_branch,
                     base=self.base_branch,
+                    head_repo=fork_repo if fork_repo else NotSet,
                 )
             )
-            pull_request_to_use.pr.add_to_labels(get_sdp_gh_label(self.gh_repo))
+            pull_request_to_use.pr.add_to_labels(
+                get_sdp_gh_label(self.sdp_repo.gh_repo)
+            )
         return pull_request_to_use
 
 
