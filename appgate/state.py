@@ -686,7 +686,7 @@ def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
         return evolve(entity, **{path[0]: value})
     field = getattr(entity, path[0], None)
     if field and type(field) not in PYTHON_TYPES:
-        return evolve(entity, **{path[0]: evolve_rec(field, path[1:], value)})
+        return evolve(entity, **{path[0]: evolve_rec(field, path[1:], value)})  # type: ignore[arg-type]
     raise Exception(f"Field {path[0]} not found in {entity}")
 
 
