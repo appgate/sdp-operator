@@ -7,6 +7,7 @@ COPY requirements.txt /appgate
 
 RUN apt-get update && \
     apt-get install git --yes && \
+    apt-get remove curl && \
     apt-get clean && \
     apt-get autoclean && \
     python3 -m venv /appgate/venv && \
