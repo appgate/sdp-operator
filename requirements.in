@@ -7,5 +7,5 @@ typedload == 2.26
 GitPython ~= 3.0
 PyGitHub ~= 1.0
 hvac ~= 1.0
-minio ~= 7.0
+minio ~= 7.2
 python-gitlab ~= 3.0
