@@ -6,7 +6,10 @@ USER root
 COPY requirements.txt /appgate
 
 RUN apt-get update && \
-    apt-get install git --yes && \
+    apt-get install --yes \
+        git \
+        # TODO: Remove when CVE-2023-5981 is resolved in upstream debian
+        libgnutls30=3.7.9-2+deb12u1 && \
     apt-get remove curl && \
     apt-get clean && \
     apt-get autoclean && \
