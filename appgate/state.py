@@ -498,7 +498,13 @@ class AppgatePlan:
         return any(v.needs_apply for v in self.entities_plan.values())
 
     def ordered_entities_plan(self, api_spec: APISpec) -> Iterator[Tuple[str, Plan]]:
-        return map(lambda k: (k, self.entities_plan[k]), api_spec.entities_sorted)
+        return filter(
+            None,
+            map(
+                lambda k: (k, v) if (v := self.entities_plan.get(k)) else None,
+                api_spec.entities_sorted,
+            ),
+        )
 
     @cached_property
     def errors(self) -> List[str]:
