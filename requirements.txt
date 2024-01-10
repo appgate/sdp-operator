@@ -4,11 +4,11 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.8.5
+aiohttp==3.9.1
     # via -r requirements.in
 aiosignal==1.3.1
     # via aiohttp
-apischema==0.18.0
+apischema==0.18.1
     # via -r requirements.in
 argon2-cffi==23.1.0
     # via minio
@@ -20,9 +20,9 @@ attrs==23.1.0
     # via
     #   -r requirements.in
     #   aiohttp
-cachetools==5.3.1
+cachetools==5.3.2
     # via google-auth
-certifi==2023.7.22
+certifi==2023.11.17
     # via
     #   kubernetes
     #   minio
@@ -32,10 +32,8 @@ cffi==1.16.0
     #   argon2-cffi-bindings
     #   cryptography
     #   pynacl
-charset-normalizer==3.3.0
-    # via
-    #   aiohttp
-    #   requests
+charset-normalizer==3.3.2
+    # via requests
 cryptography==41.0.7
     # via
     #   -r requirements.in
@@ -46,15 +44,15 @@ frozenlist==1.4.0
     # via
     #   aiohttp
     #   aiosignal
-gitdb==4.0.10
+gitdb==4.0.11
     # via gitpython
-gitpython==3.1.37
+gitpython==3.1.40
     # via -r requirements.in
-google-auth==2.23.2
+google-auth==2.25.1
     # via kubernetes
 hvac==1.2.1
     # via -r requirements.in
-idna==3.4
+idna==3.6
     # via
     #   requests
     #   yarl
@@ -70,7 +68,7 @@ oauthlib==3.2.2
     # via
     #   kubernetes
     #   requests-oauthlib
-pyasn1==0.5.0
+pyasn1==0.5.1
     # via
     #   pyasn1-modules
     #   rsa
@@ -80,7 +78,7 @@ pycparser==2.21
     # via cffi
 pycryptodome==3.19.0
     # via minio
-pygithub==1.59.1
+pygithub==2.1.1
     # via -r requirements.in
 pyhcl==0.4.5
     # via hvac
@@ -89,7 +87,9 @@ pyjwt[crypto]==2.8.0
 pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
-    # via kubernetes
+    # via
+    #   kubernetes
+    #   pygithub
 python-gitlab==3.15.0
     # via -r requirements.in
 pyyaml==6.0.1
@@ -116,14 +116,17 @@ smmap==5.0.1
     # via gitdb
 typedload==2.26
     # via -r requirements.in
+typing-extensions==4.8.0
+    # via pygithub
 urllib3==1.26.18
     # via
     #   kubernetes
     #   minio
+    #   pygithub
     #   requests
-websocket-client==1.6.3
+websocket-client==1.7.0
     # via kubernetes
-wrapt==1.15.0
+wrapt==1.16.0
     # via deprecated
-yarl==1.9.2
+yarl==1.9.4
     # via aiohttp
