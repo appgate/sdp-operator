@@ -195,7 +195,9 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
     log.info("[git-operator] Loading current state")
     # Checkout to existing branch or create a new one if needed and get current state
     branch, pull_request = git.checkout_branch(previous_branch=None, previous_pr=None)
-    current_state = get_current_branch_state(ctx.api_spec, ctx.git_clone_path)
+    current_state = get_current_branch_state(
+        ctx.api_spec, ctx.git_clone_path, entities_path=ctx.git_entities_path
+    )
     expected_state = appgate_state_empty(ctx.api_spec)
     print_configuration(ctx)
     git_entity_clients = None
@@ -303,7 +305,9 @@ async def git_operator(queue: Queue, ctx: GitOperatorContext) -> None:
                     ctx.timeout,
                 )
             log.info("[git-operator] Loading current state")
-            current_state = get_current_branch_state(ctx.api_spec, ctx.git_clone_path)
+            current_state = get_current_branch_state(
+                ctx.api_spec, ctx.git_clone_path, entities_path=ctx.git_entities_path
+            )
             branch, pull_request = git.checkout_branch(
                 previous_branch=branch, previous_pr=pull_request
             )

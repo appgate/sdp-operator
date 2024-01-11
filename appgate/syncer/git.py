@@ -87,14 +87,17 @@ def git_load(file: Path, entity_type: Type[Entity_T]) -> Entity_T:
         return GIT_LOADER.load(data["spec"], mt, entity_type)
 
 
-def get_current_branch_state(api_spec: APISpec, repository_path: Path) -> AppgateState:
+def get_current_branch_state(
+    api_spec: APISpec, repository_path: Path, entities_path: Path | None = None
+) -> AppgateState:
     entities_set = {}
     for e, v in api_spec.api_entities.items():
-        dest = repository_path / e.lower()
+        dest = repository_path / (entities_path or "") / e.lower()
         if not dest.is_dir():
             log.debug("Directory for entities %s not found, ignoring", dest)
             entities_set[e] = EntitiesSet()
             continue
+        log.info("Reading yaml entities from %s", dest)
         entities_set[e] = EntitiesSet(
             {EntityWrapper(git_load(f, entity_type=v.cls)) for f in dest.glob("*.yaml")}
         )
@@ -162,25 +165,21 @@ class GitLabPullRequest:
 
 @attrs(slots=True, frozen=True)
 class GitRepo:
-    repository: str = attrib()
+    origin_repository: str = attrib()
+    upstream_repository: str = attrib()
     repository_path: Path = attrib()
     git_repo: Repo = attrib()
     base_branch: str = attrib()
     vendor: GitVendor = attrib()
     dry_run: bool = attrib()
-    repository_fork: str | None = attrib()
     main_branch: str = attrib()
 
-    @functools.cache
-    def user_fork(self) -> tuple[str, str] | None:
-        xs = (
-            self.repository_fork.split("/", maxsplit=2)
-            if self.repository_fork
-            else None
-        )
-        if xs:
-            return xs[0], xs[1]
-        return None
+    def is_fork(self) -> bool:
+        return self.upstream_repository != self.origin_repository
+
+    def origin_user_and_repo(self) -> tuple[str, str]:
+        xs = self.origin_repository.split("/", maxsplit=1)
+        return xs[0], xs[1]
 
     def checkout_branch(
         self,
@@ -251,14 +250,14 @@ def clone_repo(ctx: GitOperatorContext) -> Repo:
 def gitlab_repo(ctx: GitOperatorContext) -> GitRepo:
     token = ensure_env(GITLAB_TOKEN_ENV)
     git_repo = clone_repo(ctx)
-    repository = ctx.git_repository_fork or ctx.git_repository
+    origin_repository = ctx.git_repository_fork or ctx.git_repository
     gl = Gitlab(url=ctx.git_hostname, private_token=token)
-    gl_project = gl.projects.get(repository)
+    gl_project = gl.projects.get(origin_repository)
     return GitLabRepo(
         gl=gl,
         gl_project=gl_project,
-        repository=repository,
-        repository_fork=ctx.git_repository_fork,
+        origin_repository=origin_repository,
+        upstream_repository=ctx.git_repository,
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
@@ -271,14 +270,16 @@ def gitlab_repo(ctx: GitOperatorContext) -> GitRepo:
 def github_repo(ctx: GitOperatorContext) -> GitRepo:
     token = ensure_env(GITHUB_TOKEN_ENV)
     git_repo = clone_repo(ctx)
-    repository = ctx.git_repository_fork or ctx.git_repository
+    origin_repository = ctx.git_repository_fork or ctx.git_repository
     gh = Github(token)
-    gh_repo = SDPRepository(gh_repo=gh.get_repo(repository))
+    gh_origin_repo = SDPRepository(gh_repo=gh.get_repo(origin_repository))
+    gh_upstream_repo = SDPRepository(gh_repo=gh.get_repo(ctx.git_repository))
     return GitHubRepo(
         gh=gh,
-        sdp_repo=gh_repo,
-        repository=repository,
-        repository_fork=ctx.git_repository_fork,
+        sdp_origin_repo=gh_origin_repo,
+        sdp_upstream_repo=gh_upstream_repo,
+        origin_repository=origin_repository,
+        upstream_repository=ctx.git_repository,
         git_repo=git_repo,
         base_branch=ctx.git_base_branch,
         vendor=ctx.git_vendor,
@@ -508,19 +509,16 @@ class GitLabRepo(GitRepo):
             # We need to create a new merge request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
             head_branch = branch
-            fork_info = self.user_fork()
-            fork_user = None
-            if fork_info:
-                fork_user = fork_info[0]
+            origin_user, origin_repo = self.origin_user_and_repo()
             log.info("[git-operator] Creating merge request in GitLab")
             log.info("[git-operator] title: %s", title)
             log.info("[git-operator] source_branch: %s", head_branch)
             log.info("[git-operator] target_branch: %s", self.base_branch)
-            log.info("[git-operator] repository: %s", self.repository)
+            log.info("[git-operator] repository: %s", self.origin_repository)
             if self.dry_run:
                 return None
             pull_request_details = {
-                "source_branch": f"{fork_user}:{branch}" if fork_user else None,
+                "source_branch": f"{origin_user}:{branch}",
                 "target_branch": self.base_branch,
                 "title": title,
                 "description": get_pull_request_body(commits=commits, body=None),
@@ -536,7 +534,8 @@ class GitLabRepo(GitRepo):
 @attrs(slots=True, frozen=True)
 class GitHubRepo(GitRepo):
     gh: Github = attrib()
-    sdp_repo: SDPRepository = attrib()
+    sdp_origin_repo: SDPRepository = attrib()
+    sdp_upstream_repo: SDPRepository = attrib()
 
     def needs_pull_request(self) -> bool:
         return self.git_repo.is_dirty()
@@ -549,7 +548,11 @@ class GitHubRepo(GitRepo):
         Return the name of the branch and if it needs to create PullRequest: if the branch is
         from an already opened PullRequest this will be False
         """
-        open_pull = get_sdp_pull_request(self.sdp_repo.gh_repo)
+        sdp_repo = (
+            self.sdp_upstream_repo if self.is_fork() else self.sdp_origin_repo
+        )
+        log.info("Checking out branch in repository %s", sdp_repo.gh_repo.full_name)
+        open_pull = get_sdp_pull_request(sdp_repo.gh_repo)
         pr_branch, branch_op = github_checkout_branch(
             previous_branch, previous_pr, open_pull
         )
@@ -592,11 +595,13 @@ class GitHubRepo(GitRepo):
         pull_request: PullRequestLike | None,
         commits: Dict[str, List[Tuple[str, GitCommitState]]],
     ) -> PullRequestLike | None:
+        sdp_repo = self.sdp_upstream_repo if self.is_fork() else self.sdp_origin_repo
+        log.info("Using repository %s", sdp_repo.gh_repo.full_name)
         # Try to sync with the opened pull request again here
         # It could be that someone has merged a PR that was opened before we entered the loop
-        latest_opened_pull = get_sdp_pull_request(self.sdp_repo.gh_repo)
+        latest_opened_pull = get_sdp_pull_request(sdp_repo.gh_repo)
         current_opened_pull = (
-            get_sdp_pull_request(self.sdp_repo.gh_repo, pull_request.number)
+            get_sdp_pull_request(sdp_repo.gh_repo, pull_request.number)
             if pull_request
             else None
         )
@@ -632,30 +637,28 @@ class GitHubRepo(GitRepo):
             # We need to create a new pull request for these changes
             title = f"[sdp-operator] ({time.strftime('%H:%M:%S')}) Merge changes from {branch}"
             head_branch = branch
-            fork_info = self.user_fork()
-            fork_user = fork_info[0] if fork_info else None
-            fork_repo = fork_info[0] if fork_info else None
-            if self.user_fork():
-                head_branch = f"{self.user_fork()}:{branch}"
+            origin_user, origin_repo = self.origin_user_and_repo()
+            head = f"{origin_user}:{branch}" if self.is_fork() else head_branch
+            #head = head_branch
+            head_repo = f"{origin_user}/{origin_repo}" if self.is_fork() else None
             log.info("[git-operator] Creating pull request in GitHub")
             log.info("[git-operator] title: %s", title)
-            log.info("[git-operator] head: %s", head_branch)
+            log.info("[git-operator] head: %s", head)
+            log.info("[git-operator] head-repo: %s", head_repo)
             log.info("[git-operator] base: %s", self.base_branch)
-            log.info("[git-operator] repository: %s", self.repository)
+            log.info("[git-operator] repository: %s", sdp_repo.gh_repo.full_name)
             if self.dry_run:
                 return None
             pull_request_to_use = GitHubPullRequest(
-                self.sdp_repo.create_pull(
+                sdp_repo.create_pull(
                     title=title,
                     body=get_pull_request_body(commits=commits, body=None),
-                    head=f"{fork_user}:{branch}" if fork_user else head_branch,
+                    head=head,
                     base=self.base_branch,
-                    head_repo=fork_repo if fork_repo else NotSet,
+                    head_repo=head_repo or NotSet,
                 )
             )
-            pull_request_to_use.pr.add_to_labels(
-                get_sdp_gh_label(self.sdp_repo.gh_repo)
-            )
+            pull_request_to_use.pr.add_to_labels(get_sdp_gh_label(sdp_repo.gh_repo))
         return pull_request_to_use
 
 
@@ -717,7 +720,7 @@ class GitEntityClient(EntityClient):
 
     async def _create(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
         p = entity_path(
-            self.repository_path, self.kind, entitites_path=self.entities_path
+            self.repository_path, self.kind, entities_path=self.entities_path
         )
         log.info(
             "[git-entity-client/%s] Creating file %s for entity %s",
@@ -738,7 +741,7 @@ class GitEntityClient(EntityClient):
 
     async def _delete(self, e: Entity_T, register_commit: bool = True) -> EntityClient:
         p: Path = entity_path(
-            self.repository_path, self.kind, entitites_path=self.entities_path
+            self.repository_path, self.kind, entities_path=self.entities_path
         ) / entity_file_name(e.name)
         if register_commit:
             self.commits.append(
