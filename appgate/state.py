@@ -774,15 +774,17 @@ def resolve_field_entity(
                 dependencies=frozenset(missing_dependencies_set),
             )
         )
-    # Only return resolved dependencies if all of them were resolved!
-    if new_dependencies and len(new_dependencies) == len(dependencies):
+
+    # Merge resolved and unresolved dependencies
+    all_dependencies = new_dependencies.union(missing_dependencies_set)
+    if new_dependencies and len(all_dependencies) == len(dependencies):
         if not is_iterable:
             return EntityWrapper(
                 evolve_rec(entity, field.split("."), list(new_dependencies)[0])
             )
         else:
             return EntityWrapper(
-                evolve_rec(entity, field.split("."), frozenset(new_dependencies))
+                evolve_rec(entity, field.split("."), frozenset(all_dependencies))
             )
     return None
 

@@ -947,7 +947,7 @@ def test_resolve_dependencies_reverse_1():
                     id="e02",
                     name="entitlement-2",
                     conditions=[
-                        "c01",
+                        "condition1",
                         "c04",
                         "c05",
                     ],
@@ -1071,7 +1071,6 @@ def test_resolve_appgate_state_1():
     conditions = EntitiesSet(
         {
             EntityWrapper(condition(id="c01", name="condition1")),
-            EntityWrapper(condition(id="c02", name="condition2")),
             EntityWrapper(condition(id="c03", name="condition3")),
             EntityWrapper(condition(id="c04", name="condition4")),
             EntityWrapper(condition(id="c05", name="condition5")),
@@ -1091,20 +1090,31 @@ def test_resolve_appgate_state_1():
         reverse=True,
         api_spec=api_spec(),
     )
-    assert conflicts == {
-        "entitlement-1": [
-            MissingFieldDependencies(
-                parent_name="entitlement-1",
-                parent_type="Entitlement",
-                field_path="site",
-                dependencies=frozenset({"s01"}),
-            )
-        ]
-    }
+    assert list(conflicts.keys()) == ["entitlement-1"]
+    assert len(conflicts["entitlement-1"]) == 2
+    assert (
+        MissingFieldDependencies(
+            parent_name="entitlement-1",
+            parent_type="Entitlement",
+            field_path="site",
+            dependencies=frozenset({"s01"}),
+        )
+        in conflicts["entitlement-1"]
+    )
+    assert (
+        MissingFieldDependencies(
+            parent_name="entitlement-1",
+            parent_type="Entitlement",
+            field_path="conditions",
+            dependencies=frozenset({"c02"}),
+        )
+        in conflicts["entitlement-1"]
+    )
+    # Note that we can't resolve c02
     resolved_entitlements = expected_state.entities_set["Entitlement"].entities_by_name
     assert resolved_entitlements["entitlement-1"].value.conditions == {
         "condition1",
-        "condition2",
+        "c02",
         "condition3",
     }
     assert resolved_entitlements["entitlement-1"].value.site == "s01"
@@ -1693,7 +1703,6 @@ def test_dependencies_4():
     )
     conflicts = resolve_appgate_state(appgate_state, appgate_state, test_api_spec)
     assert conflicts == {}
-    print(appgate_state.entities_set["EntityDep1"].entities)
     assert appgate_state.entities_set["EntityDep1"].entities == {
         EntityWrapper(EntityDep1(id="d11", name="dep11")),
         EntityWrapper(EntityDep1(id="d12", name="dep12")),
