@@ -45,6 +45,7 @@ from appgate.types import (
     has_tag,
     is_target,
     EntityClient,
+    entity_to_yaml,
 )
 
 
@@ -143,7 +144,7 @@ def dump_entities(
             entity_passwords = appgate_metadata.get(
                 APPGATE_METADATA_PASSWORD_FIELDS_FIELD
             )
-        dumped_entities.append(yaml.safe_dump(dumped_entity, default_flow_style=False))
+        dumped_entities.append(entity_to_yaml(dumped_entity))
     if not dumped_entities:
         return None
     f = dump_file.open("w") if dump_file else sys.stdout

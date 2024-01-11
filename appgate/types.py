@@ -16,6 +16,8 @@ from typing import (
     TypeAlias,
     cast,
 )
+
+import yaml
 from attr import attrib, attrs, evolve
 
 from appgate.logger import log
@@ -82,6 +84,7 @@ __all__ = [
     "APPGATE_OPERATOR_PR_LABEL_DESC",
     "GIT_REPOSITORY_MAIN_BRANCH",
     "GIT_REPOSITORY_MAIN_BRANCH_ENV",
+    "entity_to_yaml",
 ]
 
 BUILTIN_TAGS = frozenset({"builtin"})
@@ -529,3 +532,7 @@ def get_operator_mode(reverse_mode: bool) -> OperatorMode:
         return "appgate-reverse-operator"
     else:
         return "appgate-operator"
+
+
+def entity_to_yaml(entity: dict[str, Any]) -> str:
+    return yaml.safe_dump(entity, default_flow_style=False, sort_keys=True)

@@ -25,6 +25,7 @@ from appgate.openapi.types import (
     AppgateException,
     is_entity_included,
 )
+from appgate.types import entity_to_yaml
 from tests.utils import (
     load_test_open_api_spec,
     CERTIFICATE_FIELD,
@@ -1162,7 +1163,7 @@ def test_git_dumper_certificate() -> None:
     e = EntityCert(
         id="myid",
         name="myname",
-        fieldOne="PEMFILE",
+        fieldOne=PEM_TEST,
         fieldTwo=EntityCert_Fieldtwo(
             version="666",
             serial="serial",
@@ -1175,7 +1176,7 @@ def test_git_dumper_certificate() -> None:
             subjectPublicKey="1234",
         ),
     )
-    assert GIT_DUMPER(api_spec).dump(e, False, None) == {
+    assert (dumped_e := GIT_DUMPER(api_spec).dump(e, False, None)) == {
         "apiVersion": "v666.sdp.appgate.com/v1",
         "kind": "EntityCert",
         "metadata": {
@@ -1185,7 +1186,7 @@ def test_git_dumper_certificate() -> None:
         "spec": {
             "id": "myid",
             "name": "myname",
-            "fieldOne": "PEMFILE",
+            "fieldOne": PEM_TEST,
             "fieldTwo": {
                 "certificate": "123",
                 "fingerprint": "123",
@@ -1199,6 +1200,8 @@ def test_git_dumper_certificate() -> None:
             },
         },
     }
+
+    assert yaml.safe_load(entity_to_yaml(dumped_e))["spec"]["fieldOne"] == PEM_TEST
 
 
 def test_loader_git_0():

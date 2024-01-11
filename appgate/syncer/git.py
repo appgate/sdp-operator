@@ -43,6 +43,7 @@ from appgate.types import (
     APPGATE_OPERATOR_PR_LABEL_DESC,
     GITLAB_TOKEN_ENV,
     GitVendor,
+    entity_to_yaml,
 )
 
 
@@ -76,7 +77,7 @@ def git_dump(
     log.info("Dumping entity %s: %s", entity.name, entity_file)
     dumped_entity = GIT_DUMPER(api_spec).dump(entity, True, resolution_conflicts)
     with entity_file.open("w") as f:
-        f.write(yaml.safe_dump(dumped_entity, default_flow_style=False, sort_keys=True))
+        f.write(entity_to_yaml(dumped_entity))
     return entity_file
 
 
