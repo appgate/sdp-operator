@@ -45,6 +45,7 @@ from appgate.types import (
     has_tag,
     is_target,
     EntityClient,
+    entity_to_yaml,
 )
 
 
@@ -143,7 +144,7 @@ def dump_entities(
             entity_passwords = appgate_metadata.get(
                 APPGATE_METADATA_PASSWORD_FIELDS_FIELD
             )
-        dumped_entities.append(yaml.safe_dump(dumped_entity, default_flow_style=False))
+        dumped_entities.append(entity_to_yaml(dumped_entity))
     if not dumped_entities:
         return None
     f = dump_file.open("w") if dump_file else sys.stdout
@@ -686,7 +687,7 @@ def evolve_rec(entity: Entity_T, path: List[str], value: Any) -> Entity_T:
         return evolve(entity, **{path[0]: value})
     field = getattr(entity, path[0], None)
     if field and type(field) not in PYTHON_TYPES:
-        return evolve(entity, **{path[0]: evolve_rec(field, path[1:], value)})
+        return evolve(entity, **{path[0]: evolve_rec(field, path[1:], value)})  # type: ignore[arg-type]
     raise Exception(f"Field {path[0]} not found in {entity}")
 
 
@@ -773,15 +774,17 @@ def resolve_field_entity(
                 dependencies=frozenset(missing_dependencies_set),
             )
         )
-    # Only return resolved dependencies if all of them were resolved!
-    if new_dependencies and len(new_dependencies) == len(dependencies):
+
+    # Merge resolved and unresolved dependencies
+    all_dependencies = new_dependencies.union(missing_dependencies_set)
+    if new_dependencies and len(all_dependencies) == len(dependencies):
         if not is_iterable:
             return EntityWrapper(
                 evolve_rec(entity, field.split("."), list(new_dependencies)[0])
             )
         else:
             return EntityWrapper(
-                evolve_rec(entity, field.split("."), frozenset(new_dependencies))
+                evolve_rec(entity, field.split("."), frozenset(all_dependencies))
             )
     return None
 

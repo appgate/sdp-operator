@@ -5,7 +5,7 @@ cryptography ~= 41.0.6
 kubernetes ~= 28.0
 typedload == 2.26
 GitPython ~= 3.0
-PyGitHub ~= 1.0
+PyGitHub ~= 2.1.1
 hvac ~= 1.0
 minio ~= 7.2
 python-gitlab ~= 3.0

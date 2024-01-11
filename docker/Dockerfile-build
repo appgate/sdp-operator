@@ -3,5 +3,5 @@ RUN apt-get update && \
     apt-get install make gcc libffi-dev git --yes
 COPY requirements-build.txt /build/
 COPY requirements.txt /build/
-RUN pip3 install -r /build/requirements-build.txt -r /build/requirements.txt
+RUN pip3 install -r /build/requirements-build.txt
 WORKDIR /build

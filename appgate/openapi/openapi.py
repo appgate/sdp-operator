@@ -302,7 +302,7 @@ def generate_api_spec(
     )
 
 
-MAGIC_ENTITIES = {
+MAGIC_ENTITIES: dict[str, list[str]] = {
     "Site": [
         # Use '6f6fa9d9-17b2-4157-9f68-e97662acccdf' to collect logs
         # from all the appliances
