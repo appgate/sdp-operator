@@ -549,9 +549,7 @@ class GitHubRepo(GitRepo):
         Return the name of the branch and if it needs to create PullRequest: if the branch is
         from an already opened PullRequest this will be False
         """
-        sdp_repo = (
-            self.sdp_upstream_repo if self.is_fork() else self.sdp_origin_repo
-        )
+        sdp_repo = self.sdp_upstream_repo if self.is_fork() else self.sdp_origin_repo
         log.info("Checking out branch in repository %s", sdp_repo.gh_repo.full_name)
         open_pull = get_sdp_pull_request(sdp_repo.gh_repo)
         pr_branch, branch_op = github_checkout_branch(
@@ -640,7 +638,6 @@ class GitHubRepo(GitRepo):
             head_branch = branch
             origin_user, origin_repo = self.origin_user_and_repo()
             head = f"{origin_user}:{branch}" if self.is_fork() else head_branch
-            #head = head_branch
             head_repo = f"{origin_user}/{origin_repo}" if self.is_fork() else None
             log.info("[git-operator] Creating pull request in GitHub")
             log.info("[git-operator] title: %s", title)
