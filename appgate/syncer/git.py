@@ -42,6 +42,7 @@ from appgate.types import (
     APPGATE_OPERATOR_PR_LABEL_DESC,
     GITLAB_TOKEN_ENV,
     GitVendor,
+    GIT_SSH_KNOWN_HOSTS_FILE,
 )
 
 
@@ -226,6 +227,10 @@ def clone_repo(ctx: GitOperatorContext) -> Repo:
             git_ssh_command.extend(["-o", "StrictHostKeyChecking=no"])
         if ctx.git_ssh_port:
             git_ssh_command.extend(["-p", str(ctx.git_ssh_port)])
+        if ctx.git_ssh_known_hosts_file != Path(GIT_SSH_KNOWN_HOSTS_FILE):
+            git_ssh_command.extend(
+                ["-o", f"UserKnownHostsFile={ctx.git_ssh_known_hosts_file}"]
+            )
 
         git_repo = Repo.clone_from(
             url,
@@ -643,13 +648,13 @@ class GitHubRepo(GitRepo):
         return pull_request_to_use
 
 
-def create_ssh_fingerprint(fingerprint: str) -> None:
-    known_hosts = Path.home() / ".ssh/known_hosts"
-    known_hosts.parent.mkdir(exist_ok=True)
-    # Add GITHUB and GITLAB ssh fingerprints into known_hosts
-    # TODO: Add support to override this?
-    log.info("[git-operator] Creating file with known SSH fingerprints")
-    with known_hosts.open("w") as f:
+def create_ssh_fingerprint(known_host_file: Path, fingerprint: str) -> None:
+    known_host_file.parent.mkdir(exist_ok=True)
+    log.info(
+        "[git-operator] Creating file with known SSH fingerprints to %s",
+        known_host_file,
+    )
+    with known_host_file.open("w") as f:
         print(fingerprint, file=f)
 
 
@@ -657,16 +662,20 @@ def get_git_repository(ctx: GitOperatorContext) -> GitRepo:
     match ctx.git_vendor:
         case "github":
             log.info("[git-operator] Detected GitHub as git vendor type")
-            create_ssh_fingerprint(GITHUB_SSH_FINGERPRINT)
+            create_ssh_fingerprint(ctx.git_ssh_known_hosts_file, GITHUB_SSH_FINGERPRINT)
             return github_repo(ctx)
 
         case "gitlab":
             log.info("[git-operator] Detected GitLab as git vendor type")
             if ctx.git_hostname and ctx.git_strict_host_key_checking:
                 with open(ctx.git_ssh_host_key_fingerprint_path) as fingerprint:
-                    create_ssh_fingerprint(fingerprint.read())
+                    create_ssh_fingerprint(
+                        ctx.git_ssh_known_hosts_file, fingerprint.read()
+                    )
             else:
-                create_ssh_fingerprint(GITLAB_SSH_FINGERPRINT)
+                create_ssh_fingerprint(
+                    ctx.git_ssh_known_hosts_file, GITLAB_SSH_FINGERPRINT
+                )
             return gitlab_repo(ctx)
 
         case _:
