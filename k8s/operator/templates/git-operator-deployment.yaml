@@ -117,6 +117,10 @@ spec:
             - name: GIT_KEY_FINGERPRINT_PATH_ENV
               value: {{ .Values.sdp.gitOperator.git.sshKeyFingerprintPath }}
             {{- end}}
+            {{- if .Values.sdp.gitOperator.git.sshKnownHostsFile }}
+            - name: GIT_SSH_KNOWN_HOSTS_FILE
+              value: {{ .Values.sdp.gitOperator.git.sshKnownHostsFile }}
+            {{- end}}
             {{- if .Values.sdp.gitOperator.git.clonePath }}
             - name: GIT_DUMP_PATH_ENV
               value: {{ .Values.sdp.gitOperator.git.clonePath }}

@@ -46,6 +46,8 @@ from appgate.types import (
     GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
     GIT_DUMP_DIR_ENV,
     GIT_DUMP_DIR,
+    GIT_SSH_KNOWN_HOSTS_FILE_ENV,
+    GIT_SSH_KNOWN_HOSTS_FILE,
 )
 from appgate.openapi.types import (
     AppgateException,
@@ -114,6 +116,9 @@ def git_operator_context(
                 GIT_SSH_HOST_KEY_FINGERPRINT_PATH_ENV,
                 GIT_SSH_HOST_KEY_FINGERPRINT_PATH,
             )
+        ),
+        git_ssh_known_hosts_file=Path(
+            os.environ.get(GIT_SSH_KNOWN_HOSTS_FILE_ENV, GIT_SSH_KNOWN_HOSTS_FILE)
         ),
         git_dump_path=Path(os.environ.get(GIT_DUMP_DIR_ENV, GIT_DUMP_DIR)),
     )
