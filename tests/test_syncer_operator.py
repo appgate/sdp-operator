@@ -5,19 +5,17 @@ from unittest import mock
 import pytest
 
 from appgate.openapi.openapi import generate_api_spec
-from appgate.openapi.types import SPEC_ENTITIES, AppgateException
+from appgate.openapi.types import AppgateException, get_supported_entities, SPEC_ENTITIES
 from appgate.syncer.operator import generate_git_entity_clients, git_operator_context
 from appgate.types import (
     GitOperatorArguments,
     GIT_REPOSITORY_ENV,
     GIT_BASE_BRANCH_ENV,
     GIT_VENDOR_ENV,
-    APPGATE_INCLUDE_ENTITIES_ENV,
-    APPGATE_EXCLUDE_ENTITIES_ENV,
     get_tags,
 )
 
-ALL_APPGATE_ENTITIES = set(SPEC_ENTITIES.values())
+ALL_APPGATE_ENTITIES = set(get_supported_entities(SPEC_ENTITIES).values())
 
 
 def test_generate_git_entity_clients_0() -> None:
