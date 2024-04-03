@@ -260,7 +260,10 @@ class EntityWrapper:
 
     @property
     def tags(self) -> FrozenSet[str]:
-        return self.value.tags
+        try:
+            return self.value.tags
+        except AttributeError:
+            return frozenset()
 
     def with_id(self, id: str) -> "EntityWrapper":
         return EntityWrapper(evolve(self.value, id=id))
