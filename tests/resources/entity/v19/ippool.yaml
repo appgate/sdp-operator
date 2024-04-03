@@ -1,0 +1,31 @@
+apiVersion: v19.sdp.appgate.com/v1
+kind: IpPool
+metadata:
+  annotations:
+    sdp.appgate.com/id: f572b4ab-7963-4a90-9e5a-3bf033bfe2cc
+  name: default-pool-v4
+spec:
+  ipVersion6: false
+  leaseTimeDays: 30
+  name: default pool v4
+  ranges:
+  - first: 192.168.100.1
+    last: 192.168.100.254
+  tags:
+  - builtin
+---
+apiVersion: v19.sdp.appgate.com/v1
+kind: IpPool
+metadata:
+  annotations:
+    sdp.appgate.com/id: 6935b379-205d-4fdd-847f-a0b5f14aff53
+  name: default-pool-v6
+spec:
+  ipVersion6: true
+  leaseTimeDays: 30
+  name: default pool v6
+  ranges:
+  - first: fd00::ffff:c0a8:6401
+    last: fd00::ffff:c0a8:64fe
+  tags:
+  - builtin

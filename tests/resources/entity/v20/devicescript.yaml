@@ -1,0 +1,25 @@
+apiVersion: v20.sdp.appgate.com/v1
+kind: DeviceScript
+metadata:
+  annotations:
+    sdp.appgate.com/id: c5b127ab-ac67-4172-beba-b2b44e1b5285
+  name: devicescript
+spec:
+  filename: crowdstrike_data_macos.sh
+  name: Crowdstrike - get risk data from macOS
+  notes: Built-in device claim script to fetch risk data from Crowdstrike.
+  tags:
+  - builtin
+---
+apiVersion: v20.sdp.appgate.com/v1
+kind: DeviceScript
+metadata:
+  annotations:
+    sdp.appgate.com/id: 53b8fb8b-1a02-43a4-b64c-9096cafd09e7
+  name: devicescript
+spec:
+  filename: crowdstrike_data_win.bat
+  name: Crowdstrike - get risk data from Windows
+  notes: Built-in device claim script to fetch risk data from Crowdstrike.
+  tags:
+  - builtin
