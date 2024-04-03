@@ -3,9 +3,13 @@ from unittest import mock
 import pytest
 
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients
-from appgate.openapi.types import SPEC_ENTITIES, AppgateException
+from appgate.openapi.types import (
+    AppgateException,
+    get_supported_entities,
+    SPEC_ENTITIES,
+)
 
-ALL_APPGATE_ENTITIES = set(SPEC_ENTITIES.keys())
+ALL_APPGATE_ENTITIES = set(get_supported_entities(SPEC_ENTITIES).keys())
 
 
 def test_generate_api_spec_clients_0() -> None:

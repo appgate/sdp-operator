@@ -1,0 +1,19 @@
+apiVersion: v19.sdp.appgate.com/v1
+kind: GlobalSettings
+metadata:
+  annotations:
+    sdp.appgate.com/id: GlobalSettings
+  name: globalsettings
+spec:
+  administrationTokenExpiration: 1440
+  auditLogPersistenceMode: Default
+  backupApiEnabled: false
+  claimsTokenExpiration: 1440
+  collectiveName: 3ebcaea2
+  entitlementTokenExpiration: 1440
+  geoIpUpdates: false
+  profileHostname: envy-10-98-142-2.devops
+  registeredDeviceExpirationDays: 90
+  spaMode: TCP
+  spaTimeWindowSeconds: 600
+  vpnCertificateExpiration: 525600

@@ -1,0 +1,16 @@
+apiVersion: v20.sdp.appgate.com/v1
+kind: LocalUser
+metadata:
+  annotations:
+    sdp.appgate.com/id: 5e360c9d-8756-41b4-9597-601712881a5c
+  name: localuser
+spec:
+  disabled: false
+  email: admin@email.com
+  failedLoginAttempts: 0
+  firstName: Builtin
+  lastName: Administrator
+  name: admin
+  notes: Built-in administrator user.
+  tags:
+  - builtin

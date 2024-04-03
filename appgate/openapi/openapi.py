@@ -15,12 +15,13 @@ from appgate.openapi.parser import is_compound, Parser, ParserContext
 from appgate.openapi.types import (
     APISpec,
     OpenApiParserException,
-    SPEC_ENTITIES,
     K8S_APPGATE_DOMAIN,
     K8S_APPGATE_VERSION,
     GeneratedEntity,
     APPGATE_METADATA_ATTRIB_NAME,
     ENTITY_METADATA_ATTRIB_NAME,
+    get_supported_entities,
+    SPEC_ENTITIES,
 )
 
 __all__ = [
@@ -35,7 +36,8 @@ __all__ = [
 from appgate.types import EntityClient, OperatorMode
 
 # Always set the default API version to latest released version
-SPEC_DIR = "api_specs/v19"
+LATEST_API_VERSION = "v20"
+SPEC_DIR = f"api_specs/{LATEST_API_VERSION}"
 K8S_API_VERSION = "apiextensions.k8s.io/v1"
 K8S_CRD_KIND = "CustomResourceDefinition"
 LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
@@ -59,11 +61,12 @@ def parse_files(
         operator_mode=operator_mode,
     )
     parser = Parser(parser_context, spec_file)
+    api_version = parser.api_version()
     # First parse those paths we are interested in
     for path, v in parser.data["paths"].items():
         if not parser_context.get_entity_name(path):
             continue
-        entity_name = spec_entities[path]
+        entity_name = get_supported_entities(spec_entities, api_version)[path]
         log.info("Generating entity %s for path %s", entity_name, path)
         keys = ["requestBody", "content", "application/json", "schema"]
         # Check if path returns a singleton or a list of entities

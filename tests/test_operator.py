@@ -1,20 +1,21 @@
-import os
 from asyncio import Queue
 
 import pytest
 
 from appgate.__main__ import appgate_operator_context
 from appgate.openapi.openapi import generate_api_spec
-from appgate.openapi.types import SPEC_ENTITIES, AppgateException
+from appgate.openapi.types import (
+    AppgateException,
+    get_supported_entities,
+    SPEC_ENTITIES,
+)
 from appgate.operator import get_k8s_tasks
 from appgate.types import (
     AppgateOperatorArguments,
-    APPGATE_INCLUDE_ENTITIES_ENV,
-    APPGATE_EXCLUDE_ENTITIES_ENV,
     get_tags,
 )
 
-ALL_APPGATE_ENTITIES = set(SPEC_ENTITIES.values())
+ALL_APPGATE_ENTITIES = set(get_supported_entities(SPEC_ENTITIES).values())
 
 
 def test_get_k8s_tasks_0() -> None:
