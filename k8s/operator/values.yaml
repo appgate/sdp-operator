@@ -12,6 +12,8 @@ sdp:
     - git-operator
 
   ## @section SDP Operator Parameters
+  ## @param sdp.sdpOperator.annotations Annotations to add to the deployment
+  ## @param sdp.sdpOperator.podAnnotations Annotations to add to the pod template of the deployment
   ## @param sdp.sdpOperator.host The hostname of the controller to manage with the operator.
   ## @param sdp.sdpOperator.deviceId The device ID assigned to the operator for authenticating against the controller.
   ## @param sdp.sdpOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
@@ -80,6 +82,8 @@ sdp:
       create: true
 
   ## @section Git Operator
+  ## @param sdp.gitOperator.annotations Annotations to add to the deployment
+  ## @param sdp.gitOperator.podAnnotations Annotations to add to the pod template of the deployment
   ## @param sdp.gitOperator.logLevel The log level of the operator.
   ## @param sdp.gitOperator.timeout The duration in seconds that the operator will wait for a new event. The operator will compute the plan if the timeout expires. The timer is reset to 0 every time an event if received.
   ## @param sdp.gitOperator.targetTags The list of tags that define the entities to sync. Tagged entities will be synced.
@@ -90,6 +94,7 @@ sdp:
   ## @param sdp.gitOperator.git.mainBranch Main branch of the repository to clone the repository
   ## @param sdp.gitOperator.git.baseBranch Base branch of the repository to create pull requests
   ## @param sdp.gitOperator.git.repository The name of the repository (e.g. organization/repository)
+  ## @param sdp.gitOperator.git.repositoryFork The name of the repository fork
   ## @param sdp.gitOperator.secret Name of the secret that contains the SSH key and token for the git repository
   ## @param sdp.gitOperator.secret Name of the secret that contains the Admin API credentials used by the operator.
   ## @param sdp.gitOperator.securityContext.runAsUser UID of the user to run the operator
@@ -99,6 +104,10 @@ sdp:
   ## @param sdp.gitOperator.git.hostname Hostname of the git repository including the port (if not well-known port)
   ## @param sdp.gitOperator.git.sshPort Alternate ssh port for the git repository (if not well-known port)
   ## @param sdp.gitOperator.git.strictHostKeyChecking Enable StrictHostKeyChecking when cloning repository via SSH
+  ## @param sdp.gitOperator.git.sshKeyPath Path to read SSH key
+  ## @param sdp.gitOperator.git.sshKeyFingerprintPath Path to read SSH fingerprint
+  ## @param sdp.gitOperator.git.sshKnownHostsFile Path to write SSH known hosts file
+  ## @param sdp.gitOperator.git.clonePath Path to clone git repository
   gitOperator:
     annotations:
     podAnnotations:
