@@ -147,6 +147,7 @@ def test_load_entities_v18(sdp_http_file_source):
 def test_load_entities_v19(sdp_http_file_source):
     load_entities("v19")
 
+
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v20"})

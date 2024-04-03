@@ -25,10 +25,8 @@ from appgate.logger import log
 
 
 # Dictionary of deprecated entities by API version
-DEPRECATED_ENTITIES : Dict[int, Dict[str, str]] = {
-    20 : {
-        "/client-connections": "ClientConnection"
-    }
+DEPRECATED_ENTITIES: Dict[int, Dict[str, str]] = {
+    20: {"/client-connections": "ClientConnection"}
 }
 
 # Dictionary of all supported entities (2 versions backward-compatibility
@@ -57,11 +55,17 @@ SPEC_ENTITIES: Dict[str, str] = {
 }
 
 
-def get_supported_entities(spec_entities: Dict[str, str], api_version: int = 20) -> Dict[str,str]:
+def get_supported_entities(
+    spec_entities: Dict[str, str], api_version: int = 20
+) -> Dict[str, str]:
     """
     Returns a dictionary of all entities supported in the specified API version
     """
-    return {key: spec_entities[key] for key in spec_entities if key not in DEPRECATED_ENTITIES.get(api_version, {})}
+    return {
+        key: spec_entities[key]
+        for key in spec_entities
+        if key not in DEPRECATED_ENTITIES.get(api_version, {})
+    }
 
 
 K8S_APPGATE_DOMAIN = "sdp.appgate.com"

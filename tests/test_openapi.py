@@ -3,7 +3,11 @@ from unittest import mock
 import pytest
 
 from appgate.openapi.openapi import generate_api_spec, generate_api_spec_clients
-from appgate.openapi.types import AppgateException, get_supported_entities, SPEC_ENTITIES
+from appgate.openapi.types import (
+    AppgateException,
+    get_supported_entities,
+    SPEC_ENTITIES,
+)
 
 ALL_APPGATE_ENTITIES = set(get_supported_entities(SPEC_ENTITIES).keys())
 

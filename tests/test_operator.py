@@ -4,7 +4,11 @@ import pytest
 
 from appgate.__main__ import appgate_operator_context
 from appgate.openapi.openapi import generate_api_spec
-from appgate.openapi.types import AppgateException, get_supported_entities, SPEC_ENTITIES
+from appgate.openapi.types import (
+    AppgateException,
+    get_supported_entities,
+    SPEC_ENTITIES,
+)
 from appgate.operator import get_k8s_tasks
 from appgate.types import (
     AppgateOperatorArguments,

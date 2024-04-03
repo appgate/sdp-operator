@@ -5,7 +5,11 @@ from unittest import mock
 import pytest
 
 from appgate.openapi.openapi import generate_api_spec
-from appgate.openapi.types import AppgateException, get_supported_entities, SPEC_ENTITIES
+from appgate.openapi.types import (
+    AppgateException,
+    get_supported_entities,
+    SPEC_ENTITIES,
+)
 from appgate.syncer.operator import generate_git_entity_clients, git_operator_context
 from appgate.types import (
     GitOperatorArguments,

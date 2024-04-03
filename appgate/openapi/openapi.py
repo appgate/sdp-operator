@@ -19,7 +19,9 @@ from appgate.openapi.types import (
     K8S_APPGATE_VERSION,
     GeneratedEntity,
     APPGATE_METADATA_ATTRIB_NAME,
-    ENTITY_METADATA_ATTRIB_NAME, get_supported_entities, SPEC_ENTITIES,
+    ENTITY_METADATA_ATTRIB_NAME,
+    get_supported_entities,
+    SPEC_ENTITIES,
 )
 
 __all__ = [
