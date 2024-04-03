@@ -40,7 +40,13 @@ LATEST_API_VERSION = "v20"
 SPEC_DIR = f"api_specs/{LATEST_API_VERSION}"
 K8S_API_VERSION = "apiextensions.k8s.io/v1"
 K8S_CRD_KIND = "CustomResourceDefinition"
-LIST_PROPERTIES = {"range", "data", "query", "orderBy", "descending", "filterBy"}
+
+# If the definition doesn't contain these properties, we consider that entity as singleton
+LIST_PROPERTIES: Dict[int, set] = {
+    18: {"range", "data", "query", "orderBy", "descending", "filterBy"},
+    19: {"range", "data", "query", "orderBy", "descending", "filterBy"},
+    20: {"range", "data", "query", "orderBy", "descending", "filterBy", "totalCount"},
+}
 
 
 def parse_files(
@@ -89,8 +95,12 @@ def parse_files(
             parsed_schema = get_schema
         else:
             parsed_schema = {}
+
         singleton = not all(
-            map(lambda f: f in parsed_schema.get("properties", {}), LIST_PROPERTIES)
+            map(
+                lambda f: f in parsed_schema.get("properties", {}),
+                LIST_PROPERTIES.get(api_version, {}),
+            )
         )
         parser.parse_definition(
             entity_name=entity_name,
