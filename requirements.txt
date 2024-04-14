@@ -36,7 +36,7 @@ charset-normalizer==3.3.0
     # via
     #   aiohttp
     #   requests
-cryptography==41.0.7
+cryptography==42.0.5
     # via
     #   -r requirements.in
     #   pyjwt
