@@ -110,7 +110,7 @@ six==1.16.0
     #   python-dateutil
 smmap==5.0.1
     # via gitdb
-typedload==2.26
+typedload==2.27
     # via -r requirements.in
 urllib3==1.26.18
     # via
