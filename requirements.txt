@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.8.5
+aiohttp==3.9.5
     # via -r requirements.in
 aiosignal==1.3.1
     # via aiohttp
@@ -14,8 +14,6 @@ argon2-cffi==23.1.0
     # via minio
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-async-timeout==4.0.3
-    # via aiohttp
 attrs==23.1.0
     # via
     #   -r requirements.in
@@ -33,9 +31,7 @@ cffi==1.16.0
     #   cryptography
     #   pynacl
 charset-normalizer==3.3.0
-    # via
-    #   aiohttp
-    #   requests
+    # via requests
 cryptography==41.0.7
     # via
     #   -r requirements.in
