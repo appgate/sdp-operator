@@ -8,19 +8,19 @@ aiohttp==3.9.5
     # via -r requirements.in
 aiosignal==1.3.1
     # via aiohttp
-apischema==0.18.0
+apischema==0.18.1
     # via -r requirements.in
 argon2-cffi==23.1.0
     # via minio
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-attrs==23.1.0
+attrs==23.2.0
     # via
     #   -r requirements.in
     #   aiohttp
-cachetools==5.3.1
+cachetools==5.3.3
     # via google-auth
-certifi==2023.7.22
+certifi==2024.2.2
     # via
     #   kubernetes
     #   minio
@@ -30,7 +30,7 @@ cffi==1.16.0
     #   argon2-cffi-bindings
     #   cryptography
     #   pynacl
-charset-normalizer==3.3.0
+charset-normalizer==3.3.2
     # via requests
 cryptography==42.0.5
     # via
@@ -38,27 +38,27 @@ cryptography==42.0.5
     #   pyjwt
 deprecated==1.2.14
     # via pygithub
-frozenlist==1.4.0
+frozenlist==1.4.1
     # via
     #   aiohttp
     #   aiosignal
-gitdb==4.0.10
+gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via -r requirements.in
-google-auth==2.23.2
+google-auth==2.29.0
     # via kubernetes
 hvac==1.2.1
     # via -r requirements.in
-idna==3.4
+idna==3.7
     # via
     #   requests
     #   yarl
 kubernetes==28.1.0
     # via -r requirements.in
-minio==7.2.0
+minio==7.2.5
     # via -r requirements.in
-multidict==6.0.4
+multidict==6.0.5
     # via
     #   aiohttp
     #   yarl
@@ -66,15 +66,15 @@ oauthlib==3.2.2
     # via
     #   kubernetes
     #   requests-oauthlib
-pyasn1==0.5.0
+pyasn1==0.6.0
     # via
     #   pyasn1-modules
     #   rsa
-pyasn1-modules==0.3.0
+pyasn1-modules==0.4.0
     # via google-auth
-pycparser==2.21
+pycparser==2.22
     # via cffi
-pycryptodome==3.19.0
+pycryptodome==3.20.0
     # via minio
 pygithub==1.59.1
     # via -r requirements.in
@@ -84,7 +84,7 @@ pyjwt[crypto]==2.8.0
     # via pygithub
 pynacl==1.5.0
     # via pygithub
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via kubernetes
 python-gitlab==3.15.0
     # via -r requirements.in
@@ -98,7 +98,7 @@ requests==2.31.0
     #   python-gitlab
     #   requests-oauthlib
     #   requests-toolbelt
-requests-oauthlib==1.3.1
+requests-oauthlib==2.0.0
     # via kubernetes
 requests-toolbelt==1.0.0
     # via python-gitlab
@@ -112,14 +112,16 @@ smmap==5.0.1
     # via gitdb
 typedload==2.27
     # via -r requirements.in
+typing-extensions==4.11.0
+    # via minio
 urllib3==1.26.18
     # via
     #   kubernetes
     #   minio
     #   requests
-websocket-client==1.6.3
+websocket-client==1.8.0
     # via kubernetes
-wrapt==1.15.0
+wrapt==1.16.0
     # via deprecated
-yarl==1.9.2
+yarl==1.9.4
     # via aiohttp
