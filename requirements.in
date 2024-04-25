@@ -2,7 +2,7 @@ aiohttp ~= 3.9
 apischema ~= 0.18
 attrs ~= 23.0
 cryptography ~= 42.0.5
-kubernetes ~= 28.0
+kubernetes ~=29.0
 typedload == 2.27
 GitPython ~= 3.1.43
 PyGitHub ~= 1.0
