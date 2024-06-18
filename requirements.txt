@@ -48,7 +48,7 @@ gitpython==3.1.43
     # via -r requirements.in
 google-auth==2.23.2
     # via kubernetes
-hvac==1.2.1
+hvac==2.3.0
     # via -r requirements.in
 idna==3.4
     # via
@@ -78,8 +78,6 @@ pycryptodome==3.19.0
     # via minio
 pygithub==1.59.1
     # via -r requirements.in
-pyhcl==0.4.5
-    # via hvac
 pyjwt[crypto]==2.8.0
     # via pygithub
 pynacl==1.5.0
