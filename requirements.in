@@ -8,4 +8,4 @@ GitPython ~= 3.1.43
 PyGitHub ~= 1.0
 hvac ~= 1.0
 minio ~= 7.2
-python-gitlab ~= 3.0
+python-gitlab ~=4.13

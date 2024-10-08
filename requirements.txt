@@ -86,11 +86,11 @@ pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
     # via kubernetes
-python-gitlab==3.15.0
+python-gitlab==4.13.0
     # via -r requirements.in
 pyyaml==6.0.1
     # via kubernetes
-requests==2.31.0
+requests==2.32.3
     # via
     #   hvac
     #   kubernetes
