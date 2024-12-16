@@ -1,6 +1,6 @@
 aiohttp ~= 3.9
 apischema ~= 0.18
-attrs ~= 23.0
+attrs ~=24.3
 cryptography ~= 42.0.5
 kubernetes ~= 28.0
 typedload == 2.27
