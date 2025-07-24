@@ -319,9 +319,10 @@ class Parser:
             raise OpenApiParserException("Unable to find Appgate API version")
         try:
             api_version = api_version_str.split(" ")[2].split(".")[0]
+            return int(api_version)
         except IndexError:
             raise OpenApiParserException("Unable to find Appgate API version")
-        return api_version
+
 
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split("#", maxsplit=2)
