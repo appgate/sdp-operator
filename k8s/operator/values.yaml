@@ -3,7 +3,7 @@
 ##
 sdp:
   ## @param sdp.version API version of the controller
-  version: v21
+  version: v22
 
   ## @section Operator Parameters
   ## @param sdp.operators List of operators to run in the deployment. (Option: sdp-operator, git-operator)
