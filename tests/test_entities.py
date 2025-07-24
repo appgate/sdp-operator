@@ -100,40 +100,6 @@ def sdp_http_file_source():
     ) as s:
         yield s
 
-
-@pytest.mark.skip("SDP v5.1 is unsupported")
-def test_load_entities_v12():
-    load_entities("v12")
-
-
-@pytest.mark.skip("SDP v5.2 is unsupported")
-def test_load_entities_v13():
-    load_entities("v13")
-
-
-@pytest.mark.skip("SDP v5.3 is unsupported")
-def test_load_entities_v14():
-    load_entities("v14")
-
-
-@pytest.mark.skip("SDP v5.4 is unsupported")
-def test_load_entities_v15():
-    load_entities("v15")
-
-
-@pytest.mark.skip("SDP v5.5 is unsupported")
-def test_load_entities_v16():
-    load_entities("v16")
-
-
-@pytest.mark.skip("SDP v6.0 is unsupported")
-@patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
-@patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
-@patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
-def test_load_entities_v17(sdp_http_file_source):
-    load_entities("v17")
-
-
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})
