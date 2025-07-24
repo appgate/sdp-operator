@@ -50,7 +50,7 @@ google-auth==2.23.2
     # via kubernetes
 hvac==1.2.1
     # via -r requirements.in
-idna==3.4
+idna==3.7
     # via
     #   requests
     #   yarl
