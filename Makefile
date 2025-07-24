@@ -22,7 +22,8 @@ test:
 	$(PYTHON3) -m pytest -p no:cacheprovider tests
 
 docker-run-image:
-	docker build -f docker/Dockerfile -t sdp-operator .
+	docker build -f docker/Dockerfile -t localhost:5000/sdp-operator .
+	docker push localhost:5000/sdp-operator
 
 docker-build-image:
 	docker build -f docker/Dockerfile-build . -t sdp-operator-builder
