@@ -80,7 +80,7 @@ pyasn1-modules==0.3.0
     # via google-auth
 pycparser==2.21
     # via cffi
-pycryptodome==3.19.0
+pycryptodome==3.19.1
     # via minio
 pygithub==1.59.1
     # via -r requirements.in
