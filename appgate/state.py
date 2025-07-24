@@ -227,7 +227,7 @@ class AppgateState:
             dump_dir = output_dir or Path(output_dir_format)
             dump_dir.mkdir(exist_ok=True)
         password_fields = {}
-        for (i, (k, v)) in enumerate(self.entities_set.items()):
+        for i, (k, v) in enumerate(self.entities_set.items()):
             if stdout and i > 0:
                 print("---\n")
             p = dump_dir / f"{k.lower()}.yaml" if dump_dir else None

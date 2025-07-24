@@ -114,16 +114,13 @@ class BranchOp(enum.Enum):
 
 class PullRequestLike(Protocol):
     @property
-    def title(self) -> str:
-        ...
+    def title(self) -> str: ...
 
     @property
-    def number(self) -> int:
-        ...
+    def number(self) -> int: ...
 
     @property
-    def source(self) -> str:
-        ...
+    def source(self) -> str: ...
 
 
 @attrs(frozen=True)
@@ -371,7 +368,7 @@ Pull request created automatically by sdp-operator
         if not cs:
             continue
         body += f"\n  * {k}"
-        for (p, o) in cs:
+        for p, o in cs:
             body += f"\n    - {o.get_commit_message()}"
     return body
 
