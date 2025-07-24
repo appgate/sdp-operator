@@ -5,6 +5,8 @@ import ssl
 import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable, Type
+from urllib.parse import urljoin
+
 import aiohttp
 from aiohttp import InvalidURL, ClientConnectorCertificateError, ClientConnectorError
 from kubernetes.client import (
@@ -470,7 +472,7 @@ class AppgateClient:
         auth_header = await self.auth_header()
         if auth_header:
             headers["Authorization"] = auth_header
-        url = f"{self.controller}/{path}"
+        url = urljoin(self.controller.rstrip('/') + '/', path.lstrip('/'))
         try:
             async with method(
                 url=url,  # type: ignore
