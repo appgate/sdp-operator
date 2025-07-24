@@ -100,6 +100,7 @@ def sdp_http_file_source():
     ) as s:
         yield s
 
+
 @patch.dict(os.environ, {"APPGATE_FILE_SOURCE": "http"})
 @patch.dict(os.environ, {"APPGATE_FILE_HTTP_ADDRESS": "localhost:8000"})
 @patch.dict(os.environ, {"APPGATE_API_VERSION": "v18"})

@@ -472,7 +472,7 @@ class AppgateClient:
         auth_header = await self.auth_header()
         if auth_header:
             headers["Authorization"] = auth_header
-        url = urljoin(self.controller.rstrip('/') + '/', path.lstrip('/'))
+        url = urljoin(self.controller.rstrip("/") + "/", path.lstrip("/"))
         try:
             async with method(
                 url=url,  # type: ignore

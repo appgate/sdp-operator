@@ -26,5 +26,6 @@ def assert_equal_crd(version: str) -> None:
         ).open("r") as f:
             assert yaml.safe_load(crd) == yaml.safe_load(f)
 
+
 def test_generate_crd_v18():
     assert_equal_crd("v18")

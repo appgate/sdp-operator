@@ -323,7 +323,6 @@ class Parser:
         except IndexError:
             raise OpenApiParserException("Unable to find Appgate API version")
 
-
     def resolve_reference(self, reference: str, keys: List[str]) -> Dict[str, Any]:
         path, ref = reference.split("#", maxsplit=2)
         new_keys = [x for x in ref.split("/") if x] + keys
