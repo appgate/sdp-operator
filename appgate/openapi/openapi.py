@@ -46,6 +46,8 @@ LIST_PROPERTIES: Dict[int, set] = {
     18: {"range", "data", "query", "orderBy", "descending", "filterBy"},
     19: {"range", "data", "query", "orderBy", "descending", "filterBy"},
     20: {"range", "data", "query", "orderBy", "descending", "filterBy", "totalCount"},
+    21: {"range", "data", "query", "orderBy", "descending", "filterBy", "totalCount"},
+    22: {"range", "data", "query", "orderBy", "descending", "filterBy", "totalCount"},
 }
 
 
