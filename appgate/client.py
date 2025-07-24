@@ -476,7 +476,7 @@ class AppgateClient:
                 url=url,  # type: ignore
                 headers=headers,
                 json=data,
-                ssl=self.ssl_context,
+                ssl=self.ssl_context, # type: ignore
                 verify_ssl=not self.no_verify,
             ) as resp:
                 status_code = resp.status // 100
