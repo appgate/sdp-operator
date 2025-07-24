@@ -2,7 +2,7 @@
 
 set -ex
 
-for v in $(seq 12 21); do
+for v in $(seq 12 22); do
     rm -f /tmp/openspecs-$v.zip
     wget https://github.com/appgate/sdp-api-specification/archive/refs/heads/version-$v.zip \
          -O /tmp/openspec-$v.zip
