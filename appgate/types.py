@@ -316,6 +316,7 @@ class EntityWrapper:
         return self.value == other.value
 
     def __hash__(self) -> int:
+        assert self.value.__hash__
         return self.value.__hash__()
 
     def __repr__(self):
