@@ -190,8 +190,9 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
             def _get_dumper(
                 e: Entity_T,
                 strict: bool = True,
-                resolution_conflicts: Dict[str, List[MissingFieldDependencies]]
-                | None = None,
+                resolution_conflicts: (
+                    Dict[str, List[MissingFieldDependencies]] | None
+                ) = None,
             ) -> Dict[str, Any]:
                 return k8s_dumper(
                     dumper,
@@ -207,8 +208,9 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
         def _get_dumper(
             e: Entity_T,
             strict: bool = True,
-            resolution_conflicts: Dict[str, List[MissingFieldDependencies]]
-            | None = None,
+            resolution_conflicts: (
+                Dict[str, List[MissingFieldDependencies]] | None
+            ) = None,
         ) -> Dict[str, Any]:
             return dumper.dump(e)
 
@@ -307,18 +309,18 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and K8S_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[
-                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
-                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
+                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
+                        appgate_metadata[K8S_LOADERS_FIELD_NAME]
+                    )
                     for el in els or []:
                         entity = el.load(orig_values, entity)
                 elif (
                     platform_type == PlatformType.APPGATE
                     and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[
-                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
-                    ] = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
+                        appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    )
                     for el in els or []:
                         entity = el.load(orig_values, entity)
         except TypedloadException as e:

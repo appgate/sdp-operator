@@ -191,9 +191,9 @@ def run_entity_loop(
                             )
                         )
                     if latest_entity_generation:
-                        mt[
-                            APPGATE_METADATA_LATEST_GENERATION_FIELD
-                        ] = latest_entity_generation.generation
+                        mt[APPGATE_METADATA_LATEST_GENERATION_FIELD] = (
+                            latest_entity_generation.generation
+                        )
                         mt[APPGATE_METADATA_MODIFICATION_FIELD] = dump_datetime(
                             latest_entity_generation.modified
                         )
