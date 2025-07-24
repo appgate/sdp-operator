@@ -6,7 +6,6 @@ all: api_specs lint test
 .PHONY: api_specs
 api_specs:
 	@./bin/get-open-spec.sh
-	@./bin/unzip-open-spec.sh
 
 lint:
 	MYPYPATH=mypy-stubs $(PYTHON3) -m mypy --cache-dir=/dev/null appgate tests
