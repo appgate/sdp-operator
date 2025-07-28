@@ -30,7 +30,6 @@ spec:
                   enabled:
                     type: boolean
                   force:
-                    default: false
                     type: boolean
                   profiles:
                     items:
@@ -40,44 +39,31 @@ spec:
               clientSettings:
                 properties:
                   addRemoveProfiles:
-                    default: ''
                     type: string
                   attentionLevel:
-                    default: ''
                     type: string
                   autoStart:
-                    default: ''
                     type: string
                   enabled:
-                    default: false
                     type: boolean
                   entitlementsList:
-                    default: ''
                     type: string
                   keepMeSignedIn:
-                    default: ''
                     type: string
                   newUserOnboarding:
-                    default: ''
                     type: string
                   quit:
-                    default: ''
                     type: string
                   samlAutoSignIn:
-                    default: ''
                     type: string
                   signOut:
-                    default: ''
                     type: string
                   suspend:
-                    default: ''
                     type: string
                 type: object
               customClientHelpUrl:
-                default: ''
                 type: string
               disabled:
-                default: false
                 type: boolean
               dnsSettings:
                 items:
@@ -105,24 +91,20 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               overrideNearestSite:
                 type: boolean
               overrideSite:
                 type: string
               overrideSiteClaim:
-                default: ''
                 type: string
               proxyAutoConfig:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   persist:
                     type: boolean
                   url:
-                    default: ''
                     type: string
                 type: object
               ringfenceRuleLinks:
@@ -142,14 +124,11 @@ spec:
               trustedNetworkCheck:
                 properties:
                   dnsSuffix:
-                    default: ''
                     type: string
                   enabled:
-                    default: false
                     type: boolean
                 type: object
               type:
-                default: Mixed
                 type: string
             required:
             - name
@@ -184,16 +163,13 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               remedyLogic:
-                default: and
                 type: string
               remedyMethods:
                 items:
                   properties:
                     claimSuffix:
-                      default: ''
                       type: string
                     message:
                       type: string
@@ -258,10 +234,8 @@ spec:
                     monitor:
                       properties:
                         enabled:
-                          default: false
                           type: boolean
                         timeout:
-                          default: 30
                           type: integer
                       type: object
                     ports:
@@ -269,7 +243,6 @@ spec:
                         type: string
                       type: array
                     subtype:
-                      default: ''
                       type: string
                     types:
                       items:
@@ -287,10 +260,8 @@ spec:
                 items:
                   properties:
                     colorCode:
-                      default: 1
                       type: integer
                     description:
-                      default: ''
                       type: string
                     name:
                       type: string
@@ -302,22 +273,18 @@ spec:
                   type: object
                 type: array
               conditionLogic:
-                default: and
                 type: string
               conditions:
                 items:
                   type: string
                 type: array
               disabled:
-                default: false
                 type: boolean
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               riskSensitivity:
-                default: ''
                 type: string
               site:
                 type: string
@@ -383,7 +350,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               tags:
                 items:
@@ -422,12 +388,10 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
@@ -443,14 +407,12 @@ spec:
                         default: null
                         type: string
                       id:
-                        default: ''
                         type: string
                       password:
                         default: null
                         type: string
                     type: object
                   httpsPort:
-                    default: 8443
                     type: integer
                 required:
                 - hostname
@@ -461,31 +423,24 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
                   dtlsPort:
-                    default: 443
                     type: integer
                   hostname:
                     type: string
                   httpsPort:
-                    default: 443
                     type: integer
                   localHostname:
-                    default: ''
                     type: string
                   overrideSpaMode:
-                    default: ''
                     type: string
                   proxyProtocol:
-                    default: false
                     type: boolean
                 required:
                 - hostname
@@ -499,37 +454,30 @@ spec:
                           items:
                             properties:
                               address:
-                                default: ''
                                 type: string
                               netmask:
                                 type: integer
                               nic:
-                                default: ''
                                 type: string
                             type: object
                           type: array
                         defaultGateway:
-                          default: false
                           type: boolean
                         deviceId:
                           type: string
                         dnatToResource:
-                          default: false
                           type: boolean
                         name:
                           type: string
                         snatToResources:
-                          default: true
                           type: boolean
                         snatToTunnel:
-                          default: true
                           type: boolean
                       required:
                       - name
                       type: object
                     type: array
                   enabled:
-                    default: false
                     type: boolean
                   expressClients:
                     items:
@@ -549,12 +497,10 @@ spec:
                         deviceId:
                           type: string
                         dnatToResource:
-                          default: false
                           type: boolean
                         name:
                           type: string
                         snatToResources:
-                          default: true
                           type: boolean
                       required:
                       - name
@@ -564,7 +510,6 @@ spec:
               controller:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                 type: object
               customization:
@@ -572,10 +517,8 @@ spec:
               gateway:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   suspended:
-                    default: false
                     type: boolean
                   vpn:
                     properties:
@@ -583,7 +526,6 @@ spec:
                         items:
                           properties:
                             address:
-                              default: ''
                               type: string
                             netmask:
                               type: integer
@@ -596,7 +538,6 @@ spec:
                       localWeight:
                         type: integer
                       weight:
-                        default: 100
                         type: integer
                     type: object
                 type: object
@@ -606,20 +547,16 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
                   enabled:
-                    default: false
                     type: boolean
                   port:
-                    default: 5555
                     type: integer
                 type: object
               hostname:
@@ -634,22 +571,17 @@ spec:
                     items:
                       properties:
                         awsId:
-                          default: ''
                           type: string
                         awsRegion:
-                          default: ''
                           type: string
                         awsSecret:
                           default: null
                           type: string
                         batchSize:
-                          default: 400
                           type: integer
                         filter:
-                          default: ''
                           type: string
                         numberOfPartitionKeys:
-                          default: 10
                           type: integer
                         streamName:
                           type: string
@@ -736,16 +668,13 @@ spec:
                         - type
                         type: object
                       awsId:
-                        default: ''
                         type: string
                       awsRegion:
-                        default: ''
                         type: string
                       awsSecret:
                         default: null
                         type: string
                       compatibilityMode:
-                        default: 6
                         type: integer
                       retentionDays:
                         type: integer
@@ -757,7 +686,6 @@ spec:
                     - url
                     type: object
                   enabled:
-                    default: false
                     type: boolean
                   falconLogScales:
                     items:
@@ -765,13 +693,10 @@ spec:
                         collectorUrl:
                           type: string
                         index:
-                          default: ''
                           type: string
                         source:
-                          default: ''
                           type: string
                         sourceType:
-                          default: ''
                           type: string
                         token:
                           default: null
@@ -809,7 +734,6 @@ spec:
                     items:
                       properties:
                         filter:
-                          default: ''
                           type: string
                         format:
                           type: string
@@ -832,16 +756,13 @@ spec:
               logServer:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   retentionDays:
-                    default: 30
                     type: integer
                 type: object
               metricsAggregator:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   prometheusExporter:
                     properties:
@@ -849,12 +770,10 @@ spec:
                         items:
                           properties:
                             address:
-                              default: ''
                               type: string
                             netmask:
                               type: integer
                             nic:
-                              default: ''
                               type: string
                           type: object
                         type: array
@@ -865,15 +784,12 @@ spec:
                               default: null
                               type: string
                             username:
-                              default: ''
                               type: string
                           type: object
                         type: array
                       basicAuth:
-                        default: false
                         type: boolean
                       enabled:
-                        default: false
                         type: boolean
                       httpsP12:
                         properties:
@@ -881,7 +797,6 @@ spec:
                             default: null
                             type: string
                           id:
-                            default: ''
                             type: string
                           password:
                             default: null
@@ -892,10 +807,8 @@ spec:
                           type: string
                         type: array
                       port:
-                        default: 5556
                         type: integer
                       useHTTPS:
-                        default: false
                         type: boolean
                     type: object
                   sites:
@@ -947,7 +860,6 @@ spec:
                               items:
                                 properties:
                                   address:
-                                    default: ''
                                     type: string
                                   netmask:
                                     type: integer
@@ -956,7 +868,6 @@ spec:
                                 type: object
                               type: array
                             virtualIp:
-                              default: ''
                               type: string
                           type: object
                         ipv6:
@@ -987,7 +898,6 @@ spec:
                                 type: object
                               type: array
                             virtualIp:
-                              default: ''
                               type: string
                           type: object
                         mtu:
@@ -1004,12 +914,10 @@ spec:
                         address:
                           type: string
                         gateway:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       required:
                       - address
@@ -1018,7 +926,6 @@ spec:
                     type: array
                 type: object
               notes:
-                default: ''
                 type: string
               ntp:
                 properties:
@@ -1033,7 +940,6 @@ spec:
                         keyNo:
                           type: integer
                         keyType:
-                          default: ''
                           type: string
                       required:
                       - hostname
@@ -1046,12 +952,10 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
@@ -1059,13 +963,11 @@ spec:
               portal:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   externalProfiles:
                     items:
                       properties:
                         id:
-                          default: ''
                           type: string
                         url:
                           default: null
@@ -1073,7 +975,6 @@ spec:
                       type: object
                     type: array
                   httpRedirect:
-                    default: true
                     type: boolean
                   httpsP12:
                     properties:
@@ -1081,7 +982,6 @@ spec:
                         default: null
                         type: string
                       id:
-                        default: ''
                         type: string
                       password:
                         default: null
@@ -1098,13 +998,11 @@ spec:
                           default: null
                           type: string
                         id:
-                          default: ''
                           type: string
                         password:
                           default: null
                           type: string
                         verifyUpstream:
-                          default: true
                           type: boolean
                       type: object
                     type: array
@@ -1117,19 +1015,14 @@ spec:
                       autoRedirect:
                         type: boolean
                       backgroundColor:
-                        default: ''
                         type: string
                       backgroundImage:
-                        default: ''
                         type: string
                       logo:
-                        default: ''
                         type: string
                       text:
-                        default: ''
                         type: string
                       textColor:
-                        default: ''
                         type: string
                     type: object
                 type: object
@@ -1139,12 +1032,10 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
@@ -1155,15 +1046,12 @@ spec:
                           default: null
                           type: string
                         username:
-                          default: ''
                           type: string
                       type: object
                     type: array
                   basicAuth:
-                    default: false
                     type: boolean
                   enabled:
-                    default: false
                     type: boolean
                   httpsP12:
                     properties:
@@ -1171,7 +1059,6 @@ spec:
                         default: null
                         type: string
                       id:
-                        default: ''
                         type: string
                       password:
                         default: null
@@ -1182,10 +1069,8 @@ spec:
                       type: string
                     type: array
                   port:
-                    default: 5556
                     type: integer
                   useHTTPS:
-                    default: false
                     type: boolean
                 type: object
               rsyslogDestinations:
@@ -1194,10 +1079,8 @@ spec:
                     destination:
                       type: string
                     selector:
-                      default: '*.*'
                       type: string
                     template:
-                      default: '%HOSTNAME% %msg%'
                       type: string
                   required:
                   - destination
@@ -1211,20 +1094,16 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
                   enabled:
-                    default: false
                     type: boolean
                   snmpd.conf:
-                    default: ''
                     type: string
                   tcpPort:
                     type: integer
@@ -1237,23 +1116,18 @@ spec:
                     items:
                       properties:
                         address:
-                          default: ''
                           type: string
                         netmask:
                           type: integer
                         nic:
-                          default: ''
                           type: string
                       type: object
                     type: array
                   enabled:
-                    default: false
                     type: boolean
                   passwordAuthentication:
-                    default: true
                     type: boolean
                   port:
-                    default: 22
                     type: integer
                 type: object
               tags:
@@ -1292,10 +1166,8 @@ spec:
               defaultGateway:
                 properties:
                   enabledV4:
-                    default: false
                     type: boolean
                   enabledV6:
-                    default: false
                     type: boolean
                   excludedSubnets:
                     items:
@@ -1303,10 +1175,8 @@ spec:
                     type: array
                 type: object
               description:
-                default: ''
                 type: string
               entitlementBasedRouting:
-                default: false
                 type: boolean
               fallbackSite:
                 type: string
@@ -1325,14 +1195,12 @@ spec:
                     to:
                       type: string
                     type:
-                      default: Translation
                       type: string
                   type: object
                 type: array
               localSiteDetection:
                 properties:
                   enabled:
-                    default: false
                     type: boolean
                   publicIps:
                     items:
@@ -1347,33 +1215,27 @@ spec:
                     items:
                       properties:
                         accessKeyId:
-                          default: ''
                           type: string
                         assumedRoles:
                           items:
                             properties:
                               accountId:
-                                default: ''
                                 type: string
                               externalId:
-                                default: ''
                                 type: string
                               regions:
                                 items:
                                   type: string
                                 type: array
                               roleName:
-                                default: ''
                                 type: string
                             type: object
                           type: array
                         httpsProxy:
-                          default: ''
                           type: string
                         name:
                           type: string
                         partition:
-                          default: aws
                           type: string
                         regions:
                           items:
@@ -1385,7 +1247,6 @@ spec:
                           default: null
                           type: string
                         updateInterval:
-                          default: 60
                           type: integer
                         useIAMRole:
                           type: boolean
@@ -1403,7 +1264,6 @@ spec:
                     items:
                       properties:
                         clientId:
-                          default: ''
                           type: string
                         name:
                           type: string
@@ -1411,13 +1271,10 @@ spec:
                           default: null
                           type: string
                         tenantId:
-                          default: ''
                           type: string
                         updateInterval:
-                          default: 60
                           type: integer
                         useManagedIdentities:
-                          default: false
                           type: boolean
                       required:
                       - name
@@ -1438,24 +1295,20 @@ spec:
                           type: object
                         type: array
                       defaultTtlSeconds:
-                        default: 300
                         type: integer
                       dnsServers:
                         items:
                           type: string
                         type: array
                       siteIpv4:
-                        default: ''
                         type: string
                       siteIpv6:
-                        default: ''
                         type: string
                     type: object
                   dnsResolvers:
                     items:
                       properties:
                         defaultTtlSeconds:
-                          default: 300
                           type: integer
                         matchDomains:
                           items:
@@ -1464,14 +1317,12 @@ spec:
                         name:
                           type: string
                         queryAAAA:
-                          default: false
                           type: boolean
                         servers:
                           items:
                             type: string
                           type: array
                         updateInterval:
-                          default: 60
                           type: integer
                       required:
                       - name
@@ -1488,7 +1339,6 @@ spec:
                           default: null
                           type: string
                         updateInterval:
-                          default: 60
                           type: integer
                         username:
                           type: string
@@ -1502,18 +1352,14 @@ spec:
                     items:
                       properties:
                         forwardingRulesFilter:
-                          default: ''
                           type: string
                         instanceFilter:
-                          default: ''
                           type: string
                         name:
                           type: string
                         projectFilter:
-                          default: ''
                           type: string
                         updateInterval:
-                          default: 60
                           type: integer
                       required:
                       - name
@@ -1534,7 +1380,6 @@ spec:
                         port:
                           type: integer
                         updateInterval:
-                          default: 60
                           type: integer
                         username:
                           type: string
@@ -1547,7 +1392,6 @@ spec:
                       type: object
                     type: array
                   useHostsFile:
-                    default: false
                     type: boolean
                 type: object
               networkSubnets:
@@ -1555,10 +1399,8 @@ spec:
                   type: string
                 type: array
               notes:
-                default: ''
                 type: string
               shortName:
-                default: ''
                 type: string
               tags:
                 items:
@@ -1571,34 +1413,26 @@ spec:
                   dtls:
                     properties:
                       enabled:
-                        default: false
                         type: boolean
                     type: object
                   ipAccessLogIntervalSeconds:
-                    default: 120
                     type: integer
                   logNatIpAndNatPort:
-                    default: false
                     type: boolean
                   routeVia:
                     properties:
                       ipv4:
-                        default: ''
                         type: string
                       ipv6:
-                        default: ''
                         type: string
                     type: object
                   snat:
-                    default: false
                     type: boolean
                   tls:
                     properties:
                       enabled:
-                        default: true
                         type: boolean
                       version:
-                        default: TLSv23
                         type: string
                     type: object
                   urlAccessEnabled:
@@ -1610,13 +1444,11 @@ spec:
                           default: null
                           type: string
                         id:
-                          default: ''
                           type: string
                         password:
                           default: null
                           type: string
                         verifyUpstream:
-                          default: true
                           type: boolean
                       type: object
                     type: array
@@ -1655,23 +1487,18 @@ spec:
                       default: null
                       type: string
                     first:
-                      default: ''
                       type: string
                     last:
-                      default: ''
                       type: string
                   type: object
                 type: array
               ipVersion6:
-                default: false
                 type: boolean
               leaseTimeDays:
-                default: 30
                 type: integer
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               ranges:
                 items:
@@ -1680,10 +1507,8 @@ spec:
                       default: null
                       type: string
                     first:
-                      default: ''
                       type: string
                     last:
-                      default: ''
                       type: string
                   type: object
                 type: array
@@ -1719,38 +1544,30 @@ spec:
           spec:
             properties:
               adminDistinguishedName:
-                default: ''
                 type: string
               adminPassword:
                 default: null
                 type: string
               adminProvider:
-                default: false
                 type: boolean
               audience:
-                default: ''
                 type: string
               authenticationProtocol:
-                default: CHAP
                 type: string
               baseDn:
-                default: ''
                 type: string
               blockLocalDnsRequests:
-                default: false
                 type: boolean
               caCertificates:
                 items:
                   type: string
                 type: array
               certificateAttribute:
-                default: ''
                 type: string
               certificatePriorities:
                 items:
                   properties:
                     type:
-                      default: Template
                       type: string
                     value:
                       type: string
@@ -1759,7 +1576,6 @@ spec:
                   type: object
                 type: array
               certificateUserAttribute:
-                default: userPrincipalName
                 type: string
               claimMappings:
                 items:
@@ -1769,10 +1585,8 @@ spec:
                     claimName:
                       type: string
                     encrypt:
-                      default: false
                       type: boolean
                     list:
-                      default: false
                       type: boolean
                   required:
                   - attributeName
@@ -1780,10 +1594,8 @@ spec:
                   type: object
                 type: array
               decryptionKey:
-                default: ''
                 type: string
               deviceLimitPerUser:
-                default: 100
                 type: integer
               dnsSearchDomains:
                 items:
@@ -1803,7 +1615,6 @@ spec:
                     default: null
                     type: string
                   enabled:
-                    default: false
                     type: boolean
                   refreshToken:
                     type: boolean
@@ -1813,42 +1624,32 @@ spec:
                   type: string
                 type: array
               inactivityTimeoutMinutes:
-                default: 0
                 type: integer
               ipPoolV4:
                 type: string
               ipPoolV6:
                 type: string
               issuer:
-                default: ''
                 type: string
               membershipBaseDn:
-                default: ''
                 type: string
               membershipFilter:
-                default: (objectCategory=group)
                 type: string
               minPasswordLength:
-                default: 0
                 type: integer
               name:
-                default: ''
                 type: string
               networkInactivityTimeoutEnabled:
-                default: false
                 type: boolean
               notes:
-                default: ''
                 type: string
               onBoarding2FA:
                 properties:
                   alwaysRequired:
                     type: boolean
                   claimSuffix:
-                    default: onBoarding
                     type: string
                   message:
-                    default: ''
                     type: string
                   mfaProviderId:
                     type: string
@@ -1865,13 +1666,10 @@ spec:
                     parameters:
                       properties:
                         args:
-                          default: ''
                           type: string
                         name:
-                          default: ''
                           type: string
                         path:
-                          default: ''
                           type: string
                       type: object
                     platform:
@@ -1887,22 +1685,17 @@ spec:
                   enabled:
                     type: boolean
                   message:
-                    default: ''
                     type: string
                   thresholdDays:
-                    default: 5
                     type: integer
                 type: object
               port:
                 type: integer
               providerCertificate:
-                default: ''
                 type: string
               redirectUrl:
-                default: ''
                 type: string
               scope:
-                default: openid profile email offline_access
                 type: string
               sharedSecret:
                 default: null
@@ -1910,7 +1703,6 @@ spec:
               skipX509ExternalChecks:
                 type: boolean
               sslEnabled:
-                default: false
                 type: boolean
               tags:
                 items:
@@ -1919,20 +1711,16 @@ spec:
               type:
                 type: string
               userFilter:
-                default: ''
                 type: string
               userLockoutDurationMinutes:
-                default: 1
                 type: integer
               userLockoutThreshold:
-                default: 5
                 type: integer
               userScripts:
                 items:
                   type: string
                 type: array
               usernameAttribute:
-                default: sAMAccountName
                 type: string
             required:
             - type
@@ -1964,7 +1752,6 @@ spec:
               disabled:
                 type: boolean
               email:
-                default: ''
                 type: string
               failedLoginAttempts:
                 type: integer
@@ -1978,13 +1765,11 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               password:
                 default: null
                 type: string
               phone:
-                default: ''
                 type: string
               tags:
                 items:
@@ -2031,7 +1816,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               password:
                 default: null
@@ -2070,7 +1854,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               privileges:
                 items:
@@ -2137,7 +1920,6 @@ spec:
           spec:
             properties:
               authenticationProtocol:
-                default: CHAP
                 type: string
               challengeSharedSecret:
                 default: null
@@ -2147,15 +1929,12 @@ spec:
                   type: string
                 type: array
               inputType:
-                default: Masked
                 type: string
               mode:
-                default: Challenge
                 type: string
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               port:
                 type: integer
@@ -2167,7 +1946,6 @@ spec:
                   type: string
                 type: array
               timeout:
-                default: 6
                 type: integer
               type:
                 type: string
@@ -2235,7 +2013,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               pem:
                 type: string
@@ -2276,7 +2053,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               tags:
                 items:
@@ -2318,7 +2094,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               tags:
                 items:
@@ -2357,14 +2132,12 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               tags:
                 items:
                   type: string
                 type: array
               type:
-                default: host
                 type: string
             required:
             - name
@@ -2400,7 +2173,6 @@ spec:
               name:
                 type: string
               notes:
-                default: ''
                 type: string
               tags:
                 items:
@@ -2449,28 +2221,22 @@ spec:
               claimsTokenExpiration:
                 type: integer
               collectiveName:
-                default: ''
                 type: string
               entitlementTokenExpiration:
                 type: integer
               geoIpUpdates:
                 type: boolean
               loginBannerMessage:
-                default: ''
                 type: string
               messageOfTheDay:
-                default: ''
                 type: string
               profileHostname:
-                default: ''
                 type: string
               registeredDeviceExpirationDays:
                 type: integer
               spaMode:
-                default: ''
                 type: string
               spaTimeWindowSeconds:
-                default: 600
                 type: integer
               vpnCertificateExpiration:
                 type: integer
@@ -2509,28 +2275,22 @@ spec:
                 format: date-time
                 type: string
               hostname:
-                default: ''
                 type: string
               identityProviderName:
-                default: ''
                 type: string
               name:
-                default: ''
                 type: string
               notes:
-                default: ''
                 type: string
               profileUrls:
                 items:
                   properties:
                     id:
-                      default: ''
                       type: string
                     url:
                       default: null
                       type: string
                     weight:
-                      default: 100
                       type: integer
                   type: object
                 type: array
@@ -2539,7 +2299,6 @@ spec:
                   type: string
                 type: array
               type:
-                default: Profile
                 type: string
             type: object
         type: object
