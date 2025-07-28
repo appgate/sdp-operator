@@ -8,12 +8,12 @@ from appgate.openapi.openapi import generate_crd, generate_api_spec, SPEC_DIR
 
 
 ENTITIES_TO_TEST = {
-    # "Appliance",
-    # "Policy",
-    # "Entitlement",
-    # "Condition",
+    "Appliance",
+    "Policy",
+    "Entitlement",
+    "Condition",
     "IdentityProvider",
-    # "IpPool",
+    "IpPool",
 }
 
 

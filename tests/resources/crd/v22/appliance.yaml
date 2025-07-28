@@ -1,0 +1,787 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: appliances.v22.sdp.appgate.com
+spec:
+  group: v22.sdp.appgate.com
+  names:
+    kind: Appliance
+    plural: appliances
+    shortNames:
+    - app
+    singular: appliance
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              adminInterface:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  hostname:
+                    type: string
+                  httpsCiphers:
+                    items:
+                      type: string
+                    type: array
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  httpsPort:
+                    type: integer
+                required:
+                - hostname
+                type: object
+              clientInterface:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  dtlsPort:
+                    type: integer
+                  hostname:
+                    type: string
+                  httpsPort:
+                    type: integer
+                  localHostname:
+                    type: string
+                  overrideSpaMode:
+                    type: string
+                  proxyProtocol:
+                    type: boolean
+                required:
+                - hostname
+                type: object
+              connector:
+                properties:
+                  advancedClients:
+                    items:
+                      properties:
+                        allowResources:
+                          items:
+                            properties:
+                              address:
+                                type: string
+                              netmask:
+                                type: integer
+                              nic:
+                                type: string
+                            type: object
+                          type: array
+                        defaultGateway:
+                          type: boolean
+                        deviceId:
+                          type: string
+                        dhcpRelay:
+                          properties:
+                            servers:
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        dnatToResource:
+                          type: boolean
+                        name:
+                          type: string
+                        snatToResources:
+                          type: boolean
+                        snatToTunnel:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  expressClients:
+                    items:
+                      properties:
+                        allowResources:
+                          items:
+                            properties:
+                              address:
+                                type: string
+                              netmask:
+                                type: integer
+                            required:
+                            - address
+                            - netmask
+                            type: object
+                          type: array
+                        deviceId:
+                          type: string
+                        dnatToResource:
+                          type: boolean
+                        name:
+                          type: string
+                        snatToResources:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                type: object
+              controller:
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
+              customization:
+                type: string
+              gateway:
+                properties:
+                  enabled:
+                    type: boolean
+                  suspended:
+                    type: boolean
+                  vpn:
+                    properties:
+                      allowDestinations:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            netmask:
+                              type: integer
+                            nic:
+                              type: string
+                          required:
+                          - nic
+                          type: object
+                        type: array
+                      localWeight:
+                        type: integer
+                      weight:
+                        type: integer
+                    type: object
+                type: object
+              healthcheckServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  port:
+                    type: integer
+                type: object
+              hostname:
+                type: string
+              hostnameAliases:
+                items:
+                  type: string
+                type: array
+              logForwarder:
+                properties:
+                  awsKineses:
+                    items:
+                      properties:
+                        awsId:
+                          type: string
+                        awsRegion:
+                          type: string
+                        awsSecret:
+                          default: null
+                          type: string
+                        batchSize:
+                          type: integer
+                        filter:
+                          type: string
+                        numberOfPartitionKeys:
+                          type: integer
+                        streamName:
+                          type: string
+                        type:
+                          type: string
+                        useInstanceCredentials:
+                          type: boolean
+                      required:
+                      - type
+                      - streamName
+                      type: object
+                    type: array
+                  azureMonitors:
+                    items:
+                      properties:
+                        appId:
+                          type: string
+                        appSecret:
+                          default: null
+                          type: string
+                        logDestinationUrl:
+                          type: string
+                        scope:
+                          type: string
+                        tokenRequestUrl:
+                          type: string
+                      required:
+                      - appId
+                      - tokenRequestUrl
+                      - logDestinationUrl
+                      - scope
+                      type: object
+                    type: array
+                  coralogixs:
+                    items:
+                      properties:
+                        applicationName:
+                          type: string
+                        privateKey:
+                          default: null
+                          type: string
+                        subsystemName:
+                          type: string
+                        url:
+                          type: string
+                        uuid:
+                          type: string
+                      required:
+                      - url
+                      - uuid
+                      - applicationName
+                      - subsystemName
+                      type: object
+                    type: array
+                  datadogs:
+                    items:
+                      properties:
+                        apiKey:
+                          default: null
+                          type: string
+                        site:
+                          type: string
+                        source:
+                          type: string
+                        tags:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - site
+                      - source
+                      type: object
+                    type: array
+                  elasticsearch:
+                    properties:
+                      authentication:
+                        properties:
+                          token:
+                            default: null
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - type
+                        type: object
+                      awsId:
+                        type: string
+                      awsRegion:
+                        type: string
+                      awsSecret:
+                        default: null
+                        type: string
+                      compatibilityMode:
+                        type: integer
+                      retentionDays:
+                        type: integer
+                      url:
+                        type: string
+                      useInstanceCredentials:
+                        type: boolean
+                    required:
+                    - url
+                    type: object
+                  enabled:
+                    type: boolean
+                  falconLogScales:
+                    items:
+                      properties:
+                        collectorUrl:
+                          type: string
+                        index:
+                          type: string
+                        source:
+                          type: string
+                        sourceType:
+                          type: string
+                        token:
+                          default: null
+                          type: string
+                      required:
+                      - collectorUrl
+                      type: object
+                    type: array
+                  sites:
+                    items:
+                      type: string
+                    type: array
+                  splunkClients:
+                    items:
+                      properties:
+                        token:
+                          default: null
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    type: array
+                  sumoLogicClients:
+                    items:
+                      properties:
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    type: array
+                  tcpClients:
+                    items:
+                      properties:
+                        filter:
+                          type: string
+                        format:
+                          type: string
+                        host:
+                          type: string
+                        name:
+                          type: string
+                        port:
+                          type: integer
+                        useTLS:
+                          type: boolean
+                      required:
+                      - name
+                      - host
+                      - port
+                      - format
+                      type: object
+                    type: array
+                type: object
+              logServer:
+                properties:
+                  enabled:
+                    type: boolean
+                  retentionDays:
+                    type: integer
+                type: object
+              metricsAggregator:
+                properties:
+                  enabled:
+                    type: boolean
+                  prometheusExporter:
+                    properties:
+                      allowSources:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            netmask:
+                              type: integer
+                            nic:
+                              type: string
+                          type: object
+                        type: array
+                      allowedUsers:
+                        items:
+                          properties:
+                            password:
+                              default: null
+                              type: string
+                            username:
+                              type: string
+                          type: object
+                        type: array
+                      basicAuth:
+                        type: boolean
+                      enabled:
+                        type: boolean
+                      httpsP12:
+                        properties:
+                          content:
+                            default: null
+                            type: string
+                          id:
+                            type: string
+                          password:
+                            default: null
+                            type: string
+                        type: object
+                      labelsDisabled:
+                        items:
+                          type: string
+                        type: array
+                      port:
+                        type: integer
+                      useHTTPS:
+                        type: boolean
+                    type: object
+                  sites:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              name:
+                type: string
+              networking:
+                properties:
+                  dnsServers:
+                    items:
+                      type: string
+                    type: array
+                  hosts:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        hostname:
+                          type: string
+                      required:
+                      - hostname
+                      - address
+                      type: object
+                    type: array
+                  nics:
+                    items:
+                      properties:
+                        enabled:
+                          type: boolean
+                        ipv4:
+                          properties:
+                            dhcp:
+                              properties:
+                                dns:
+                                  type: boolean
+                                enabled:
+                                  type: boolean
+                                mtu:
+                                  type: boolean
+                                ntp:
+                                  type: boolean
+                                routers:
+                                  type: boolean
+                              type: object
+                            static:
+                              items:
+                                properties:
+                                  address:
+                                    type: string
+                                  netmask:
+                                    type: integer
+                                  snat:
+                                    type: boolean
+                                type: object
+                              type: array
+                            virtualIp:
+                              type: string
+                          type: object
+                        ipv6:
+                          properties:
+                            dhcp:
+                              properties:
+                                dns:
+                                  type: boolean
+                                enabled:
+                                  type: boolean
+                                mtu:
+                                  type: boolean
+                                ntp:
+                                  type: boolean
+                              type: object
+                            static:
+                              items:
+                                properties:
+                                  address:
+                                    type: string
+                                  netmask:
+                                    type: integer
+                                  snat:
+                                    type: boolean
+                                required:
+                                - address
+                                - netmask
+                                type: object
+                              type: array
+                            virtualIp:
+                              type: string
+                          type: object
+                        mtu:
+                          type: integer
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  routes:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        gateway:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      required:
+                      - address
+                      - netmask
+                      type: object
+                    type: array
+                type: object
+              notes:
+                type: string
+              ntp:
+                properties:
+                  servers:
+                    items:
+                      properties:
+                        hostname:
+                          type: string
+                        key:
+                          default: null
+                          type: string
+                        keyNo:
+                          type: integer
+                        keyType:
+                          type: string
+                      required:
+                      - hostname
+                      type: object
+                    type: array
+                type: object
+              ping:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              portal:
+                properties:
+                  enabled:
+                    type: boolean
+                  externalProfiles:
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          default: null
+                          type: string
+                      type: object
+                    type: array
+                  httpRedirect:
+                    type: boolean
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  profiles:
+                    items:
+                      type: string
+                    type: array
+                  proxyP12s:
+                    items:
+                      properties:
+                        content:
+                          default: null
+                          type: string
+                        id:
+                          type: string
+                        password:
+                          default: null
+                          type: string
+                        verifyUpstream:
+                          type: boolean
+                      type: object
+                    type: array
+                  proxyPorts:
+                    items:
+                      type: integer
+                    type: array
+                  signInCustomization:
+                    properties:
+                      autoRedirect:
+                        type: boolean
+                      backgroundColor:
+                        type: string
+                      backgroundImage:
+                        type: string
+                      logo:
+                        type: string
+                      text:
+                        type: string
+                      textColor:
+                        type: string
+                    type: object
+                type: object
+              prometheusExporter:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  allowedUsers:
+                    items:
+                      properties:
+                        password:
+                          default: null
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    type: array
+                  basicAuth:
+                    type: boolean
+                  enabled:
+                    type: boolean
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  labelsDisabled:
+                    items:
+                      type: string
+                    type: array
+                  port:
+                    type: integer
+                  useHTTPS:
+                    type: boolean
+                type: object
+              rsyslogDestinations:
+                items:
+                  properties:
+                    destination:
+                      type: string
+                    selector:
+                      type: string
+                    template:
+                      type: string
+                  required:
+                  - destination
+                  type: object
+                type: array
+              site:
+                type: string
+              snmpServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  snmpd.conf:
+                    type: string
+                  tcpPort:
+                    type: integer
+                  udpPort:
+                    type: integer
+                type: object
+              sshServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  passwordAuthentication:
+                    type: boolean
+                  port:
+                    type: integer
+                type: object
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - hostname
+            - clientInterface
+            type: object
+        type: object
+    served: true
+    storage: true
