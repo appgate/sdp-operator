@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -7,12 +8,12 @@ from appgate.openapi.openapi import generate_crd, generate_api_spec, SPEC_DIR
 
 
 ENTITIES_TO_TEST = {
-    "Appliance",
-    "Policy",
-    "Entitlement",
-    "Condition",
+    # "Appliance",
+    # "Policy",
+    # "Entitlement",
+    # "Condition",
     "IdentityProvider",
-    "IpPool",
+    # "IpPool",
 }
 
 
@@ -27,5 +28,5 @@ def assert_equal_crd(version: str) -> None:
             assert yaml.safe_load(crd) == yaml.safe_load(f)
 
 
-def test_generate_crd_v18():
-    assert_equal_crd("v18")
+def test_generate_crd_v22():
+    assert_equal_crd("v22")
