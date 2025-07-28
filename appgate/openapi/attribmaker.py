@@ -128,9 +128,7 @@ class AttribMaker:
         elif self.factory and not (read_only or write_only):
             attribs["factory"] = self.factory
         elif not required or read_only or write_only:
-            attribs["default"] = definition.get(
-                "default", None if (read_only or write_only) else self.default
-            )
+            attribs["default"] = None
         attribs["repr"] = self.repr
         return attribs
 
