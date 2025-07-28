@@ -593,10 +593,20 @@ def compare_entities(
     target_tags: Optional[FrozenSet[str]],
     excluded_tags: Optional[FrozenSet[str]] = None,
 ) -> Plan:
-    current_entities = {e for e in current.entities if is_target(e, target_tags)}
+    current_entities = {
+        e
+        for e in current.entities
+        if exclude_appgate_entity(e, target_tags, excluded_tags)
+    }
     current_names = {e.name for e in current_entities}
-    expected_entities = {e for e in expected.entities if is_target(e, target_tags)}
+    log.debug("Current entities: %s", current_entities)
+    expected_entities = {
+        e
+        for e in expected.entities
+        if exclude_appgate_entity(e, target_tags, excluded_tags)
+    }
     expected_names = {e.name for e in expected_entities}
+    log.debug("Expected entities: %s", expected_entities)
     shared_names = current_names.intersection(expected_names)
 
     ignore_tags = builtin_tags.union(excluded_tags or frozenset())
