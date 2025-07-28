@@ -51,7 +51,7 @@ def test_load_http_file_0(http_file_source):
         .cls
     )
     data = {"filename": "test-entity.sh"}
-    expected_entity = EntityTestFile(filename="test-entity.sh", file="")
+    expected_entity = EntityTestFile(filename="test-entity.sh", file=None)
     e = K8S_LOADER.load(data, None, EntityTestFile)
     assert http_file_source.call_count == 0
     assert expected_entity == e
@@ -162,7 +162,7 @@ def test_load_http_file_1(http_file_source):
     expected_entity = EntityTestFileComplex(
         name="test1",
         id="id1",
-        filename="",
+        filename=None,
         file="c3RhcnQxMjM=",
         checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )
@@ -207,7 +207,7 @@ def test_load_s3_file_0(s3_file_source):
     data = {"filename": "test-entity.sh"}
     expected_entity = EntityTestFile(
         filename="test-entity.sh",
-        file="",
+        file=None,
     )
     e = K8S_LOADER.load(data, None, EntityTestFile)
     assert s3_file_source.call_count == 0
@@ -260,7 +260,7 @@ def test_load_s3_file_1(s3_file_source):
     expected_entity = EntityTestFileComplex(
         name="test1",
         id="id1",
-        filename="",
+        filename=None,
         file="c3RhcnQxMjM=",
         checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )
@@ -329,7 +329,7 @@ def test_load_s3_file_1(s3_file_source):
     expected_entity = EntityTestFileComplex(
         name="test1",
         id="id1",
-        filename="",
+        filename=None,
         file="c3RhcnQxMjM=",
         checksum="2c4779e28ec964baa2afdeb862be4b9776562866443cfcf22f37950c20ed0af2",
     )

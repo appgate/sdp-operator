@@ -890,7 +890,6 @@ definitions:
         properties:
           configurableFieldOne:
             type: boolean
-            default: false
   DiscriminatorOne:
     allOf:
       - $ref: '#/definitions/BaseEntityDiscriminator'

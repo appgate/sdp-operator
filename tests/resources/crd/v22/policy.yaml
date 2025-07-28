@@ -1,0 +1,140 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: policies.v22.sdp.appgate.com
+spec:
+  group: v22.sdp.appgate.com
+  names:
+    kind: Policy
+    plural: policies
+    shortNames:
+    - pol
+    singular: policy
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              administrativeRoles:
+                items:
+                  type: string
+                type: array
+              applyFallbackSite:
+                type: boolean
+              clientProfileSettings:
+                properties:
+                  enabled:
+                    type: boolean
+                  force:
+                    type: boolean
+                  profiles:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              clientSettings:
+                properties:
+                  addRemoveProfiles:
+                    type: string
+                  attentionLevel:
+                    type: string
+                  autoStart:
+                    type: string
+                  enabled:
+                    type: boolean
+                  entitlementsList:
+                    type: string
+                  keepMeSignedIn:
+                    type: string
+                  newUserOnboarding:
+                    type: string
+                  quit:
+                    type: string
+                  samlAutoSignIn:
+                    type: string
+                  signOut:
+                    type: string
+                  suspend:
+                    type: string
+                type: object
+              customClientHelpUrl:
+                type: string
+              disabled:
+                type: boolean
+              dnsSettings:
+                items:
+                  properties:
+                    domain:
+                      type: string
+                    registerTunIpsToActiveDirectory:
+                      type: boolean
+                    servers:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - domain
+                  type: object
+                type: array
+              entitlementLinks:
+                items:
+                  type: string
+                type: array
+              entitlements:
+                items:
+                  type: string
+                type: array
+              expression:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              overrideNearestSite:
+                type: boolean
+              overrideSite:
+                type: string
+              overrideSiteClaim:
+                type: string
+              proxyAutoConfig:
+                properties:
+                  enabled:
+                    type: boolean
+                  persist:
+                    type: boolean
+                  url:
+                    type: string
+                type: object
+              ringfenceRuleLinks:
+                items:
+                  type: string
+                type: array
+              ringfenceRules:
+                items:
+                  type: string
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              tamperProofing:
+                type: boolean
+              trustedNetworkCheck:
+                properties:
+                  dnsSuffix:
+                    type: string
+                  enabled:
+                    type: boolean
+                type: object
+              type:
+                type: string
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true

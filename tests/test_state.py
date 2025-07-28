@@ -2219,9 +2219,9 @@ def test_discriminator_entities_updated():
         " {\n",
         '-    "fieldOne": "bye",\n',
         '-    "discriminatorOneFieldOne": "hihi",\n',
-        '-    "discriminatorOneFieldTwo": "byebye",\n',
+        '-    "discriminatorOneFieldTwo": "byebye"\n',
         '+    "fieldOne": "hello",\n',
         '+    "discriminatorOneFieldOne": "hi",\n',
-        '+    "discriminatorOneFieldTwo": "bye",\n',
-        '     "configurableFieldOne": false\n',
+        '+    "discriminatorOneFieldTwo": "bye"\n',
+        " }",
     ]
