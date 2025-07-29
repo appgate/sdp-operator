@@ -159,7 +159,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
             if d.hidedefault:
                 if name == "_entity_metadata":
                     continue
-                if attrval is None or attrval == "":
+                if name != "notes" and (attrval is None or attrval == ""):
                     continue
                 if (
                     hasattr(attr.default, "factory")
@@ -171,7 +171,7 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                 continue
             name = attr.metadata.get("name", attr.name)
             r[name] = d_val
-
+        log.debug("%s", r)
         return r
 
     dumper = datadumper.Dumper(**{})
