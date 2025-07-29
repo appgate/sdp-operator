@@ -599,14 +599,14 @@ def compare_entities(
         if exclude_appgate_entity(e, target_tags, excluded_tags)
     }
     current_names = {e.name for e in current_entities}
-    log.debug("Current entities: %s", current_entities)
+    log.info("Current entities: %s", [e.value for e in current_entities])
     expected_entities = {
         e
         for e in expected.entities
         if exclude_appgate_entity(e, target_tags, excluded_tags)
     }
     expected_names = {e.name for e in expected_entities}
-    log.debug("Expected entities: %s", expected_entities)
+    log.info("Expected entities: %s", [e.value for e in expected_entities])
     shared_names = current_names.intersection(expected_names)
 
     ignore_tags = builtin_tags.union(excluded_tags or frozenset())
