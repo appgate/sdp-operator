@@ -488,10 +488,11 @@ class AppgateClient:
                     else:
                         return await resp.json()
                 else:
-                    error_data = await resp.text()
-                    log.error(
-                        "[aggpate-client] %s :: %s: %s", url, resp.status, error_data
-                    )
+                    if resp.status == 409 and verb == "POST":
+                        log.info("[appgate-client] Retrying %s %s as PUT", verb, url)
+                        return await self.request(
+                            verb="PUT", path=path, data=data, should_retry=False
+                        )
                     if resp.status in [401, 403]:
                         # Renew the token and retry again if needed
                         if should_retry:
@@ -499,6 +500,10 @@ class AppgateClient:
                             return await self.request(
                                 verb=verb, path=path, data=data, should_retry=False
                             )
+                    error_data = await resp.text()
+                    log.error(
+                        "[aggpate-client] %s :: %s: %s", url, resp.status, error_data
+                    )
                     raise AppgateException(
                         f"Error: [{method} {url} {resp.status}] {error_data}"
                     )
