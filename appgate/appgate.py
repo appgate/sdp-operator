@@ -170,6 +170,15 @@ async def appgate_operator(
             ctx=ctx, appgate_client=appgate_client
         )
         total_appgate_state = deepcopy(expected_appgate_state)
+        if ctx.builtin_tags:
+            # only keep the default builtins entities
+            total_appgate_state = AppgateState(
+                {
+                    k: v.entities_with_tags(ctx.builtin_tags)
+                    for k, v in total_appgate_state.entities_set.items()
+                }
+            )
+
         if ctx.target_tags:
             expected_appgate_state = AppgateState(
                 {
