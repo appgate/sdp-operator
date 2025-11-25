@@ -250,6 +250,20 @@ async def appgate_operator(
                         event_error.error,
                     )
                 sys.exit(1)
+
+            if ctx.reverse_mode:
+                # Fetch the state of the appgate system
+                expected_appgate_state = await get_current_appgate_state(
+                    ctx=ctx, appgate_client=appgate_client
+                )
+                if ctx.target_tags:
+                    expected_appgate_state = AppgateState(
+                        {
+                            k: v.entities_with_tags(ctx.target_tags)
+                            for k, v in expected_appgate_state.entities_set.items()
+                        }
+                    )
+
             # Log all expected entities
             any_expected = False
             for entity_type, xs in expected_appgate_state.entities_set.items():
@@ -368,17 +382,6 @@ async def appgate_operator(
                     operator_name,
                     namespace,
                 )
-                if ctx.reverse_mode:
-                    expected_appgate_state = await get_current_appgate_state(
-                        ctx=ctx, appgate_client=appgate_client
-                    )
-                    if ctx.target_tags:
-                        expected_appgate_state = AppgateState(
-                            {
-                                k: v.entities_with_tags(ctx.target_tags)
-                                for k, v in expected_appgate_state.entities_set.items()
-                            }
-                        )
 
 
 async def main_loop(
