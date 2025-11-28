@@ -212,6 +212,7 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
         namespace=ctx.namespace, name=ctx.metadata_configmap
     )
     await k8s_configmap_client.init()
+    k8s_configmap_client = None
     operator_name = get_operator_mode(ctx.reverse_mode)
     if ctx.device_id is None:
         ctx.device_id = await k8s_configmap_client.ensure_device_id()
