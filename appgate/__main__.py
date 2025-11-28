@@ -144,10 +144,8 @@ def appgate_operator_context(
         appgate_cacert_path = args.cafile
     secrets_key = os.getenv(APPGATE_SECRETS_KEY)
     target_tags, exclude_tags, builtin_tags = get_all_tags(args)
-    metadata_configmap = (
-        args.metadata_configmap
-        or os.getenv(APPGATE_MT_CONFIGMAP_ENV)
-        or f"{namespace}-configmap"
+    metadata_configmap = args.metadata_configmap or os.getenv(
+        APPGATE_MT_CONFIGMAP_ENV, None
     )
 
     if not user or not password or not controller:
@@ -208,19 +206,24 @@ async def run_appgate_operator(args: AppgateOperatorArguments) -> None:
         ),
         namespace=ns,
     )
-    k8s_configmap_client = K8SConfigMapClient(
-        namespace=ctx.namespace, name=ctx.metadata_configmap
+    k8s_configmap_client = (
+        K8SConfigMapClient(namespace=ctx.namespace, name=ctx.metadata_configmap)
+        if ctx.metadata_configmap
+        else None
     )
-    await k8s_configmap_client.init()
     operator_name = get_operator_mode(ctx.reverse_mode)
-    if ctx.device_id is None:
-        ctx.device_id = await k8s_configmap_client.ensure_device_id()
-        log.info(
-            "[%s/%s] Read device id from config map: %s",
-            operator_name,
-            ctx.namespace,
-            ctx.device_id,
-        )
+
+    if k8s_configmap_client:
+        await k8s_configmap_client.init()
+
+        if ctx.device_id is None:
+            ctx.device_id = await k8s_configmap_client.ensure_device_id()
+            log.info(
+                "[%s/%s] Read device id from config map: %s",
+                operator_name,
+                ctx.namespace,
+                ctx.device_id,
+            )
     events_queue: Queue[AppgateEvent] = asyncio.Queue()
     if ctx.device_id is None:
         raise AppgateException("No device id specified")
