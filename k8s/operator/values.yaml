@@ -35,6 +35,8 @@ sdp:
   ## @param sdp.sdpOperator.twoWaySync Read the current configuration from the controller before computing the plan.
   ## @param sdp.sdpOperator.fernetKey The fernet key to use when decrypting secrets in entities.
   ## @param sdp.sdpOperator.caCert The controller's CA Certificate in PEM format. It may be a base64-encoded string or string as-is.
+  ## @param sdp.sdpOperator.configMapMt.enabled Enables if the operator does bookkeeping on a separate config map or not
+  ## @param sdp.sdpOperator.configMapMt.name The name of the config map used by the operator. It will be created if it does not exist
   sdpOperator:
     annotations:
     podAnnotations:
@@ -61,6 +63,9 @@ sdp:
     cleanup: false
     fernetKey: ""
     caCert: ""
+    configMapMt:
+      enabled: false
+      name: ""
 
     ## @param sdp.sdpOperator.image.tag The image tag of the operator.
     ## @param sdp.sdpOperator.image.pullPolicy The image pull policy of the operator.

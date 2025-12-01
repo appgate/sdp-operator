@@ -117,7 +117,7 @@ def generate_k8s_clients(
 async def appgate_operator(
     queue: Queue,
     ctx: AppgateOperatorContext,
-    k8s_configmap_client: K8SConfigMapClient,
+    k8s_configmap_client: K8SConfigMapClient | None,
     appgate_client: AppgateClient,
 ) -> None:
     namespace = ctx.namespace

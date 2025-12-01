@@ -88,8 +88,10 @@ spec:
               value: "{{ .Values.sdp.sdpOperator.twoWaySync }}"
             - name: APPGATE_OPERATOR_SSL_NO_VERIFY
               value: "{{ .Values.sdp.sdpOperator.sslNoVerify }}"
+            {{- if .Values.sdp.sdpOperator.configMapMt.enabled }}
             - name: APPGATE_OPERATOR_CONFIG_MAP
-              value: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.sdpOperator.configMapMt }}
+              value: {{ default (include "sdp-operator.config-mt" .) .Values.sdp.sdpOperator.configMapMt.name }}
+            {{ end }}
             {{- with .Values.sdp.sdpOperator.caCert }}
             - name: APPGATE_OPERATOR_CACERT
               value: "{{ . }}"
