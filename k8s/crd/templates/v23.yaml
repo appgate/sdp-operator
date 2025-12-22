@@ -1,0 +1,2322 @@
+{{ if eq .Values.version "v23" }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: policies.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: Policy
+    plural: policies
+    shortNames:
+    - pol
+    singular: policy
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              administrativeRoles:
+                items:
+                  type: string
+                type: array
+              applyFallbackSite:
+                type: boolean
+              blockLocalDnsRequests:
+                type: boolean
+              clientProfileSettings:
+                properties:
+                  enabled:
+                    type: boolean
+                  force:
+                    type: boolean
+                  profiles:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              clientSettings:
+                properties:
+                  addRemoveProfiles:
+                    type: string
+                  attentionLevel:
+                    type: string
+                  autoStart:
+                    type: string
+                  enabled:
+                    type: boolean
+                  entitlementsList:
+                    type: string
+                  keepMeSignedIn:
+                    type: string
+                  newUserOnboarding:
+                    type: string
+                  quit:
+                    type: string
+                  samlAutoSignIn:
+                    type: string
+                  signOut:
+                    type: string
+                  suspend:
+                    type: string
+                type: object
+              customClientHelpUrl:
+                type: string
+              disabled:
+                type: boolean
+              dnsSettings:
+                items:
+                  properties:
+                    domain:
+                      type: string
+                    registerTunIpsToActiveDirectory:
+                      type: boolean
+                    servers:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - domain
+                  type: object
+                type: array
+              entitlementLinks:
+                items:
+                  type: string
+                type: array
+              entitlements:
+                items:
+                  type: string
+                type: array
+              expression:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              overrideNearestSite:
+                type: boolean
+              overrideSite:
+                type: string
+              overrideSiteClaim:
+                type: string
+              proxyAutoConfig:
+                properties:
+                  enabled:
+                    type: boolean
+                  persist:
+                    type: boolean
+                  url:
+                    type: string
+                type: object
+              ringfenceRuleLinks:
+                items:
+                  type: string
+                type: array
+              ringfenceRules:
+                items:
+                  type: string
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              tamperProofing:
+                type: boolean
+              trustedNetworkCheck:
+                properties:
+                  dnsSuffix:
+                    type: string
+                  enabled:
+                    type: boolean
+                type: object
+              type:
+                type: string
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: conditions.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: Condition
+    plural: conditions
+    shortNames:
+    - con
+    singular: condition
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              expression:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              remedyLogic:
+                type: string
+              remedyMethods:
+                items:
+                  properties:
+                    claimSuffix:
+                      type: string
+                    message:
+                      type: string
+                    providerId:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - type
+                  - message
+                  type: object
+                type: array
+              repeatSchedules:
+                items:
+                  type: string
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: entitlements.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: Entitlement
+    plural: entitlements
+    shortNames:
+    - ent
+    singular: entitlement
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              actions:
+                items:
+                  properties:
+                    action:
+                      type: string
+                    hosts:
+                      items:
+                        type: string
+                      type: array
+                    methods:
+                      items:
+                        type: string
+                      type: array
+                    monitor:
+                      properties:
+                        enabled:
+                          type: boolean
+                        timeout:
+                          type: integer
+                      type: object
+                    ports:
+                      items:
+                        type: string
+                      type: array
+                    subtype:
+                      type: string
+                    types:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - action
+                  type: object
+                type: array
+              appShortcutScripts:
+                items:
+                  type: string
+                type: array
+              appShortcuts:
+                items:
+                  properties:
+                    colorCode:
+                      type: integer
+                    description:
+                      type: string
+                    groupName:
+                      type: string
+                    name:
+                      type: string
+                    url:
+                      type: string
+                  required:
+                  - name
+                  - url
+                  type: object
+                type: array
+              conditionLogic:
+                type: string
+              conditions:
+                items:
+                  type: string
+                type: array
+              disabled:
+                type: boolean
+              name:
+                type: string
+              notes:
+                type: string
+              site:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - site
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ringfencerules.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: RingfenceRule
+    plural: ringfencerules
+    shortNames:
+    - rin
+    singular: ringfencerule
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              actions:
+                items:
+                  properties:
+                    action:
+                      type: string
+                    direction:
+                      type: string
+                    hosts:
+                      items:
+                        type: string
+                      type: array
+                    ports:
+                      items:
+                        type: string
+                      type: array
+                    protocol:
+                      type: string
+                    types:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - protocol
+                  - direction
+                  - action
+                  type: object
+                type: array
+              name:
+                type: string
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: appliances.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: Appliance
+    plural: appliances
+    shortNames:
+    - app
+    singular: appliance
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              adminInterface:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  hostname:
+                    type: string
+                  httpsCiphers:
+                    items:
+                      type: string
+                    type: array
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  httpsPort:
+                    type: integer
+                required:
+                - hostname
+                type: object
+              clientInterface:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  dtlsPort:
+                    type: integer
+                  hostname:
+                    type: string
+                  httpsPort:
+                    type: integer
+                  localHostname:
+                    type: string
+                  overrideSpaMode:
+                    type: string
+                  proxyProtocol:
+                    type: boolean
+                required:
+                - hostname
+                type: object
+              connector:
+                properties:
+                  advancedClients:
+                    items:
+                      properties:
+                        allowResources:
+                          items:
+                            properties:
+                              address:
+                                type: string
+                              netmask:
+                                type: integer
+                              nic:
+                                type: string
+                            type: object
+                          type: array
+                        defaultGateway:
+                          type: boolean
+                        deviceId:
+                          type: string
+                        dhcpRelay:
+                          properties:
+                            servers:
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        dnatToResource:
+                          type: boolean
+                        name:
+                          type: string
+                        snatToResources:
+                          type: boolean
+                        snatToTunnel:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  expressClients:
+                    items:
+                      properties:
+                        allowResources:
+                          items:
+                            properties:
+                              address:
+                                type: string
+                              netmask:
+                                type: integer
+                            required:
+                            - address
+                            - netmask
+                            type: object
+                          type: array
+                        deviceId:
+                          type: string
+                        dnatToResource:
+                          type: boolean
+                        name:
+                          type: string
+                        snatToResources:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                type: object
+              controller:
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
+              customization:
+                type: string
+              gateway:
+                properties:
+                  enabled:
+                    type: boolean
+                  suspended:
+                    type: boolean
+                  vpn:
+                    properties:
+                      allowDestinations:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            netmask:
+                              type: integer
+                            nic:
+                              type: string
+                          required:
+                          - nic
+                          type: object
+                        type: array
+                      localWeight:
+                        type: integer
+                      weight:
+                        type: integer
+                    type: object
+                type: object
+              healthcheckServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  port:
+                    type: integer
+                type: object
+              hostname:
+                type: string
+              hostnameAliases:
+                items:
+                  type: string
+                type: array
+              logForwarder:
+                properties:
+                  awsKineses:
+                    items:
+                      properties:
+                        awsId:
+                          type: string
+                        awsRegion:
+                          type: string
+                        awsSecret:
+                          default: null
+                          type: string
+                        batchSize:
+                          type: integer
+                        filter:
+                          type: string
+                        numberOfPartitionKeys:
+                          type: integer
+                        streamName:
+                          type: string
+                        type:
+                          type: string
+                        useInstanceCredentials:
+                          type: boolean
+                      required:
+                      - type
+                      - streamName
+                      type: object
+                    type: array
+                  azureMonitors:
+                    items:
+                      properties:
+                        appId:
+                          type: string
+                        appSecret:
+                          default: null
+                          type: string
+                        logDestinationUrl:
+                          type: string
+                        scope:
+                          type: string
+                        tokenRequestUrl:
+                          type: string
+                      required:
+                      - appId
+                      - tokenRequestUrl
+                      - logDestinationUrl
+                      - scope
+                      type: object
+                    type: array
+                  coralogixs:
+                    items:
+                      properties:
+                        applicationName:
+                          type: string
+                        privateKey:
+                          default: null
+                          type: string
+                        subsystemName:
+                          type: string
+                        url:
+                          type: string
+                        uuid:
+                          type: string
+                      required:
+                      - url
+                      - uuid
+                      - applicationName
+                      - subsystemName
+                      type: object
+                    type: array
+                  datadogs:
+                    items:
+                      properties:
+                        apiKey:
+                          default: null
+                          type: string
+                        site:
+                          type: string
+                        source:
+                          type: string
+                        tags:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - site
+                      - source
+                      type: object
+                    type: array
+                  elasticsearch:
+                    properties:
+                      authentication:
+                        properties:
+                          token:
+                            default: null
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - type
+                        type: object
+                      awsId:
+                        type: string
+                      awsRegion:
+                        type: string
+                      awsSecret:
+                        default: null
+                        type: string
+                      compatibilityMode:
+                        type: integer
+                      retentionDays:
+                        type: integer
+                      url:
+                        type: string
+                      useInstanceCredentials:
+                        type: boolean
+                    required:
+                    - url
+                    type: object
+                  enabled:
+                    type: boolean
+                  falconLogScales:
+                    items:
+                      properties:
+                        collectorUrl:
+                          type: string
+                        index:
+                          type: string
+                        source:
+                          type: string
+                        sourceType:
+                          type: string
+                        token:
+                          default: null
+                          type: string
+                      required:
+                      - collectorUrl
+                      type: object
+                    type: array
+                  sites:
+                    items:
+                      type: string
+                    type: array
+                  splunkClients:
+                    items:
+                      properties:
+                        token:
+                          default: null
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    type: array
+                  sumoLogicClients:
+                    items:
+                      properties:
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    type: array
+                  tcpClients:
+                    items:
+                      properties:
+                        filter:
+                          type: string
+                        format:
+                          type: string
+                        host:
+                          type: string
+                        name:
+                          type: string
+                        port:
+                          type: integer
+                        useTLS:
+                          type: boolean
+                      required:
+                      - name
+                      - host
+                      - port
+                      - format
+                      type: object
+                    type: array
+                type: object
+              logServer:
+                properties:
+                  enabled:
+                    type: boolean
+                  retentionDays:
+                    type: integer
+                type: object
+              metricsAggregator:
+                properties:
+                  enabled:
+                    type: boolean
+                  prometheusExporter:
+                    properties:
+                      allowSources:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            netmask:
+                              type: integer
+                            nic:
+                              type: string
+                          type: object
+                        type: array
+                      allowedUsers:
+                        items:
+                          properties:
+                            password:
+                              default: null
+                              type: string
+                            username:
+                              type: string
+                          type: object
+                        type: array
+                      basicAuth:
+                        type: boolean
+                      enabled:
+                        type: boolean
+                      httpsP12:
+                        properties:
+                          content:
+                            default: null
+                            type: string
+                          id:
+                            type: string
+                          password:
+                            default: null
+                            type: string
+                        type: object
+                      labelsDisabled:
+                        items:
+                          type: string
+                        type: array
+                      port:
+                        type: integer
+                      useHTTPS:
+                        type: boolean
+                    type: object
+                  sites:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              name:
+                type: string
+              networking:
+                properties:
+                  dnsServers:
+                    items:
+                      type: string
+                    type: array
+                  hosts:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        hostname:
+                          type: string
+                      required:
+                      - hostname
+                      - address
+                      type: object
+                    type: array
+                  nics:
+                    items:
+                      properties:
+                        enabled:
+                          type: boolean
+                        ipv4:
+                          properties:
+                            dhcp:
+                              properties:
+                                dns:
+                                  type: boolean
+                                enabled:
+                                  type: boolean
+                                mtu:
+                                  type: boolean
+                                ntp:
+                                  type: boolean
+                                routers:
+                                  type: boolean
+                              type: object
+                            static:
+                              items:
+                                properties:
+                                  address:
+                                    type: string
+                                  netmask:
+                                    type: integer
+                                  snat:
+                                    type: boolean
+                                type: object
+                              type: array
+                            virtualIp:
+                              type: string
+                          type: object
+                        ipv6:
+                          properties:
+                            dhcp:
+                              properties:
+                                dns:
+                                  type: boolean
+                                enabled:
+                                  type: boolean
+                                mtu:
+                                  type: boolean
+                                ntp:
+                                  type: boolean
+                              type: object
+                            static:
+                              items:
+                                properties:
+                                  address:
+                                    type: string
+                                  netmask:
+                                    type: integer
+                                  snat:
+                                    type: boolean
+                                required:
+                                - address
+                                - netmask
+                                type: object
+                              type: array
+                            virtualIp:
+                              type: string
+                          type: object
+                        mtu:
+                          type: integer
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  routes:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        gateway:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      required:
+                      - address
+                      - netmask
+                      type: object
+                    type: array
+                type: object
+              notes:
+                type: string
+              ntp:
+                properties:
+                  servers:
+                    items:
+                      properties:
+                        hostname:
+                          type: string
+                        key:
+                          default: null
+                          type: string
+                        keyNo:
+                          type: integer
+                        keyType:
+                          type: string
+                      required:
+                      - hostname
+                      type: object
+                    type: array
+                type: object
+              ping:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              portal:
+                properties:
+                  enabled:
+                    type: boolean
+                  externalProfiles:
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          default: null
+                          type: string
+                      type: object
+                    type: array
+                  httpRedirect:
+                    type: boolean
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  profiles:
+                    items:
+                      type: string
+                    type: array
+                  proxyP12s:
+                    items:
+                      properties:
+                        content:
+                          default: null
+                          type: string
+                        id:
+                          type: string
+                        password:
+                          default: null
+                          type: string
+                        verifyUpstream:
+                          type: boolean
+                      type: object
+                    type: array
+                  proxyPorts:
+                    items:
+                      type: integer
+                    type: array
+                  signInCustomization:
+                    properties:
+                      autoRedirect:
+                        type: boolean
+                      backgroundColor:
+                        type: string
+                      backgroundImage:
+                        type: string
+                      logo:
+                        type: string
+                      text:
+                        type: string
+                      textColor:
+                        type: string
+                    type: object
+                type: object
+              prometheusExporter:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  allowedUsers:
+                    items:
+                      properties:
+                        password:
+                          default: null
+                          type: string
+                        username:
+                          type: string
+                      type: object
+                    type: array
+                  basicAuth:
+                    type: boolean
+                  enabled:
+                    type: boolean
+                  httpsP12:
+                    properties:
+                      content:
+                        default: null
+                        type: string
+                      id:
+                        type: string
+                      password:
+                        default: null
+                        type: string
+                    type: object
+                  labelsDisabled:
+                    items:
+                      type: string
+                    type: array
+                  port:
+                    type: integer
+                  useHTTPS:
+                    type: boolean
+                type: object
+              rsyslogDestinations:
+                items:
+                  properties:
+                    destination:
+                      type: string
+                    selector:
+                      type: string
+                    template:
+                      type: string
+                  required:
+                  - destination
+                  type: object
+                type: array
+              site:
+                type: string
+              snmpServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  snmpd.conf:
+                    type: string
+                  tcpPort:
+                    type: integer
+                  udpPort:
+                    type: integer
+                type: object
+              sshServer:
+                properties:
+                  allowSources:
+                    items:
+                      properties:
+                        address:
+                          type: string
+                        netmask:
+                          type: integer
+                        nic:
+                          type: string
+                      type: object
+                    type: array
+                  enabled:
+                    type: boolean
+                  passwordAuthentication:
+                    type: boolean
+                  port:
+                    type: integer
+                type: object
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - hostname
+            - clientInterface
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sites.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: Site
+    plural: sites
+    shortNames:
+    - sit
+    singular: site
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              defaultGateway:
+                properties:
+                  enabledV4:
+                    type: boolean
+                  enabledV6:
+                    type: boolean
+                  excludedSubnets:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              description:
+                type: string
+              entitlementBasedRouting:
+                type: boolean
+              fallbackSite:
+                type: string
+              geolocation:
+                properties:
+                  latitude:
+                    type: integer
+                  longitude:
+                    type: integer
+                type: object
+              ipPoolMappings:
+                items:
+                  properties:
+                    fromm:
+                      type: string
+                    to:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
+              localSiteDetection:
+                properties:
+                  enabled:
+                    type: boolean
+                  publicIps:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              name:
+                type: string
+              nameResolution:
+                properties:
+                  awsResolvers:
+                    items:
+                      properties:
+                        accessKeyId:
+                          type: string
+                        apiGateway:
+                          type: boolean
+                        assumedRoles:
+                          items:
+                            properties:
+                              accountId:
+                                type: string
+                              externalId:
+                                type: string
+                              regions:
+                                items:
+                                  type: string
+                                type: array
+                              roleName:
+                                type: string
+                            type: object
+                          type: array
+                        ec2:
+                          type: boolean
+                        eks:
+                          type: boolean
+                        httpsProxy:
+                          type: string
+                        name:
+                          type: string
+                        partition:
+                          type: string
+                        rds:
+                          type: boolean
+                        regions:
+                          items:
+                            type: string
+                          type: array
+                        resolveWithMasterCredentials:
+                          type: boolean
+                        secretAccessKey:
+                          default: null
+                          type: string
+                        updateInterval:
+                          type: integer
+                        useIAMRole:
+                          type: boolean
+                        vpcAutoDiscovery:
+                          type: boolean
+                        vpcs:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  azureResolvers:
+                    items:
+                      properties:
+                        clientId:
+                          type: string
+                        name:
+                          type: string
+                        secret:
+                          default: null
+                          type: string
+                        subscriptionIdAutoDiscovery:
+                          type: boolean
+                        subscriptionIds:
+                          items:
+                            type: string
+                          type: array
+                        tenantId:
+                          type: string
+                        updateInterval:
+                          type: integer
+                        useManagedIdentities:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  dnsForwarding:
+                    properties:
+                      allowDestinations:
+                        items:
+                          properties:
+                            address:
+                              type: string
+                            netmask:
+                              type: integer
+                          required:
+                          - address
+                          - netmask
+                          type: object
+                        type: array
+                      autoClientDns:
+                        type: boolean
+                      dnsServers:
+                        items:
+                          type: string
+                        type: array
+                      matchDomains:
+                        items:
+                          type: string
+                        type: array
+                      siteIpv4:
+                        type: string
+                      siteIpv6:
+                        type: string
+                    type: object
+                  dnsResolvers:
+                    items:
+                      properties:
+                        autoClientDns:
+                          type: boolean
+                        matchDomains:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                        queryAAAA:
+                          type: boolean
+                        servers:
+                          items:
+                            type: string
+                          type: array
+                        updateInterval:
+                          type: integer
+                        zonesTransfers:
+                          type: boolean
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  esxResolvers:
+                    items:
+                      properties:
+                        hostname:
+                          type: string
+                        name:
+                          type: string
+                        password:
+                          default: null
+                          type: string
+                        updateInterval:
+                          type: integer
+                        username:
+                          type: string
+                      required:
+                      - name
+                      - hostname
+                      - username
+                      type: object
+                    type: array
+                  gcpResolvers:
+                    items:
+                      properties:
+                        forwardingRulesFilter:
+                          type: string
+                        instanceFilter:
+                          type: string
+                        name:
+                          type: string
+                        projectFilter:
+                          type: string
+                        updateInterval:
+                          type: integer
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  illumioResolvers:
+                    items:
+                      properties:
+                        hostname:
+                          type: string
+                        name:
+                          type: string
+                        orgId:
+                          type: string
+                        password:
+                          default: null
+                          type: string
+                        port:
+                          type: integer
+                        updateInterval:
+                          type: integer
+                        username:
+                          type: string
+                      required:
+                      - name
+                      - orgId
+                      - hostname
+                      - port
+                      - username
+                      type: object
+                    type: array
+                  useHostsFile:
+                    type: boolean
+                type: object
+              networkSubnets:
+                items:
+                  type: string
+                type: array
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+              useForNearestSiteSelection:
+                type: boolean
+              vpn:
+                properties:
+                  dtls:
+                    properties:
+                      enabled:
+                        type: boolean
+                    type: object
+                  ipAccessLogIntervalSeconds:
+                    type: integer
+                  logNatIpAndNatPort:
+                    type: boolean
+                  routeVia:
+                    properties:
+                      ipv4:
+                        type: string
+                      ipv6:
+                        type: string
+                    type: object
+                  snat:
+                    type: boolean
+                  tls:
+                    properties:
+                      enabled:
+                        type: boolean
+                      version:
+                        type: string
+                    type: object
+                  urlAccessEnabled:
+                    type: boolean
+                  urlAccessP12s:
+                    items:
+                      properties:
+                        content:
+                          default: null
+                          type: string
+                        id:
+                          type: string
+                        password:
+                          default: null
+                          type: string
+                        verifyUpstream:
+                          type: boolean
+                      type: object
+                    type: array
+                type: object
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ippools.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: IpPool
+    plural: ippools
+    shortNames:
+    - ipp
+    singular: ippool
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              excludedRanges:
+                items:
+                  properties:
+                    cidr:
+                      default: null
+                      type: string
+                    first:
+                      type: string
+                    last:
+                      type: string
+                  type: object
+                type: array
+              ipVersion6:
+                type: boolean
+              leaseTimeDays:
+                type: integer
+              name:
+                type: string
+              notes:
+                type: string
+              ranges:
+                items:
+                  properties:
+                    cidr:
+                      default: null
+                      type: string
+                    first:
+                      type: string
+                    last:
+                      type: string
+                  type: object
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: identityproviders.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: IdentityProvider
+    plural: identityproviders
+    shortNames:
+    - ide
+    singular: identityprovider
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              adminDistinguishedName:
+                type: string
+              adminPassword:
+                default: null
+                type: string
+              adminProvider:
+                type: boolean
+              audience:
+                type: string
+              authenticationProtocol:
+                type: string
+              baseDn:
+                type: string
+              caCertificates:
+                items:
+                  type: string
+                type: array
+              certificateAttribute:
+                type: string
+              certificatePriorities:
+                items:
+                  properties:
+                    type:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - value
+                  type: object
+                type: array
+              certificateUserAttribute:
+                type: string
+              claimMappings:
+                items:
+                  properties:
+                    attributeName:
+                      type: string
+                    claimName:
+                      type: string
+                    encrypt:
+                      type: boolean
+                    list:
+                      type: boolean
+                  required:
+                  - attributeName
+                  - claimName
+                  type: object
+                type: array
+              decryptionKey:
+                type: string
+              deviceLimitPerUser:
+                type: integer
+              enforceWindowsNetworkProfileAsDomain:
+                type: boolean
+              forceAuthn:
+                type: boolean
+              google:
+                properties:
+                  clientSecret:
+                    default: null
+                    type: string
+                  enabled:
+                    type: boolean
+                  refreshToken:
+                    type: boolean
+                type: object
+              hostnames:
+                items:
+                  type: string
+                type: array
+              inactivityTimeoutMinutes:
+                type: integer
+              ipPoolV4:
+                type: string
+              ipPoolV6:
+                type: string
+              issuer:
+                type: string
+              membershipBaseDn:
+                type: string
+              membershipFilter:
+                type: string
+              minPasswordLength:
+                type: integer
+              name:
+                type: string
+              networkInactivityTimeoutEnabled:
+                type: boolean
+              notes:
+                type: string
+              onBoarding2FA:
+                properties:
+                  alwaysRequired:
+                    type: boolean
+                  claimSuffix:
+                    type: string
+                  message:
+                    type: string
+                  mfaProviderId:
+                    type: string
+                required:
+                - mfaProviderId
+                type: object
+              onDemandClaimMappings:
+                items:
+                  properties:
+                    claimName:
+                      type: string
+                    command:
+                      type: string
+                    parameters:
+                      properties:
+                        args:
+                          type: string
+                        name:
+                          type: string
+                        path:
+                          type: string
+                      type: object
+                    platform:
+                      type: string
+                  required:
+                  - command
+                  - claimName
+                  - platform
+                  type: object
+                type: array
+              passwordWarning:
+                properties:
+                  enabled:
+                    type: boolean
+                  message:
+                    type: string
+                  thresholdDays:
+                    type: integer
+                type: object
+              port:
+                type: integer
+              providerCertificate:
+                type: string
+              redirectUrl:
+                type: string
+              scope:
+                type: string
+              sharedSecret:
+                default: null
+                type: string
+              skipX509ExternalChecks:
+                type: boolean
+              sslEnabled:
+                type: boolean
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+              userFilter:
+                type: string
+              userLockoutDurationMinutes:
+                type: integer
+              userLockoutThreshold:
+                type: integer
+              userScripts:
+                items:
+                  type: string
+                type: array
+              usernameAttribute:
+                type: string
+            required:
+            - type
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localusers.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: LocalUser
+    plural: localusers
+    shortNames:
+    - loc
+    singular: localuser
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              disabled:
+                type: boolean
+              email:
+                type: string
+              failedLoginAttempts:
+                type: integer
+              firstName:
+                type: string
+              lastName:
+                type: string
+              lockStart:
+                format: date-time
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              password:
+                default: null
+                type: string
+              phone:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - firstName
+            - lastName
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: serviceusers.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: ServiceUser
+    plural: serviceusers
+    shortNames:
+    - ser
+    singular: serviceuser
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              disabled:
+                type: boolean
+              failedLoginAttempts:
+                type: integer
+              labels:
+                type: object
+              lockStart:
+                format: date-time
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              password:
+                default: null
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: administrativeroles.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: AdministrativeRole
+    plural: administrativeroles
+    shortNames:
+    - adm
+    singular: administrativerole
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              name:
+                type: string
+              notes:
+                type: string
+              privileges:
+                items:
+                  properties:
+                    defaultTags:
+                      items:
+                        type: string
+                      type: array
+                    functions:
+                      items:
+                        type: string
+                      type: array
+                    scope:
+                      properties:
+                        all:
+                          type: boolean
+                        ids:
+                          items:
+                            type: string
+                          type: array
+                        tags:
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    target:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - type
+                  - target
+                  type: object
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: mfaproviders.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: MfaProvider
+    plural: mfaproviders
+    shortNames:
+    - mfa
+    singular: mfaprovider
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              authenticationProtocol:
+                type: string
+              challengeSharedSecret:
+                default: null
+                type: string
+              hostnames:
+                items:
+                  type: string
+                type: array
+              inputType:
+                type: string
+              mode:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              port:
+                type: integer
+              sharedSecret:
+                default: null
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+              timeout:
+                type: integer
+              type:
+                type: string
+              useUserPassword:
+                type: boolean
+            required:
+            - name
+            - type
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: adminmfasettingss.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: AdminMfaSettings
+    plural: adminmfasettingss
+    shortNames:
+    - adi
+    singular: adminmfasettings
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              exemptedUsers:
+                items:
+                  type: string
+                type: array
+              providerId:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: trustedcertificates.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: TrustedCertificate
+    plural: trustedcertificates
+    shortNames:
+    - tru
+    singular: trustedcertificate
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              name:
+                type: string
+              notes:
+                type: string
+              pem:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - pem
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: criteriascriptss.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: CriteriaScripts
+    plural: criteriascriptss
+    shortNames:
+    - cri
+    singular: criteriascripts
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              expression:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: devicescripts.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: DeviceScript
+    plural: devicescripts
+    shortNames:
+    - dev
+    singular: devicescript
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              file:
+                default: null
+                type: string
+              filename:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            - filename
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: entitlementscripts.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: EntitlementScript
+    plural: entitlementscripts
+    shortNames:
+    - enr
+    singular: entitlementscript
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              expression:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+            required:
+            - name
+            - expression
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: appliancecustomizations.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: ApplianceCustomization
+    plural: appliancecustomizations
+    shortNames:
+    - apt
+    singular: appliancecustomization
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              file:
+                default: null
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - name
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: globalsettingss.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: GlobalSettings
+    plural: globalsettingss
+    shortNames:
+    - glo
+    singular: globalsettings
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              administrationTokenExpiration:
+                type: integer
+              auditLogPersistenceMode:
+                type: string
+              backupApiEnabled:
+                type: boolean
+              backupPassphrase:
+                default: null
+                type: string
+              claimsTokenExpiration:
+                type: integer
+              collectiveName:
+                type: string
+              entitlementTokenExpiration:
+                type: integer
+              geoIpUpdates:
+                type: boolean
+              loginBannerMessage:
+                type: string
+              messageOfTheDay:
+                type: string
+              profileHostname:
+                type: string
+              registeredDeviceExpirationDays:
+                type: integer
+              spaMode:
+                type: string
+              spaTimeWindowSeconds:
+                type: integer
+              vpnCertificateExpiration:
+                type: integer
+            required:
+            - claimsTokenExpiration
+            - entitlementTokenExpiration
+            - administrationTokenExpiration
+            - vpnCertificateExpiration
+            - auditLogPersistenceMode
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clientprofiles.v23.sdp.appgate.com
+spec:
+  group: v23.sdp.appgate.com
+  names:
+    kind: ClientProfile
+    plural: clientprofiles
+    shortNames:
+    - cli
+    singular: clientprofile
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              exported:
+                format: date-time
+                type: string
+              hostname:
+                type: string
+              identityProviderName:
+                type: string
+              name:
+                type: string
+              notes:
+                type: string
+              profileUrls:
+                items:
+                  properties:
+                    id:
+                      type: string
+                    url:
+                      default: null
+                      type: string
+                    weight:
+                      type: integer
+                  type: object
+                type: array
+              tags:
+                items:
+                  type: string
+                type: array
+              type:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+{{ end }}
