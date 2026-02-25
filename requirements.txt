@@ -20,8 +20,11 @@ attrs==23.1.0
     # via
     #   -r requirements.in
     #   aiohttp
+    #   cattrs
 cachetools==5.3.1
     # via google-auth
+cattrs==24.1.2
+    # via -r requirements.in
 certifi==2024.7.4
     # via
     #   kubernetes
@@ -116,8 +119,6 @@ six==1.16.0
     #   python-dateutil
 smmap==5.0.1
     # via gitdb
-typedload==2.27
-    # via -r requirements.in
 typing-extensions==4.14.1
     # via aiosignal
 urllib3==1.26.18

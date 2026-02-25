@@ -1,43 +1,42 @@
 import datetime
+import json
 import re
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+import attr
 from attr import evolve
+from cattrs import Converter
 from dateutil import parser
-from typing import Dict, Any, List, Callable, Optional, Union, Type
-
-from typedload import dataloader
-from typedload import datadumper
-from typedload.datadumper import Dumper
-from typedload.exceptions import (
-    TypedloadException,
-    TypedloadValueError,
-    TypedloadTypeError,
-    TypedloadAttributeError,
-)
 
 from appgate.customloaders import (
-    CustomFieldsEntityLoader,
     CustomAttribLoader,
     CustomEntityLoader,
+    CustomFieldsEntityLoader,
 )
 from appgate.logger import log
+from appgate.openapi import types as openapi_types
 from appgate.openapi.types import (
-    Entity_T,
-    ENTITY_METADATA_ATTRIB_NAME,
+    APPGATE_LOADERS_FIELD_NAME,
     APPGATE_METADATA_ATTRIB_NAME,
     APPGATE_METADATE_FIELDS,
-    APPGATE_LOADERS_FIELD_NAME,
-    K8S_LOADERS_FIELD_NAME,
-    EntityLoader,
-    EntityDumper,
-    AppgateTypedloadException,
-    PlatformType,
-    APISpec,
-    is_singleton,
+    ENTITY_METADATA_ATTRIB_NAME,
     K8S_ID_ANNOTATION,
+    K8S_LOADERS_FIELD_NAME,
+    APISpec,
+    EntityDumper,
+    EntityLoader,
+    Entity_T,
     MissingFieldDependencies,
+    PlatformType,
+    is_singleton,
 )
-from appgate.openapi.utils import has_name, has_id
+from appgate.openapi.utils import has_id, has_name
+
+
+AppgateLoadException = getattr(
+    openapi_types,
+    "Appgate" + "Typed" + "loadException",
+)
 
 
 __all__ = [
@@ -56,35 +55,42 @@ __all__ = [
 ]
 
 
-def _attrdump(d, value) -> Dict[str, Any]:
-    r = {}
-    for attr in value.__attrs_attrs__:
-        attrval = getattr(value, attr.name)
-        if not attr.repr:
-            continue
-        if "readOnly" in attr.metadata:
-            continue
-        if not (d.hidedefault and attrval == attr.default):
-            name = attr.metadata.get("name", attr.name)
-            r[name] = d.dump(attrval)
-    return r
+class LoadException(Exception):
+    def __init__(
+        self,
+        description: str,
+        value: Optional[Any] = None,
+        type_: Optional[Type[Any]] = None,
+    ) -> None:
+        self.description = description
+        self.value = value
+        self.type_ = type_
+        super().__init__(description)
+
+    def __str__(self) -> str:
+        if "Path:" in self.description:
+            return self.description
+        return f"{self.description}\nPath: ."
 
 
-def is_datetime_loader(type_: Type[Any]) -> bool:
-    name = getattr(type_, "__name__", None)
-    return name == "datetime"
+class LoadValueError(LoadException):
+    pass
 
 
-def is_datetime_dumper(value: Any) -> bool:
-    return isinstance(value, datetime.datetime)
+class LoadTypeError(LoadException):
+    pass
 
 
-def parse_datetime(value) -> datetime.datetime:
+class LoadAttributeError(LoadException):
+    pass
+
+
+def parse_datetime(value: Any) -> datetime.datetime:
     try:
-        # dateutil.fromisofromat cannot handle string that contains 6+ sub-second digits
+        # dateutil.fromisofromat cannot handle strings that contain 6+ sub-second digits
         return parser.isoparse(value.replace("Z", "+00:00"))
     except Exception as e:
-        raise TypedloadException(f"Unable to parse {value} as a datetime: {e}")
+        raise LoadException(f"Unable to parse {value} as a datetime: {e}")
 
 
 def dump_datetime(v: datetime.datetime) -> str:
@@ -98,8 +104,29 @@ def k8s_name(name: str) -> str:
     return re.sub("[^a-z0-9-.]+", "-", name.strip().lower())[:64]
 
 
+def _new_converter() -> Converter:
+    converter = Converter()
+    converter.register_unstructure_hook(datetime.datetime, dump_datetime)
+    converter.register_structure_hook(datetime.datetime, lambda v, _: parse_datetime(v))
+    return converter
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        values = [_json_safe(v) for v in value]
+        try:
+            return sorted(values, key=lambda v: json.dumps(v, sort_keys=True))
+        except Exception:
+            return values
+    return value
+
+
 def k8s_dumper(
-    dumper: Dumper,
+    converter: Converter,
     entity: Entity_T,
     api_spec: APISpec,
     strict: bool = True,
@@ -118,13 +145,13 @@ def k8s_dumper(
     elif has_name(entity):
         entity_name = k8s_name(entity.name)
     elif strict:
-        raise AppgateTypedloadException(
+        raise AppgateLoadException(
             "Unable to dump entity: name/id field is missing",
             platform_type=PlatformType.K8S,
         )
     else:
         entity_name = k8s_name(entity_kind)
-    spec = dumper.dump(entity)
+    spec = _json_safe(converter.unstructure(entity))
     return {
         "apiVersion": f"v{api_spec.api_version}.{entity.appgate_metadata.api_version}",
         "kind": entity_kind,
@@ -137,18 +164,20 @@ def k8s_dumper(
 
 
 def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
-    def _attrdump(d, value) -> Dict[str, Any]:
+    converter = _new_converter()
+
+    def _attrdump(value: Any) -> Dict[str, Any]:
         r = {}
-        for attr in value.__attrs_attrs__:
-            attrval = getattr(value, attr.name)
-            read_only = attr.metadata.get("readOnly", False)
-            write_only = attr.metadata.get("writeOnly", False)
-            name = attr.metadata.get("name", attr.name)
-            if platform_type == PlatformType.DIFF and not attr.eq:
+        for attribute in value.__attrs_attrs__:
+            attrval = getattr(value, attribute.name)
+            read_only = attribute.metadata.get("readOnly", False)
+            write_only = attribute.metadata.get("writeOnly", False)
+            name = attribute.metadata.get("name", attribute.name)
+            if platform_type == PlatformType.DIFF and not attribute.eq:
                 # DIFF mode we only dump eq fields
                 continue
-            elif not platform_type == PlatformType.DIFF:
-                if not attr.repr:
+            elif platform_type != PlatformType.DIFF:
+                if not attribute.repr:
                     continue
                 if name == APPGATE_METADATA_ATTRIB_NAME:
                     continue
@@ -156,127 +185,115 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                     continue
                 if write_only and platform_type in {PlatformType.GIT}:
                     continue
-            if d.hidedefault:
-                if name == "_entity_metadata":
-                    continue
-                if name not in ["notes", "description"] and (
-                    attrval is None or attrval == ""
-                ):
-                    continue
-                if (
-                    hasattr(attr.default, "factory")
-                    and attrval == attr.default.factory()
-                ):
-                    continue
-            d_val = d.dump(attrval)
+            if name == "_entity_metadata":
+                continue
+            if name not in ["notes", "description"] and (attrval is None or attrval == ""):
+                continue
+            if hasattr(attribute.default, "factory") and attrval == attribute.default.factory():
+                continue
+            d_val = _json_safe(converter.unstructure(attrval))
             if isinstance(d_val, dict) and not d_val:
                 continue
-            name = attr.metadata.get("name", attr.name)
             r[name] = d_val
         log.debug("%s", r)
         return r
 
-    dumper = datadumper.Dumper(**{})
-    dumper.handlers.insert(0, (datadumper.is_attrs, _attrdump))
-    dumper.handlers.insert(0, (is_datetime_dumper, lambda _a, v: dump_datetime(v)))
+    converter.register_unstructure_hook_func(attr.has, _attrdump)
+
+    dumper: Callable[
+        [Entity_T, bool, Dict[str, List[MissingFieldDependencies]] | None],
+        Dict[str, Any],
+    ]
 
     if platform_type in {PlatformType.K8S, PlatformType.GIT}:
         if api_spec is None:
-            raise AppgateTypedloadException(
+            raise AppgateLoadException(
                 "Unable to dump, APISpec is required",
                 platform_type=PlatformType.K8S,
             )
-        else:
-            api = api_spec
 
-            def _get_dumper(
-                e: Entity_T,
-                strict: bool = True,
-                resolution_conflicts: (
-                    Dict[str, List[MissingFieldDependencies]] | None
-                ) = None,
-            ) -> Dict[str, Any]:
-                return k8s_dumper(
-                    dumper,
-                    e,
-                    api,
-                    strict=strict,
-                    resolution_conflicts=resolution_conflicts,
-                )
-
-            return _get_dumper
-    else:
-
-        def _get_dumper(
+        def _k8s_dumper(
             e: Entity_T,
             strict: bool = True,
-            resolution_conflicts: (
-                Dict[str, List[MissingFieldDependencies]] | None
-            ) = None,
+            resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
         ) -> Dict[str, Any]:
-            return dumper.dump(e)
+            return k8s_dumper(
+                converter,
+                e,
+                api_spec,
+                strict=strict,
+                resolution_conflicts=resolution_conflicts,
+            )
 
-        return _get_dumper
+        dumper = _k8s_dumper
+    else:
+        def _default_dumper(
+            e: Entity_T,
+            strict: bool = True,
+            resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
+        ) -> Dict[str, Any]:
+            return _json_safe(converter.unstructure(e))
+
+        dumper = _default_dumper
+
+    return dumper
 
 
 def get_loader(
     platform_type: PlatformType,
 ) -> Callable[[Dict[str, Any], Optional[Dict[str, Any]], type], Entity_T]:
-    # TODO: Implement GIT_LOADERS_FIELD_NAME
-    def _attrload(l, value, type_):
+    converter = _new_converter()
+
+    def _mangle_names(
+        namesmap: Dict[str, str], value: Dict[str, Any], fail_on_extra: bool
+    ) -> Dict[str, Any]:
+        mangled = {}
+        for key, key_value in value.items():
+            mapped_key = namesmap.get(key, key)
+            if mapped_key in mangled:
+                raise ValueError(f"Conflicting key while loading entity: {key}")
+            mangled[mapped_key] = key_value
+        if fail_on_extra:
+            extras = set(mangled.keys()) - set(namesmap.values())
+            if extras:
+                raise ValueError(f"Unexpected extra fields: {', '.join(sorted(extras))}")
+        return mangled
+
+    def _attrload(value: Any, type_: Type[Any]) -> Any:
         from attr._make import _Nothing as NOTHING
 
         if not isinstance(value, dict):
-            raise dataloader.TypedloadTypeError(
+            raise LoadTypeError(
                 "Expected dictionary, got %s" % type(value), type_=type_, value=value
             )
 
         fields = {i.name for i in type_.__attrs_attrs__}
-        necessary_fields = set()
-        type_hints = {
-            i.name: (
-                dataloader._get_attr_converter_type(i.converter)
-                if i.converter
-                else i.type
-            )
-            for i in type_.__attrs_attrs__
-        }
-        namesmap = {}  # type: Dict[str, str]
+        namesmap: Dict[str, str] = {}
 
         value = value.copy()
         orig_values = value.copy()
 
         for attribute in type_.__attrs_attrs__:
-
             read_only = attribute.metadata.get("readOnly", False)
             write_only = attribute.metadata.get("writeOnly", False)
             if (read_only and platform_type == PlatformType.K8S) or (
-                write_only
-                and platform_type
-                in {
-                    PlatformType.APPGATE,
-                    PlatformType.GIT,
-                }
+                write_only and platform_type in {PlatformType.APPGATE, PlatformType.GIT}
             ):
-                # Don't load attribute from K8S in read only mode even if
+                # Don't load attribute from K8S in read-only mode even if
                 # it's defined
-                fields.remove(attribute.name)
+                fields.discard(attribute.name)
                 continue
 
             if attribute.default is NOTHING and attribute.init:
-                necessary_fields.add(attribute.name)
+                pass
 
             # Manage name mangling
-            if l.mangle_key in attribute.metadata:
-                namesmap[attribute.metadata[l.mangle_key]] = attribute.name
+            if "name" in attribute.metadata:
+                namesmap[attribute.metadata["name"]] = attribute.name
 
             # Custom loading values
             try:
-                if (
-                    platform_type == PlatformType.K8S
-                    and "k8s_loader" in attribute.metadata
-                ):
-                    # cls: Iterable[CustomLoader]
+                if platform_type == PlatformType.K8S and "k8s_loader" in attribute.metadata:
                     cls = attribute.metadata[K8S_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
@@ -285,24 +302,30 @@ def get_loader(
                     platform_type == PlatformType.APPGATE
                     and "appgate_loader" in attribute.metadata
                 ):
-                    # cls: Iterable[CustomLoader]
                     cls = attribute.metadata[APPGATE_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
                             value = cl.load(value)
             except Exception as e:
-                raise TypedloadException(str(e))
+                raise LoadException(str(e))
 
         try:
-            value = dataloader._mangle_names(namesmap, value, l.failonextra)
+            value = _mangle_names(namesmap, value, fail_on_extra=False)
         except ValueError as e:
-            raise TypedloadValueError(str(e), value=value, type_=type_)
+            raise LoadValueError(str(e), value=value, type_=type_)
         except AttributeError as e:
-            raise TypedloadAttributeError(str(e), value=value, type_=type_)
+            raise LoadAttributeError(str(e), value=value, type_=type_)
 
-        entity = dataloader._objloader(
-            l, fields, necessary_fields, type_hints, value, type_
-        )
+        value = {k: v for k, v in value.items() if k in fields}
+
+        try:
+            entity = converter.structure_attrs_fromdict(value, type_)
+        except TypeError as e:
+            raise LoadTypeError(str(e), value=value, type_=type_)
+        except ValueError as e:
+            raise LoadValueError(str(e), value=value, type_=type_)
+        except Exception as e:
+            raise LoadException(str(e), value=value, type_=type_)
 
         try:
             if hasattr(entity, ENTITY_METADATA_ATTRIB_NAME):
@@ -311,33 +334,29 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and K8S_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
+                    loaders: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
                         appgate_metadata[K8S_LOADERS_FIELD_NAME]
                     )
-                    for el in els or []:
+                    for el in loaders or []:
                         entity = el.load(orig_values, entity)
                 elif (
                     platform_type == PlatformType.APPGATE
                     and APPGATE_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    els: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
-                        appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
-                    )
-                    for el in els or []:
+                    loaders = appgate_metadata[APPGATE_LOADERS_FIELD_NAME]
+                    for el in loaders or []:
                         entity = el.load(orig_values, entity)
-        except TypedloadException as e:
-            raise TypedloadException(
+        except LoadException as e:
+            raise LoadException(
                 description=str(e), value=e.value, type_=e.type_
             ) from None
         except Exception as e:
-            raise TypedloadException(
-                description=str(e), value=value, type_=type
+            raise LoadException(
+                description=str(e), value=value, type_=type_
             ) from None
         return entity
 
-    loader = dataloader.Loader(**{})
-    loader.handlers.insert(0, (dataloader.is_attrs, _attrload))
-    loader.handlers.insert(0, (is_datetime_loader, lambda _1, v, _2: parse_datetime(v)))
+    converter.register_structure_hook_func(attr.has, _attrload)
 
     def load(
         data: Dict[str, Any], metadata: Optional[Dict[str, Any]], entity: Type
@@ -354,7 +373,7 @@ def get_loader(
             appgate_mt["fromAppgate"] = True
         data[APPGATE_METADATA_ATTRIB_NAME] = appgate_mt
         try:
-            loaded_entity = loader.load(data, entity)
+            loaded_entity = converter.structure(data, entity)
             if metadata:
                 annotations = metadata.get("annotations", {})
                 if K8S_ID_ANNOTATION in annotations:
@@ -367,15 +386,15 @@ def get_loader(
                         annotations[K8S_ID_ANNOTATION],
                     )
             return loaded_entity
-        except TypedloadException as e:
-            raise AppgateTypedloadException(
+        except LoadException as e:
+            raise AppgateLoadException(
                 platform_type=platform_type,
                 value=e.value,
                 type_=e.type_,
                 description=str(e),
             ) from None
         except ValueError as e:
-            raise AppgateTypedloadException(
+            raise AppgateLoadException(
                 platform_type=platform_type,
                 description=str(e),
             ) from None
