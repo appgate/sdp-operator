@@ -187,9 +187,14 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
                     continue
             if name == "_entity_metadata":
                 continue
-            if name not in ["notes", "description"] and (attrval is None or attrval == ""):
+            if name not in ["notes", "description"] and (
+                attrval is None or attrval == ""
+            ):
                 continue
-            if hasattr(attribute.default, "factory") and attrval == attribute.default.factory():
+            if (
+                hasattr(attribute.default, "factory")
+                and attrval == attribute.default.factory()
+            ):
                 continue
             d_val = _json_safe(converter.unstructure(attrval))
             if isinstance(d_val, dict) and not d_val:
@@ -215,7 +220,9 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
         def _k8s_dumper(
             e: Entity_T,
             strict: bool = True,
-            resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
+            resolution_conflicts: (
+                Dict[str, List[MissingFieldDependencies]] | None
+            ) = None,
         ) -> Dict[str, Any]:
             return k8s_dumper(
                 converter,
@@ -227,10 +234,13 @@ def get_dumper(platform_type: PlatformType, api_spec: APISpec | None = None):
 
         dumper = _k8s_dumper
     else:
+
         def _default_dumper(
             e: Entity_T,
             strict: bool = True,
-            resolution_conflicts: Dict[str, List[MissingFieldDependencies]] | None = None,
+            resolution_conflicts: (
+                Dict[str, List[MissingFieldDependencies]] | None
+            ) = None,
         ) -> Dict[str, Any]:
             return _json_safe(converter.unstructure(e))
 
@@ -256,7 +266,9 @@ def get_loader(
         if fail_on_extra:
             extras = set(mangled.keys()) - set(namesmap.values())
             if extras:
-                raise ValueError(f"Unexpected extra fields: {', '.join(sorted(extras))}")
+                raise ValueError(
+                    f"Unexpected extra fields: {', '.join(sorted(extras))}"
+                )
         return mangled
 
     def _attrload(value: Any, type_: Type[Any]) -> Any:
@@ -293,7 +305,10 @@ def get_loader(
 
             # Custom loading values
             try:
-                if platform_type == PlatformType.K8S and "k8s_loader" in attribute.metadata:
+                if (
+                    platform_type == PlatformType.K8S
+                    and "k8s_loader" in attribute.metadata
+                ):
                     cls = attribute.metadata[K8S_LOADERS_FIELD_NAME]
                     for cl in cls:
                         if isinstance(cl, CustomAttribLoader):
@@ -334,9 +349,9 @@ def get_loader(
                     platform_type == PlatformType.K8S
                     and K8S_LOADERS_FIELD_NAME in appgate_metadata
                 ):
-                    loaders: List[Union[CustomFieldsEntityLoader, CustomEntityLoader]] = (
-                        appgate_metadata[K8S_LOADERS_FIELD_NAME]
-                    )
+                    loaders: List[
+                        Union[CustomFieldsEntityLoader, CustomEntityLoader]
+                    ] = appgate_metadata[K8S_LOADERS_FIELD_NAME]
                     for el in loaders or []:
                         entity = el.load(orig_values, entity)
                 elif (
@@ -351,9 +366,7 @@ def get_loader(
                 description=str(e), value=e.value, type_=e.type_
             ) from None
         except Exception as e:
-            raise LoadException(
-                description=str(e), value=value, type_=type_
-            ) from None
+            raise LoadException(description=str(e), value=value, type_=type_) from None
         return entity
 
     converter.register_structure_hook_func(attr.has, _attrload)
