@@ -179,6 +179,29 @@ def test_loader_array_object():
     )
 
 
+def test_diff_dump_array_object():
+    entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
+
+    EntityArray = entities["EntityArray"].cls
+    EntityArrayObjectOne = entities["EntityArray_Arrayobjectone"].cls
+
+    entity = EntityArray(
+        arrayObjectOne=frozenset(
+            {
+                EntityArrayObjectOne(arrayFieldOne="foo", arrayFieldTwo="bar"),
+                EntityArrayObjectOne(arrayFieldOne="faa", arrayFieldTwo="baa"),
+            }
+        )
+    )
+
+    dumped = DIFF_DUMPER.dump(entity)
+
+    assert dumped["arrayObjectOne"] == [
+        {"arrayFieldOne": "faa", "arrayFieldTwo": "baa"},
+        {"arrayFieldOne": "foo", "arrayFieldTwo": "bar"},
+    ]
+
+
 def test_loader_discriminator():
     entities = load_test_open_api_spec(secrets_key=None, reload=True).entities
 
