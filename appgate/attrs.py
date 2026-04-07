@@ -108,6 +108,16 @@ def _new_converter() -> Converter:
     converter = Converter()
     converter.register_unstructure_hook(datetime.datetime, dump_datetime)
     converter.register_structure_hook(datetime.datetime, lambda v, _: parse_datetime(v))
+
+    def _unstructure_set(v: set[Any] | frozenset[Any]) -> List[Any]:
+        values = [_json_safe(converter.unstructure(i)) for i in v]
+        try:
+            return sorted(values, key=lambda value: json.dumps(value, sort_keys=True))
+        except Exception:
+            return values
+
+    converter.register_unstructure_hook(set, _unstructure_set)
+    converter.register_unstructure_hook(frozenset, _unstructure_set)
     return converter
 
 
