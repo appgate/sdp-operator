@@ -1,4 +1,4 @@
-aiohttp ~= 3.13
+aiohttp ~= 3.14
 apischema ~= 0.18
 attrs ~= 23.0
 cryptography ~=46.0.6
