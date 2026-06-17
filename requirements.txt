@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.4
+aiohttp==3.14.1
     # via -r requirements.in
 aiosignal==1.4.0
     # via aiohttp
@@ -120,7 +120,9 @@ six==1.16.0
 smmap==5.0.1
     # via gitdb
 typing-extensions==4.14.1
-    # via aiosignal
+    # via
+    #   aiohttp
+    #   aiosignal
 urllib3==1.26.18
     # via
     #   kubernetes
