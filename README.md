@@ -1,4 +1,10 @@
 # SDP Operator
+
+> [!WARNING]
+> **This project is sunset and no longer maintained.** No further releases are planned and this repository is archived.
+> Use **Collective Replication**, available in Appgate SDP 6.7.x and later, which provides this functionality natively.
+> Previously published container images and Helm chart versions remain available.
+
 SDP Operator is a Kubernetes operator to configure an Appgate SDP system.
 
 # Table of Contents
